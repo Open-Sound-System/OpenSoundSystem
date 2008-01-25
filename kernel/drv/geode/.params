@@ -1,0 +1,13 @@
+int geode_use_src=1;
+/*
+ * Geode uses OSS SRC by default - if the cpu usage is too high disable it.
+ * Values: 1=Enable, 0=Disable   Default: 1
+ */
+ 
+
+
+int geode_use_pollmode=0;
+/*
+ * if interrupts don't use let Geode use software polling mode
+ * Values: 1=Enable 0=Disable    Default: 0
+ */

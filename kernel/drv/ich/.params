@@ -1,0 +1,12 @@
+int intelpci_rate_tuning = 240;
+/*
+ * Few broken motherboards had nonstandard crystal clocks that cause wrong
+ * sampling rates. With such motherboards it was necessary to use
+ * the intelpci_rate_tuning option to fix the rate. See the manual
+ * for more info.
+ */
+int intelpci_force_mmio = 0;
+/*
+ * intelpci_force_mmio forces the driver to use Memory Mapped IO
+ * (some bioses don't provide I/O mapped addresses).
+ */

@@ -1,0 +1,21 @@
+ich	pci1022,7445	AMD 786
+ich	pci1022,746d	AMD 8111 
+ich	pci1039,7012	SiS 7012 
+ich	pci10de,1b1	Nvidia nForce
+ich	pci10de,3a	Nvidia MCP4
+ich	pci10de,6a	Nvidia nForce2
+ich	pci10de,8a	Nvidia CK8
+ich	pci10de,da	Nvidia nForce3
+ich	pci10de,ea	Nvidia CK8S
+ich	pci10de,59	Nvidia nForce4
+ich	pci10de,26b	Nvidia MCP51
+ich	pci8086,2415	Intel AC97 (ICH)
+ich	pci8086,2425	Intel AC97 (ICH1)
+ich	pci8086,2445	Intel AC97 (ICH2)
+ich	pci8086,2485	Intel AC97 (ICH3)
+ich	pci8086,24c5	Intel AC97 (ICH4)
+ich	pci8086,24d5	Intel AC97 (ICH5)
+ich	pci8086,25a6	Intel AC97 (ESB)
+ich	pci8086,266e	Intel AC97 (ICH6)
+ich	pci8086,27de	Intel AC97 (ICH7)
+ich	pci8086,7195	Intel 440MX (440MX)

@@ -1,0 +1,29 @@
+NAME
+ossplay - Open Sound System playback applet.
+
+DESCRIPTION
+The ossplay applet plays raw PCM, Microsoft RIFF (.wav) and Sun ULaw (.au) 
+audio files. By default the application will try to determine the audio 
+file's format and plays audio based on the stored inforation about bit/sample,
+number of channels and sampling rate.
+
+
+OPTIONS
+-v		Verbose output
+-R		Disable redirection to virtual mixer engines and sample
+		rate/format conversions. Should not be used unless absolutely
+		necessary.
+-q		Quiet (no information printed)
+-d<devname> 	Select <devname> as the device (eg -d/dev/dsp2)
+-s<rate> 	Select the playback rate for raw PCM audio (eg -s48000)
+-b<bits> 	Select the number of bits/sample (8/16/24/32) (eg. -b8 or -b16)
+-c<channels 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc.
+-o<playtarget> 	Selects the play target name if the device supports multiple
+		play targets (such as front, rear, side). 
+-o? 		Prints the list of available play targets.
+
+FILES
+/usr/bin/ossplay
+
+AUTHOR
+4Front Technologies

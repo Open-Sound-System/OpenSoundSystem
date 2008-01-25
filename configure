@@ -1,0 +1,130 @@
+#!/bin/sh
+
+CONFIGURE=YES
+export CONFIGURE
+
+while test  "$# " != "0 "
+do
+	case "$1" in
+
+   	"--regparm")
+		if test "`uname -s` " != "Linux "
+		then
+			echo $0: --regparm is only valid under Linux
+			exit 1
+		fi
+		echo Will prepare for REGPARM kernels
+		export USE_REGPARM=1
+		;;
+
+   	"--no-regparm")
+		if test "`uname -s` " != "Linux "
+		then
+			echo $0: --no-regparm is only valid under Linux
+			exit 1
+		fi
+		echo Will prepare for non-REGPARM kernels
+		export NO_REGPARM=1
+		;;
+
+	*)
+
+		echo $0: Unrecognized command line option $1
+		
+		case `uname -s` in
+
+		Linux)
+			echo
+			echo Permitted command line arguments are:
+			echo
+			echo "   --regparm      - Configure for CONFIG_REGPARM kernels"
+			echo "   --no-regparm   - Configure for kernels without CONFIG_REGPARM option."
+			echo "NOTE! --regparm/--no-regparm is normally detected"
+			echo "      automatically and these swhiches should NOT be used."
+			echo
+			;;
+
+		*)
+		   echo No command line arguments permitted under this operating system.
+		esac
+		exit 1
+	esac
+
+	shift
+done
+
+DIR=`dirname $0`
+SRCDIR=$DIR
+export SRCDIR
+
+if test "$DIR " = " " || test "$DIR " = ". "
+then
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo "**** USAGE ERROR ****"
+	echo
+	echo You need to create an empty build directory and
+	echo then execute sh `pwd`/configure inside it.
+	echo
+	echo Configure script aborted
+	exit 2
+fi
+
+# Run the OS dependent setup script
+
+case `uname` in
+
+"SunOS")
+	case `uname -r` in
+	"5.9")
+		echo Setting up for Solaris 9
+		SOL9=1
+		export SOL9
+		;;
+
+	"5.8")
+		echo Setting up for Solaris 8
+		SOL9=1
+		export SOL9
+		;;
+	*)
+		echo Using Solaris10 specific script
+		;;
+	esac
+	exec sh $DIR/setup/SunOS/solsetup.sh
+	;;
+
+"Linux")
+
+	if test -d /usr/include/alsa || test -d /usr/local/include/alsa
+	then
+		echo Compiling libsalsa library
+		export HAVE_ALSA=1
+	fi
+	
+	if test "$USE_REGPARM " != "1 " && test "$NO_REGPARM " != "1 "
+	then
+	  # REGPARM/NOTREGPARM not set so compile a version for both of them
+	        echo Using the Linux specific script
+		exec sh $DIR/setup/Linux/linsetup.sh
+	fi
+
+	echo Using the default script
+	exec sh $DIR/setup/setupdir.sh
+	;;
+
+*)
+	echo Using the default script
+	exec sh $DIR/setup/setupdir.sh
+
+esac
+
+echo internal error in configure
+
+exit 3

@@ -1,0 +1,12 @@
+Change log for OSS
+==================
+
+This file contains a list of the changes made to OSS. Changes are sorted by
+directory (not by time).
+
+Global changes
+--------------
+
+070710 by hannu
+Added "template" for Linux 2.4.x support. However for the time being it's not
+functional.

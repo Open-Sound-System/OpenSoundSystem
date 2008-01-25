@@ -1,0 +1,19 @@
+NAME
+osscore - Open Sound Sytem core audio framework.
+
+DESCRIPTION
+Open Sound System core audio support psudo driver. This driver implements the core Open Sound System API for audio, midi, mixer and synth functions. This driver also implements the OS driver interface as well as device configuration and setup. More information on programming on the OSS API is avaialable at:
+http://manuals.fi.opensound.com/
+
+OPTIONS
+o detect_trace 	Internal debugging (do not change).
+o max_intrate 	Set the maximum number of interrupts per second. By default
+		this parameter is set to 100 interrupts per second which equals
+		to about 10 msec minimum latencies.
+
+FILES
+CONFIGFILEPATH/osscore.conf Device configuration file
+
+AUTHOR
+4Front Technologies
+

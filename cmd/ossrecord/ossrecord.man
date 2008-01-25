@@ -1,0 +1,69 @@
+NAME
+ossrecord - Open Sound System recording applet.
+
+DESCRIPTION
+The ossrecord applet records audio in Microsoft RIFF (wav) format. It
+will record from any input that's currently set as the recording source
+by the ossxmix/ossmix mixer applets. With the -l option, you also get
+a level meter that will display VU levels in a character mode.
+
+
+OPTIONS
+-s<rate> 	Select the playback rate for raw PCM audio (eg -s48000)
+-b<bits> 	Select the number of bits/sample (8/16/32) (eg. -b8 or -b16)
+-c<channels> 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc (-c2 
+-d<devname>  	Select <devname> as the device (eg -d/dev/dsp2)
+-S		Record in stereo (obsolete - use -c2 instead).
+-R		Open audio device in raw mode to disable virtual mixing and
+		sample rate/format
+		conversions. Can be used when recording from a digital source
+		(S/PDIF input).
+-v		Verbose information
+-d<device> 	Select the device to record from (eg. -d/dev/dsp2)
+-l		Display level meters (character based)
+-i<recsrc|?> 	Select the recording source or display available recording 
+		sources if '?' is supplied:
+		eg: ossrecord -i? will display:
+			        vol
+        			line (currently selected)
+        			mic
+        			cd
+        			aux1
+        			phone
+        			mono
+        			video
+-m<nfiles> 	Repeat the recording operation <nfiles> times. The filename
+		argument must have %d (or %02d) somewhere in the file to
+		guarantee unique filenames. If no %d is given then subsequent
+		recordings will overwrite the previous one(s). This option is
+		usefull only with loopback audio devices or if the -t option
+		is used.
+-r<command> 	This option launches the <command> in background after 
+		recording the file was completed. The name of the recorded file
+		will be given as the (only) command line argument. When the -m 
+		option is used the script will run in parallel while recording
+		the next file. See the COMMAND SCRIPT section (below) for more
+		info.
+-h		Display usage instructions.
+
+FILES
+/usr/bin/ossrecord
+
+COMMAND SCRIPT
+		The -r command line argument makes it possible to execute
+		a script or program after recording of the wave file is finished.
+		Below is a simple scell script that does MP3 encoding using
+		lame.
+
+#!/bin/sh
+
+WAVENAME=$1
+
+MP3NAME=$1.mp3
+
+lame -m s -h --preset studio $WAVENAME $MP3NAME
+
+exit 0
+
+AUTHOR
+4Front Technologies

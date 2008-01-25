@@ -1,0 +1,5 @@
+cmpci	pci13f6,100	C-Media CM8338A
+cmpci	pci13f6,100	MIDIMan DiO 2448
+cmpci	pci13f6,101	CMedia CM8338B
+cmpci	pci13f6,111	CMedia CM8738/CM8768
+cmpci	pci14af,20	Guillemot Maxi Sound MUSE

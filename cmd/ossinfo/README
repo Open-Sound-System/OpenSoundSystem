@@ -1,0 +1,8 @@
+Release notes
+=============
+
+The ossinfo program demonstrates the device discovery API of (upcoming)
+OSS 4.0 version. The documentation of this interface will be released
+at the same time with OSS 4.0 version. While the API features used by 
+this program are already available in OSS 3.99.x it's possible that they
+may change before the final release.

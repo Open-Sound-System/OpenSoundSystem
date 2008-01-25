@@ -1,0 +1,52 @@
+int softoss_masterdev=-1;
+/*
+ * Master device to attach the SoftOSS engine to. -1 is automatic detection
+ * Values: 0-N,	Default: -1 (autodetect)
+ */
+
+int softoss_rate=48000;
+/*
+ * Maximum sample rate to use for the virtual mixer - this means that audio
+ * played at the sample rate of virtual mixer will pass through without SRC.
+ * Values: 8000-48000	Default: 48000
+ */
+
+int softoss_devices=4;
+/*
+ * Number of Virtual Mixer /dev/dsp# devices to create
+ * Values: 1-32		Default: 4
+ */ 
+
+int softoss_loopdevs=0;
+/*
+ * Number of loopback recording devices to create. Loopback devices are
+ * special devices that can be used to record mix/sum of the audio outputs
+ * by an application running in the same computer.
+ * Values: 0-4	Default: 0
+ */
+
+int softoss_use_src=1;
+/*
+ * Enable Linear Interpolation or full SRC
+ * Values: 1=On 0=Off	Default: 1
+ */
+
+int softoss_redirect=0;
+/*
+ * Allow OSS to automatically redirect audio to virtual mixer devices or
+ * disable the feature
+ * Values: 1=On 0=Off	Default: 1
+ */
+
+int softoss_channels=2;
+/*
+ * Number of channels supported by Virtual Mixer - currently it's 2 but 
+ * in the future it can be 4 or 6 channels of audio.
+ * Values: 2, 4, 6	Default: 2
+ */
+
+int softoss_disable=0;
+/*
+ * Disable the Virtual Mixer from attaching
+ * Values: 1=Disable 0=Enable	Default: 0
+ */

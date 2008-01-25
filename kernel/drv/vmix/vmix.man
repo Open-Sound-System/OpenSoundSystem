@@ -1,0 +1,37 @@
+NAME
+vmix - Virtual Mixer audio driver.
+
+DESCRIPTION
+Open Sound System provides an audio mixer device to mix multiple
+audio streams being played to the same audio device. Recoring and full duplex
+is supported too with most devices.
+
+The vmix driver is a 2nd generation virtual mixing driver. Similar
+functionality is provided by the older softoss driver.
+
+Unlike softoss the vmix driver doesn't create visible audio devices. Instead
+the driver creates "hidden" audio engines that will be automatically used
+when some application opens the master device. However the ossinfo(1) program
+shows these virtual engines with the -e option. Also the -a and -A options
+will show these engines if the -v (verbose) option is used.
+
+ MIXER DEVICES
+The vmix driver doesn't create dedicated mixer (volume control) device.
+Instead it hooks to the mixer of the parent (master) device. The parent device
+will have few vmix specific volume and peak meter controls attached.
+
+KNOWN PROBLEMS
+o The vmix driver doesn't work in Sparc systems and with older x86 processors
+(PII, first Athlon models and andy older CPUs). In these systems the older
+softoss based virtual mixer driver will be installed automatically instead of
+vmix.
+o In some cases vmix may be enabled in digital (S/PDIF) output devices that 
+may be used to play AC3 or DTS streams. Due to mixing these encoded formats
+may not always work properly.
+
+FILES
+CONFIGFILEPATH/vmix.conf Device configuration file
+
+AUTHOR
+4Front Technologies
+

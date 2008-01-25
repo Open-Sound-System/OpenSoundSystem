@@ -1,0 +1,27 @@
+NAME
+ossinfo - Open Sound System information/status appet
+
+DESCRIPTION
+The ossinfo applet displays the OSS device information.
+
+OPTIONS
+-v		Verbose output
+-p		Display only physical audio/midi devices
+-g		Display ALL audio/midi/mixer devices (physical and virtual)
+-a		Display audio device files
+-a		Display audio device files (for applications using O_EXCL)
+-e		Display all audio engines
+-m		Display only the MIDI devices
+-x		Display only the mixer devices
+-h		Display help.
+
+FILES
+/usr/bin/ossinfo
+
+SEE ALSO
+The Getting information about devices section of the OSS Programmer's Guide
+(device_discovery(2)) gives instructions for getting device information
+in applications.
+
+AUTHOR
+4Front Technologies

@@ -1,0 +1,12 @@
+Known bugs and things to fix in this release
+============================================
+
+- There is initial support for Linux 2.4.x kernels. However it's not functional
+yet. At least the setup/Linux24/oss/build/install.sh file needs to be fixed.
+In addition it's likely that the other files under setup/Linux24/oss/build
+will require serious changes.
+
+- The Cuckoo files (kernel level ALSA API support for Linux (2.6.x)) are not
+compatible with the current audio core. This will be fixed later this year.
+There is a workaround. See http://www.4front-tech.com/foum/viewtopic.php?t=2188
+for more info.

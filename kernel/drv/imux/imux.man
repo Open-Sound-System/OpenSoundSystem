@@ -1,0 +1,108 @@
+NAME
+imux - Input Muplexer audio driver.
+
+DESCRIPTION
+IMUX is a virtual recording engine that permits up to 8 audio recording
+applications to run at the same time. Generally most soundcards permit only a
+single recording application to record the input source (via mic, line or CD).
+With IMUX, you can use up to 8 recording applications to record the same
+source in different sample rates, bits/sample and channels (mono/stereo).
+IMUX does all the rate and format conversion in software. The applications
+think that they are actually getting data from the physical device. For
+instance, if you want to record the input from a CDROM in .wav format at
+48Khz/8/Mono and at the same time you want to record the same stream in .mp3
+format in 44.1Khz 16 bit stereo, with IMUX, you can start the wave recording
+application on the first IMUX device and start the MP3 encoder on the second
+IMUX device and both applications will run simultaneously thinking that they
+are getting data from the physical soundcard.
+
+CONFIGURATION
+To add the IMUX driver you first need to ensure that there is a physical
+soundcard present and then you can run ossdetect -i to add the IMUX driver.
+
+When properly configured, IMUX output in /dev/sndstat will look like:
+
+	Audio devices:
+	0: AMD 8111 (DUPLEX)
+	1: AMD 8111 (shadow) (DUPLEX)
+	2: OSS Virtual Mixer v2.5 Playback CH #0 (GRC3)
+	3: OSS Virtual Mixer v2.5 Playback CH #1 (GRC3)
+	4: OSS Virtual Mixer v2.5 Playback CH #2 (GRC3)
+	5: OSS Virtual Mixer v2.5 Playback CH #3 (GRC3)
+	6: OSS Virtual Mixer v2.5 Playback CH #4 (GRC3)
+	7: OSS Virtual Mixer v2.5 Playback CH #5 (GRC3)
+	8: OSS Virtual Mixer v2.5 Playback CH #6 (GRC3)
+	9: OSS Virtual Mixer v2.5 Playback CH #7 (GRC3)
+	10: Virtual Mixer Loopback Record CH #0 (GRC3)
+	11: Virtual Mixer Loopback Record CH #1 (GRC3)
+	12: Virtual Mixer Loopback Record CH #2 (GRC3)
+	13: Virtual Mixer Loopback Record CH #3 (GRC3)
+	14: IMux0 CH #0 (GRC3)
+	15: IMux0 CH #1 (GRC3)
+	16: IMux0 CH #2 (GRC3)
+	17: IMux0 CH #3 (GRC3)
+	18: IMux0 CH #4 (GRC3)
+
+	Midi devices:
+
+	Mixers:
+	0: ICH AC97 Mixer (AD1885)
+	1: Virtual Mixer
+	2: IMUX Control panel
+
+
+USAGE
+Connect an input source to the soundcard's line-in jack. Using the Mixer app
+like ossmix (or any OSS compliant mixer) set the recording source to Line-In 
+(eg ossmix line.rec ON) Now you can start recording the input in multiple 
+formats and at different sample rates. The simplest example is:
+
+	/usr/lib/oss/record -s48000 -b16 -S -d/dev/dsp3 test1.wav &
+	/usr/lib/oss/record -s8000 -b8 -d/dev/dsp5 test2.wave &
+
+After a few minutes of recording you can stop them by placing the command in
+forground mode (type fg %1 or fg %2) and press ^c to stop.
+
+You now have two wav format files. test1.wav is a 48KHz 16bit stereo file and
+test2.wav is a 8Khz 8bit Mono file.
+
+You can now playback the files as follows:
+o /usr/lib/oss/play -v test1.wav and it should show you that the file is indeed
+48Khz 16bit stereo.
+
+o /usr/lib/oss/play -v test2.wav - you should see that this file is indeed a
+8Khz 8bit mono file.
+
+What you have essentially accomplished is recording a single input stream into
+two different formats at the same time.
+
+You can now extend this analogy to record the input in mp3 format and RealAudio
+format simultaneously.
+
+The IMUX control panel can be displayed by typing ossxmix -d<imux mixer number>
+(for e.g. in the above example, IMUX mixer is #2 so we type ossxmix -d2
+
+There are record level control sliders for each input channel and it will show
+activity when a recording program is active on a particular channel.
+
+
+OPTIONS
+
+o imux_masterdev: Selects which physical device to use as the Master device
+for the IMUX driver.
+Values: -1: automatically selected by OSS, 1-N: Audio device index of the
+master device (as reported by ossinfo -a), Default: -1.
+
+o imux_rate: Specifies what is the base sampling rate used by the imux driver.
+Values: 5000-96000 Default: 48000
+
+o imux_devices: Specifies number of Input Multiplexer devices to setup.
+Values: 2-48 Default: 5
+
+
+FILES
+CONFIGFILEPATH/imux.conf Device configuration file
+
+AUTHOR
+4Front Technologies
+
