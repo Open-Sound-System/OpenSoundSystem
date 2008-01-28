@@ -119,7 +119,7 @@ else
 	exit 254
 fi
 
-if test ! -f $SRCDIR/.date
+if test -f $SRCDIR/kernel/nonfree/include/license.h
 then
 	echo "#define LICENSED_VERSION" >> kernel/framework/include/timestamp.h
 fi
