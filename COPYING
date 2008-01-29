@@ -1,1 +1,12 @@
-Copyright (C) Hannu Savolainen and Dev Mazumdar 1996-2006. All rights reserved.
+Copyright (C) Hannu Savolainen and Dev Mazumdar 1996-2008. All rights reserved.
+
+This source tree is reserved for internal use by 4Front Technologies and
+by registerd contributors of Open Sound System. You have no right to 
+redistribute this version or to use it for any other purpose than developing
+OSS itself.
+
+There is absolutely no warranty. The code contained in this source tree is
+under development and potentially buggy.
+
+Officially released source code packages of Open Sound System are available
+from http://developer.opensound.com. 
