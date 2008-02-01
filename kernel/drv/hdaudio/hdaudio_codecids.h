@@ -5,7 +5,7 @@
 
 struct codec_desc
 {
-  unsigned int id;
+  unsigned int id; /* Codec id (however subdevice ID in the subdevices[] table) */
   char *name;
   unsigned long flags;
 #define VF_NONE         0x00000000
@@ -21,7 +21,8 @@ S/PDIF */
    */
   unsigned int multich_map;
   hda_mixer_init_func mixer_init;
-  unsigned int main_id; /* In the subdevices table this is used for the codec ID */
+  unsigned int main_id; /* In the subdevices[] table this is used for the codec ID */
+  unsigned int pci_subdevice; /* PCI subdevice ID of the controller (subdevices[]) */
 };
 
 
@@ -846,9 +847,15 @@ static const codec_desc_t subdevices[] = {
   {0x1043e601, "ScaleoP/ALC888", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_scaleoP_mixer_init}, 
 
   /* Abit AA8 (at least some revisions) have bogus codec config information,
-   * including the subvendor ID. */
-  {0x08800000, "Abit AA8/ALC880", VF_ALC88X_HACK, (char **) &abit_AA8_remap, 0, hdaudio_abit_AA8_mixer_init}, 
-  {0x10250000, "Ferrari5k/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init},
+   * including the subvendor ID. 0x08800000 is used by many other motherboards
+   * too. Have to use the pci_subvendor field for alc880 based devices:
+   * 	0x147b1039 = Abit AA8 motherboard.
+   * 	0x15849077 = Rock Pegasus 665 laptop.
+   */
+  {0x08800000, "Abit AA8/ALC880", VF_ALC88X_HACK, (char **) &abit_AA8_remap, 0, hdaudio_abit_AA8_mixer_init, 0, 0x147b1039},
+
+  {0x10250000, "Ferrari5k/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010a},
+  {0x10250000, "Acer_aspire5052/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010f},
   {0x104d2200, "STAC9872K/Vaio", VF_NONE, (char**) &vaio_remap, 0x76543210, hdaudio_vaio_vgn_mixer_init, 0x83847664}, /* Vaio VGN-AR51J */
 #endif
   {0, "Unknown"}

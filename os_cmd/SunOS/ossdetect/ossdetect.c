@@ -588,7 +588,7 @@ forceload_drivers (char *fname)
 int
 main (int argc, char *argv[])
 {
-  int i, pass;
+  int i, pass, c;
   di_node_t root_node;
   char tmp[256];
   struct stat st;
@@ -628,9 +628,8 @@ main (int argc, char *argv[])
     sprintf (arch, "%s/", tmp);
 #endif
 
-  for (i = 1; i < argc; i++)
-    if (argv[i][0] == '-')
-      switch (argv[i][1])
+  while ((c = getopt (argc, argv, "vfidlV")) != EOF)
+      switch (c)
 	{
 	case 'v':
 	  verbose++;

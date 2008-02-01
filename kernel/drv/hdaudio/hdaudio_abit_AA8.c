@@ -27,7 +27,7 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 
     HDA_GROUP (pin_group, top_group, "jack");
 
-    if (HDA_PIN_GROUP (0x14, group, pin_group, "green1", n, "jack", 4))	/* Pin widget 0x14 */
+    if (HDA_PIN_GROUP (0x14, group, pin_group, "green", n, "jack", 4))	/* Pin widget 0x14 */
       {
 	/* Src 0xc=front */
 	if (HDA_PINSELECT (0x14, ctl, group, "mode", -1))
@@ -35,7 +35,7 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_OUTMUTE (0x14, group, "mute", UNMUTE);
       }
 
-    if (HDA_PIN_GROUP (0x15, group, pin_group, "black1", n, "jack", 4))	/* Pin widget 0x15 */
+    if (HDA_PIN_GROUP (0x15, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x15 */
       {
 	/* Src 0xd=rear */
 	if (HDA_PINSELECT (0x15, ctl, group, "mode", -1))
@@ -158,11 +158,11 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	/* Src 0x1a=blue1 */
 	/* Src 0x1b=blue2 */
 	/* Src 0x1c=cd */
-	/* Src 0x14=green1 */
-	/* Src 0x15=black1 */
+	/* Src 0x14=green */
+	/* Src 0x15=black */
 	if (HDA_SELECT (0x07, "src", ctl, group, -1))
 	  {
-	    HDA_CHOICES (ctl, "pink1 pink2 blue1 blue2 cd green1 black1");
+	    HDA_CHOICES (ctl, "pink1 pink2 blue1 blue2 cd green black");
 	  }
 	{
 	  int amp_group;
@@ -173,8 +173,8 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INAMP (0x07, 2, amp_group, "blue1", 90);	/* From widget 0x1a */
 	  HDA_INAMP (0x07, 3, amp_group, "blue2", 90);	/* From widget 0x1b */
 	  HDA_INAMP (0x07, 4, amp_group, "cd", 90);	/* From widget 0x1c */
-	  HDA_INAMP (0x07, 5, amp_group, "green1", 90);	/* From widget 0x14 */
-	  HDA_INAMP (0x07, 6, amp_group, "black1", 90);	/* From widget 0x15 */
+	  HDA_INAMP (0x07, 5, amp_group, "green", 90);	/* From widget 0x14 */
+	  HDA_INAMP (0x07, 6, amp_group, "black", 90);	/* From widget 0x15 */
 	}
       }
 
@@ -185,11 +185,11 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	/* Src 0x1a=blue1 */
 	/* Src 0x1b=blue2 */
 	/* Src 0x1c=cd */
-	/* Src 0x14=green1 */
-	/* Src 0x15=black1 */
+	/* Src 0x14=green */
+	/* Src 0x15=black */
 	if (HDA_SELECT (0x08, "src", ctl, group, -1))
 	  {
-	    HDA_CHOICES (ctl, "pink1 pink2 blue1 blue2 cd green1 black1");
+	    HDA_CHOICES (ctl, "pink1 pink2 blue1 blue2 cd green black");
 	  }
 	{
 	  int amp_group;
@@ -200,8 +200,8 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INAMP (0x08, 2, amp_group, "blue1", 90);	/* From widget 0x1a */
 	  HDA_INAMP (0x08, 3, amp_group, "blue2", 90);	/* From widget 0x1b */
 	  HDA_INAMP (0x08, 4, amp_group, "cd", 90);	/* From widget 0x1c */
-	  HDA_INAMP (0x08, 5, amp_group, "green1", 90);	/* From widget 0x14 */
-	  HDA_INAMP (0x08, 6, amp_group, "black1", 90);	/* From widget 0x15 */
+	  HDA_INAMP (0x08, 5, amp_group, "green", 90);	/* From widget 0x14 */
+	  HDA_INAMP (0x08, 6, amp_group, "black", 90);	/* From widget 0x15 */
 	}
       }
 
@@ -213,14 +213,14 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	/* Src 0x1b=blue2 */
 	/* Src 0x1c=cd */
 	/* Src 0xb=inputmix */
-	/* Src 0x14=green1 */
-	/* Src 0x15=black1 */
+	/* Src 0x14=green */
+	/* Src 0x15=black */
 	/* Src 0x16=C-L */
 	/* Src 0x17=surr */
 	if (HDA_SELECT (0x09, "src", ctl, group, -1))
 	  {
 	    HDA_CHOICES (ctl,
-			 "pink1 pink2 blue1 blue2 cd inputmix green1 black1 C-L surr");
+			 "pink1 pink2 blue1 blue2 cd inputmix green black C-L surr");
 	  }
 	{
 	  int amp_group;
@@ -232,8 +232,8 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INAMP (0x09, 3, amp_group, "blue2", 90);	/* From widget 0x1b */
 	  HDA_INAMP (0x09, 4, amp_group, "cd", 90);	/* From widget 0x1c */
 	  HDA_INAMP (0x09, 5, amp_group, "inputmix", 90);	/* From widget 0x0b */
-	  HDA_INAMP (0x09, 6, amp_group, "green1", 90);	/* From widget 0x14 */
-	  HDA_INAMP (0x09, 7, amp_group, "black1", 90);	/* From widget 0x15 */
+	  HDA_INAMP (0x09, 6, amp_group, "green", 90);	/* From widget 0x14 */
+	  HDA_INAMP (0x09, 7, amp_group, "black", 90);	/* From widget 0x15 */
 	  HDA_INAMP (0x09, 8, amp_group, "C-L", 90);	/* From widget 0x16 */
 	  HDA_INAMP (0x09, 9, amp_group, "surr", 90);	/* From widget 0x17 */
 	}
@@ -318,8 +318,8 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	/* Src 0x1b=blue2 */
 	/* Src 0x1c=cd */
 	/* Src 0x1d=beep */
-	/* Src 0x14=green1 */
-	/* Src 0x15=black1 */
+	/* Src 0x14=green */
+	/* Src 0x15=black */
 	{
 	  int amp_group;
 
@@ -330,8 +330,8 @@ hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INAMP (0x0b, 3, amp_group, "blue2", 90);	/* From widget 0x1b */
 	  HDA_INAMP (0x0b, 4, amp_group, "cd", 90);	/* From widget 0x1c */
 	  HDA_INAMP (0x0b, 5, amp_group, "beep", 90);	/* From widget 0x1d */
-	  HDA_INAMP (0x0b, 6, amp_group, "green1", 90);	/* From widget 0x14 */
-	  HDA_INAMP (0x0b, 7, amp_group, "black1", 90);	/* From widget 0x15 */
+	  HDA_INAMP (0x0b, 6, amp_group, "green", 90);	/* From widget 0x14 */
+	  HDA_INAMP (0x0b, 7, amp_group, "black", 90);	/* From widget 0x15 */
 	}
       }
   }

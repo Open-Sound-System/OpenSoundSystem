@@ -321,6 +321,8 @@ typedef struct
   hdaudio_endpointinfo_t outendpoints[HDA_MAX_OUTSTREAMS];
 
   unsigned int multich_map;	/* See codec_desc_t.multich_map */
+
+  int mixer_mode;	/* For use by dedicated drivers. Initially set to 0 */
 } codec_t;
 
 struct _hdaudio_mixer_struct

@@ -851,7 +851,7 @@ save_links (void)
 int
 main (int argc, char *argv[])
 {
-  int i;
+  int i,c;
 
   if ((mixerfd = open ("/dev/mixer", O_RDWR, 0)) == -1)
     {
@@ -877,12 +877,16 @@ main (int argc, char *argv[])
 	}
     }
 
-  for (i = 1; i < argc; i++)
+  while ((c = getopt (argc, argv, "vr")) != EOF)
+  switch (c)
     {
-      if (strcmp (argv[i], "-r") == 0)	/* Reset legacy device numbering */
-	recreate_all = 1;
-      if (strcmp (argv[i], "-v") == 0)	/* Verbose mode */
-	verbose++;
+    case 'r':
+      recreate_all = 1;
+      break;
+
+    case 'v':
+      verbose++;
+      break;
     }
 
   if (verbose < 1)

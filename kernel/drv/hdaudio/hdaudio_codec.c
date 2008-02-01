@@ -782,6 +782,12 @@ hdaudio_mixer_create (char *name, void *devc,
 	   "Subvendor ID 0x%08x\n", name, vendor_id, subvendor_id);
   hw_info += strlen (hw_info);
 
+  if (hdaudio_snoopy)
+     {
+	sprintf(hw_info, "**** Warning: Diagnostic mode enabled (hdaudio_snoopy) ****\n");
+  	hw_info += strlen (hw_info);
+     }
+
   for (i = 0; i < 16; i++)
     if (mixer->codecmask & (1 << i))
       {
@@ -1861,7 +1867,8 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
  * higher widget number for the modem group than the audio group. So in this
  * way we can have smaller MAX_WIDGETS which in turn conserves memory.
  */
-      if ((gt & 0xff) != 1)
+      if ((gt & 0xff) != 1 &&
+          (gt & 0xff) != 2)
 	continue;
 
       has_audio_group = 1;
@@ -1923,7 +1930,8 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
   for (i = first_node; i < first_node + num_nodes; i++)
     {
       corb_read (mixer, cad, i, 0, GET_PARAMETER, HDA_GROUP_TYPE, &a, &b);
-      if ((a & 0xff) == 0x1)	/* Root node */
+      if ((a & 0xff) == 0x1 ||	/* Audio group root node */
+          (a & 0xff) == 0x2)	/* Modem group root node */
 	{
 	  codec->afg = i;
 
@@ -1943,6 +1951,11 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 		    if (subdevices[subix].main_id != 0)
 		      if (subdevices[subix].main_id != codec->vendor_id)
 			continue;
+
+		    if (subdevices[subix].pci_subdevice != 0)
+		      if (subdevices[subix].pci_subdevice != pci_subdevice)
+			continue;
+
 
 		    DDB (cmn_err
 			 (CE_CONT, "Subdevice known as %s\n",
@@ -2247,7 +2260,7 @@ hda_codec_getname (hdaudio_mixer_t * mixer, hda_name_t * name)
     return -EIO;
   if (mixer->codecs[name->cad] == NULL)
     return -EIO;
-#if 0
+#if 1
   if (name->wid >= mixer->codecs[name->cad]->nwidgets)
     return -EIO;
 #endif
@@ -2269,6 +2282,10 @@ hda_codec_getwidget (hdaudio_mixer_t * mixer, hda_widget_info_t * info)
     return -EIO;
 
   widget = &mixer->codecs[info->cad]->widgets[info->wid];
+  if (info->wid >= mixer->codecs[info->cad]->nwidgets)
+     return -EIO;
+  if (widget == NULL)
+     return -EIO;
   memcpy (info->info, widget, sizeof (*widget));
 
   return 0;
@@ -2778,7 +2795,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (widget->outamp_caps & AMPCAP_MUTE)	/* Only mute control */
     {
       char tmpname[32];
-      name = "mute";
+      // name = "mute";
 
       if ((ctl = mixer_ext_create_control (mixer->mixer_dev,
 					   group,
@@ -2798,7 +2815,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 
 int
 hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
-		     int ix, int group, const char *name, int percent)
+		     int ix, int group, const char *name, int percent, int flags)
 {
   widget_t *widget;
   codec_t *codec;
@@ -2850,7 +2867,7 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 				       typ,
 				       name, maxval,
 				       MIXF_READABLE |
-				       MIXF_WRITEABLE | MIXF_CENTIBEL)) < 0)
+				       MIXF_WRITEABLE | MIXF_CENTIBEL | flags)) < 0)
     return ctl;
   /* Setup initial volume */
   val = (maxval * percent) / 100;

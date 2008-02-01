@@ -1126,7 +1126,7 @@ dump_all (void)
 int
 main (int argc, char *argv[])
 {
-  int dev = 0, argp = 1, done = 0;
+  int dev = 0, c;
   progname = argv[0];
 
 /*
@@ -1138,62 +1138,58 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  while (argp < argc)
-    {
-      if (argv[argp][0] == '-')
+  while ((c = getopt (argc, argv, "qd:Dcmh")) != EOF)
 	{
-	  switch (argv[argp][1])
+	  switch (c)
 	    {
 	    case 'q':
 	      quiet = 1;
 	      break;
 
 	    case 'd':
-	      dev = atoi (&argv[argp][2]);
+	      dev = atoi (optarg);
 	      break;
 
 	    case 'D':
 	      load_devinfo (dev);
 	      verbose_devinfo (dev);
-	      done = 1;
+	      exit (0);
 	      break;
 
 	    case 'c':
 	      dump_all ();
-	      done = 1;
+	      exit (0);
 	      break;
 
 #ifndef MIDI_DISABLED
 	    case 'm':
-	      midi_mixer (dev, &argv[argp][2], argv, argp + 1, argc);
+	      midi_mixer (dev, optarg, argv, optind, argc);
+	      exit (0);
 	      break;
 #endif
 
 	    case 'h':
 	    default:
-	      done = 1;
 	      usage ();
 	    }
 	}
-      else
+
+  	if (optind==argc)
 	{
-	  load_devinfo (dev);
-	  if (argc <= (argp + 1))
-	    show_level (dev, argv[argp]);
-	  else
-	    change_level (dev, argv[argp], argv[argp + 1]);
-
-	  argp++;
-	  done = 1;
+      		load_devinfo (dev);
+      		show_devinfo (dev);
+		exit (0);
 	}
-      argp++;
-    }
 
-  if (!done)
-    {
-      load_devinfo (dev);
-      show_devinfo (dev);
-    }
+	  load_devinfo (dev);
+	  if (optind >= argc-1)
+	     {
+	    	show_level (dev, argv[optind]);
+	     }
+	  else
+	     {
+	    	change_level (dev, argv[optind], argv[optind + 1]);
+	     }
 
   close (mixerfd);
   return 0;

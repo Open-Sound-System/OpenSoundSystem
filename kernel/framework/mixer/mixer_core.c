@@ -2285,7 +2285,7 @@ oss_install_mixer (int vers,
        * error message instead of having the system to lock up foreever.
        */
       if (nnn++ > 50)
-	cmn_err (CE_PANIC, "Giving up\n");
+	cmn_err (CE_PANIC, "Killing runaway system.\n");
       return -EIO;
     }
 
