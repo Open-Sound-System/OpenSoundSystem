@@ -451,12 +451,12 @@ create_update (GtkWidget * frame, GtkObject * left, GtkObject * right,
 static void
 manage_label (GtkWidget * frame, oss_mixext * thisrec)
 {
-  char new_label[FRAME_NAME_LENGTH], tmp[64];
+  char new_label[FRAME_NAME_LENGTH+1], tmp[64];
 
   if (thisrec->id[0] != '@')
     return;
 
-  *new_label = '\0';
+  *new_label = 0;
 
   strcpy (tmp, &thisrec->id[1]);
 
@@ -1605,7 +1605,7 @@ poll_all (gpointer data)
 {
   ctlrec_t *srec;
   oss_audioinfo ainfo;
-  char new_label[FRAME_NAME_LENGTH] = "";
+  char new_label[FRAME_NAME_LENGTH+1] = "";
   int status_changed = 0;
   oss_mixerinfo inf;
 
@@ -1814,7 +1814,6 @@ main (int argc, char *argv[])
 	  printf ("Usage: %s [options...]\n", argv[0]);
 	  printf ("       -h          Prints help (this screen)\n");
 	  printf ("       -d<dev#>    Selects the mixer device\n");
-	  printf ("       -a          Show all mixers\n");
 	  printf ("       -x          Hides the \"legacy\" mixer controls\n");
 	  printf ("       -w[val]     Make mixer bit wider on screen\n");
 	  printf ("       -n[val]     Make mixer bit narrower on screen\n");
