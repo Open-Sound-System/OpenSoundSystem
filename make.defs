@@ -55,7 +55,7 @@ $(TOPDIR)/ossmkdep:	$(TOPDIR)/utils/ossmkdep.c
 dep_local: $(TOPDIR)/ossmkdep
 	rm -f .depend
 	touch .depend
-	for n in *.c; do $(TOPDIR)/ossmkdep -M $(INCLUDES) $$n | sed 's/\(.*\)\.o:/$$(DEPDIR)\1.o:/' >> .depend; done
+	for n in *.c; do $(TOPDIR)/ossmkdep -M $(INCLUDES) $$n | sed 's/\(.*\)\.o:/$$(DEPDIR)\/\1.o:/' >> .depend; done
 
 dep_subdirs: 
 	for n in $(SUBDIRS);do (cd $$n && $(MAKE) dep) || eval 'exit 1'; done

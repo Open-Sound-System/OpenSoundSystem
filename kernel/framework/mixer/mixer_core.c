@@ -731,7 +731,7 @@ mixer_ext_recrw (int dev, int ctrl, unsigned int cmd, int value)
     return err;
 
 
-  return (value) ? 1 : 0;
+  return (recmask & (1 << ctrl)) ? 1 : 0;
 }
 
 /*

@@ -100,6 +100,7 @@ do_local_include (char *hdrname, char *pathname)
 
   sprintf (tmp, "%s ", tmp);
   parse_f (f, pathname);
+  printf ("\\\n  %s ", tmp);
 
   fclose (f);
 }

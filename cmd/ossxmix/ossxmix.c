@@ -33,7 +33,7 @@
  *
  * This program uses a "LED" bar widget contained in gtkvu.c.
  */
-#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
 #ifdef __hpux
 #define G_INLINE_FUNC
@@ -49,7 +49,18 @@
 #include <errno.h>
 #include "gtkvu.h"
 
-#undef  TEST_JOY
+#undef TEST_JOY
+#undef DEBUG
+
+#ifndef GTK1_ONLY
+#include <gtk/gtkversion.h>
+#if GTK_CHECK_VERSION(2,10,0) && !defined(GDK_WINDOWING_DIRECTFB)
+#include "ossxmix.xpm"
+#define STATUSICON
+#endif /* GTK_CHECK_VERSION(2,10,0) && !GDK_WINDOWING_DIRECTFB */
+#else
+#include <gdk/gdkx.h>
+#endif /* !GTK1_ONLY */
 
 #ifdef TEST_JOY
 #include "gtkjoy.h"
@@ -60,34 +71,20 @@
 #define FALSE 0
 #endif
 
-#if 0
-/*
- * Memory allocation debugging
- */
-static void *
-ossxmix_malloc (size_t sz, char *f, int l)
-{
-  printf ("malloc(%d)\t%s:%d\n", sz, f, l);
-  return malloc (sz);
-}
-
-#define malloc(sz) ossxmix_malloc(sz, __FILE__, __LINE__)
-#endif
 
 #define MAX_DEVS 256
-int set_counter[MAX_DEVS] = { 0 };
-int prev_update_counter[MAX_DEVS] = { 0 };
-oss_mixext *extrec = NULL;
-oss_mixext_root *root[MAX_DEVS] = { NULL };
-char *extnames[MAX_DEVS] = { NULL };
-int ngroups = 0;
-int mixer_fd = -1;
-int dev = -1;
-int nrext = 0;
-int show_all = 1;
-int fully_started = 0;
-int use_layout_b = 0;
-int load_all_devs = 1;
+static int set_counter[MAX_DEVS] = { 0 };
+static int prev_update_counter[MAX_DEVS] = { 0 };
+static oss_mixext *extrec = NULL;
+static oss_mixext_root *root[MAX_DEVS] = { NULL };
+static char *extnames[MAX_DEVS] = { NULL };
+static int mixer_fd = -1;
+static int dev = -1;
+static int show_all = 1;
+static int fully_started = 0;
+static int load_all_devs = 1;
+static int background = 0;
+static int show_status_icon = 1;
 
 int width_adjust = 0;
 
@@ -96,7 +93,7 @@ int width_adjust = 0;
 #define MONO	3
 #define BOTH	4
 
-guint poll_tag_list[3] = { 0 };
+static guint poll_tag_list[3] = { 0 };
 #define PEAK_DECAY		 6
 #define PEAK_POLL_INTERVAL	50
 #define VALUE_POLL_INTERVAL	5000
@@ -113,7 +110,7 @@ typedef struct ctlrec
   GtkObject *left, *right;
   GtkWidget *gang, *frame;
 #define FRAME_NAME_LENGTH 8
-  char frame_name[FRAME_NAME_LENGTH];
+  char frame_name[FRAME_NAME_LENGTH+1];
   int last_left, last_right;
   int full_scale;
   int what_to_do;
@@ -123,17 +120,29 @@ typedef struct ctlrec
 }
 ctlrec_t;
 
-ctlrec_t *control_list[MAX_DEVS] = { NULL };
-ctlrec_t *peak_list[MAX_DEVS] = { NULL };
-ctlrec_t *value_poll_list[MAX_DEVS] = { NULL };
-ctlrec_t *check_list[MAX_DEVS] = { NULL };
+static ctlrec_t *control_list[MAX_DEVS] = { NULL };
+static ctlrec_t *peak_list[MAX_DEVS] = { NULL };
+static ctlrec_t *value_poll_list[MAX_DEVS] = { NULL };
+static ctlrec_t *check_list[MAX_DEVS] = { NULL };
 
-GtkWidget *window, *scrolledwin;
+static GtkWidget *window, *scrolledwin;
 
+#ifdef DEBUG
+static void * _ossxmix_malloc (size_t, char *, int);
+static void * _ossxmix_calloc (size_t, size_t, char *, int);
+#define ossxmix_malloc(sz) _ossxmix_malloc (sz, __FILE__, __LINE__)
+#define ossxmix_calloc(nm, sz) _ossxmix_calloc (nm, sz, __FILE__, __LINE__)
+#else
+static void * _ossxmix_malloc (size_t);
+static void * _ossxmix_calloc (size_t, size_t);
+#define ossxmix_malloc(sz) _ossxmix_malloc (sz)
+#define ossxmix_calloc(nm, sz) _ossxmix_calloc (nm, sz)
+#endif /* DEBUG */
 static gint add_timeout(gpointer);
-static void ChangeEnum (GtkToggleButton *, gpointer);
-static void ChangeOnoff (GtkToggleButton *, gpointer);
-static gint CloseRequest (GtkWidget *, gpointer);
+static void change_enum (GtkToggleButton *, gpointer);
+static void change_on_off (GtkToggleButton *, gpointer);
+static void cleanup (void);
+static gint close_request (GtkWidget *, gpointer);
 static void connect_enum (oss_mixext *, GtkObject *);
 static void connect_onoff (oss_mixext *, GtkObject *);
 static void connect_peak (oss_mixext *, GtkWidget *, GtkWidget *);
@@ -142,16 +151,17 @@ static void connect_scrollers (oss_mixext *, GtkObject *,
 static void connect_value_poll (oss_mixext *, GtkWidget *);
 static void create_update (GtkWidget *, GtkObject *, GtkObject *, GtkWidget *,
                            oss_mixext *, int, int);
+static GtkRequisition create_widgets (void);
 static char * cut_name (char *);
 static void do_update (ctlrec_t *);
 static int findenum (oss_mixext *, const char *);
 static int find_default_mixer (void);
-static void GangChange (GtkToggleButton *, gpointer);
+static void gang_change (GtkToggleButton *, gpointer);
 static char * get_name (int);
 static int get_value (oss_mixext *);
 static GtkWidget * load_devinfo (int);
 static GList * load_enum_values (char *, oss_mixext *);
-static GtkWidget * load_multiple_devs (int);
+static GtkWidget * load_multiple_devs (void);
 static void manage_label (GtkWidget *, oss_mixext *);
 #ifndef GTK1_ONLY
 static gint manage_timeouts(GtkWidget *, GdkEventWindowState *, gpointer);
@@ -160,7 +170,7 @@ static gint poll_all (gpointer);
 static gint poll_peaks (gpointer);
 static gint poll_values (gpointer);
 static void reload_gui (void);
-static gint remove_timeout(gpointer);
+static gint remove_timeout (gpointer);
 static void Scrolled (GtkAdjustment *, gpointer);
 static void set_value (oss_mixext *, int);
 static char * showenum (char *, oss_mixext *, int);
@@ -168,6 +178,13 @@ static void store_ctl (ctlrec_t *, int);
 static void store_name (int, char *);
 static void switch_page (GtkNotebook *, GtkNotebookPage *, guint, gpointer);
 static void update_label (oss_mixext *, GtkWidget *, int);
+#ifdef STATUSICON
+static void activate_mainwindow (GtkStatusIcon *, guint, guint, gpointer);
+static void popup_mainwindow (GtkWidget *, gpointer);
+static void trayicon_popupmenu (GtkStatusIcon *, guint, guint, gpointer);
+
+GtkStatusIcon *status_icon = NULL;
+#endif /* STATUSICON */
 
 static void
 store_name (int n, char *name)
@@ -179,11 +196,13 @@ store_name (int n, char *name)
       name[i] += 32;
 
   extnames[n] = strdup(name);
-/* fprintf(stderr, "Control = %s\n", name); */
+#ifdef DEBUG
+  fprintf(stderr, "Control = %s\n", name);
+#endif
 }
 
 static char *
-cut_name (char *name)
+cut_name (char * name)
 {
   char *s = name;
   while (*s)
@@ -233,7 +252,7 @@ showenum (char *extname, oss_mixext * rec, int val)
   char *p, *tmp;
   oss_mixer_enuminfo ei;
 
-  tmp = malloc (100 * sizeof(char));
+  tmp = ossxmix_malloc (100 * sizeof(char));
   *tmp = '\0';
 
   if (*extname == '.')
@@ -308,7 +327,7 @@ load_enum_values (char *extname, oss_mixext * rec)
 }
 
 static int
-findenum (oss_mixext * rec, const char *arg)
+findenum (oss_mixext * rec, const char * arg)
 {
   int i, v;
   oss_mixer_enuminfo ei;
@@ -355,7 +374,6 @@ get_value (oss_mixext * thisrec)
 	{
 	  fprintf (stderr,
 		   "ossxmix: Mixer device disconnected from the system\n");
-	  close(mixer_fd);
 	  exit (-1);
 	}
 
@@ -434,7 +452,7 @@ create_update (GtkWidget * frame, GtkObject * left, GtkObject * right,
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->parm = parm;
   srec->what_to_do = what;
@@ -563,10 +581,10 @@ Scrolled (GtkAdjustment * adjust, gpointer data)
 }
 
 static void
-GangChange (GtkToggleButton * but, gpointer data)
+gang_change (GtkToggleButton * but, gpointer data)
 {
   ctlrec_t *srec = (ctlrec_t *) data;
-  int val, lval, rval;
+  int val, aval, lval, rval;
   int mask = 0xff, shift = 8;
 
   if (!but->active)
@@ -577,25 +595,26 @@ GangChange (GtkToggleButton * but, gpointer data)
   if (lval == rval)
     return;
 
-  if (lval<rval)
-     lval=rval;
+  if (lval < rval)
+     lval = rval;
 
   if (srec->mixext->type == MIXT_STEREOSLIDER16)
     {
       shift = 16;
       mask = 0xffff;
     }
-  val = lval | (lval << shift);
-  val = srec->mixext->maxvalue - (val & mask);
 
-  gtk_adjustment_set_value (GTK_ADJUSTMENT (srec->left), val);
-  gtk_adjustment_set_value (GTK_ADJUSTMENT (srec->right), val);
+  val = lval | (lval << shift);
+  aval = srec->mixext->maxvalue - (val & mask);
+
+  gtk_adjustment_set_value (GTK_ADJUSTMENT (srec->left), aval);
+  gtk_adjustment_set_value (GTK_ADJUSTMENT (srec->right), aval);
   set_value (srec->mixext, val);
 }
 
 /*ARGSUSED*/
 static void
-ChangeEnum (GtkToggleButton * but, gpointer data)
+change_enum (GtkToggleButton * but, gpointer data)
 {
   ctlrec_t *srec = (ctlrec_t *) data;
   int val;
@@ -612,7 +631,7 @@ ChangeEnum (GtkToggleButton * but, gpointer data)
 
 
 static void
-ChangeOnoff (GtkToggleButton * but, gpointer data)
+change_on_off (GtkToggleButton * but, gpointer data)
 {
   ctlrec_t *srec = (ctlrec_t *) data;
   int val;
@@ -635,7 +654,7 @@ connect_scrollers (oss_mixext * thisrec, GtkObject * left, GtkObject * right,
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->left = left;
   srec->right = right;
@@ -648,7 +667,7 @@ connect_scrollers (oss_mixext * thisrec, GtkObject * left, GtkObject * right,
 			GTK_SIGNAL_FUNC (Scrolled), srec);
   if (gang != NULL)
     gtk_signal_connect (GTK_OBJECT (gang), "toggled",
-			GTK_SIGNAL_FUNC (GangChange), srec);
+			GTK_SIGNAL_FUNC (gang_change), srec);
 
   store_ctl (srec, thisrec->dev);
 
@@ -659,7 +678,7 @@ connect_peak (oss_mixext * thisrec, GtkWidget * left, GtkWidget * right)
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->left = GTK_OBJECT (left);
   if (right == NULL)
@@ -679,7 +698,7 @@ connect_value_poll (oss_mixext * thisrec, GtkWidget * wid)
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->left = GTK_OBJECT (wid);
   srec->right = NULL;
@@ -696,29 +715,27 @@ connect_enum (oss_mixext * thisrec, GtkObject * entry)
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->left = entry;
   srec->right = NULL;
   srec->gang = NULL;
-  gtk_signal_connect (entry, "changed", GTK_SIGNAL_FUNC (ChangeEnum), srec);
+  gtk_signal_connect (entry, "changed", GTK_SIGNAL_FUNC (change_enum), srec);
   store_ctl (srec, thisrec->dev);
 
 }
-
-static void update_label (oss_mixext * mixext, GtkWidget * wid, int val);
 
 static void
 connect_onoff (oss_mixext * thisrec, GtkObject * entry)
 {
   ctlrec_t *srec;
 
-  srec = malloc (sizeof (*srec));
+  srec = ossxmix_malloc (sizeof (*srec));
   srec->mixext = thisrec;
   srec->left = entry;
   srec->right = NULL;
   srec->gang = NULL;
-  gtk_signal_connect (entry, "toggled", GTK_SIGNAL_FUNC (ChangeOnoff), srec);
+  gtk_signal_connect (entry, "toggled", GTK_SIGNAL_FUNC (change_on_off), srec);
   store_ctl (srec, thisrec->dev);
 
 }
@@ -727,7 +744,7 @@ connect_onoff (oss_mixext * thisrec, GtkObject * entry)
  * Create notebook and populate it with multiple mixer tabs. Returns notebook.
  */
 static GtkWidget *
-load_multiple_devs(int fallback)
+load_multiple_devs(void)
 {
   oss_sysinfo si;
   int i;
@@ -737,19 +754,8 @@ load_multiple_devs(int fallback)
 
   if (si.nummixers > MAX_DEVS) si.nummixers = MAX_DEVS;
 
-  if (dev > si.nummixers - 1)
-    {
-      if (fallback)
-        {
-          dev = find_default_mixer ();
-        }
-      else
-        {
-          fprintf (stderr, "Mixer %d does not exist\n", dev);
-          close(mixer_fd);
-          exit (-1);
-        }
-    }
+  /* This can happen when ossxmix is restarted by {get/set}_value */
+  if (dev > si.nummixers - 1) dev = find_default_mixer ();
 
   notebook = gtk_notebook_new ();
   for (i = 0; i < si.nummixers; i++)
@@ -764,7 +770,6 @@ load_multiple_devs(int fallback)
       if (root[i] == NULL)
         {
           fprintf (stderr, "No device root node for mixer %d\n", i);
-          close(mixer_fd);
           exit (-1);
         }
       label = gtk_label_new (root[i]->name);
@@ -804,7 +809,7 @@ load_devinfo (int dev)
   int i, n, val, left, right, mx, g;
   int angle, vol;
   int width;
-  int orient[256] = { '\0' };
+  int orient[256] = { 0 };
   int ngroups = 0;
   int parent, ori;
   oss_mixext *thisrec;
@@ -821,7 +826,6 @@ load_devinfo (int dev)
   if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &mi) == -1)
     {
       perror ("SNDCTL_MIXERINFO");
-      close(mixer_fd);
       exit (-1);
     }
 
@@ -836,18 +840,11 @@ load_devinfo (int dev)
       perror ("SNDCTL_MIX_NREXT");
       if (errno == EINVAL)
 	fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
-      close(mixer_fd);
       exit (-1);
     }
 
-  if ((extrec = calloc (n, sizeof (oss_mixext))) == NULL)
-    {
-      fprintf (stderr, "malloc of %d entries failed\n", n);
-      close(mixer_fd);
-      exit (-1);
-    }
+  extrec = ossxmix_calloc (n, sizeof (oss_mixext));
 
-  nrext = n;
   for (i = 0; i < n; i++)
     {
       int mask = 0xff, shift = 8;
@@ -863,7 +860,6 @@ load_devinfo (int dev)
 	      printf ("Incompatible OSS version\n");
 	  else
 	      perror ("SNDCTL_MIX_EXTINFO");
-	  close(mixer_fd);
 	  exit (-1);
 	}
 
@@ -1376,7 +1372,7 @@ load_devinfo (int dev)
 	  change_orient = FALSE;
 	  break;
 
-	default:;
+	default:
 	  fprintf (stderr, "Unknown type for control %s\n", extnames[i]);
 	}
 
@@ -1388,7 +1384,7 @@ load_devinfo (int dev)
  * Creates the widget tree. Returns dimensions of scrolledwin.
  */
 static GtkRequisition
-create_widgets (int fallback)
+create_widgets (void)
 {
   GtkRequisition Dimensions;
   char tmp[100];
@@ -1415,7 +1411,6 @@ create_widgets (int fallback)
       if (root[dev] == NULL)
         {
           fprintf (stderr, "No device root node\n");
-          close(mixer_fd);
           exit (-1);
         }
       snprintf (tmp, sizeof(tmp), "ossxmix - device %d / %s",
@@ -1426,7 +1421,7 @@ create_widgets (int fallback)
     {
       GtkWidget *notebook;
 
-      notebook = load_multiple_devs (fallback);
+      notebook = load_multiple_devs ();
       gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolledwin),
                                              notebook);
       gtk_window_set_title (GTK_WINDOW (window), "ossxmix");
@@ -1453,7 +1448,7 @@ reload_gui (void)
                   } while (0)
   int i;
 
-  remove_timeout((gpointer)poll_tag_list);
+  remove_timeout ((gpointer)poll_tag_list);
   for (i = 0; i < MAX_DEVS; i++)
     {
       FREE (control_list[i]);
@@ -1464,9 +1459,9 @@ reload_gui (void)
 
   fully_started = 0;
   gtk_widget_destroy (scrolledwin);
-  create_widgets (TRUE);
+  create_widgets ();
   fully_started = 1;
-  add_timeout((gpointer)poll_tag_list);
+  add_timeout ((gpointer)poll_tag_list);
 #undef FREE
 }
 
@@ -1559,6 +1554,7 @@ do_update (ctlrec_t * srec)
       break;
 
     case MIXT_MONOSLIDER:
+    case MIXT_MONOSLIDER16:
       mx = srec->mixext->maxvalue;
       val = mx - (val & mask);
       gtk_adjustment_set_value (GTK_ADJUSTMENT (srec->left), val);
@@ -1613,7 +1609,6 @@ poll_all (gpointer data)
   if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &inf) == -1)
     {
       perror ("SNDCTL_MIXERINFO");
-      close(mixer_fd);
       exit (-1);
     }
 
@@ -1754,7 +1749,12 @@ find_default_mixer (void)
       perror ("SNDCTL_SYSINFO");
       if (errno == EINVAL)
 	fprintf (stderr, "Error: OSS version 4.0 or later is required\n");
-      close(mixer_fd);
+      exit (-1);
+    }
+
+  if (si.nummixers == 0)
+    {
+      fprintf(stderr, "No mixers are available\n");
       exit (-1);
     }
 
@@ -1776,15 +1776,15 @@ find_default_mixer (void)
 }
 
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
-  int i, v,c;
+  int v, c;
   GtkRequisition Dimensions;
 
   /* Get Gtk to process the startup arguments */
   gtk_init (&argc, &argv);
 
-  while ((c = getopt (argc, argv, "d:w:n:xh")) != EOF)
+  while ((c = getopt (argc, argv, "Sbd:w:n:xh")) != EOF)
       switch (c)
 	{
 	case 'd':
@@ -1810,6 +1810,14 @@ main (int argc, char *argv[])
 	  show_all = 0;
 	  break;
 
+	case 'b':
+	  background = 1;
+	  break;
+
+	case 'S':
+	  show_status_icon = 0;
+	  break;
+
 	case 'h':
 	  printf ("Usage: %s [options...]\n", argv[0]);
 	  printf ("       -h          Prints help (this screen)\n");
@@ -1817,9 +1825,18 @@ main (int argc, char *argv[])
 	  printf ("       -x          Hides the \"legacy\" mixer controls\n");
 	  printf ("       -w[val]     Make mixer bit wider on screen\n");
 	  printf ("       -n[val]     Make mixer bit narrower on screen\n");
+	  printf ("       -b          Start mixer in background\n");
+#ifdef STATUSICON
+	  printf ("       -S          Don't place an icon in system tray\n");
+#endif /* STATUSICON */
 	  exit (0);
 	  break;
 	}
+
+  if (width_adjust < -2)
+    width_adjust = -2;
+  if (width_adjust > 4)
+    width_adjust = 4;
 
   if ((mixer_fd = open ("/dev/mixer", O_RDWR, 0)) == -1)
     {
@@ -1827,40 +1844,72 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
+  atexit (cleanup);
+
   if (dev == -1)
     dev = find_default_mixer ();
 
-  if (width_adjust < -4)
-    width_adjust = -4;
-  if (width_adjust > 4)
-    width_adjust = 4;
+  chdir("/");
 
   /* Create the app's main window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  Dimensions = create_widgets(FALSE);
+  Dimensions = create_widgets ();
   gtk_window_set_default_size (GTK_WINDOW (window),
                                Dimensions.width, Dimensions.height);
 
   fully_started = 1;
 
+  /* Connect a window's signal to a signal function */
+  gtk_signal_connect (GTK_OBJECT (window), "delete_event",
+		      GTK_SIGNAL_FUNC (close_request), NULL);
+
+#ifdef STATUSICON
+  if (show_status_icon)
+    {
+      char tmp[100];
+      GdkPixbuf *icon_pix;
+
+      icon_pix = gdk_pixbuf_new_from_xpm_data((const char **)ossxmix);
+      status_icon = gtk_status_icon_new_from_pixbuf (icon_pix);
+      snprintf (tmp, sizeof(tmp), "ossxmix - device %d / %s",
+                dev, root[dev]->name);
+      gtk_status_icon_set_tooltip (status_icon, tmp);
+      g_signal_connect (G_OBJECT (status_icon), "popup-menu",
+                        G_CALLBACK (trayicon_popupmenu), NULL);
+      g_signal_connect (G_OBJECT (status_icon), "activate",
+                        G_CALLBACK (activate_mainwindow), NULL);
+    }
+#endif /* STATUSICON */
+
 #ifndef GTK1_ONLY
   g_signal_connect (G_OBJECT (window), "window-state-event",
                     G_CALLBACK (manage_timeouts), (gpointer)poll_tag_list);
+  if ((!background) || (!show_status_icon))
+    {
+      gtk_widget_show (window);
+      if (background) gtk_window_iconify (GTK_WINDOW (window));
+    }
+  else gdk_notify_startup_complete ();
 #else
-  add_timeout((gpointer)poll_tag_list);
-#endif /* !GTK1_ONLY */
-
-  /* Connect a window's signal to a signal function */
-  gtk_signal_connect (GTK_OBJECT (window), "delete_event",
-		      GTK_SIGNAL_FUNC (CloseRequest), NULL);
-
+  add_timeout ((gpointer)poll_tag_list);
   gtk_widget_show (window);
+  if (background) XIconifyWindow (GDK_WINDOW_XDISPLAY (window->window),
+				  GDK_WINDOW_XWINDOW (window->window),
+				  DefaultScreen (GDK_DISPLAY ()));
+#endif /* !GTK1_ONLY */
 
   gtk_main ();
 
-  close(mixer_fd);
-
   return 0;
+}
+
+/*
+ * Function to run when program is shutting down
+ */
+static void
+cleanup(void)
+{
+  close (mixer_fd);
 }
 
 /*
@@ -1868,10 +1917,17 @@ main (int argc, char *argv[])
  */
 /*ARGSUSED*/
 static gint
-CloseRequest (GtkWidget * theWindow, gpointer data)
+close_request (GtkWidget * theWindow, gpointer data)
 {
+#ifdef STATUSICON
+  if (show_status_icon && (gtk_status_icon_is_embedded (status_icon) == TRUE))
+    {
+      gtk_widget_hide (window);
+      return TRUE;
+    }
+#endif
   gtk_main_quit ();
-  return (FALSE);
+  return FALSE;
 }
 
 /*
@@ -1879,17 +1935,29 @@ CloseRequest (GtkWidget * theWindow, gpointer data)
  */
 /*ARGSUSED*/
 static void
-switch_page (GtkNotebook *notebook, GtkNotebookPage *page,
+switch_page (GtkNotebook * notebook, GtkNotebookPage * page,
              guint page_num, gpointer data)
 {
+#ifdef STATUSICON
+  char tmp[100];
+
+  if ((show_status_icon) &&
+      (gtk_status_icon_is_embedded (status_icon) == TRUE))
+    {
+      snprintf (tmp, sizeof(tmp), "ossxmix - device %d / %s",
+                page_num, root[page_num]->name);
+      gtk_status_icon_set_tooltip (status_icon, tmp);
+    }
+#endif /* STATUSICON */
+
   /*
    * GTK1 calls switch_page when scrolledwin is destroyed in reload_gui.
    * This is merely annoying, but this check prevents it nonetheless.
    */
   if (fully_started == 0) return;
-  remove_timeout(data);
+  remove_timeout (data);
   dev = page_num;
-  add_timeout(data);
+  add_timeout (data);
 }
 
 /*
@@ -1901,11 +1969,12 @@ add_timeout(gpointer data)
 {
   guint *poll_tag_list = (guint *) data;
 
-  if (peak_list[dev] != NULL)
+  if ((peak_list[dev] != NULL) && (poll_tag_list[0] == 0))
     poll_tag_list[0] = g_timeout_add (PEAK_POLL_INTERVAL, poll_peaks, NULL);
-  if (value_poll_list[dev] != NULL)
+  if ((value_poll_list[dev] != NULL) && (poll_tag_list[1] == 0))
     poll_tag_list[1] = g_timeout_add (VALUE_POLL_INTERVAL, poll_values, NULL);
-  poll_tag_list[2] = g_timeout_add (MIXER_POLL_INTERVAL, poll_all, NULL);
+  if (poll_tag_list[2] == 0)
+    poll_tag_list[2] = g_timeout_add (MIXER_POLL_INTERVAL, poll_all, NULL);
   return FALSE;
 }
 
@@ -1928,8 +1997,11 @@ remove_timeout(gpointer data)
       g_source_remove (poll_tag_list[1]);
       poll_tag_list[1] = 0;
     }
-  g_source_remove (poll_tag_list[2]);
-  poll_tag_list[2] = 0;
+  if (poll_tag_list[2] != 0)
+    {
+      g_source_remove (poll_tag_list[2]);
+      poll_tag_list[2] = 0;
+    }
   return FALSE;
 }
 
@@ -1951,4 +2023,98 @@ manage_timeouts(GtkWidget * w, GdkEventWindowState * e, gpointer data)
   return FALSE;
 }
 #endif /* !GTK1_ONLY */
+
+#ifdef STATUSICON
+/*ARGSUSED*/
+static void
+activate_mainwindow (GtkStatusIcon * icon, guint button, guint etime,
+		     gpointer data)
+{
+  if (GTK_WIDGET_VISIBLE (window)) gtk_widget_hide (window);
+  else popup_mainwindow (NULL, NULL);
+}
+
+/*ARGSUSED*/
+static void
+popup_mainwindow (GtkWidget * w, gpointer data)
+{
+  gtk_widget_show (window);
+  gtk_window_present (GTK_WINDOW (window));
+}
+
+/*
+ * Popup menu when clicking on status icon
+ */
+/*ARGSUSED*/
+static void
+trayicon_popupmenu (GtkStatusIcon * icon, guint button, guint etime,
+		    gpointer data)
+{
+  static GtkWidget *tray_menu = NULL;
+
+  if (tray_menu == NULL)
+    {
+      GtkWidget *item;
+      tray_menu = gtk_menu_new ();
+
+      item = gtk_menu_item_new_with_label ("Restore");
+      g_signal_connect (G_OBJECT (item), "activate",
+                        G_CALLBACK (popup_mainwindow), NULL);
+      gtk_menu_append (tray_menu, item);
+      item = gtk_menu_item_new_with_label ("Quit");
+      gtk_menu_append (tray_menu, item);
+      g_signal_connect (G_OBJECT (item), "activate",
+                        G_CALLBACK (gtk_main_quit), NULL);
+    }
+
+  gtk_widget_show_all (tray_menu);
+
+  gtk_menu_popup (GTK_MENU (tray_menu), NULL, NULL,
+                  gtk_status_icon_position_menu, status_icon,
+                  button, etime);
+}
+#endif /* STATUSICON */
+
+static void *
+#ifdef DEBUG
+_ossxmix_malloc (size_t sz, char *f, int l)
+#else
+_ossxmix_malloc (size_t sz)
+#endif
+{
+  void *ptr;
+
+#ifdef DEBUG
+  printf ("malloc(%lu)\t%s:%d\n", (unsigned long)sz, f, l);
+#endif
+  ptr = malloc (sz);
+  if (ptr == NULL) {
+    /* Not all libcs support using %z for size_t */
+    fprintf (stderr, "Can't allocate %lu bytes\n", (unsigned long)sz);
+    exit (-1);
+  }
+  return ptr;
+}
+
+static void *
+#ifdef DEBUG
+_ossxmix_calloc (size_t nm, size_t sz, char *f, int l)
+#else
+_ossxmix_calloc (size_t nm, size_t sz)
+#endif
+{
+  void *ptr;
+
+#ifdef DEBUG
+  printf ("calloc(%lu, %lu)\t%s:%d\n", (unsigned long)nm, (unsigned long)sz,
+	  f, l);
+#endif
+  ptr = calloc (nm, sz);
+  if (ptr == NULL) {
+    fprintf (stderr, "Couldn't allocate %lu entries of size %lu\n",
+	     (unsigned long)nm, (unsigned long)sz);
+    exit (-1);
+  }
+  return ptr;
+}
 

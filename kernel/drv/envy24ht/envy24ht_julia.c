@@ -76,32 +76,17 @@ i2c_write (envy24ht_devc * devc, unsigned char addr, unsigned char pos,
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
-static unsigned int
-GpioReadAll (envy24ht_devc * devc)
-{
-  return INW (devc->osdev, devc->ccs_base + 0x14);
-}
-
-static void
-GPIOWriteAll (envy24ht_devc * devc, unsigned int data)
-{
-  OUTW (devc->osdev, 0xffff, devc->ccs_base + 0x18);	/* GPIO direction */
-  OUTW (devc->osdev, 0x0000, devc->ccs_base + 0x16);	/* GPIO write mask */
-
-  OUTW (devc->osdev, data, devc->ccs_base + 0x14);
-}
-
 static void
 GPIOWrite (envy24ht_devc * devc, int pos, int bit)
 {
-  int data = GpioReadAll (devc);
+  int data = INW (devc->osdev, devc->ccs_base + 0x14);
 
   bit = (bit != 0);
 
   data &= ~(1 << pos);
   data |= (bit << pos);
 
-  GPIOWriteAll (devc, data);
+  OUTW (devc->osdev, data, devc->ccs_base + 0x14);
 }
 
 static int

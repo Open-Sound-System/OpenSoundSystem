@@ -1016,17 +1016,9 @@ julia_eeprom_init (envy24ht_devc * devc)
   OUTB (devc->osdev, 0xf8, devc->ccs_base + 0x06);	/* I2S configuration */
   OUTB (devc->osdev, 0xc3, devc->ccs_base + 0x07);	/* S/PDIF configuration */
 
-  OUTB (devc->osdev, 0x7f, devc->ccs_base + 0x18);
-  OUTB (devc->osdev, 0xff, devc->ccs_base + 0x19);
-  OUTB (devc->osdev, 0x9f, devc->ccs_base + 0x1a);
-
-  OUTB (devc->osdev, 0x7f, devc->ccs_base + 0x16);
-  OUTB (devc->osdev, 0xff, devc->ccs_base + 0x17);
-  OUTB (devc->osdev, 0x9f, devc->ccs_base + 0x1f);
-
-  OUTB (devc->osdev, 0x00, devc->ccs_base + 0x14);
-  OUTB (devc->osdev, 0x80, devc->ccs_base + 0x15);
-  OUTB (devc->osdev, 0x16, devc->ccs_base + 0x1e);
+  OUTW (devc->osdev, 0xffff, devc->ccs_base + 0x18);	/* GPIO direction */
+  OUTW (devc->osdev, 0x0000, devc->ccs_base + 0x16);	/* GPIO write mask */
+  OUTW (devc->osdev, 0x801A, devc->ccs_base + 0x14);	/* Initital bit state */
 }
 
 static int

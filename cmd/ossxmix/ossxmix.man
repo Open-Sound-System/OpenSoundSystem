@@ -1,36 +1,38 @@
 NAME
-ossxmix - Open Sound System XWindows based GUI mixer applet.
+ossxmix - Open Sound System GTK based GUI mixer applet.
 
 DESCRIPTION
-The ossxmix is a GTK1 based mixer applet that is used to display the
+ossxmix is a GTK+ based mixer applet that is used to display the
 mixer settings of physical and virtual audio devices. There can be
 several physical mixers for a single audio device. Mixers found on
-audio devices are controllers that set the volume, select the input
-or perform certain functions on the speakers or sets certain device
-characteristics
+audio devices are controllers that set the volume, select the input,
+perform certain functions on the speakers or set various device
+characteristics.
 
 
 OPTIONS
 
--h          Prints help (this screen)
--d<dev#>    Selects the mixer device (use ossinfo -x to find the
-            available mixers. If this option is not given then ossxmix will
-	    try to find the mixer for the motherboard audio device.
+-h          Display usage instructions.
+-d<dev#>    Display only mixer device dev#. If this option is not given then
+            ossxmix will display all the mixers available on the system.
 -x          Hides the "legacy" mixer controls.
 -w[value]   Make the mixer slightly wider on the screen. This option affects
             only the selection boxes and peak meter LED bars. In most cases
-	    this option is not required. The value can be between 1 and 5.
-            The default value is 1.
+            this option is not required. The value can be between 1 (default)
+            and 4.
 -n[value]   Make the mixer slightly narrower than normally. This may be
             necessary if the mixer is wider than the screen. The value can be
             1 (default) or 2.
+-b          Start in background.
+-S          Do not try to place an icon in the system tray.
 
-EXAMPLES
+NOTES
 
 o ossxmix -d0 displays the default audio device's mixer panel.
 o ossxmix without the -d parameter shows the "default" mixer which is usually
   the mixer/control panel of the motherboard device. In many cases the default
   mixer is not the first mixer device (-d0).
+o Standard gtk toolkit options like --display are available as well.
 
 FILES
 /usr/bin/ossxmix

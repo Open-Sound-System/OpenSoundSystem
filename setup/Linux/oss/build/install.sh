@@ -135,7 +135,7 @@ then
   fi
   echo
 
-  if grep -q Ubuntu /etc/issue # Ubuntu?
+  if grep -q Ubuntu /etc/issue || grep -q Debian /etc/issue # Ubuntu or Debian?
   then
 	echo Under Ubuntu you may need to prepare the kernel environment
 	echo after downloading the kernel sources using

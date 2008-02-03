@@ -97,11 +97,13 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	case 0:
 	  mixer->play_engine.outvol = vol;
 
+	  mixer_devs[mixer->output_mixer_dev]->modify_counter++;
 	  return vol | (vol << 16);
 	  break;
 
 	case 512:		/* grc3<->interpolation selector */
 	  mixer->src_quality = value & 0xff;
+	  mixer_devs[mixer->output_mixer_dev]->modify_counter++;
 	  return mixer->src_quality;
 	  break;
 
@@ -155,7 +157,7 @@ vmix_invol (int dev, int ctrl, unsigned int cmd, int value)
 	{
 	case 0:
 	  mixer->record_engine.outvol = vol;
-
+	  mixer_devs[mixer->input_mixer_dev]->modify_counter++;
 	  return vol | (vol << 16);
 	  break;
 

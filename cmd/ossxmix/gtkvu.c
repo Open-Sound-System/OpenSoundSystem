@@ -111,7 +111,8 @@ gtk_vu_realize (GtkWidget * widget)
 {
   GtkVU *vu;
   GdkWindowAttr attributes;
-  gint i, attributes_mask;
+  gint attributes_mask;
+  gboolean alloc_success[7];
 
   g_return_if_fail (widget != NULL);
   g_return_if_fail (GTK_IS_VU (widget));
@@ -179,12 +180,8 @@ gtk_vu_realize (GtkWidget * widget)
   vu->colors[6].green = 0x0000;
   vu->colors[6].blue = 0x0000;
 
-  for (i = 0; i < 7; i++)
-    {
-      gdk_colormap_alloc_color (gtk_widget_get_colormap (widget),
-				&vu->colors[i], FALSE, TRUE);
-    }
-
+  gdk_colormap_alloc_colors (gtk_widget_get_colormap (widget), vu->colors, 7,
+			     FALSE, TRUE, alloc_success);
   vu->gc = gdk_gc_new (widget->window);
   vu->pixmap =
     gdk_pixmap_new (widget->window, widget->allocation.width,
@@ -193,7 +190,7 @@ gtk_vu_realize (GtkWidget * widget)
   /*  gtk_style_set_background (widget->style, widget->window, GTK_STATE_ACTIVE); */
 }
 
-void
+static void
 gtk_vu_unrealize (GtkWidget * widget)
 {
   GtkVU *vu;

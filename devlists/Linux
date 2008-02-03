@@ -157,6 +157,7 @@ sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
 sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
 sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
 sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
+sbxfi	pci1102,5	Creative SB X-Fi (NOT SUPPORTED YET)
 softoss	SOFTOSS	OSS Virtual mixer/synth driver
 solo	pci125d,1969	ESS Solo-1 
 sonorus	pci1057,1801	Sonorus STUDI/O
