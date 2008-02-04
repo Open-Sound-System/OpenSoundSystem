@@ -31,7 +31,7 @@
  */
 
 #define MAX_SYNTH_DEV	6
-#define MAX_MIXER_DEV	20
+#define MAX_MIXER_DEV	16
 #define	MAX_MIDI_DEV	32
 #define MAX_TIMER_DEV	(MAX_MIDI_DEV+4)
 #define MAX_PCM_DEV	64

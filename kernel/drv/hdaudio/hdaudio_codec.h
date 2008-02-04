@@ -5,11 +5,11 @@
 #ifndef HDAUDIO_CODEC_H
 #define HDAUDIO_CODEC_H
 
-#define HDA_MAX_OUTSTREAMS		10
+#define HDA_MAX_OUTSTREAMS		12
 #define HDA_MAX_INSTREAMS		8
 
 #define MAX_CODECS	16
-#define MAX_WIDGETS	80
+#define MAX_WIDGETS	150
 #define MAX_CONN	24
 
 #define CT_INMONO	0x0001
@@ -64,6 +64,7 @@ typedef struct
   int is_digital;
   int auto_muted;
   int skip; /* Not connected to anywhere */
+  int already_used;
 } hdaudio_endpointinfo_t;
 
 /*
@@ -167,8 +168,6 @@ extern hdaudio_mixer_t *hdaudio_mixer_create (char *name, void *devc,
 extern void hdaudio_mixer_set_initfunc (hdaudio_mixer_t * mixer,
 					mixer_create_controls_t func);
 #endif
-
-extern int hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info, unsigned int pci_subvendor);
 
 extern int hdaudio_mixer_get_mixdev (hdaudio_mixer_t * mixer);
 
@@ -295,6 +294,8 @@ typedef struct codec_desc codec_desc_t;
 typedef struct
 {
   const codec_desc_t *codec_desc;
+  int active;	/* Codec has audio or modem functionality */
+  unsigned long vendor_flags;
 
   int nwidgets;
   widget_t widgets[MAX_WIDGETS];
@@ -323,6 +324,7 @@ typedef struct
   unsigned int multich_map;	/* See codec_desc_t.multich_map */
 
   int mixer_mode;	/* For use by dedicated drivers. Initially set to 0 */
+  char **remap;
 } codec_t;
 
 struct _hdaudio_mixer_struct
@@ -333,8 +335,6 @@ struct _hdaudio_mixer_struct
   char name[64];
   char *chip_name;
   int mixer_dev;
-  char **remap;
-  unsigned long vendor_flags;
 
   hdmixer_write_t write;
   hdmixer_read_t read;
@@ -342,7 +342,6 @@ struct _hdaudio_mixer_struct
   unsigned int codecmask;
 
   int ncodecs;
-  int working_codecs;		/* Number of codecs that actually work */
   codec_t *codecs[MAX_CODECS];
 
   int ncontrols;		/* Total number of widgets (all codecs) */
@@ -355,6 +354,8 @@ struct _hdaudio_mixer_struct
   int npins;			/* Used for managing the width of the connectors group */
   int split_connectors;		/* Fearless flag used for splitting the connectors geroup */
   mixer_create_controls_t client_mixer_init;
+
+  int remap_avail;
 };
 
 extern int create_outgain_selector (hdaudio_mixer_t * mixer, widget_t * widget, int group, const char *name);

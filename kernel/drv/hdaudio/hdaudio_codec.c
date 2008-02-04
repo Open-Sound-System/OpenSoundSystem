@@ -11,6 +11,10 @@
 extern int hdaudio_snoopy;
 extern int hdaudio_jacksense;
 
+static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
+
+static int attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
+		      unsigned int pci_subdevice, int group_type);
 int
 hdaudio_mixer_get_outendpoints (hdaudio_mixer_t * mixer,
 				hdaudio_endpointinfo_t ** endpoints, int size)
@@ -30,6 +34,12 @@ hdaudio_mixer_get_outendpoints (hdaudio_mixer_t * mixer,
       hdaudio_endpointinfo_t *ep = *endpoints + i;
 
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+
+      if (hdaudio_snoopy)
+         {
+	     char *s = ep->name + strlen(ep->name);
+	     sprintf(s, ":%d:%d", ep->cad, ep->base_wid);
+	 }
     }
   return mixer->num_outendpoints;
 }
@@ -53,6 +63,12 @@ hdaudio_mixer_get_inendpoints (hdaudio_mixer_t * mixer,
       hdaudio_endpointinfo_t *ep = *endpoints + i;
 
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+
+      if (hdaudio_snoopy)
+         {
+	     char *s = ep->name + strlen(ep->name);
+	     sprintf(s, ":%d:%d", ep->cad, ep->base_wid);
+	 }
     }
   return mixer->num_inendpoints;
 }
@@ -86,7 +102,7 @@ propagate_names (hdaudio_mixer_t * mixer)
 
   for (i = 0; i < 20; i++)
     for (c = 0; c < mixer->ncodecs; c++)
-      if (mixer->codecs[c] != NULL)
+      if (mixer->codecs[c] != &NULL_codec)
 	{
 	  for (w = 1; w < mixer->codecs[c]->nwidgets; w++)
 	    {
@@ -122,7 +138,7 @@ check_names (hdaudio_mixer_t * mixer)
  * Make sure all widgets have unique names.
  */
   for (c = 0; c < mixer->ncodecs; c++)
-    if (mixer->codecs[c] != NULL)
+    if (mixer->codecs[c] != &NULL_codec)
       {
 	for (w = 1; w < mixer->codecs[c]->nwidgets; w++)
 	  {
@@ -539,7 +555,7 @@ perform_pin_sense (hdaudio_mixer_t * mixer)
   codec_t *codec;
 
   for (cad = 0; cad < mixer->ncodecs; cad++)
-    if (mixer->codecs[cad] != NULL)
+    if (mixer->codecs[cad] != &NULL_codec)
       {
 	codec = mixer->codecs[cad];
 
@@ -636,7 +652,7 @@ perform_pin_sense (hdaudio_mixer_t * mixer)
  */
 
   for (cad = 0; cad < mixer->ncodecs; cad++)
-    if (mixer->codecs[cad] != NULL)
+    if (mixer->codecs[cad] != &NULL_codec)
       for (wid = 1; wid < mixer->codecs[cad]->nwidgets; wid++)
 	{
 	  if (mixer->codecs[cad]->widgets[wid].wid_type == NT_PIN)	/* Pin complex */
@@ -683,19 +699,48 @@ hdaudio_mix_init (int dev)
   hdaudio_mixer_t *mixer = mixer_devs[dev]->devc;
   char tmp[32];
   int err;
-
+  int working_codecs=0;
   int cad;
 
+/*
+ * First pass. Count the number of active codecs.
+ */
+
   for (cad = 0; cad < mixer->ncodecs; cad++)
-    if (mixer->codecs[cad] != NULL)
+    if (mixer->codecs[cad] != &NULL_codec)
       {
 	codec_t *codec = mixer->codecs[cad];
 	int group = 0;
 
-	if (codec == NULL || codec->nwidgets == 0)	/* Codec not active */
+	if (codec == &NULL_codec || codec->nwidgets == 0)	/* Codec not active */
 	  continue;
 
-	if (mixer->working_codecs > 1)
+	/*
+	 * Enable the new generic mixer driver
+	 */
+	if (codec->mixer_init == NULL)
+	{
+	  codec->mixer_init = hdaudio_generic_mixer_init;
+	}
+	
+	if (codec->active && codec->mixer_init != NULL_mixer_init)
+	   working_codecs++;
+      }
+
+  /*
+   * Second pass. Initialize the mixer interfaces for all active codecs.
+   */
+
+  for (cad = 0; cad < mixer->ncodecs; cad++)
+    if (mixer->codecs[cad] != &NULL_codec)
+      {
+	codec_t *codec = mixer->codecs[cad];
+	int group = 0;
+
+	if (codec == &NULL_codec || codec->nwidgets == 0)	/* Codec not active */
+	  continue;
+
+	if (working_codecs > 1)
 	  {
 	    sprintf (tmp, "codec%d", cad + 1);
 	    if ((group = mixer_ext_create_group (dev, 0, tmp)) < 0)
@@ -704,14 +749,8 @@ hdaudio_mix_init (int dev)
 	      }
 	  }
 
-	/*
-	 * Enable the new generic mixer driver
-	 */
-	if (codec->mixer_init == NULL)
-	  codec->mixer_init = hdaudio_generic_mixer_init;
-
-	if (codec->mixer_init != NULL)
-	  {
+	if (codec->active && codec->mixer_init != NULL_mixer_init)
+	   {
 	    if ((err = codec->mixer_init (dev, mixer, cad, group)) < 0)
 	      {
 		if (err != -EAGAIN)
@@ -728,7 +767,7 @@ hdaudio_mix_init (int dev)
 	      }
 	    else
 	      continue;
-	  }
+	   }
       }
 
   if (mixer->client_mixer_init != 0)
@@ -745,11 +784,8 @@ hdaudio_mixer_create (char *name, void *devc,
 		      hdmixer_read_t readfunc, unsigned int codecmask,
 		      unsigned int vendor_id, unsigned int subvendor_id)
 {
-
-  static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
-
   hdaudio_mixer_t *mixer;
-  int i;
+  int i, func;
   int ncodecs = 0;
   char tmp[128];
   int mixer_dev;
@@ -788,10 +824,15 @@ hdaudio_mixer_create (char *name, void *devc,
   	hw_info += strlen (hw_info);
      }
 
+/*
+ * Search first all audio function groups for all codecs and then
+ * handle modem function groups.
+ */
+  for (func=1;func<=2;func++)
   for (i = 0; i < 16; i++)
     if (mixer->codecmask & (1 << i))
       {
-	if (hdaudio_mixer_attach (mixer, i, hw_info, subvendor_id) >= 0)
+	if (attach_codec (mixer, i, hw_info, subvendor_id, func) >= 0)
 	  ncodecs++;
 	hw_info += strlen (hw_info);
       }
@@ -802,8 +843,9 @@ hdaudio_mixer_create (char *name, void *devc,
       return NULL;
     }
 
-  if (mixer->remap == NULL)
-    check_names (mixer);
+  if (!mixer->remap_avail)
+     check_names (mixer);
+
   propagate_names (mixer);
   perform_pin_sense (mixer);
 
@@ -940,7 +982,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
   codec_t *codec = mixer->codecs[cad];
   widget_t *widget;
 
-  if (codec == NULL)
+  if (codec == &NULL_codec)
     return 0;
 
   if (!corb_read
@@ -949,7 +991,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 
   if (wid >= MAX_WIDGETS)
     {
-      cmn_err (CE_WARN, "Too many widgets (%d/%d)\n", wid, MAX_WIDGETS);
+      cmn_err (CE_WARN, "Too many widgets for codec %d (%d/%d)\n", cad, wid, MAX_WIDGETS);
       return 0;
     }
 
@@ -1204,6 +1246,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	  endpoint->volume_wid = wid;
 	  endpoint->nrates=0;
 	  endpoint->name = widget->name;
+
 	  widget->endpoint = endpoint;
 
 	  /*
@@ -1515,14 +1558,16 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
  * Handle hardcodded widget names
  */
 
-  if (mixer->remap != NULL)
+  if (codec->remap != NULL)
     {
       int w;
 
-      for (w = 0; mixer->remap[w] != NULL; w++)
+      mixer->remap_avail=1;
+
+      for (w = 0; codec->remap[w] != NULL; w++)
 	if (w == wid)
 	  {
-	    char *s = mixer->remap[w];
+	    char *s = codec->remap[w];
 
 	    if (*s != 0)
 	      {
@@ -1541,13 +1586,13 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 
 /*ARGSUSED*/
 static int
-attach_group (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
+attach_group (hdaudio_mixer_t * mixer, int cad, int wid, int parent, int group_type)
 {
   unsigned int a, b, gt;
   int i, first_node, num_nodes;
   codec_t *codec = mixer->codecs[cad];
 
-  if (codec == NULL)
+  if (codec == &NULL_codec)
     return 0;
 
   if (!corb_read (mixer, cad, wid, 0,
@@ -1583,7 +1628,7 @@ attach_group (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
  * higher widget number for the modem group than the audio group. So in this
  * way we can have smaller MAX_WIDGETS which in turn conserves memory.
  */
-  if ((gt & 0xff) != 1)
+  if ((gt & 0xff) != group_type)
     return 0;
 
   if (corb_read (mixer, cad, wid, 0, GET_PARAMETER, HDA_PCM_SIZES, &a, &b))
@@ -1596,6 +1641,8 @@ attach_group (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
       if (!attach_node (mixer, cad, i, wid))
 	return 0;
 
+  if (num_nodes >= 1)
+     codec->active=1;
   return 1;
 }
 
@@ -1608,7 +1655,7 @@ polish_widget_list (hdaudio_mixer_t * mixer, int cad)
   int skip = 0;
   int do_jacksense = 0;
 
-  if (mixer->codecs[cad] == NULL)
+  if (mixer->codecs[cad] == &NULL_codec)
     {
       cmn_err (CE_WARN, "Bad codec %d\n", cad);
     }
@@ -1720,6 +1767,12 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
  * Install output endpoints from the codec to the global endpoint table.
  */
 
+  for (i = 0; i < codec->num_outendpoints; i++)
+    {
+      hdaudio_endpointinfo_t *ep = &codec->outendpoints[i];
+      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+    }
+
 	n=mixer->num_outendpoints;
 	for (i=0;i<codec->num_outendpoints;i++)
 	{
@@ -1728,7 +1781,7 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 
        	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
 
-	  if (ep->skip)
+	  if (ep->skip || ep->already_used)
 	     continue;
 
 	  switch (pass)
@@ -1753,6 +1806,7 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 	     }
 
 	  memcpy(&mixer->outendpoints[n], ep, sizeof(*ep));
+	  ep->already_used=1;
 
 	  n++;
 	}
@@ -1762,6 +1816,12 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
  * Install input endpoints from the codec to the global endpoint table.
  */
 
+  for (i = 0; i < codec->num_inendpoints; i++)
+    {
+      hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
+      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+    }
+
 	n=mixer->num_inendpoints;
 	for (i=0;i<codec->num_inendpoints;i++)
 	{
@@ -1769,7 +1829,7 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 
        	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
 
-	  if (ep->skip)
+	  if (ep->skip || ep->already_used)
 	     continue;
 
 	  switch (pass)
@@ -1794,6 +1854,7 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 	     }
 
 	  memcpy(&mixer->inendpoints[n], ep, sizeof(*ep));
+	  ep->already_used=1;
 
 	  n++;
 	}
@@ -1801,9 +1862,9 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 }
 
 /* ARGSUSED */
-int
-hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
-		      unsigned int pci_subdevice)
+static int
+attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
+		      unsigned int pci_subdevice, int group_type)
 {
   unsigned int a, b, x;
   int subix, ix, i;
@@ -1813,30 +1874,40 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
   if (cad >= MAX_CODECS)
     {
-      cmn_err (CE_WARN, "hdaudio_mixer_attach: Too many codecs %d\n", cad);
+      cmn_err (CE_WARN, "attach_codec: Too many codecs %d\n", cad);
       return -EIO;
     }
 
   mixer->ncodecs = cad + 1;
 
-  if ((codec = PMALLOC (mixer->osdev, sizeof (*codec))) == NULL)
-    {
-      cmn_err (CE_CONT, "Cannot allocate codec descriptor\n");
-      return -ENOMEM;
-    }
-
-  memset (codec, 0, sizeof (*codec));
-
-  mixer->codecs[cad] = codec;
+  if (mixer->codecs[cad] == &NULL_codec)
+     {
+	  if ((codec = PMALLOC (mixer->osdev, sizeof (*codec))) == NULL)
+	    {
+	      cmn_err (CE_CONT, "Cannot allocate codec descriptor\n");
+	      return -ENOMEM;
+	    }
+	
+	  memset (codec, 0, sizeof (*codec));
+	
+	  mixer->codecs[cad] = codec;
+     }
+  else
+     {
+     	codec = mixer->codecs[cad];
+     }
 
   corb_write (mixer, cad, 0, 0, SET_POWER_STATE, 0);	/* Power up everything */
 
   if (!corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_VENDOR, &a, &b))
     {
-      sprintf (hw_info, "  Codec %2d: Not present\n", cad);
-      cmn_err (CE_NOTE,
-	       "hdaudio_mixer_attach: Codec #%d is not physically present\n",
-	       cad);
+      if (group_type == 1)
+         {
+		sprintf (hw_info, " Codec %2d: Not present\n", cad);
+      		cmn_err (CE_NOTE,
+	       		"attach_codec: Codec #%d is not physically present\n",
+	       		cad);
+	 }
       return -EIO;
     }
   codec->vendor_id = a;
@@ -1863,12 +1934,9 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
       corb_read (mixer, cad, i, 0, GET_PARAMETER, HDA_GROUP_TYPE, &gt, &b);
 /*
- * Ignore other than audio function groups. Codecs probably allocate
- * higher widget number for the modem group than the audio group. So in this
- * way we can have smaller MAX_WIDGETS which in turn conserves memory.
+ * Handle only the function group type requested by the upper layer code.
  */
-      if ((gt & 0xff) != 1 &&
-          (gt & 0xff) != 2)
+      if ((gt & 0xff) != 1)
 	continue;
 
       has_audio_group = 1;
@@ -1886,7 +1954,8 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
   if (codecs[ix].id == 0)	/* Unknown codec */
     {
-      sprintf (hw_info, " Codec %2d: Unknown (0x%08x", cad, a);
+      if (group_type == 1)
+         sprintf (hw_info, " Codec %2d: Unknown (0x%08x", cad, a);
       cmn_err (CE_NOTE, "Unknown HDA codec 0x%08x\n", a);
       /* 
        * Create hexadecimal codec ID
@@ -1899,18 +1968,26 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
     }
   else
     {
-      sprintf (hw_info, " Codec %2d: %s (0x%08x", cad, codecs[ix].name, a);
+      if (group_type == 1)
+         sprintf (hw_info, " Codec %2d: %s (0x%08x", cad, codecs[ix].name, a);
     }
 
   if (has_audio_group && mixer->chip_name == NULL)
     {
       mixer->chip_name = codecs[ix].name;
 
-      mixer->remap = codecs[ix].remap;
-      codec->mixer_init = codecs[ix].mixer_init;
-      mixer->vendor_flags = codecs[ix].flags;
-      codec->multich_map = codecs[ix].multich_map;
     }
+    
+    if (codecs[ix].remap != NULL)
+       codec->remap = codecs[ix].remap;
+
+    if (codecs[ix].flags != 0)
+       codec->vendor_flags = codecs[ix].flags;
+
+  if (codecs[ix].mixer_init != NULL)
+     codec->mixer_init = codecs[ix].mixer_init;
+
+  codec->multich_map = codecs[ix].multich_map;
 
   if (corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_REVISION, &a, &b))
     {
@@ -1930,8 +2007,7 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
   for (i = first_node; i < first_node + num_nodes; i++)
     {
       corb_read (mixer, cad, i, 0, GET_PARAMETER, HDA_GROUP_TYPE, &a, &b);
-      if ((a & 0xff) == 0x1 ||	/* Audio group root node */
-          (a & 0xff) == 0x2)	/* Modem group root node */
+      if ((a & 0xff) == group_type)	/* Proper function group type */
 	{
 	  codec->afg = i;
 
@@ -1939,9 +2015,12 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 	    {
 	      DDB (cmn_err (CE_CONT, "Subsystem ID = 0x%08x\n", a));
 
-	      /* Append subvendor ID to hw_info */
-	      hw_info += strlen (hw_info);
-	      sprintf (hw_info, "/0x%08x", a);
+      	      if (group_type == 1)
+	         {
+	      		/* Append subvendor ID to hw_info */
+	      		hw_info += strlen (hw_info);
+	      		sprintf (hw_info, "/0x%08x", a);
+	         }
 
 	      codec->subvendor_id = a;
 
@@ -1960,16 +2039,24 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 		    DDB (cmn_err
 			 (CE_CONT, "Subdevice known as %s\n",
 			  subdevices[subix].name));
-		    hw_info += strlen (hw_info);
-		    sprintf (hw_info, " %s", subdevices[subix].name);
+      		    if (group_type == 1)
+		       {
+		    	  hw_info += strlen (hw_info);
+		    	  sprintf (hw_info, " %s", subdevices[subix].name);
+		       }
 		    if (subdevices[subix].remap != NULL)
-		      mixer->remap = subdevices[subix].remap;
+		    {
+		      codec->remap = subdevices[subix].remap;
+		    }
+
 		    if (subdevices[subix].multich_map != 0)
 		      codec->multich_map = subdevices[subix].multich_map;
 		    if (subdevices[subix].flags != 0)
-		      mixer->vendor_flags = subdevices[subix].flags;
+		      codec->vendor_flags = subdevices[subix].flags;
 		    if (subdevices[subix].mixer_init != NULL)
+		    {
 		      codec->mixer_init = subdevices[subix].mixer_init;
+		    }
 		  }
 	    }
 	  break;
@@ -1977,7 +2064,8 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
     }
 
   hw_info += strlen (hw_info);
-  strcpy (hw_info, ")\n");
+  if (group_type == 1)
+     strcpy (hw_info, ")\n");
 
   if (codec->multich_map == 0)
     {
@@ -1986,11 +2074,8 @@ hdaudio_mixer_attach (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
   for (i = first_node; i < first_node + num_nodes; i++)
     {
-      if (!attach_group (mixer, cad, i, 0))
+      if (!attach_group (mixer, cad, i, 0, group_type))
 	continue;
-
-      if (num_nodes > 1)
-	mixer->working_codecs++;
 
       /* power up the AFG! */
       corb_write (mixer, cad, i, 0, SET_POWER_STATE, 0);
@@ -2258,7 +2343,7 @@ hda_codec_getname (hdaudio_mixer_t * mixer, hda_name_t * name)
 
   if (name->cad >= mixer->ncodecs)
     return -EIO;
-  if (mixer->codecs[name->cad] == NULL)
+  if (mixer->codecs[name->cad] == &NULL_codec)
     return -EIO;
 #if 1
   if (name->wid >= mixer->codecs[name->cad]->nwidgets)
@@ -2278,7 +2363,7 @@ hda_codec_getwidget (hdaudio_mixer_t * mixer, hda_widget_info_t * info)
 
   if (info->cad >= mixer->ncodecs)
     return -EIO;
-  if (mixer->codecs[info->cad] == NULL)
+  if (mixer->codecs[info->cad] == &NULL_codec)
     return -EIO;
 
   widget = &mixer->codecs[info->cad]->widgets[info->wid];

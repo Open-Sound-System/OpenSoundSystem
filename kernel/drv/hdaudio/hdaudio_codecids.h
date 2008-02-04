@@ -3,6 +3,11 @@
  */
 #define COPYING103 Copyright (C) Hannu Savolainen and Dev Mazumdar 2007. All rights reserved.
 
+/*
+ * NULL mixer init function. Used to disable mixer creation for given codec.
+ */
+static int NULL_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group) { return 0;}
+
 struct codec_desc
 {
   unsigned int id; /* Codec id (however subdevice ID in the subdevices[] table) */
@@ -682,6 +687,127 @@ static const char *stac923xremap[] = {
 };
 
 
+static const char *conexant_modem_remap[] =
+{
+	"",		/* 0x00 */
+	"",		/* 0x01 */
+	"",		/* 0x02 */
+	"",		/* 0x03 */
+	"",		/* 0x04 */
+	"",		/* 0x05 */
+	"",		/* 0x06 */
+	"",		/* 0x07 */
+	"",		/* 0x08 */
+	"",		/* 0x09 */
+	"",		/* 0x0a */
+	"",		/* 0x0b */
+	"",		/* 0x0c */
+	"",		/* 0x0d */
+	"",		/* 0x0e */
+	"",		/* 0x0f */
+	"",		/* 0x10 */
+	"",		/* 0x11 */
+	"",		/* 0x12 */
+	"",		/* 0x13 */
+	"",		/* 0x14 */
+	"",		/* 0x15 */
+	"",		/* 0x16 */
+	"",		/* 0x17 */
+	"",		/* 0x18 */
+	"",		/* 0x19 */
+	"",		/* 0x1a */
+	"",		/* 0x1b */
+	"",		/* 0x1c */
+	"",		/* 0x1d */
+	"",		/* 0x1e */
+	"",		/* 0x1f */
+	"",		/* 0x20 */
+	"",		/* 0x21 */
+	"",		/* 0x22 */
+	"",		/* 0x23 */
+	"",		/* 0x24 */
+	"",		/* 0x25 */
+	"",		/* 0x26 */
+	"",		/* 0x27 */
+	"",		/* 0x28 */
+	"",		/* 0x29 */
+	"",		/* 0x2a */
+	"",		/* 0x2b */
+	"",		/* 0x2c */
+	"",		/* 0x2d */
+	"",		/* 0x2e */
+	"",		/* 0x2f */
+	"",		/* 0x30 */
+	"",		/* 0x31 */
+	"",		/* 0x32 */
+	"",		/* 0x33 */
+	"",		/* 0x34 */
+	"",		/* 0x35 */
+	"",		/* 0x36 */
+	"",		/* 0x37 */
+	"",		/* 0x38 */
+	"",		/* 0x39 */
+	"",		/* 0x3a */
+	"",		/* 0x3b */
+	"",		/* 0x3c */
+	"",		/* 0x3d */
+	"",		/* 0x3e */
+	"",		/* 0x3f */
+	"",		/* 0x40 */
+	"",		/* 0x41 */
+	"",		/* 0x42 */
+	"",		/* 0x43 */
+	"",		/* 0x44 */
+	"",		/* 0x45 */
+	"",		/* 0x46 */
+	"",		/* 0x47 */
+	"",		/* 0x48 */
+	"",		/* 0x49 */
+	"",		/* 0x4a */
+	"",		/* 0x4b */
+	"",		/* 0x4c */
+	"",		/* 0x4d */
+	"",		/* 0x4e */
+	"",		/* 0x4f */
+	"",		/* 0x50 */
+	"",		/* 0x51 */
+	"",		/* 0x52 */
+	"",		/* 0x53 */
+	"",		/* 0x54 */
+	"",		/* 0x55 */
+	"",		/* 0x56 */
+	"",		/* 0x57 */
+	"",		/* 0x58 */
+	"",		/* 0x59 */
+	"",		/* 0x5a */
+	"",		/* 0x5b */
+	"",		/* 0x5c */
+	"",		/* 0x5d */
+	"",		/* 0x5e */
+	"",		/* 0x5f */
+	"",		/* 0x60 */
+	"",		/* 0x61 */
+	"",		/* 0x62 */
+	"",		/* 0x63 */
+	"",		/* 0x64 */
+	"",		/* 0x65 */
+	"",		/* 0x66 */
+	"",		/* 0x67 */
+	"",		/* 0x68 */
+	"",		/* 0x69 */
+	"",		/* 0x6a */
+	"",		/* 0x6b */
+	"",		/* 0x6c */
+	"",		/* 0x6d */
+	"",		/* 0x6e */
+	"",		/* 0x6f */
+	"modem-control",/* 0x70 */ // Vendor defined widget
+	"modem-in",	/* 0x71 */
+	"modem-out",	/* 0x72 */
+	"modem-jack",	/* 0x73 */
+	NULL
+};
+
 static const codec_desc_t codecs[] = {
   /* Realtek HDA codecs */
   {0x10ec0260, "ALC260", VF_NONE, (char **) &alc260remap},
@@ -757,7 +883,8 @@ static const codec_desc_t codecs[] = {
   /* Conexant */
   {0x14f15045, "CX20548", VF_NONE, NULL, 0x76543201},
   {0x14f15047, "CX20551", VF_NONE, NULL, 0x76543201},
-  {0x14f12c06, "Conexant2c06", VF_NONE, NULL}, /* Modem codec (Vaio) */
+  {0x14f12c06, "Conexant2c06", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Vaio) */
+  {0x14f12bfa, "Conexant2bfa", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Acer Ferrari 5k) */
 
   /* Unknown */
   {0, "Unknown"}
@@ -830,6 +957,48 @@ static const char *vaio_remap[] = {
 	NULL
 };
 
+static const char *alc262_vaio_remap[] =
+{
+        "",             /* 0x00 */
+        "",             /* 0x01 */
+        "speaker",              /* 0x02 */
+        "headphone",            /* 0x03 */
+        "vendor",               /* 0x04 */
+        "vendor",               /* 0x05 */
+        "hdmi-out",             /* 0x06 */
+        "rec1",         /* 0x07 */
+        "rec2",         /* 0x08 */
+        "rec3",         /* 0x09 */
+        "spdif-in",             /* 0x0a */
+        "mix",          /* 0x0b */
+        "mix",          /* 0x0c */
+        "mix",          /* 0x0d */
+        "mono",         /* 0x0e */
+        "vendor",               /* 0x0f */
+        "vendor",               /* 0x10 */
+        "mono",         /* 0x11 */
+        "dmic",         /* 0x12 */
+        "vendor",               /* 0x13 */
+        "line-out",             /* 0x14 */
+        "headphone",            /* 0x15 */
+        "mono",         /* 0x16 */
+        "beep",         /* 0x17 */
+        "speaker",              /* 0x18 */
+        "speaker",              /* 0x19 */
+        "speaker",              /* 0x1a */
+        "speaker",              /* 0x1b */
+        "speaker",              /* 0x1c */
+        "beep",         /* 0x1d */
+        "spdif-out",            /* 0x1e */
+        "spdif-in",             /* 0x1f */
+        "vendor",               /* 0x20 */
+        "vol",          /* 0x21 */
+        "rec3",         /* 0x22 */
+        "rec2",         /* 0x23 */
+        "rec1",         /* 0x24 */
+	NULL
+};
+
 /*
  * Table for subsystem ID's that require special handling
  */
@@ -841,7 +1010,6 @@ extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int c
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
-#if 1
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
   {0x104381e1, "Asus P4B-E/AD1988A", VF_NONE, (char **) &ad1988remap, 0x76015432, hdaudio_Asus_P4B_E_mixer_init},
   {0x1043e601, "ScaleoP/ALC888", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_scaleoP_mixer_init}, 
@@ -856,8 +1024,17 @@ static const codec_desc_t subdevices[] = {
 
   {0x10250000, "Ferrari5k/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010a},
   {0x10250000, "Acer_aspire5052/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010f},
-  {0x104d2200, "STAC9872K/Vaio", VF_NONE, (char**) &vaio_remap, 0x76543210, hdaudio_vaio_vgn_mixer_init, 0x83847664}, /* Vaio VGN-AR51J */
-#endif
+
+  /*
+   **** Sony Vaio VGN-AR51 ***
+   * Has three codecs. Primary (Stac9872K), Modem (Conexant) and
+   * HDMI digital output (ALC262). Disable the mixer entries for codecs 2 and 3.
+   */
+  {0x104d2200, "Vaio/STAC9872K", VF_NONE, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847664, 0x104d9016},
+  /* 2nd codec (#1) is "Conexant2c06" modem */
+  {0x104d2200, "Vaio/HDMI", VF_NONE, (char **) &alc262_vaio_remap, 0, NULL_mixer_init, 0x10ec0262, 0x104d9016}, 
+  /****/
+
   {0, "Unknown"}
 };
 

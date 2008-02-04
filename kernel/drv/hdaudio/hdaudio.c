@@ -1355,7 +1355,7 @@ spdif_mixer_init (int dev)
 static void
 install_outputdevs (hda_devc * devc)
 {
-  int i, n, pass, audio_dev;
+  int i, j, n, pass, audio_dev;
   char tmp_name[64];
   hdaudio_endpointinfo_t *endpoints;
 
@@ -1364,23 +1364,26 @@ install_outputdevs (hda_devc * devc)
 				       sizeof (*endpoints))) < 0)
     return;
 
+#if 0
+  // This check will be done later.
   if (n > MAX_OUTPUTS)
     {
       cmn_err (CE_WARN,
-	       "hda: Only %d out of %d output devices can be installed\n",
+	       "Only %d out of %d output devices can be installed\n",
 	       MAX_OUTPUTS, n);
       n = MAX_OUTPUTS;
     }
+#endif
 
 /*
  * Install the output devices in two passes. First install the analog
  * endpoints and then the digital one(s).
  */
   for (pass = 0; pass < 2; pass++)
-    for (i = 0; i < n; i++)
+    for (j = 0; j < n; j++)
       {
 	adev_p adev;
-	hda_portc *portc = &devc->output_portc[i];
+	hda_portc *portc = &devc->output_portc[j];
 	unsigned int formats = AFMT_S16_LE;
 	int opts = ADEV_AUTOMODE | ADEV_NOINPUT;
 
@@ -1390,22 +1393,28 @@ install_outputdevs (hda_devc * devc)
 	  portc->max_channels = 2;
 
 /* Skip endpoints that are not physically connected on the motherboard. */
-	if (endpoints[i].skip)
+	if (endpoints[j].skip)
 	  continue;
+
+	if (n >= MAX_OUTPUTS)
+	{
+		cmn_err(CE_CONT, "Too many output endpoints. Endpoint %d ignored.\n", j);
+		continue;
+	}
 
 	switch (pass)
 	  {
 	  case 0:		/* Pick analog ones */
-	    if (endpoints[i].is_digital)
+	    if (endpoints[j].is_digital)
 	      continue;
 	    break;
 
 	  case 1:		/* Pick digital one(s) */
-	    if (!endpoints[i].is_digital)
+	    if (!endpoints[j].is_digital)
 	      continue;
 	  }
 
-	if (endpoints[i].is_digital)
+	if (endpoints[j].is_digital)
 	  {
 	    char devname[16];
 	    opts |= ADEV_SPECIAL;
@@ -1413,8 +1422,8 @@ install_outputdevs (hda_devc * devc)
 	    oss_audio_set_devname (devname);
 	  }
 
-	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
-	sprintf (tmp_name, "High Definition Audio %s", endpoints[i].name);
+	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[j].name);
+	sprintf (tmp_name, "High Definition Audio %s", endpoints[j].name);
 
 	if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 					       devc->osdev,
@@ -1449,7 +1458,7 @@ install_outputdevs (hda_devc * devc)
 	portc->audio_enabled = 0;
 	portc->audiodev = audio_dev;
 	portc->port_type = PT_OUTPUT;
-	portc->endpoint = &endpoints[i];
+	portc->endpoint = &endpoints[j];
 	init_adev_caps (devc, adev, portc->endpoint);
 	portc->engine = NULL;
 
@@ -1475,6 +1484,7 @@ install_outputdevs (hda_devc * devc)
 		hdaudio_mixer_set_initfunc (devc->mixer, spdif_mixer_init);
 	      }
 	  }
+	  i++;
       }
 }
 
@@ -1493,7 +1503,7 @@ install_inputdevs (hda_devc * devc)
   if (n > MAX_INPUTS)
     {
       cmn_err (CE_WARN,
-	       "hda: Only %d out of %d input devices can be installed\n",
+	       "Only %d out of %d input devices can be installed\n",
 	       MAX_INPUTS, n);
       n = MAX_INPUTS;
     }
