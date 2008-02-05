@@ -48,6 +48,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include "gtkvu.h"
+#include "ossxmix.xpm"
 
 #undef TEST_JOY
 #undef DEBUG
@@ -55,7 +56,6 @@
 #ifndef GTK1_ONLY
 #include <gtk/gtkversion.h>
 #if GTK_CHECK_VERSION(2,10,0) && !defined(GDK_WINDOWING_DIRECTFB)
-#include "ossxmix.xpm"
 #define STATUSICON
 #endif /* GTK_CHECK_VERSION(2,10,0) && !GDK_WINDOWING_DIRECTFB */
 #else
@@ -71,13 +71,12 @@
 #define FALSE 0
 #endif
 
-
-#define MAX_DEVS 256
+#define MAX_DEVS 16
 static int set_counter[MAX_DEVS] = { 0 };
 static int prev_update_counter[MAX_DEVS] = { 0 };
-static oss_mixext *extrec = NULL;
-static oss_mixext_root *root[MAX_DEVS] = { NULL };
-static char *extnames[MAX_DEVS] = { NULL };
+static oss_mixext_root * root[MAX_DEVS] = { NULL };
+static oss_mixext * extrec[MAX_DEVS] = { NULL };
+static char ** extnames[MAX_DEVS];
 static int mixer_fd = -1;
 static int dev = -1;
 static int show_all = 1;
@@ -120,12 +119,12 @@ typedef struct ctlrec
 }
 ctlrec_t;
 
-static ctlrec_t *control_list[MAX_DEVS] = { NULL };
-static ctlrec_t *peak_list[MAX_DEVS] = { NULL };
-static ctlrec_t *value_poll_list[MAX_DEVS] = { NULL };
-static ctlrec_t *check_list[MAX_DEVS] = { NULL };
+static ctlrec_t * control_list[MAX_DEVS] = { NULL };
+static ctlrec_t * peak_list[MAX_DEVS] = { NULL };
+static ctlrec_t * value_poll_list[MAX_DEVS] = { NULL };
+static ctlrec_t * check_list[MAX_DEVS] = { NULL };
 
-static GtkWidget *window, *scrolledwin;
+static GtkWidget * window, * scrolledwin;
 
 #ifdef DEBUG
 static void * _ossxmix_malloc (size_t, char *, int);
@@ -138,7 +137,7 @@ static void * _ossxmix_calloc (size_t, size_t);
 #define ossxmix_malloc(sz) _ossxmix_malloc (sz)
 #define ossxmix_calloc(nm, sz) _ossxmix_calloc (nm, sz)
 #endif /* DEBUG */
-static gint add_timeout(gpointer);
+static gint add_timeout (gpointer);
 static void change_enum (GtkToggleButton *, gpointer);
 static void change_on_off (GtkToggleButton *, gpointer);
 static void cleanup (void);
@@ -157,14 +156,14 @@ static void do_update (ctlrec_t *);
 static int findenum (oss_mixext *, const char *);
 static int find_default_mixer (void);
 static void gang_change (GtkToggleButton *, gpointer);
-static char * get_name (int);
+static char * get_name (int, int);
 static int get_value (oss_mixext *);
 static GtkWidget * load_devinfo (int);
 static GList * load_enum_values (char *, oss_mixext *);
 static GtkWidget * load_multiple_devs (void);
 static void manage_label (GtkWidget *, oss_mixext *);
 #ifndef GTK1_ONLY
-static gint manage_timeouts(GtkWidget *, GdkEventWindowState *, gpointer);
+static gint manage_timeouts (GtkWidget *, GdkEventWindowState *, gpointer);
 #endif /* !GTK1_ONLY */
 static gint poll_all (gpointer);
 static gint poll_peaks (gpointer);
@@ -172,10 +171,10 @@ static gint poll_values (gpointer);
 static void reload_gui (void);
 static gint remove_timeout (gpointer);
 static void Scrolled (GtkAdjustment *, gpointer);
-static void set_value (oss_mixext *, int);
-static char * showenum (char *, oss_mixext *, int);
+static int set_value (oss_mixext *, int);
+static char * showenum (oss_mixext *, int);
 static void store_ctl (ctlrec_t *, int);
-static void store_name (int, char *);
+static void store_name (int, int, char *);
 static void switch_page (GtkNotebook *, GtkNotebookPage *, guint, gpointer);
 static void update_label (oss_mixext *, GtkWidget *, int);
 #ifdef STATUSICON
@@ -183,11 +182,11 @@ static void activate_mainwindow (GtkStatusIcon *, guint, guint, gpointer);
 static void popup_mainwindow (GtkWidget *, gpointer);
 static void trayicon_popupmenu (GtkStatusIcon *, guint, guint, gpointer);
 
-GtkStatusIcon *status_icon = NULL;
+static GtkStatusIcon *status_icon = NULL;
 #endif /* STATUSICON */
 
 static void
-store_name (int n, char *name)
+store_name (int dev, int n, char *name)
 {
   int i;
 
@@ -195,9 +194,9 @@ store_name (int n, char *name)
     if (name[i] >= 'A' && name[i] <= 'Z')
       name[i] += 32;
 
-  extnames[n] = strdup(name);
+  extnames[dev][n] = strdup (name);
 #ifdef DEBUG
-  fprintf(stderr, "Control = %s\n", name);
+  fprintf (stderr, "Control = %s\n", name);
 #endif
 }
 
@@ -216,12 +215,12 @@ cut_name (char * name)
 }
 
 static char *
-get_name (int n)
+get_name (int dev, int n)
 {
   char *p, *s;
 
 #if 1
-  s = p = extnames[n];
+  s = p = extnames[dev][n];
   while (*p)
     {
       if (*p == '.')
@@ -232,7 +231,7 @@ get_name (int n)
   return s;
 #else
 
-  p = extnames[n];
+  p = extnames[dev][n];
 
   while (*p && *p != '.')
     p++;
@@ -242,21 +241,15 @@ get_name (int n)
       p++;
       return p;
     }
-  return extnames[n];
+  return extnames[dev][n];
 #endif
 }
 
 static char *
-showenum (char *extname, oss_mixext * rec, int val)
+showenum (oss_mixext * rec, int val)
 {
-  char *p, *tmp;
+  static char tmp[100];
   oss_mixer_enuminfo ei;
-
-  tmp = ossxmix_malloc (100 * sizeof(char));
-  *tmp = '\0';
-
-  if (*extname == '.')
-    extname++;
 
   if (val > rec->maxvalue)
     {
@@ -269,6 +262,8 @@ showenum (char *extname, oss_mixext * rec, int val)
 
   if (ioctl (mixer_fd, SNDCTL_MIX_ENUMINFO, &ei) != -1)
     {
+      char *p;
+
       if (val >= ei.nvalues)
 	{
 	  snprintf (tmp, sizeof(tmp), "%d(too large2 (%d)?)", val, ei.nvalues);
@@ -276,7 +271,7 @@ showenum (char *extname, oss_mixext * rec, int val)
 	}
 
       p = ei.strings + ei.strindex[val];
-      strcpy (tmp, p);
+      strncpy (tmp, p, sizeof(tmp));
       return tmp;
     }
 
@@ -290,8 +285,6 @@ load_enum_values (char *extname, oss_mixext * rec)
   int i;
   GList *list = NULL;
   oss_mixer_enuminfo ei;
-
-  memset (&ei, 0, sizeof (ei));
 
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
@@ -308,7 +301,7 @@ load_enum_values (char *extname, oss_mixext * rec)
 	if (rec->enum_present[i / 8] & (1 << (i % 8)))
 	  {
 	    p = ei.strings + ei.strindex[i];
-	    list = g_list_append (list, strdup (p));
+	    list = g_list_append (list, p);
 	  }
 
       return list;
@@ -320,7 +313,7 @@ load_enum_values (char *extname, oss_mixext * rec)
   for (i = 0; i < rec->maxvalue; i++)
     if (rec->enum_present[i / 8] & (1 << (i % 8)))
       {
-	list = g_list_append (list, showenum (extname, rec, i));
+	list = g_list_append (list, showenum (rec, i));
       }
 
   return list;
@@ -404,19 +397,19 @@ get_value (oss_mixext * thisrec)
       }
       fprintf (stderr, "%s\n", thisrec->id);
       perror ("SNDCTL_MIX_READ");
-      return 0;
+      return -1;
     }
 
   return val.value;
 }
 
-static void
+static int
 set_value (oss_mixext * thisrec, int value)
 {
   oss_mixer_value val;
 
   if (!(thisrec->flags & MIXF_WRITEABLE))
-    return;
+    return -1;
   val.dev = thisrec->dev;
   val.ctrl = thisrec->ctrl;
   val.value = value;
@@ -432,7 +425,7 @@ set_value (oss_mixext * thisrec, int value)
 	    fprintf (stderr,
 		     "ossxmix: Mixer structure changed - restarting.\n");
 	    reload_gui ();
-	    return;
+	    return -1;
 	  }
 	else
 	  {
@@ -443,7 +436,9 @@ set_value (oss_mixext * thisrec, int value)
       }
       fprintf (stderr, "%s\n", thisrec->id);
       perror ("SNDCTL_MIX_WRITE");
+      return -1;
     }
+  return val.value;
 }
 
 static void
@@ -469,14 +464,15 @@ create_update (GtkWidget * frame, GtkObject * left, GtkObject * right,
 static void
 manage_label (GtkWidget * frame, oss_mixext * thisrec)
 {
-  char new_label[FRAME_NAME_LENGTH+1], tmp[64];
+  char new_label[FRAME_NAME_LENGTH+1], tmp[16];
 
   if (thisrec->id[0] != '@')
     return;
 
   *new_label = 0;
 
-  strcpy (tmp, &thisrec->id[1]);
+  strncpy (tmp, &thisrec->id[1], sizeof(tmp));
+  tmp[15] = '\0';
 
   if ((tmp[0] == 'd' && tmp[1] == 's' && tmp[2] == 'p') ||
       (tmp[0] == 'p' && tmp[1] == 'c' && tmp[2] == 'm'))
@@ -638,7 +634,17 @@ change_on_off (GtkToggleButton * but, gpointer data)
 
   val = but->active;
 
+ /*
+  * old OSSv4 builds had a bug where SNDCTL_MIX_WRITE would always return
+  * 1 when changing a rec button.
+  */
+#if 0
+  val = set_value (srec->mixext, val);
+#else
   set_value (srec->mixext, val);
+  val = get_value (srec->mixext);
+#endif
+  if (val != -1) but->active = val;
 }
 
 static void
@@ -744,7 +750,7 @@ connect_onoff (oss_mixext * thisrec, GtkObject * entry)
  * Create notebook and populate it with multiple mixer tabs. Returns notebook.
  */
 static GtkWidget *
-load_multiple_devs(void)
+load_multiple_devs (void)
 {
   oss_sysinfo si;
   int i;
@@ -762,9 +768,9 @@ load_multiple_devs(void)
     {
       vbox = gtk_vbox_new (FALSE, 0);
       hbox = gtk_hbox_new (FALSE, 0);
-      mixer_page = load_devinfo(i);
-      gtk_box_pack_start ( GTK_BOX (vbox), mixer_page, FALSE, TRUE, 0);
-      gtk_box_pack_end ( GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
+      mixer_page = load_devinfo (i);
+      gtk_box_pack_start (GTK_BOX (vbox), mixer_page, FALSE, TRUE, 0);
+      gtk_box_pack_end (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
       gtk_widget_show (hbox);
       gtk_widget_show (vbox);
       if (root[i] == NULL)
@@ -806,23 +812,20 @@ static GtkWidget *
 load_devinfo (int dev)
 {
   char tmp[1024], *name;
-  int i, n, val, left, right, mx, g;
+  int i, n, val, left, right, mx, g, mask, shift;
   int angle, vol;
   int width;
-  int orient[256] = { 0 };
   int ngroups = 0;
-  int parent, ori;
+  int parent;
   oss_mixext *thisrec;
   oss_mixerinfo mi;
   GtkWidget *wid, *wid2, *gang, *rootwid = NULL, *pw, *frame, *box;
   GtkWidget *widgets[256] = { NULL };
   GtkObject *adjust, *adjust2;
-  gboolean change_orient = TRUE;
-  gboolean use_layout_b = FALSE;
+  gboolean change_orient = TRUE, ori, orient[256] = { FALSE };
+  gboolean expand, use_layout_b = FALSE;
 
-  n = dev;
   mi.dev = dev;
-
   if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &mi) == -1)
     {
       perror ("SNDCTL_MIXERINFO");
@@ -835,6 +838,7 @@ load_devinfo (int dev)
   if ((mi.caps & MIXER_CAP_NARROW) && (width_adjust >= 0))
     width_adjust = -1;
 
+  n = dev;
   if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &n) == -1)
     {
       perror ("SNDCTL_MIX_NREXT");
@@ -842,15 +846,16 @@ load_devinfo (int dev)
 	fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
       exit (-1);
     }
-
-  extrec = ossxmix_calloc (n, sizeof (oss_mixext));
+  extrec[dev] = ossxmix_calloc (n, sizeof (oss_mixext));
+  extnames[dev] = ossxmix_calloc (n, sizeof (char *));
 
   for (i = 0; i < n; i++)
     {
-      int mask = 0xff, shift = 8;
-      gboolean expand = TRUE;
+      mask = 0xff;
+      shift = 8;
+      expand = TRUE;
 
-      thisrec = &extrec[i];
+      thisrec = &extrec[dev][i];
       thisrec->dev = dev;
       thisrec->ctrl = i;
 
@@ -877,7 +882,7 @@ load_devinfo (int dev)
 	{
 	case MIXT_DEVROOT:
 	  root[dev] = (oss_mixext_root *) & thisrec->data;
-	  extnames[i] = "";
+	  extnames[dev][i] = strdup("");
 	  rootwid = gtk_vbox_new (FALSE, 2);
 	  gtk_box_set_child_packing (GTK_BOX (rootwid), rootwid, TRUE, TRUE,
                                     100, GTK_PACK_START);
@@ -893,11 +898,11 @@ load_devinfo (int dev)
 	    break;
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
-	  if (*extnames[parent] == '\0')
+	  if (*extnames[dev][parent] == '\0')
 	    strcpy (tmp, name);
 	  else
-	    snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	  store_name (i, tmp);
+	    snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	  store_name (dev, i, tmp);
 	  if (!change_orient && (parent == 0))
 	    pw = rootwid;
 	  else
@@ -906,7 +911,7 @@ load_devinfo (int dev)
 	    expand = FALSE;
 	  if (pw == NULL)
 	    fprintf (stderr, "Root group %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 	  ori = !orient[parent];
 	  if (change_orient)
 	    ori = !ori;
@@ -926,7 +931,7 @@ load_devinfo (int dev)
 	      wid = gtk_hbox_new (FALSE, 1);
 	    }
 
-	  frame = gtk_frame_new (get_name (i));
+	  frame = gtk_frame_new (get_name (dev, i));
 	  manage_label (frame, thisrec);
 	  gtk_box_pack_start (GTK_BOX (pw), frame, expand, TRUE, 1);
 	  gtk_container_add (GTK_CONTAINER (frame), wid);
@@ -941,17 +946,17 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  val = get_value (thisrec);
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 
 	  wid = gtk_label_new ("????");
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
@@ -970,17 +975,17 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
-	  wid = gtk_button_new_with_label (get_name (i));
+		     extnames[dev][i], parent);
+	  wid = gtk_button_new_with_label (get_name (dev, i));
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
 	  gtk_widget_show (wid);
 	  break;
@@ -992,17 +997,17 @@ load_devinfo (int dev)
 	  val = get_value (thisrec) & 0x01;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
-          wid = gtk_check_button_new_with_label (get_name (i));
+		     extnames[dev][i], parent);
+          wid = gtk_check_button_new_with_label (get_name (dev, i));
 	  connect_onoff (thisrec, GTK_OBJECT (wid));
 	  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), val);
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
@@ -1021,16 +1026,16 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 #if 0
 	  adjust = GTK_OBJECT (gtk_adjustment_new (left, 0, mx, 1, 5, 0));
 	  adjust2 = GTK_OBJECT (gtk_adjustment_new (right, 0, mx, 1, 5, 0));
@@ -1045,9 +1050,9 @@ load_devinfo (int dev)
 	  wid2 = gtk_vu_new ();
 
 	  connect_peak (thisrec, wid, wid2);
-	  if (strcmp (get_name (parent), get_name (i)) != 0)
+	  if (strcmp (get_name (dev, parent), get_name (dev, i)) != 0)
 	    {
-	      frame = gtk_frame_new (get_name (i));
+	      frame = gtk_frame_new (get_name (dev, i));
 	      manage_label (frame, thisrec);
 	      gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
 	      gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, TRUE, 0);
@@ -1077,22 +1082,22 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 	  wid = gtk_vu_new ();
 
 	  connect_peak (thisrec, wid, NULL);
-	  if (strcmp (get_name (parent), get_name (i)) != 0)
+	  if (strcmp (get_name (dev, parent), get_name (dev, i)) != 0)
 	    {
-	      frame = gtk_frame_new (get_name (i));
+	      frame = gtk_frame_new (get_name (dev, i));
 	      manage_label (frame, thisrec);
 	      gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
 	      gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, TRUE, 0);
@@ -1125,18 +1130,18 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
-	  adjust = GTK_OBJECT (gtk_adjustment_new (left, 0, mx, 1, 5, 0));
-	  adjust2 = GTK_OBJECT (gtk_adjustment_new (right, 0, mx, 1, 5, 0));
+		     extnames[dev][i], parent);
+	  adjust = gtk_adjustment_new (left, 0, mx, 1, 5, 0);
+	  adjust2 = gtk_adjustment_new (right, 0, mx, 1, 5, 0);
 	  gang = gtk_check_button_new ();
 	  g = (left == right);
 	  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (gang), g);
@@ -1159,9 +1164,9 @@ load_devinfo (int dev)
 	  gtk_scale_set_digits (GTK_SCALE (wid2), 0);
 	  gtk_scale_set_draw_value (GTK_SCALE (wid2), FALSE);
 
-	  if (strcmp (get_name (parent), get_name (i)) != 0)
+	  if (strcmp (get_name (dev, parent), get_name (dev, i)) != 0)
 	    {
-	      frame = gtk_frame_new (get_name (i));
+	      frame = gtk_frame_new (get_name (dev, i));
 	      manage_label (frame, thisrec);
 	      /* gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN); */
 	      gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, FALSE, 1);
@@ -1195,22 +1200,22 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 	  wid = gtk_joy_new ();
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
 
-	  if (strcmp (get_name (parent), get_name (i)) != 0)
+	  if (strcmp (get_name (dev, parent), get_name (dev, i)) != 0)
 	    {
-	      frame = gtk_frame_new (get_name (i));
+	      frame = gtk_frame_new (get_name (dev, i));
 	      manage_label (frame, thisrec);
 	      gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
 	      gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, TRUE, 0);
@@ -1237,18 +1242,18 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
-	  adjust = GTK_OBJECT (gtk_adjustment_new (vol, 0, 100, 1, 5, 0));
-	  adjust2 = GTK_OBJECT (gtk_adjustment_new (angle, 0, 360, 1, 5, 0));
+		     extnames[dev][i], parent);
+	  adjust = gtk_adjustment_new (vol, 0, 100, 1, 5, 0);
+	  adjust2 = gtk_adjustment_new (angle, 0, 360, 1, 5, 0);
 	  connect_scrollers (thisrec, adjust, adjust2, NULL);
 	  create_update (NULL, adjust, adjust2, NULL, thisrec, WHAT_UPDATE,
 			 0);
@@ -1259,7 +1264,7 @@ load_devinfo (int dev)
 	  gtk_scale_set_digits (GTK_SCALE (wid2), 0);
 	  gtk_scale_set_draw_value (GTK_SCALE (wid2), FALSE);
 
-	  frame = gtk_frame_new (get_name (i));
+	  frame = gtk_frame_new (get_name (dev, i));
 	  manage_label (frame, thisrec);
 	  /* gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN); */
 	  gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, FALSE, 1);
@@ -1288,17 +1293,17 @@ load_devinfo (int dev)
 
 	  val = mx - val;
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
-	  adjust = GTK_OBJECT (gtk_adjustment_new (val, 0, mx, 1, 5, 0));
+		     extnames[dev][i], parent);
+	  adjust = gtk_adjustment_new (val, 0, mx, 1, 5, 0);
 	  connect_scrollers (thisrec, adjust, NULL, NULL);
 	  create_update (NULL, adjust, NULL, NULL, thisrec, WHAT_UPDATE, 0);
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
@@ -1308,9 +1313,9 @@ load_devinfo (int dev)
 	  gtk_scale_set_digits (GTK_SCALE (wid), 0);
 	  gtk_scale_set_draw_value (GTK_SCALE (wid), FALSE);
 
-	  if (strcmp (get_name (parent), get_name (i)) != 0)
+	  if (strcmp (get_name (dev, parent), get_name (dev, i)) != 0)
 	    {
-	      frame = gtk_frame_new (get_name (i));
+	      frame = gtk_frame_new (get_name (dev, i));
 	      manage_label (frame, thisrec);
 	      /* gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN); */
 	      gtk_box_pack_start (GTK_BOX (pw), frame, FALSE, FALSE, 1);
@@ -1331,17 +1336,17 @@ load_devinfo (int dev)
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
-	    extnames[i] = extnames[parent];
+	    extnames[dev][i] = extnames[dev][parent];
 	  else
 	    {
-	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
-	      store_name (i, tmp);
+	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[dev][parent], name);
+	      store_name (dev, i, tmp);
 	    }
 	  val = get_value (thisrec) & 0xff;
 	  pw = widgets[parent];
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
+		     extnames[dev][i], parent);
 
 	  wid = gtk_combo_new ();
 	  {
@@ -1349,18 +1354,17 @@ load_devinfo (int dev)
 
 	    if (!(thisrec->flags & MIXF_WIDE))
 	      gtk_widget_set_usize (wid, 100 + 20 * width_adjust, -1);
-	    opt = load_enum_values (extnames[i], thisrec);
+	    opt = load_enum_values (extnames[dev][i], thisrec);
 	    gtk_combo_set_popdown_strings (GTK_COMBO (wid), opt);
+	    g_list_free (opt);
 
 	    gtk_combo_set_use_arrows_always (GTK_COMBO (wid), 1);
 	    gtk_entry_set_editable (GTK_ENTRY (GTK_COMBO (wid)->entry),
 				    FALSE);
-	    gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (wid)->entry),
-				showenum (extnames[i], thisrec, val));
 	  }
 	  connect_enum (thisrec, GTK_OBJECT (GTK_COMBO (wid)->entry));
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, i);
-	  frame = gtk_frame_new (get_name (i));
+	  frame = gtk_frame_new (get_name (dev, i));
 	  manage_label (frame, thisrec);
 	  gtk_box_pack_start (GTK_BOX (pw), frame, TRUE, FALSE, 0);
 	  gtk_container_add (GTK_CONTAINER (frame), wid);
@@ -1373,7 +1377,7 @@ load_devinfo (int dev)
 	  break;
 
 	default:
-	  fprintf (stderr, "Unknown type for control %s\n", extnames[i]);
+	  fprintf (stderr, "Unknown type for control %s\n", extnames[dev][i]);
 	}
 
     }
@@ -1440,24 +1444,33 @@ create_widgets (void)
 static void
 reload_gui (void)
 {
-#define FREE(x) do { \
-                  if (x != NULL) \
-                    { \
-                      free (x); x = NULL; \
-                    } \
-                  } while (0)
-  int i;
+#define FREECTL(x) do { \
+                     for (i=0; i < MAX_DEVS; i++) \
+                       { \
+                         for (p = x[i]; p != NULL;) \
+                           { \
+                             nextp = p->next; \
+                             free (p); \
+                             p = nextp; \
+                           } \
+                         x[i] = NULL; \
+                       } \
+                   } while (0)
+
+  ctlrec_t * p, * nextp;
+  int i, j;
 
   remove_timeout ((gpointer)poll_tag_list);
-  for (i = 0; i < MAX_DEVS; i++)
-    {
-      FREE (control_list[i]);
-      FREE (peak_list[i]);
-      FREE (check_list[i]);
-      FREE (value_poll_list[i]);
-    }
-
   fully_started = 0;
+  FREECTL (control_list); FREECTL (peak_list);
+  FREECTL (check_list); FREECTL (value_poll_list);
+  for (i=0; extrec[i] != NULL; i++) {
+    for (j=0; extnames[i][j] != NULL; j++)
+      if (*(extrec[i][j].id) != '\0') free(extnames[i][j]);
+    free(extnames[i]);
+    free(extrec[i]);
+  }
+
   gtk_widget_destroy (scrolledwin);
   create_widgets ();
   fully_started = 1;
@@ -1476,33 +1489,37 @@ update_label (oss_mixext * mixext, GtkWidget * wid, int val)
   char tmp[100];
 
   if (mixext->type == MIXT_HEXVALUE)
-    snprintf (tmp, sizeof(tmp), "[%s: 0x%x] ", get_name (mixext->ctrl), val);
+    snprintf (tmp, sizeof(tmp), "[%s: 0x%x] ",
+              get_name (mixext->dev, mixext->ctrl), val);
   else
-    snprintf (tmp, sizeof(tmp), "[%s: %d] ", get_name (mixext->ctrl), val);
+    snprintf (tmp, sizeof(tmp), "[%s: %d] ",
+              get_name (mixext->dev, mixext->ctrl), val);
 
   if (mixext->flags & MIXF_HZ)
     {
       if (val > 1000000)
 	{
 	  snprintf (tmp, sizeof(tmp), "[%s: %d.%03d MHz] ",
-		    get_name (mixext->ctrl), val / 1000000,
+		    get_name (mixext->dev, mixext->ctrl), val / 1000000,
 		    (val / 1000) % 1000);
 	}
       else if (val > 1000)
 	{
 	  snprintf (tmp, sizeof(tmp), "[%s: %d.%03d kHz] ",
-		    get_name (mixext->ctrl), val / 1000, val % 1000);
+		    get_name (mixext->dev, mixext->ctrl), val / 1000, val % 1000);
 	}
       else
-	snprintf (tmp, sizeof(tmp), "[%s: %d Hz] ", get_name (mixext->ctrl),
-		  val);
+	snprintf (tmp, sizeof(tmp), "[%s: %d Hz] ",
+		  get_name (mixext->dev, mixext->ctrl), val);
     }
   else if (mixext->flags & MIXF_OKFAIL)
     {
       if (val != 0)
-	snprintf (tmp, sizeof(tmp), "[%s: Ok] ", get_name (mixext->ctrl));
+	snprintf (tmp, sizeof(tmp), "[%s: Ok] ",
+		  get_name (mixext->dev, mixext->ctrl));
       else
-	snprintf (tmp, sizeof(tmp), "[%s: Fail] ", get_name (mixext->ctrl));
+	snprintf (tmp, sizeof(tmp), "[%s: Fail] ",
+		  get_name (mixext->dev, mixext->ctrl));
     }
   gtk_label_set (GTK_LABEL (wid), tmp);
 }
@@ -1516,7 +1533,6 @@ static void
 do_update (ctlrec_t * srec)
 {
   int val, mx, left, right, vol, angle;
-  char *p;
   int mask = 0xff, shift = 8;
 
   val = get_value (srec->mixext);
@@ -1537,9 +1553,7 @@ do_update (ctlrec_t * srec)
 
     case MIXT_ENUM:
       gtk_entry_set_text (GTK_ENTRY (GTK_COMBO (srec->gang)->entry),
-			  p =
-			  showenum (extnames[srec->parm], srec->mixext, val));
-      free (p);
+			  showenum (srec->mixext, val));
       break;
 
     case MIXT_VALUE:
@@ -1647,9 +1661,9 @@ poll_all (gpointer data)
 	      snprintf (new_label, FRAME_NAME_LENGTH, "pcm%d", srec->parm);
 	    }
 	  if ((srec->frame != NULL) &&
-	      (strncmp(srec->frame_name, new_label, FRAME_NAME_LENGTH)))
+	      (strncmp (srec->frame_name, new_label, FRAME_NAME_LENGTH)))
 	    {
-	      strcpy(srec->frame_name, new_label);
+	      strcpy (srec->frame_name, new_label);
      	      gtk_frame_set_label (GTK_FRAME (srec->frame), new_label);
 	    }
 	  break;
@@ -1754,7 +1768,7 @@ find_default_mixer (void)
 
   if (si.nummixers == 0)
     {
-      fprintf(stderr, "No mixers are available\n");
+      fprintf (stderr, "No mixers are available\n");
       exit (-1);
     }
 
@@ -1780,6 +1794,12 @@ main (int argc, char **argv)
 {
   int v, c;
   GtkRequisition Dimensions;
+#ifndef GTK1_ONLY
+  GdkPixbuf *icon_pix;
+#else
+  GdkPixmap *icon_pix;
+  GdkBitmap *icon_mask;
+#endif /* !GTK1_ONLY */
 
   /* Get Gtk to process the startup arguments */
   gtk_init (&argc, &argv);
@@ -1849,7 +1869,7 @@ main (int argc, char **argv)
   if (dev == -1)
     dev = find_default_mixer ();
 
-  chdir("/");
+  chdir ("/");
 
   /* Create the app's main window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -1863,13 +1883,13 @@ main (int argc, char **argv)
   gtk_signal_connect (GTK_OBJECT (window), "delete_event",
 		      GTK_SIGNAL_FUNC (close_request), NULL);
 
+#ifndef GTK1_ONLY
+  icon_pix = gdk_pixbuf_new_from_xpm_data ((const char **)ossxmix);
 #ifdef STATUSICON
   if (show_status_icon)
     {
       char tmp[100];
-      GdkPixbuf *icon_pix;
 
-      icon_pix = gdk_pixbuf_new_from_xpm_data((const char **)ossxmix);
       status_icon = gtk_status_icon_new_from_pixbuf (icon_pix);
       snprintf (tmp, sizeof(tmp), "ossxmix - device %d / %s",
                 dev, root[dev]->name);
@@ -1880,8 +1900,8 @@ main (int argc, char **argv)
                         G_CALLBACK (activate_mainwindow), NULL);
     }
 #endif /* STATUSICON */
+  gtk_window_set_icon (GTK_WINDOW (window), icon_pix);
 
-#ifndef GTK1_ONLY
   g_signal_connect (G_OBJECT (window), "window-state-event",
                     G_CALLBACK (manage_timeouts), (gpointer)poll_tag_list);
   if ((!background) || (!show_status_icon))
@@ -1896,6 +1916,10 @@ main (int argc, char **argv)
   if (background) XIconifyWindow (GDK_WINDOW_XDISPLAY (window->window),
 				  GDK_WINDOW_XWINDOW (window->window),
 				  DefaultScreen (GDK_DISPLAY ()));
+  icon_pix = gdk_pixmap_create_from_xpm_d (window->window, &icon_mask,
+                                          &window->style->bg[GTK_STATE_NORMAL],
+                                          ossxmix);
+  gdk_window_set_icon (window->window, NULL, icon_pix, icon_mask);
 #endif /* !GTK1_ONLY */
 
   gtk_main ();
@@ -1907,7 +1931,7 @@ main (int argc, char **argv)
  * Function to run when program is shutting down
  */
 static void
-cleanup(void)
+cleanup (void)
 {
   close (mixer_fd);
 }
@@ -1965,7 +1989,7 @@ switch_page (GtkNotebook * notebook, GtkNotebookPage * page,
  */
 /*ARGSUSED*/
 static gint
-add_timeout(gpointer data)
+add_timeout (gpointer data)
 {
   guint *poll_tag_list = (guint *) data;
 
@@ -1983,7 +2007,7 @@ add_timeout(gpointer data)
  */
 /*ARGSUSED*/
 static gint
-remove_timeout(gpointer data)
+remove_timeout (gpointer data)
 {
   guint *poll_tag_list = (guint *) data;
  
@@ -2011,7 +2035,7 @@ remove_timeout(gpointer data)
  */
 /*ARGSUSED*/
 static gint
-manage_timeouts(GtkWidget * w, GdkEventWindowState * e, gpointer data)
+manage_timeouts (GtkWidget * w, GdkEventWindowState * e, gpointer data)
 {
   if (e->new_window_state &
       (GDK_WINDOW_STATE_ICONIFIED | GDK_WINDOW_STATE_WITHDRAWN))

@@ -79,7 +79,7 @@ gtk_vu_class_init (GtkVUClass * class)
 static void
 gtk_vu_init (GtkVU * vu)
 {
-  vu->level = 5;
+  vu->level = 0;
 }
 
 GtkWidget *
@@ -202,6 +202,8 @@ gtk_vu_unrealize (GtkWidget * widget)
 
   gdk_colormap_free_colors (gtk_widget_get_colormap (widget), vu->colors, 7);
   gdk_pixmap_unref (vu->pixmap);
+  gdk_gc_unref (vu->gc);
+  gdk_window_unref (widget->window);
 }
 
 /*ARGSUSED*/
