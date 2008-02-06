@@ -254,33 +254,6 @@ convert_event (snd_seq_t * seq, snd_seq_event_t * ev)
     case SND_SEQ_EVENT_PORT_UNSUBSCRIBED:
       dbg_printf ("\tSND_SEQ_EVENT_PORT_UNSUBSCRIBED\n");
       break;
-    case SND_SEQ_EVENT_SAMPLE:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_CLUSTER:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_CLUSTER\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_START:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_START\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_STOP:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_STOP\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_FREQ:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_FREQ\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_VOLUME:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_VOLUME\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_LOOP:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_LOOP\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_POSITION:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_POSITION\n");
-      break;
-    case SND_SEQ_EVENT_SAMPLE_PRIVATE1:
-      dbg_printf ("\tSND_SEQ_EVENT_SAMPLE_PRIVATE1\n");
-      break;
     case SND_SEQ_EVENT_USR0:
       dbg_printf ("\tSND_SEQ_EVENT_USR0\n");
       break;
@@ -310,63 +283,6 @@ convert_event (snd_seq_t * seq, snd_seq_event_t * ev)
       break;
     case SND_SEQ_EVENT_USR9:
       dbg_printf ("\tSND_SEQ_EVENT_USR9\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_BEGIN:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_BEGIN\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_END:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_END\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_INFO:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_INFO\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_INFO_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_INFO_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_FINFO:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_FINFO\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_FINFO_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_FINFO_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_RESET:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_RESET\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_STATUS:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_STATUS\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_STATUS_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_STATUS_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_PUT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_PUT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_GET:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_GET\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_GET_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_GET_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_FREE:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_FREE\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_LIST:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_LIST\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_LIST_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_LIST_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_CLUSTER:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_CLUSTER\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_CLUSTER_GET:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_CLUSTER_GET\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_CLUSTER_RESULT:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_CLUSTER_RESULT\n");
-      break;
-    case SND_SEQ_EVENT_INSTR_CHANGE:
-      dbg_printf ("\tSND_SEQ_EVENT_INSTR_CHANGE\n");
       break;
     case SND_SEQ_EVENT_SYSEX:
       dbg_printf ("\tSND_SEQ_EVENT_SYSEX\n");
