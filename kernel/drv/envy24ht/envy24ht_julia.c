@@ -13,10 +13,6 @@
 #define AK4358_ADDRESS 0x11
 #define AK4114_ADDRESS 0x10
 
-#define _delay()	{}
-#define BIT(x) (1<<(x))
-#define BIT3 BIT(3)
-
 #if 0
 static unsigned char
 i2c_read (envy24ht_devc * devc, unsigned char addr, unsigned char pos)
@@ -74,6 +70,9 @@ i2c_write (envy24ht_devc * devc, unsigned char addr, unsigned char pos,
 
     }
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
+
+  if ((addr == AK4358_ADDRESS) && (pos <= 0x0c))
+    devc->m_DACVolume[pos] = data;
 }
 
 static void
@@ -102,42 +101,40 @@ set_dac (envy24ht_devc * devc, int reg, int level)
   return level;
 }
 
+static struct { 
+    int rate, spdifin, clks;
+} rate_sel[] = {
+    {32000, 0x30, 0x08},
+    {44100, 0x00, 0x09},
+    {48000, 0x20, 0x0A},
+    {88200, 0x80, 0x05},
+    {96000, 0xA0, 0x06},
+    {176400, 0xC0, 0x01},
+    {192000, 0xE0, 0x02},
+    {16000, -1, 0x0C},
+    {22050, -1, 0x0D},
+    {24000, -1, 0x0E},
+    {64000, -1, 0x04},
+    {128000, -1, 0x00},
+    {-1, -1, -1}
+};
+
 #if 0
 static int
 julia_get_spdifin_rate (envy24ht_devc *devc)
 {
+  int i;
   int spdifin = i2c_read (devc, AK4114_ADDRESS, 7);
   
-  switch (spdifin)
-    {
-    case 0x00:
-	return 44100;
-	break;
-    case 0x20:
-	return 48000;
-	break;
-    case 0x30:
-	return 32000;
-	break;
-    case 0x80:
-	return 88200;
-	break;
-    case 0xA0:
-	return 96000;
-	break;
-    case 0xC0:
-	return 176400;
-	break;
-    case 0xE0:
-	return 192000;
-	break;
-    default:
-	return 0;
-    }
+  for (i = 0; rate_sel[i].rate; i++)
+    if (rate_sel[i].spdifin == spdifin)
+	return rate_sel[i].rate;
+  
+  return 0;
 }
 #endif
 
-void
+static void
 julia_Monitor (envy24ht_devc * devc, int bMonitor, int num)
 {
   switch (num)
@@ -177,80 +174,66 @@ julia_Monitor (envy24ht_devc * devc, int bMonitor, int num)
 }
 
 static void
-julia_Set_48K_Mode (envy24ht_devc * devc)
-/*
-*****************************************************************************
-* Sets Chip and Envy24 for 8kHz-48kHz sample rates.
-****************************************************************************/
+ak4114_init (envy24ht_devc * devc)
 {
-  OUTB (devc->osdev, INB (devc->osdev, devc->mt_base + 2) & ~BIT3,
-	devc->mt_base + 2);
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x4E);
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x4F);
+  /*
+   * AK4114 S/PDIF interface initialization
+   */
+  if ((devc->m_SPDIFConfig != 1) || (devc->speed > 96000))
+    i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0f);
+  else
+    i2c_write (devc, AK4114_ADDRESS, 0x00, 0x03);
+  
+  i2c_write (devc, AK4114_ADDRESS, 0x01, 0x70);
+  i2c_write (devc, AK4114_ADDRESS, 0x02, 0x80);
+  i2c_write (devc, AK4114_ADDRESS, 0x03, 0x49);
+  i2c_write (devc, AK4114_ADDRESS, 0x04, 0x00);
+  i2c_write (devc, AK4114_ADDRESS, 0x05, 0x00);
 
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x01);
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x03);
-}
-
-static void
-julia_Set_96K_Mode (envy24ht_devc * devc)
-/*
-*****************************************************************************
-* Sets CODEC and Envy24 for 60kHz-96kHz sample rates.
-****************************************************************************/
-{
-/* ICE MCLK = 256x. */
-  OUTB (devc->osdev, INB (devc->osdev, devc->mt_base + 2) & ~BIT3,
-	devc->mt_base + 2);
-/* DFS=double-speed, RESET. */
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x5E);
-/* DFS=double-speed, NORMAL OPERATION. */
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x5F);
-/* SPDIF */
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x01);
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x03);
-}
-
-static void
-julia_Set_192K_Mode (envy24ht_devc * devc)
-/*
-*****************************************************************************
-* Sets CODEC and Envy24 for 120kHz-192kHz sample rate.
-****************************************************************************/
-{
-/* ICE MCLK = 128x. */
-  OUTB (devc->osdev, INB (devc->osdev, devc->mt_base + 2) | BIT3,
-	devc->mt_base + 2);
-  _delay ();
-/*----- SET THE D/A. */
-/* DFS=quad-speed, RESET. */
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x6E);
-  _delay ();
-/* DFS=quad-speed, NORMAL OPERATION. */
-  i2c_write (devc, AK4358_ADDRESS, 2, 0x6F);
-
-  /* SPDIF */
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0d);
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0f);
+  i2c_write (devc, AK4114_ADDRESS, 0x0d, 0x41);
+  i2c_write (devc, AK4114_ADDRESS, 0x0e, 0x02);
+  i2c_write (devc, AK4114_ADDRESS, 0x0f, 0x2c);
+  i2c_write (devc, AK4114_ADDRESS, 0x10, 0x00);
+  i2c_write (devc, AK4114_ADDRESS, 0x11, 0x00);
+  devc->m_SPDIFConfig = 1;
 }
 
 static void
 julia_set_rate (envy24ht_devc * devc)
 {
+  int i, data;
+  
+  for (i = 0; rate_sel[i].rate; i++)
+    if ((rate_sel[i].rate == devc->speed)||(rate_sel[i].rate == -1)) 
+	break;
+  
+    /* Set rate by GPIO */
+  if (rate_sel[i].rate != -1)
+    {
+	data = INW (devc->osdev, devc->ccs_base + 0x14);
+	data &= ~0x0f;
+	data |= rate_sel[i].clks;
+	OUTW (devc->osdev, data, devc->ccs_base + 0x14);
+    }
+
+  i2c_write (devc, AK4358_ADDRESS, 0, 0x06); /* reset ak4358 */
+  i2c_write (devc, AK4114_ADDRESS, 0, 0x01); /* reset ak4114 */
+
   if (devc->speed <= 48000)
-    {
-	julia_Set_48K_Mode (devc);
-    } 
+	devc->m_DACVolume[2] = 0x4f; /* DFS=normal-speed */	
   else if (devc->speed <= 96000)
-    {
-	julia_Set_96K_Mode (devc);
-    }
+	devc->m_DACVolume[2] = 0x5f; /* DFS=double-speed */
   else
-    {
-	julia_Set_192K_Mode (devc);
-    }
-    
-  julia_Monitor (devc, devc->monitor[0], 0);
+	devc->m_DACVolume[2] = 0x6f; /* DFS=quad-speed */
+
+  OUTB (devc->osdev, 0x80, devc->mt_base + 0x05);   /* RESET */
+  OUTB (devc->osdev, 0x00, devc->mt_base + 0x05);
+
+    /* Restore ak4358 regs and set DFS */
+  for (i = 0; i <= 0x0c; i++)
+    i2c_write (devc, AK4358_ADDRESS, i, devc->m_DACVolume[i]);
+    /* Restore ak4114 */
+  ak4114_init (devc);
 }
 
 static int
@@ -438,25 +421,7 @@ julia_mixer_init (envy24ht_devc * devc, int dev, int g)
 static void
 julia_card_init (envy24ht_devc * devc)
 {
-
-  cmn_err (CE_CONT, "julia_card_init()\n");
-
-  /*
-   * AK4114 S/PDIF interface initialization
-   */
-  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0f);
-  i2c_write (devc, AK4114_ADDRESS, 0x01, 0x70);
-  i2c_write (devc, AK4114_ADDRESS, 0x02, 0x80);
-  i2c_write (devc, AK4114_ADDRESS, 0x03, 0x49);
-  i2c_write (devc, AK4114_ADDRESS, 0x04, 0x00);
-  i2c_write (devc, AK4114_ADDRESS, 0x05, 0x00);
-
-  i2c_write (devc, AK4114_ADDRESS, 0x0d, 0x41);
-  i2c_write (devc, AK4114_ADDRESS, 0x0e, 0x02);
-  i2c_write (devc, AK4114_ADDRESS, 0x0f, 0x2c);
-  i2c_write (devc, AK4114_ADDRESS, 0x10, 0x00);
-  i2c_write (devc, AK4114_ADDRESS, 0x11, 0x00);
-
+  ak4114_init (devc);
 /*
  * AK4358 DAC initialization
  */
@@ -481,14 +446,7 @@ julia_card_init (envy24ht_devc * devc)
   i2c_write (devc, AK4358_ADDRESS, 0xF, 0x00);
   i2c_write (devc, AK4358_ADDRESS, 2, 0x4F);
 
-  GPIOWrite (devc, 8, 0);
-  GPIOWrite (devc, 9, 0);
-  GPIOWrite (devc, 10, 0);
-
-  julia_Monitor (devc, 0, 0);
-  julia_Monitor (devc, 0, 1);
-  julia_Monitor (devc, 0, 2);
-  julia_Monitor (devc, 0, 3);
+  julia_Monitor (devc, 0, 0); /* Unmute */
 }
 
 envy24ht_auxdrv_t envy24ht_julia_auxdrv = {
