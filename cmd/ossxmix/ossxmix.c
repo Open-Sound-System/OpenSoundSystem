@@ -301,7 +301,7 @@ load_enum_values (char *extname, oss_mixext * rec)
 	if (rec->enum_present[i / 8] & (1 << (i % 8)))
 	  {
 	    p = ei.strings + ei.strindex[i];
-	    list = g_list_append (list, p);
+	    list = g_list_append (list, strdup (p));
 	  }
 
       return list;
@@ -313,7 +313,7 @@ load_enum_values (char *extname, oss_mixext * rec)
   for (i = 0; i < rec->maxvalue; i++)
     if (rec->enum_present[i / 8] & (1 << (i % 8)))
       {
-	list = g_list_append (list, showenum (rec, i));
+	list = g_list_append (list, strdup (showenum (rec, i)));
       }
 
   return list;
@@ -846,8 +846,8 @@ load_devinfo (int dev)
 	fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
       exit (-1);
     }
-  extrec[dev] = ossxmix_calloc (n, sizeof (oss_mixext));
-  extnames[dev] = ossxmix_calloc (n, sizeof (char *));
+  extrec[dev] = ossxmix_calloc (n+1, sizeof (oss_mixext));
+  extnames[dev] = ossxmix_calloc (n+1, sizeof (char *));
 
   for (i = 0; i < n; i++)
     {
@@ -1464,11 +1464,11 @@ reload_gui (void)
   fully_started = 0;
   FREECTL (control_list); FREECTL (peak_list);
   FREECTL (check_list); FREECTL (value_poll_list);
-  for (i=0; extrec[i] != NULL; i++) {
+  for (i=0; (extrec[i] != NULL) && (i < MAX_DEVS); i++) {
     for (j=0; extnames[i][j] != NULL; j++)
       if (*(extrec[i][j].id) != '\0') free(extnames[i][j]);
-    free(extnames[i]);
-    free(extrec[i]);
+    free(extnames[i]); extnames[i] = NULL;
+    free(extrec[i]); extrec[i] = NULL;
   }
 
   gtk_widget_destroy (scrolledwin);
