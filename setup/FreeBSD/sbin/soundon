@@ -42,7 +42,7 @@ then
 	exit 4
 fi
 
-for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/ .*//'`
+for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'`
 do
 	if ! /sbin/kldload $OSSLIBDIR/modules/$n.ko
 	then
