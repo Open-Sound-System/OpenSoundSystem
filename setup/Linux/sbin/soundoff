@@ -31,7 +31,7 @@ then
   do
     if test -f /proc/$n/cmdline
     then
-      echo $n `cat /proc/$n/cmdline`
+      echo $n `cat /proc/$n/cmdline | sed 's/\x00/ /'`
     else
       echo $n Unknown
     fi
@@ -42,10 +42,6 @@ then
   exit 2
 fi
 
-# Some video drivers depend on osscore (soundcore) and need to be removed
-# before OSS can be unloaded.
-#VIDEODRIVERS="tvmixer saa7134-empress saa7134-dvb saa7134"
-
 # Save mixer settings automatically if requested
 if test -f $OSSLIBDIR/etc/userdefs && grep -q "autosave_mixer yes" $OSSLIBDIR/etc/userdefs
 then
@@ -54,19 +50,15 @@ fi
 
 for i in 1 2 3
 do
-  for n in $VIDEODRIVERS `cat $OSSLIBDIR/etc/installed_drivers | sed 's/ .*//'`
+  for n in `egrep "^osscore" /proc/modules 2>/dev/null | cut -d ' ' -f 4 | sed 's/,/ /g'` `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'` osscore
   do
     /sbin/modprobe -r $n > /dev/null 2>&1
   done
 done
 
-rmmod cuckoo > /dev/null 2>&1
-rmmod cuckoo_pcm > /dev/null 2>&1
-rmmod cuckoo_mixer > /dev/null 2>&1
-
 #modprobe -r snd-pcm > /dev/null 2>&1
 
-for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/ .*//'` osscore
+for n in `egrep "^osscore" /proc/modules 2>/dev/null | cut -d ' ' -f 4 | sed 's/,/ /g'` `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'` osscore
 do
     /sbin/modprobe -r $n
 done
