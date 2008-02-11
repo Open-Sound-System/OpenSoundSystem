@@ -1,1 +1,1 @@
-../../kernel/framework/include/midiparser.h
+#include "../../kernel/framework/include/midiparser.h"

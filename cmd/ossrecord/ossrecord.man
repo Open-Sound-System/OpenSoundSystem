@@ -1,12 +1,17 @@
 NAME
 ossrecord - Open Sound System recording applet.
 
+USAGE
+ossrecord [options] filename
+
 DESCRIPTION
 The ossrecord applet records audio in Microsoft RIFF (wav) format. It
 will record from any input that's currently set as the recording source
 by the ossxmix/ossmix mixer applets. With the -l option, you also get
 a level meter that will display VU levels in a character mode.
 
+The filename parameter is name of the (.wav) file to be produced. Output can be
+sent to stdot by giving - as the file name.
 
 OPTIONS
 -s<rate> 	Select the playback rate for raw PCM audio (eg -s48000)

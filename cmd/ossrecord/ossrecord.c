@@ -567,7 +567,11 @@ do_record (char *dspdev, char *wave_name)
 	perror ("SNDCTL_DSP_SETRECVOL");
     }
 
-  wave_fp = fopen (wave_name, "wb");
+  if (strcmp(wave_name, "-") == 0)
+     wave_fp = fdopen (1, "wb");
+  else
+     wave_fp = fopen (wave_name, "wb");
+
   if (wave_fp == NULL)
     {
       perror (wave_name);
