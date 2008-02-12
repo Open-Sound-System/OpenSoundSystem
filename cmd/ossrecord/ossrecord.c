@@ -63,6 +63,7 @@ FILE *wave_fp;
 int x = -10, ii = 0, time1 = 0;
 int verbose = 0;
 int level_meters = 0, level = 0;
+int amplification=1;
 int reclevel = 0;
 int nfiles = 1;
 char *program;
@@ -503,7 +504,7 @@ usage (void)
 {
   fprintf
     (stderr,
-     "Usage: %s [-s<speed> -b<bits{8|16|32}> (-c<channels>|-S) -v -l -m<nfiles> -d<device> -i<recsrc>|?] filename.wav\n",
+     "Usage: %s [-s<speed> -b<bits{8|16|32}> (-c<channels>|-S) -v -l -m<nfiles> -d<device> -i<recsrc>|?] -a<amplification>filename.wav\n",
      program);
   exit (0);
 }
@@ -550,6 +551,34 @@ find_devname (char *devname, char *num)
   strcpy (devname, ai.devnode);
 
   close (mixer_fd);
+}
+
+static void
+amplify(unsigned char *b, int count)
+{
+	switch (bits)
+	{
+	case 16:
+		{
+			int i, l=count/2;
+			short *s=(short *)b;
+
+			for (i=0;i<l;i++)
+			    s[i] *= amplification;
+		}
+		break;
+
+	case 32:
+		{
+			int i, l=count/4;
+			int *s=(int *)b;
+
+			for (i=0;i<l;i++)
+			    s[i] *= amplification;
+		}
+		break;
+
+	}
 }
 
 int
@@ -636,6 +665,10 @@ do_record (char *dspdev, char *wave_name)
 	  end ();
 	  return 0;
 	}
+
+      if (amplification != 1)
+     	 amplify (audiobuf, 512);
+
       fwrite (audiobuf, 1, l, wave_fp);
       if (level_meters)
 	update_level (audiobuf, l);
@@ -676,9 +709,13 @@ main (int argc, char *argv[])
   if (argc < 2)
     usage ();
 
-  while ((c = getopt (argc, argv, "SMRwvlhs:b:d:c:t:L:i:m:r:")) != EOF)
+  while ((c = getopt (argc, argv, "SMRwvlhs:b:d:c:t:L:i:m:r:a:")) != EOF)
     switch (c)
       {
+      case 'a':
+	amplification = atoi (optarg);
+	if (amplification==0)
+	   usage ();
       case 's':
 	speed = atoi (optarg);
 	if (speed == 0)

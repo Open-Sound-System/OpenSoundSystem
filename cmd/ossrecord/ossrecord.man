@@ -49,6 +49,9 @@ OPTIONS
 		option is used the script will run in parallel while recording
 		the next file. See the COMMAND SCRIPT section (below) for more
 		info.
+-a<amplification>
+		Multiply recorded samples by integer given as argument. Only
+		supported in 16 and 32 bit modes.
 -h		Display usage instructions.
 
 FILES
