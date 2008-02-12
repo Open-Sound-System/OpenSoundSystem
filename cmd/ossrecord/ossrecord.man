@@ -67,9 +67,22 @@ COMMAND SCRIPT
 
 WAVENAME=$1
 
-MP3NAME=$1.mp3
+M1P3NAME=$1.mp3
 
 lame -m s -h --preset studio $WAVENAME $MP3NAME
+
+exit 0
+
+Another example script for ossrecord is a simple CGI script for live MP3
+streaming (from /dev/dsp).
+
+#!/bin/sh
+
+echo Content-Type: audio/mp3
+
+echo
+
+ossrecord -S -b16 -s48 - | lame -m j - -
 
 exit 0
 

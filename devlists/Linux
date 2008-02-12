@@ -40,16 +40,6 @@ digi96	pci10ee,3fc1	RME Digi96/8
 digi96	pci10ee,3fc2	RME Digi96/8 PRO
 digi96	pci10ee,3fc3	RME Digi96/8 PAD
 emu10k1x	pci1102,6	Creative Sound Blaster 5.1 (Dell)
-envy24ht	pci1412,1724	Generic ENVY24HT based sound card
-envy24ht	pcs1412,3630	M Audio Revolution 7.1
-envy24ht	pcs1412,3631	M Audio Revolution 5.1
-envy24ht	pcs1412,6321	M Audio Audiophile 192
-envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
-envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
-envy24ht	pcs153b,1149	Terratec PHASE 28
-envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
-envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
-envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 envy24	pci1412,1712	Generic ENVY24 based device
 envy24	pcs1412,d630	M Audio Delta 1010
 envy24	pcs1412,d631	M Audio Delta DiO 2496
@@ -63,6 +53,16 @@ envy24	pcs153b,1115	Terratec EWS88MT
 envy24	pcs153b,112b	Terratec EWS88D
 envy24	pcs153b,1130	Terratec EWX 24/96
 envy24	pcs153b,1138	Terratec DMX 6Fire
+envy24ht	pci1412,1724	Generic ENVY24HT based sound card
+envy24ht	pcs1412,3630	M Audio Revolution 7.1
+envy24ht	pcs1412,3631	M Audio Revolution 5.1
+envy24ht	pcs1412,6321	M Audio Audiophile 192
+envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
+envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
+envy24ht	pcs153b,1149	Terratec PHASE 28
+envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
+envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
+envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 fm801	pci1319,801	ForteMedia FM 801
 fm801	pcs1489,7008	Genius Sound Maker Live
 geode	pci100b,503	National Semiconductor Geode SC1200
@@ -84,6 +84,7 @@ hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 hdaudio	pci1106,3288	VIA High Definition Audio
 hdaudio	pci1039,7502	SiS High Definition Audio
 hdaudio	pci10b9,5461	ULI High Definition Audio
+hdsp	pci10ee,3fc5	RME Hammerfall (not supported yet)
 ich	pci1022,7445	AMD 786
 ich	pci1022,746d	AMD 8111 
 ich	pci1039,7012	SiS 7012 
@@ -106,6 +107,13 @@ ich	pci8086,266e	Intel AC97 (ICH6)
 ich	pci8086,27de	Intel AC97 (ICH7)
 ich	pci8086,7195	Intel 440MX (440MX)
 imux	IMUX	OSS Input Multiplexer 
+lynxone	pci10b5,1142	LynxONE Studio Interface
+lynxtwo	pci1621,20	LynxTWO-A Studio Interface
+lynxtwo	pci1621,21	LynxTWO-B Studio Interface
+lynxtwo	pci1621,22	LynxTWO-C Studio Interface
+lynxtwo	pci1621,23	Lynx-L22 Studio Interface
+lynxtwo	pci1621,24	Lynx AES16 Studio Interface
+lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 maestro	pci125d,1968	ESS Maestro-2 
 maestro	pci125d,1978	ESS Maestro-2E 
 maestro	pci1285,100	ESS Maestro-1 
@@ -138,6 +146,8 @@ ossusb	usb763,1015	M Audio Oygen8 MIDI keyboard
 ossusb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
 ossusb	usb499,1009	Yamaha UX16 USB MIDI interface (BETA)
 ossusb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
+riptide	pci127a,4310	Conexant Riptide 
+riptide	pci127a,4320	Conexant Riptide
 s3vibes	pci5333,ca00	S3 Sonic Vibes
 sblive	pci1102,2	Creative Sound Blaster Live 
 sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
@@ -147,8 +157,10 @@ sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
 sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
 sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
 sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
+sbxfi	pci1102,5	Creative SB X-Fi (NOT SUPPORTED YET)
 softoss	SOFTOSS	OSS Virtual mixer/synth driver
 solo	pci125d,1969	ESS Solo-1 
+sonorus	pci1057,1801	Sonorus STUDI/O
 trident	pci1023,2000	Trident 4DWave-DX
 trident	pci1023,2001	Trident 4DWave-NX
 trident	pci1023,2002	Trident 4DWave-CX
