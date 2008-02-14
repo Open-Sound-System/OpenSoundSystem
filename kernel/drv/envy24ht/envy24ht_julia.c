@@ -179,11 +179,7 @@ ak4114_init (envy24ht_devc * devc)
   /*
    * AK4114 S/PDIF interface initialization
    */
-  if ((devc->m_SPDIFConfig != 1) || (devc->speed > 96000))
-    i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0f);
-  else
-    i2c_write (devc, AK4114_ADDRESS, 0x00, 0x03);
-  
+  i2c_write (devc, AK4114_ADDRESS, 0x00, 0x0f);
   i2c_write (devc, AK4114_ADDRESS, 0x01, 0x70);
   i2c_write (devc, AK4114_ADDRESS, 0x02, 0x80);
   i2c_write (devc, AK4114_ADDRESS, 0x03, 0x49);
@@ -195,7 +191,6 @@ ak4114_init (envy24ht_devc * devc)
   i2c_write (devc, AK4114_ADDRESS, 0x0f, 0x2c);
   i2c_write (devc, AK4114_ADDRESS, 0x10, 0x00);
   i2c_write (devc, AK4114_ADDRESS, 0x11, 0x00);
-  devc->m_SPDIFConfig = 1;
 }
 
 static void
@@ -217,7 +212,6 @@ julia_set_rate (envy24ht_devc * devc)
     }
 
   i2c_write (devc, AK4358_ADDRESS, 0, 0x06); /* reset ak4358 */
-  i2c_write (devc, AK4114_ADDRESS, 0, 0x01); /* reset ak4114 */
 
   if (devc->speed <= 48000)
 	devc->m_DACVolume[2] = 0x4f; /* DFS=normal-speed */	
@@ -228,6 +222,7 @@ julia_set_rate (envy24ht_devc * devc)
 
   OUTB (devc->osdev, 0x80, devc->mt_base + 0x05);   /* RESET */
   OUTB (devc->osdev, 0x00, devc->mt_base + 0x05);
+  OUTB (devc->osdev, 0x10, devc->mt_base + 0x01);
 
     /* Restore ak4358 regs and set DFS */
   for (i = 0; i <= 0x0c; i++)

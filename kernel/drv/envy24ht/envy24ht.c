@@ -782,6 +782,9 @@ setup_sample_rate (envy24ht_devc * devc)
     {
       oss_spdif_setrate (&devc->spdc, devc->speed);
 
+      if (devc->model_data->svid == SSID_JULIA)
+	goto JULIA;
+
       if (devc->syncsource != 0)	/* External sync */
 	bits |= 0x10;
 
@@ -795,7 +798,7 @@ setup_sample_rate (envy24ht_devc * devc)
 	}
 
       OUTB (devc->osdev, bits & 0x0f, devc->mt_base + 0x01);	/* Sampling rate */
-
+JULIA:
       if (devc->auxdrv->set_rate)
 	devc->auxdrv->set_rate (devc);
     }
@@ -1011,9 +1014,9 @@ envy24pt_init (envy24ht_devc * devc)
 static void
 julia_eeprom_init (envy24ht_devc * devc)
 {
-  OUTB (devc->osdev, 0x20, devc->ccs_base + 0x04);	/* System configuration */
+  OUTB (devc->osdev, 0x39, devc->ccs_base + 0x04);	/* System configuration */
   OUTB (devc->osdev, 0x80, devc->ccs_base + 0x05);	/* AC-link configuration */
-  OUTB (devc->osdev, 0xf8, devc->ccs_base + 0x06);	/* I2S configuration */
+  OUTB (devc->osdev, 0x78, devc->ccs_base + 0x06);	/* I2S configuration */
   OUTB (devc->osdev, 0xc3, devc->ccs_base + 0x07);	/* S/PDIF configuration */
 
   OUTW (devc->osdev, 0xffff, devc->ccs_base + 0x18);	/* GPIO direction */

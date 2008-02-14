@@ -177,7 +177,7 @@ typedef struct
   int m_SPDIFSource;		/* Aureon */
   int m_ADCIndex;		/* Aureon */
   int m_f1724SPDIF;		/* Aureon */
-  int m_SPDIFConfig;		/* Aureon & Juli@ */
+  int m_SPDIFConfig;		/* Aureon */
   int m_Frontjack;		/* Aureon */
   unsigned char m_fDACMute[12];	/* Aureon */
   unsigned char m_DACVolume[12];	/* Aureon & Juli@ */
