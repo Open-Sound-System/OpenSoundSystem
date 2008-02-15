@@ -1162,6 +1162,36 @@ ac97_mixext_ctl (int dev, int ctrl, unsigned int cmd, int value)
 }
 
 static int
+ac97_micboost_ctl (int dev, int ctrl, unsigned int cmd, int value)
+{
+  ac97_devc *devc = mixer_devs[dev]->devc;
+  int tmp;
+
+  if (cmd == SNDCTL_MIX_READ)
+    {
+	return !!devc->micboost;
+    }
+
+  if (cmd == SNDCTL_MIX_WRITE)
+    {
+	value = !!value;
+
+	tmp = codec_read (devc, 0x0e);
+
+	if (value)
+	  devc->micboost = 0x40;
+	else
+	  devc->micboost = 0x00;
+
+	codec_write (devc, 0x0e, (tmp & ~0x40) | devc->micboost);
+
+	return value;
+    }
+
+  return -EINVAL;
+}
+
+static int
 ac97_recselect_ctl (int dev, int ctrl, unsigned int cmd, int value)
 {
   int tmp;
@@ -1197,11 +1227,17 @@ ac97_mixext_init (int dev)
   ac97_devc *devc = mixer_devs[dev]->devc;
   unsigned int mixflags = 0;
 
-  int group, err;
+  int group, err, ctl;
+
+  if ((ctl =
+     mixer_ext_create_control (dev, 0, 0,
+			     ac97_micboost_ctl, MIXT_ONOFF,
+			     "micboost", 2,
+			     MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+     return ctl;
 
   if (ac97_recselect)
     {
-      int ctl;
       if ((group =
 	   mixer_ext_create_group_flags (dev, 0, "AC97_RECSEL",
 					 MIXF_FLAT)) < 0)
