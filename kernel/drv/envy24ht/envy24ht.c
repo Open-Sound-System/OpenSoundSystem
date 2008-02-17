@@ -2323,6 +2323,10 @@ envy24ht_detach (oss_device_t * osdev)
 	devc->mt_base + 0x18);
 
   unload_midi (devc);
+
+  if (devc->auxdrv->card_uninit)
+     devc->auxdrv->card_uninit(devc);
+
   oss_unregister_interrupts (devc->osdev);
 
   MUTEX_CLEANUP (devc->mutex);
