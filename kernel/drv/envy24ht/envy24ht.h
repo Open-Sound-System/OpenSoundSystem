@@ -190,6 +190,7 @@ typedef struct
 
   int mute;
   int reclevel;
+  timeout_id_t timeout_id;	/* Juli@ */
 }
 envy24ht_devc;
 
@@ -203,6 +204,7 @@ struct envy24ht_auxdrv
   int (*private1) (envy24ht_devc * devc, int value);
   int (*audio_ioctl) (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
 		      int *arg);
+  void (*card_uninit) (envy24ht_devc * devc);
 };
 
 struct speed_sel

@@ -863,7 +863,10 @@ envy24ht_set_control (int dev, int ctrl, unsigned int cmd, int value)
       case 2:
 	if (value < 0 || value > 2)
 	  return -EIO;
-	return devc->syncsource = value;
+	devc->syncsource = value;
+	if (devc->model_data->svid == SSID_JULIA)
+	    devc->auxdrv->private1 (devc, value);
+	return devc->syncsource;
 	break;
 
       case 3:

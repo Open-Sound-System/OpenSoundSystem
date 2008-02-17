@@ -13,7 +13,6 @@
 #define AK4358_ADDRESS 0x11
 #define AK4114_ADDRESS 0x10
 
-#if 0
 static unsigned char
 i2c_read (envy24ht_devc * devc, unsigned char addr, unsigned char pos)
 {
@@ -39,7 +38,6 @@ i2c_read (envy24ht_devc * devc, unsigned char addr, unsigned char pos)
 
   return data;
 }
-#endif
 
 static void
 i2c_write (envy24ht_devc * devc, unsigned char addr, unsigned char pos,
@@ -119,20 +117,25 @@ static struct {
     {-1, -1, -1}
 };
 
-#if 0
-static int
-julia_get_spdifin_rate (envy24ht_devc *devc)
+static void
+julia_set_deemph (envy24ht_devc * devc, int mode)
 {
-  int i;
-  int spdifin = i2c_read (devc, AK4114_ADDRESS, 7);
-  
-  for (i = 0; rate_sel[i].rate; i++)
-    if (rate_sel[i].spdifin == spdifin)
-	return rate_sel[i].rate;
-  
-  return 0;
+  int deemph = 0x01; /* OFF */
+
+  if (mode == 0) 
+    i2c_write (devc, AK4358_ADDRESS, 0x03, deemph);
+  else {
+
+    if (devc->speed == 44100)
+      deemph = 0x00;
+    else if (devc->speed == 48000)
+      deemph = 0x02;
+    else if (devc->speed == 32000)
+      deemph = 0x03;
+
+    i2c_write (devc, AK4358_ADDRESS, 0x03, deemph);
+  }
 }
-#endif
 
 static void
 julia_Monitor (envy24ht_devc * devc, int bMonitor, int num)
@@ -168,6 +171,9 @@ julia_Monitor (envy24ht_devc * devc, int bMonitor, int num)
     	    GPIOWrite (devc, 12, 1);
 	else
     	    GPIOWrite (devc, 12, 0);
+	break;
+    case 4:	/* De-emphasis */
+    	julia_set_deemph (devc, bMonitor);
 	break;
     }
   devc->monitor[num] = bMonitor;
@@ -229,6 +235,53 @@ julia_set_rate (envy24ht_devc * devc)
     i2c_write (devc, AK4358_ADDRESS, i, devc->m_DACVolume[i]);
     /* Restore ak4114 */
   ak4114_init (devc);
+  julia_set_deemph (devc, devc->monitor[4]);
+}
+
+static void
+julia_sync_ak4114 (void *arg)
+{
+  envy24ht_devc *devc = arg;
+  int i;
+  int spdifin = i2c_read (devc, AK4114_ADDRESS, 7);
+
+  for (i = 0; rate_sel[i].rate; i++)
+    if (rate_sel[i].spdifin == spdifin)
+     {
+      if (devc->speed != rate_sel[i].rate);
+       {
+        devc->speed = rate_sel[i].rate;
+        mixer_devs[devc->mixer_dev]->modify_counter++;
+        julia_set_rate (devc);
+       }
+      break;
+     }
+  
+  if (devc->syncsource == 1)
+    devc->timeout_id = timeout (julia_sync_ak4114, devc, OSS_HZ);
+}
+
+static int
+julia_set_syncsource (envy24ht_devc * devc, int value)
+{
+  if (value == 1)
+  {
+    GPIOWrite (devc, 4, 0);
+    devc->timeout_id = timeout (julia_sync_ak4114, devc, OSS_HZ);
+  } else {
+    if (devc->timeout_id != 0)
+       untimeout (devc->timeout_id);
+    devc->timeout_id = 0;
+
+    GPIOWrite (devc, 4, 1);
+    
+    if (devc->speed != devc->pending_speed)
+    {
+      devc->speed = devc->pending_speed;
+      mixer_devs[devc->mixer_dev]->modify_counter++;
+      julia_set_rate (devc);
+    }
+  }
 }
 
 static int
@@ -273,7 +326,7 @@ julia_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
   if (cmd == SNDCTL_MIX_READ)
     {
-        if (ctrl < 0 || ctrl > 3)
+        if (ctrl < 0 || ctrl > 4)
 	    return -EINVAL;
     
 	return devc->monitor[ctrl];
@@ -281,7 +334,7 @@ julia_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
   if (cmd == SNDCTL_MIX_WRITE)
     {
-    	if (ctrl < 0 || ctrl > 3)
+    	if (ctrl < 0 || ctrl > 4)
 	    return -EINVAL;
 	
 	value = !!value;
@@ -409,7 +462,15 @@ julia_mixer_init (envy24ht_devc * devc, int dev, int g)
 				       "ENVY24_SPDIFIN", 2,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return err;
-
+  
+  if ((err = mixer_ext_create_control (dev, monitor,
+				       4, julia_set_control,
+		    		       MIXT_ENUM,
+				       "ENVY24_DEEMPH", 2,
+				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+   return err;
+  mixer_ext_set_strings (dev, err, "OFF 50/15usec", 0);
+  
   return 0;
 }
 
@@ -444,12 +505,20 @@ julia_card_init (envy24ht_devc * devc)
   julia_Monitor (devc, 0, 0); /* Unmute */
 }
 
+static void
+julia_card_uninit (envy24ht_devc * devc)
+{
+    if (devc->timeout_id != 0)
+       untimeout (devc->timeout_id);
+}
+
 envy24ht_auxdrv_t envy24ht_julia_auxdrv = {
   julia_card_init,
   julia_mixer_init,
   julia_set_rate,
   NULL,
   NULL,
-  NULL,
-  julia_audio_ioctl
+  julia_set_syncsource,
+  julia_audio_ioctl,
+  julia_card_uninit
 };
