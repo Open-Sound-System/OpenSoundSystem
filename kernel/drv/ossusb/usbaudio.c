@@ -1383,7 +1383,7 @@ ossusb_init_audiostream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
       char name[128];
 
       sprintf (name, "%s-altset", devc->units[portc->terminal_link].name);
-      ossusb_create_altset_control (devc->mixer_dev, inum - 1,
+      ossusb_create_altset_control (devc->mixer_dev, portc_num,
 				    portc->num_settings, name);
     }
 
