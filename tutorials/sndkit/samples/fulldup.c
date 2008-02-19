@@ -54,7 +54,7 @@ open_one_device (char *devname)
     }
 
   ai.dev = -1;
-  if (ioctl (fd, SNDCTL_AUDIOINFO, &ai) != -1)
+  if (ioctl (fd, SNDCTL_ENGINEINFO, &ai) != -1)
     {
       printf ("\nUsing audio engine %d=%s for duplex\n\n", ai.dev, ai.name);
     }
@@ -236,7 +236,7 @@ open_two_devices (char *devname_out, char *devname_in)
     }
 
   ai_out.dev = -1;
-  if (ioctl (fd_out, SNDCTL_AUDIOINFO, &ai_out) != -1)
+  if (ioctl (fd_out, SNDCTL_ENGINEINFO, &ai_out) != -1)
     {
       printf ("\nUsing audio engine %d=%s for output\n", ai_out.dev,
 	      ai_out.name);
@@ -252,7 +252,7 @@ open_two_devices (char *devname_out, char *devname_in)
     }
 
   ai_in.dev = -1;
-  if (ioctl (fd_in, SNDCTL_AUDIOINFO, &ai_in) != -1)
+  if (ioctl (fd_in, SNDCTL_ENGINEINFO, &ai_in) != -1)
     {
       printf ("Using audio engine %d=%s for input\n\n", ai_in.dev,
 	      ai_in.name);

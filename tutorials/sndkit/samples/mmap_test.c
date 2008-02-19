@@ -87,7 +87,7 @@ main (int argc, char *argv[])
     }
 
   ai.dev = -1;
-  if (ioctl (fd, SNDCTL_AUDIOINFO, &ai) != -1)
+  if (ioctl (fd, SNDCTL_ENGINEINFO, &ai) != -1)
     {
       printf ("Using audio device %s (engine %d)\n", ai.name, ai.dev);
     }

@@ -1478,15 +1478,23 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	dev = info->dev;
 
 	if (dev == -1)		/* Request for the current device */
-	  switch (class)
-	    {
-	    case OSS_DEV_DSP:
-	      dev = orig_dev;
-	      break;
-
-	    default:
+	   {
+	      oss_audio_set_error (orig_dev, E_PLAY,
+				   OSSERR (1022,
+					   "SNDCTL_AUDIOINFO called with dev=-1.."),
+				   0);
+	      /*
+	       * Errordesc:
+	       * Applications that try to obtain audio device information about
+	       * the current device should call SNDCTL_ENGINEINFO instead of
+	       * SNDCTL_AUDIOINFO.
+	       *
+	       * Audio file descriptors returned by open(2) are bound
+	       * directly to specific audio engine instead of the
+	       * device file.
+	       */
 	      return -EINVAL;
-	    }
+	  }
 
 	if (dev < 0 || dev >= num_audio_devfiles)
 	  {
@@ -1522,10 +1530,12 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	  switch (class)
 	    {
 	    case OSS_DEV_DSP:
+	    case OSS_DEV_DSP_ENGINE:
 	      dev = orig_dev;
 	      break;
 
 	    default:
+	      cmn_err(CE_WARN, "Unrecognized device class %d for dev %d\n", class, orig_dev);
 	      return -EINVAL;
 	    }
 
