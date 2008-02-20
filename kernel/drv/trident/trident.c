@@ -399,6 +399,12 @@ tridentintr (oss_device_t * osdev)
 		ptr = READW (devc->osdev, CSO + 2);
 		ptr++;
 		ptr *= portc->channels * (portc->bits / 8);
+
+		if (dmapin->bytes_in_use == 0 || dmapin->fragment_size == 0)
+		   {
+			   cmn_err(CE_WARN, "bytes_in_use=%d, fragment_size=%d\n", dmapin->bytes_in_use, dmapin->fragment_size);
+			   continue;
+		   }
 		ptr %= dmapin->bytes_in_use;
 		ptr /= dmapin->fragment_size;
 		i = 0;

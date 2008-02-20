@@ -949,9 +949,11 @@ oss_audio_sync (adev_p adev)
 #ifndef __FreeBSD__
 	  cmn_err (CE_WARN, "Output timed out (sync) on audio engine %d\n",
 		   adev->engine_num);
-	  adev->timeout_count++;
 #endif
+	  adev->timeout_count++;
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
+	  FMA_EREPORT(adev->osdev, DDI_FM_DEVICE_STALL, NULL, NULL, NULL);
+	  FMA_IMPACT(adev->osdev, DDI_SERVICE_LOST);
 	  return;
 	}
     }
@@ -4087,6 +4089,8 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 		   "Input timed out on audio engine %d (count=%lld)\n",
 		   adev->engine_num, dmap->byte_counter);
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
+	  FMA_EREPORT(adev->osdev, DDI_FM_DEVICE_STALL, NULL, NULL, NULL);
+	  FMA_IMPACT(adev->osdev, DDI_SERVICE_LOST);
 	  return -EIO;
 	}			/* Timed out */
 
@@ -4523,6 +4527,8 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 		       adev->engine_num, adev->name, dmap->byte_counter);
 	    }
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
+	  FMA_EREPORT(adev->osdev, DDI_FM_DEVICE_STALL, NULL, NULL, NULL);
+	  FMA_IMPACT(adev->osdev, DDI_SERVICE_LOST);
 	  return -EIO;
 	}			/* Timed out */
       DOWN_STATUS (STS_SLEEP);

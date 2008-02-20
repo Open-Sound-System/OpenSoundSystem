@@ -1361,12 +1361,21 @@ free_all_contig_memory (void)
   contig_list = NULL;
 }
 
+/*ARGSUSED*/
+static int
+oss_fm_error_cb(dev_info_t *dip, ddi_fm_error_t *err, const void *osdev_)
+{
+	pci_ereport_post(dip, err, NULL);
+	return err->fme_status;
+}
+
 oss_device_t *
 osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
 	      const char *handle)
 {
   oss_device_t *osdev = NULL;
   int i;
+  ddi_iblock_cookie_t iblk;
 
   if (handle == NULL)
     handle = nick;
@@ -1457,12 +1466,18 @@ cmn_err(CE_CONT, "Reusing osdev%d\n", i);
     case DRV_PCI:
       if (pci_config_setup (dip, &osdev->pci_config_handle) != DDI_SUCCESS)
 	cmn_err (CE_NOTE, "pci_config_setup() failed\n");
+      osdev->fm_capabilities =	DDI_FM_EREPORT_CAPABLE | DDI_FM_DMACHK_CAPABLE |
+	      			DDI_FM_ERRCB_CAPABLE;
+      ddi_fm_init(dip, &osdev->fm_capabilities, &iblk);
+      ddi_fm_handler_register(dip, oss_fm_error_cb, (void*)osdev);
+      pci_ereport_setup(dip);
       break;
 
     case DRV_VIRTUAL:
     case DRV_VMIX:
     case DRV_STREAMS:
-      /* NOP */
+      osdev->fm_capabilities=DDI_FM_EREPORT_CAPABLE;
+      ddi_fm_init(dip, &osdev->fm_capabilities, &iblk);
       break;
 
     case DRV_USB:
@@ -1533,8 +1548,17 @@ cmn_err(CE_CONT, "Make osdev %s unavailable\n", osdev->nick);
   switch (osdev->dev_type)
     {
     case DRV_PCI:
+      ddi_fm_handler_unregister(osdev->dip);
+      pci_ereport_teardown(osdev->dip);
       pci_config_teardown (&osdev->pci_config_handle);
+      ddi_fm_fini(osdev->dip);
       osdev->pci_config_handle = NULL;
+      break;
+
+    case DRV_VIRTUAL:
+    case DRV_VMIX:
+    case DRV_STREAMS:
+      ddi_fm_fini(osdev->dip);
       break;
     }
 
@@ -1710,6 +1734,12 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   int flags = DDI_DMA_REDZONE | DDI_DMA_CONSISTENT |
     (direction == OPEN_READ) ? DDI_DMA_READ : DDI_DMA_WRITE;
 
+  if (osdev == NULL)
+    {
+      cmn_err (CE_WARN, "oss_alloc_dmabuf: osdev==NULL\n");
+      return -EIO;
+    }
+
   acc_attr = get_acc_attr (osdev);
 
   if (dma_buffsize > 16 && dma_buffsize <= 128)
@@ -1736,18 +1766,15 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   memcpy (&dma_attr, &dma_attr_pci, sizeof (ddi_dma_attr_t));
   dma_attr.dma_attr_addr_hi = maxaddr;
 
+  if (osdev->dev_type == DRV_PCI)
+     dma_attr.dma_attr_flags |= DDI_DMA_FLAGERR;
+
   if (dmap->dmabuf != NULL)
     return 0;			/* Already done */
 
   dmap->dma_parms.state = 0;
   dmap->dma_parms.enabled = 1;
   dmap->dma_parms.ignore = 0;
-
-  if (osdev == NULL)
-    {
-      cmn_err (CE_WARN, "oss_alloc_dmabuf: osdev==NULL\n");
-      return -EIO;
-    }
 
   if (osdev->dip == NULL)
     {

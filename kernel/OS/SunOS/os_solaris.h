@@ -80,6 +80,11 @@ typedef unsigned long long oss_uint64_t;	/* Unsigned 64 bit integer */
 #include <sys/cred_impl.h>
 #endif
 
+#include <sys/ddifm.h>
+#include <sys/fm/protocol.h>
+#include <sys/fm/util.h>
+#include <sys/fm/io/ddi.h>
+
 #undef HZ
 #define OSS_HZ hz
 
@@ -139,6 +144,9 @@ struct _oss_device_t
 
 /* USB fields */
   udi_usb_devc *usbdev;
+
+/* Fault management (FMA) */
+  int fm_capabilities;
 #endif
 };
 
@@ -459,3 +467,21 @@ extern void *oss_memset (void *s, int c, size_t n);
 extern void *oss_memcpy (void *s1, const void *s2, size_t n);
 #define memcpy oss_memcpy
 #endif
+
+/*
+ * Fault management (FMA) support.
+ */
+
+#define FMA_EREPORT(osdev, detail, name, type, value) \
+{ \
+	uint64_t ena; \
+	char buf[FM_MAX_CLASS]; \
+	(void) snprintf (buf, FM_MAX_CLASS, "%s.%s", DDI_FM_DEVICE, detail); \
+	ena = fm_ena_generate(0, FM_ENA_FMT1); \
+	if (osdev->fm_capabilities != 0) \
+	   ddi_fm_ereport_post(osdev->dip, buf, ena, DDI_NOSLEEP, FM_VERSION, DATA_TYPE_UINT8, FM_EREPORT_VERS0, name, type, value, NULL); \
+}
+
+#define FMA_IMPACT(osdev, impact) \
+	if (osdev->fm_capabilities != 0) \
+	   ddi_fm_service_impact(osdev->dip, impact)

@@ -66,6 +66,12 @@ typedef void (*oss_bottomhalf_handler_t) (struct _oss_device_t * osdev);
 #define GET_PROCESS_PID() -1
 #endif
 
+#ifndef FMA_EREPORT
+/* FMA is only available under Solaris */
+#define FMA_EREPORT(osdev, detail, name, type, value)
+#define FMA_IMPACT(osdev, impact)
+#endif
+
 #include "oss_version.h"
 /* #include "aw.h" */
 #define EXCLUDE_GUS_IODETECT

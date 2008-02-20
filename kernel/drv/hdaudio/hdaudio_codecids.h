@@ -34,12 +34,17 @@ S/PDIF */
 /*
  * Meaningful widget naming schemes for some known codecs.
  * The list is terminated by a NULL string. An empty string
- * ("") means that the automatically selected name will be used.
+ * (ES) means that the automatically selected name will be used.
+ *
+ * Define ES as a pointer to a common "" variable to conserve space.
  */
 
+static const char hda_empty_string[] = "";
+#define ES hda_empty_string
+
 static const char *alc880remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */
+  ES,				/* 0 */
+  ES,				/* 1 */
   "front",			/* 2 */
   "rear",			/* 3 */
   "center/LFE",			/* 4 */
@@ -58,36 +63,36 @@ static const char *alc880remap[] = {
   "source-b",			/* 17 */
   "source-c",			/* 18 */
   "source-d",			/* 19 */
-  "",				/* 20 */
-  "",				/* 21 */
-  "",				/* 22 */
-  "",				/* 23 */
-  "",				/* 24 */
-  "",				/* 25 */
-  "",				/* 26 */
-  "",				/* 27 */
-  "",				/* 28 */
-  "",				/* 29 */
-  "",				/* 30 */
-  "",				/* 31 */
-  "",				/* 32 */
-  "",				/* 33 */
-  "",				/* 34 */
-  "",				/* 35 */
-  "",				/* 36 */
+  ES,				/* 20 */
+  ES,				/* 21 */
+  ES,				/* 22 */
+  ES,				/* 23 */
+  ES,				/* 24 */
+  ES,				/* 25 */
+  ES,				/* 26 */
+  ES,				/* 27 */
+  ES,				/* 28 */
+  ES,				/* 29 */
+  ES,				/* 30 */
+  ES,				/* 31 */
+  ES,				/* 32 */
+  ES,				/* 33 */
+  ES,				/* 34 */
+  ES,				/* 35 */
+  ES,				/* 36 */
   "fp-front",			/* 37 */
   NULL
 };
 
 static const char *alc883remap[] = {
-  "",                           /* 0 */
-  "",                           /* 1 */
+  ES,                           /* 0 */
+  ES,                           /* 1 */
   "front",                 	/* 2 */
   "rear",                  	/* 3 */
   "center/LFE",            	/* 4 */
   "side",                  	/* 5 */
   "spdif-out",                	/* 6 */
-  "",                       	/* 7 */
+  ES,                       	/* 7 */
   "rec1",                       /* 8 */
   "rec2",                      	/* 9 */
   "spdif-in",                 	/* a */
@@ -96,35 +101,35 @@ static const char *alc883remap[] = {
   "rear",                       /* d */
   "center/LFE",                 /* e */
   "side",                       /* f */
-  "",                   	/* 10 */
-  "",                   	/* 11 */
-  "",                   	/* 12 */
-  "",                   	/* 13 */
-  "",                           /* 14 */
-  "",                           /* 15 */
-  "",                           /* 16 */
-  "",                           /* 17 */
-  "",                       	/* 18 */
-  "",                   	/* 19 */
-  "",                   	/* 1a */
-  "",                   	/* 1b */
-  "",                         	/* 1c */
-  "",                       	/* 1d */
-  "",                  		/* 1e */
-  "",                   	/* 1f */
-  "",                           /* 20 */
-  "",                           /* 21 */
-  "",                           /* 22 */
-  "",                           /* 23 */
-  "",                           /* 24 */
+  ES,                   	/* 10 */
+  ES,                   	/* 11 */
+  ES,                   	/* 12 */
+  ES,                   	/* 13 */
+  ES,                           /* 14 */
+  ES,                           /* 15 */
+  ES,                           /* 16 */
+  ES,                           /* 17 */
+  ES,                       	/* 18 */
+  ES,                   	/* 19 */
+  ES,                   	/* 1a */
+  ES,                   	/* 1b */
+  ES,                         	/* 1c */
+  ES,                       	/* 1d */
+  ES,                  		/* 1e */
+  ES,                   	/* 1f */
+  ES,                           /* 20 */
+  ES,                           /* 21 */
+  ES,                           /* 22 */
+  ES,                           /* 23 */
+  ES,                           /* 24 */
   "pcm4",                       /* 25 */
   "pcm4",                       /* 26 */
   NULL
 };
 
 static const char *alc260remap[] = {
-  "",				/* 0x00 */
-  "",				/* 0x01 */
+  ES,				/* 0x00 */
+  ES,				/* 0x01 */
   "front",			/* 0x02 */
   "spdif-out",			/* 0x03 */
   "rec1",			/* 0x04 */
@@ -134,18 +139,18 @@ static const char *alc260remap[] = {
   "speaker-mix",		/* 0x08 */
   "headphone-mix",		/* 0x09 */
   "mono-mix",			/* 0x0a */
-  "",				/* 0x0b */
-  "",				/* 0x0c */
-  "",				/* 0x0d */
-  "",				/* 0x0e */
+  ES,				/* 0x0b */
+  ES,				/* 0x0c */
+  ES,				/* 0x0d */
+  ES,				/* 0x0e */
   "speaker",			/* 0x0f */
   "headphone",			/* 0x10 */
   "mono",			/* 0x11 */
-  "",				/* 0x12 */
-  "",				/* 0x13 */
-  "",				/* 0x14 */
-  "",				/* 0x15 */
-  "",				/* 0x16 */
+  ES,				/* 0x12 */
+  ES,				/* 0x13 */
+  ES,				/* 0x14 */
+  ES,				/* 0x15 */
+  ES,				/* 0x16 */
   "beep",			/* 0x17 */
   "spdif-out",			/* 0x18 */
   "spdif-in",			/* 0x19 */
@@ -153,35 +158,35 @@ static const char *alc260remap[] = {
 };
 
 static const char *alc262remap[] = {
-  "",                           /* 0x00 */
-  "",                           /* 0x01 */
+  ES,                           /* 0x00 */
+  ES,                           /* 0x01 */
   "speaker",               	/* 0x02 */
   "headphone",             	/* 0x03 */
-  "",                       	/* 0x04 */
-  "",                       	/* 0x05 */
+  ES,                       	/* 0x04 */
+  ES,                       	/* 0x05 */
   "spdif-out",                  /* 0x06 */
   "rec1",                       /* 0x07 */
   "rec2",                       /* 0x08 */
   "rec3",                       /* 0x09 */
   "spdif-in",                   /* 0x0a */
   "mix",                        /* 0x0b */
-  "",                           /* 0x0c */
-  "",                           /* 0x0d */
-  "",                           /* 0x0e */
-  "",                           /* 0x0f */
-  "",                           /* 0x10 */
+  ES,                           /* 0x0c */
+  ES,                           /* 0x0d */
+  ES,                           /* 0x0e */
+  ES,                           /* 0x0f */
+  ES,                           /* 0x10 */
   "mono",                       /* 0x11 */
   "dmic",                       /* 0x12 */
-  "",                           /* 0x13 */
+  ES,                           /* 0x13 */
   "line-out",                   /* 0x14 */
   "headphone",                  /* 0x15 */
   "mono",                       /* 0x16 */
   "beep",                       /* 0x17 */
-  "",                       	/* 0x18 */
-  "",                       	/* 0x19 */
-  "",                   	/* 0x1a */
-  "",                   	/* 0x1b */
-  "",                         	/* 0x1c */
+  ES,                       	/* 0x18 */
+  ES,                       	/* 0x19 */
+  ES,                   	/* 0x1a */
+  ES,                   	/* 0x1b */
+  ES,                         	/* 0x1c */
   "beep",                       /* 0x1d */
   "spdif-out",                  /* 0x1e */
   "spdif-in",                   /* 0x1f */
@@ -189,66 +194,66 @@ static const char *alc262remap[] = {
 };
 
 static const char *alc662remap[] = {
-  "",                           /* 0x00 */
-  "",                           /* 0x01 */
+  ES,                           /* 0x00 */
+  ES,                           /* 0x01 */
   "front",                 	/* 0x02 */
   "rear",                 	/* 0x03 */
   "center/LFE",            	/* 0x04 */
-  "",            		/* 0x05 */
+  ES,            		/* 0x05 */
   "spdif-out",                  /* 0x06 */
   "spdout",                     /* 0x07 */
   "rec1",                       /* 0x08 */
   "rec2",                      	/* 0x09 */
-  "",                      	/* 0x0a */
+  ES,                      	/* 0x0a */
   "mix",                        /* 0x0b */
   "front",                      /* 0x0c */
   "rear",                       /* 0x0d */
   "c/lfe",                      /* 0x0e */
-  "",                           /* 0x0f */
-  "",                           /* 0x10 */
-  "",                           /* 0x11 */
-  "",                           /* 0x12 */
-  "",                      	/* 0x13 */
-  "",                    	/* 0x14 */
-  "",                     	/* 0x15 */
-  "",                   	/* 0x16 */
-  "",                    	/* 0x17 */
-  "",                    	/* 0x18 */
-  "",                    	/* 0x19 */
-  "",                  		/* 0x1a */
-  "",                   	/* 0x1b */
-  "",                   	/* 0x1c */
-  "",                      	/* 0x1d */
-  "",                  		/* 0x1e */
-  "",                           /* 0x1f */
-  "",                           /* 0x20 */
-  "",                           /* 0x21 */
-  "",                           /* 0x22 */
-  "",                   	/* 0x23 */
+  ES,                           /* 0x0f */
+  ES,                           /* 0x10 */
+  ES,                           /* 0x11 */
+  ES,                           /* 0x12 */
+  ES,                      	/* 0x13 */
+  ES,                    	/* 0x14 */
+  ES,                     	/* 0x15 */
+  ES,                   	/* 0x16 */
+  ES,                    	/* 0x17 */
+  ES,                    	/* 0x18 */
+  ES,                    	/* 0x19 */
+  ES,                  		/* 0x1a */
+  ES,                   	/* 0x1b */
+  ES,                   	/* 0x1c */
+  ES,                      	/* 0x1d */
+  ES,                  		/* 0x1e */
+  ES,                           /* 0x1f */
+  ES,                           /* 0x20 */
+  ES,                           /* 0x21 */
+  ES,                           /* 0x22 */
+  ES,                   	/* 0x23 */
   NULL
 };
 
 static const char *alc861remap[] = {
-  "",				/* 0x00 */
-  "",				/* 0x01 */
-  "",				/* 0x02 */
+  ES,				/* 0x00 */
+  ES,				/* 0x01 */
+  ES,				/* 0x02 */
   "front",			/* 0x03 */
   "side",			/* 0x04 */
   "center/LFE",			/* 0x05 */
   "rear",			/* 0x06 */
   "spdout",			/* 0x07 */
   "rec",			/* 0x08 */
-  "",				/* 0x09 */
-  "",				/* 0x0a */
-  "",				/* 0x0b */
-  "",				/* 0x0c */
-  "",				/* 0x0d */
-  "",				/* 0x0e */
-  "",				/* 0x0f */
-  "",				/* 0x10 */
-  "",				/* 0x11 */
-  "",				/* 0x12 */
-  "",				/* 0x13 */
+  ES,				/* 0x09 */
+  ES,				/* 0x0a */
+  ES,				/* 0x0b */
+  ES,				/* 0x0c */
+  ES,				/* 0x0d */
+  ES,				/* 0x0e */
+  ES,				/* 0x0f */
+  ES,				/* 0x10 */
+  ES,				/* 0x11 */
+  ES,				/* 0x12 */
+  ES,				/* 0x13 */
   "recmix",			/* 0x14 */
   "outmix",			/* 0x15 */
   "frontmix",			/* 0x16 */
@@ -258,63 +263,63 @@ static const char *alc861remap[] = {
   "line2-mix",			/* 0x1a */
   "mic2mix",			/* 0x1b */
   "line1mix",			/* 0x1c */
-  "",				/* 0x1d */
+  ES,				/* 0x1d */
   "vendor",			/* 0x1e */
   "center/LFE",			/* 0x1f */
   "side",			/* 0x20 */
-  "",				/* 0x21 */
-  "",				/* 0x22 */
+  ES,				/* 0x21 */
+  ES,				/* 0x22 */
   "beep",			/* 0x23 */
   NULL
 };
 
 static const char *cmi9880remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */
-  "",				/* 2 */
+  ES,				/* 0 */
+  ES,				/* 1 */
+  ES,				/* 2 */
   "front",			/* 3 */
   "rear",			/* 4 */
   "side",			/* 5 */
   "center/LFE",			/* 6 */
   "spdif-out",			/* 7 */
-  "",				/* 8 */
-  "",				/* 9 */
-  "",				/* 10 */
-  "",				/* 11 */
-  "",				/* 12 */
-  "",				/* 13 */
-  "",				/* 14 */
-  "",				/* 15 */
-  "",				/* 16 */
-  "",				/* 17 */
-  "",				/* 18 */
-  "",				/* 19 */
-  "",				/* 20 */
-  "",				/* 21 */
-  "",				/* 22 */
+  ES,				/* 8 */
+  ES,				/* 9 */
+  ES,				/* 10 */
+  ES,				/* 11 */
+  ES,				/* 12 */
+  ES,				/* 13 */
+  ES,				/* 14 */
+  ES,				/* 15 */
+  ES,				/* 16 */
+  ES,				/* 17 */
+  ES,				/* 18 */
+  ES,				/* 19 */
+  ES,				/* 20 */
+  ES,				/* 21 */
+  ES,				/* 22 */
   "pcbeep",			/* 23 */
-  "",				/* 24 */
-  "",				/* 25 */
-  "",				/* 26 */
-  "",				/* 27 */
-  "",				/* 28 */
-  "",				/* 29 */
-  "",				/* 30 */
-  "",				/* 31 */
+  ES,				/* 24 */
+  ES,				/* 25 */
+  ES,				/* 26 */
+  ES,				/* 27 */
+  ES,				/* 28 */
+  ES,				/* 29 */
+  ES,				/* 30 */
+  ES,				/* 31 */
   NULL
 };
 
 static const char *ad1981remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */
+  ES,				/* 0 */
+  ES,				/* 1 */
   "spdif",			/* 2 */
   "play",			/* 3 */
   "rec",			/* 4 */
-  "",				/* 5 */
-  "",				/* 6 */
-  "",				/* 7 */
-  "",				/* 8 */
-  "",				/* 9 */
+  ES,				/* 5 */
+  ES,				/* 6 */
+  ES,				/* 7 */
+  ES,				/* 8 */
+  ES,				/* 9 */
   "spdif-out",			/* a */
   "mono-sel",			/* b */
   "mic-mix",			/* c */
@@ -327,10 +332,10 @@ static const char *ad1981remap[] = {
   "linein-mixamp",		/* 13 */
   "powerdown",			/* 14 */
   "rec-sel",			/* 15 */
-  "",				/* 16 */
-  "",				/* 17 */
-  "",				/* 18 */
-  "",				/* 19 */
+  ES,				/* 16 */
+  ES,				/* 17 */
+  ES,				/* 18 */
+  ES,				/* 19 */
   "lineout-mixamp",		/* 1a */
   "aux-mixamp",			/* 1b */
   "mic-mixamp",			/* 1c */
@@ -341,16 +346,16 @@ static const char *ad1981remap[] = {
 };
 
 static const char *ad1983remap[] = {
-  "",                           /* 0 */
-  "",                           /* 1 */
+  ES,                           /* 0 */
+  ES,                           /* 1 */
   "spdif",                      /* 2 */
   "play",                       /* 3 */
   "rec",                        /* 4 */
-  "",                   	/* 5 */
-  "",          			/* 6 */
-  "",                  		/* 7 */
-  "",                  		/* 8 */
-  "",                  		/* 9 */
+  ES,                   	/* 5 */
+  ES,          			/* 6 */
+  ES,                  		/* 7 */
+  ES,                  		/* 8 */
+  ES,                  		/* 9 */
   "spdif-out",                  /* a */
   "mono-sel",                	/* b */
   "mic-boost",                  /* c */
@@ -367,8 +372,8 @@ static const char *ad1983remap[] = {
 };
 
 static const char *ad1984remap[] = {
-  "",                           /* 0 */
-  "",                           /* 1 */
+  ES,                           /* 0 */
+  ES,                           /* 1 */
   "spdif",                      /* 2 */
   "headphone",                  /* 3 */
   "front",                 	/* 4 */
@@ -384,19 +389,19 @@ static const char *ad1984remap[] = {
   "mono-sel",                  	/* e */
   "aux-sel",                   	/* f */
   "beep",               	/* 10 */
-  "",               		/* 11 */
-  "",                 		/* 12 */
-  "",              		/* 13 */
-  "",                  		/* 14 */
-  "",                  		/* 15 */
-  "",                  		/* 16 */
-  "",                  		/* 17 */
-  "",                  		/* 18 */
+  ES,               		/* 11 */
+  ES,                 		/* 12 */
+  ES,              		/* 13 */
+  ES,                  		/* 14 */
+  ES,                  		/* 15 */
+  ES,                  		/* 16 */
+  ES,                  		/* 17 */
+  ES,                  		/* 18 */
   "mixer-powerdown",            /* 19 */
   "beep",                  	/* 1a */
   "spdif-out",                  /* 1b */
-  "",                  		/* 1c */
-  "",                  		/* 1d */
+  ES,                  		/* 1c */
+  ES,                  		/* 1d */
   "mono-mix",                  	/* 1e */
   "mono-downmix",               /* 1f */
   "input-mix",                  /* 20 */
@@ -405,13 +410,13 @@ static const char *ad1984remap[] = {
   "dock-sel",                  	/* 23 */
   "dock-mix",                  	/* 24 */
   "dock-micboost",              /* 25 */
-  "",                  		/* 26 */
+  ES,                  		/* 26 */
   NULL
 };
 
 static const char *ad1986remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */
+  ES,				/* 0 */
+  ES,				/* 1 */
   "spdif-out",			/* 2 */
   "front",			/* 3 */
   "rear",			/* 4 */
@@ -436,17 +441,17 @@ static const char *ad1986remap[] = {
   "linein-mix",			/* 17 */
   "beep",			/* 18 */
   "digital-beep",		/* 19 */
-  "",				/* 1a */
-  "",				/* 1b */
-  "",				/* 1c */
-  "",				/* 1d */
-  "",				/* 1e */
-  "",				/* 1f */
-  "",				/* 20 */
-  "",				/* 21 */
-  "",				/* 22 */
-  "",				/* 23 */
-  "",				/* 24 */
+  ES,				/* 1a */
+  ES,				/* 1b */
+  ES,				/* 1c */
+  ES,				/* 1d */
+  ES,				/* 1e */
+  ES,				/* 1f */
+  ES,				/* 20 */
+  ES,				/* 21 */
+  ES,				/* 22 */
+  ES,				/* 23 */
+  ES,				/* 24 */
   "spdif-out",			/* 25 */
   "analog-powerdown",		/* 26 */
   "mic-c/LFE-mix",		/* 27 */
@@ -458,8 +463,8 @@ static const char *ad1986remap[] = {
 };
 
 static const char *ad1988remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */ /* This is both audio-fgr and DAC???? */
+  ES,				/* 0 */
+  ES,				/* 1 */ /* This is both audio-fgr and DAC???? */
   "spdout",			/* 2 */ /* Not used? */
   "headphone",			/* 3 */
   "front",			/* 4 */
@@ -475,14 +480,14 @@ static const char *ad1988remap[] = {
   "rec3-src",			/* e */
   "rec3",			/* f */
   "pcbeep",			/* 10 */
-  "",				/* 11 */
-  "",				/* 12 */
-  "",				/* 13 */
-  "",				/* 14 */
-  "",				/* 15 */
-  "",				/* 16 */
-  "",				/* 17 */
-  "",				/* 18 */
+  ES,				/* 11 */
+  ES,				/* 12 */
+  ES,				/* 13 */
+  ES,				/* 14 */
+  ES,				/* 15 */
+  ES,				/* 16 */
+  ES,				/* 17 */
+  ES,				/* 18 */
   "power-down",			/* 19 */
   "beep",			/* 1a */
   "spdif-out",			/* 1b */
@@ -494,8 +499,8 @@ static const char *ad1988remap[] = {
   "outamp",			/* 21 */
   "headphon-mix",		/* 22 */
   "hp-powerdown",		/* 23 */
-  "",				/* 24 */
-  "",				/* 25 */
+  ES,				/* 24 */
+  ES,				/* 25 */
   "mic-mix",			/* 26 */
   "center/LFE-mix",		/* 27 */
   "side-mix",			/* 28 */
@@ -504,14 +509,14 @@ static const char *ad1988remap[] = {
   "fp-mic-mix",			/* 2b */
   "linein-mix",			/* 2c */
   "mono-mixdown",		/* 2d */
-  "",				/* 2e */
+  ES,				/* 2e */
   "bias-pdown",			/* 2f */
   "fppink-outsel",		/* 30 */
   "blue-outsel",		/* 31 */
   "pink-outsel",		/* 32 */
   "blue-insel",			/* 33 */
   "pink-insel",			/* 34 */
-  "",				/* 35 */
+  ES,				/* 35 */
   "mono-sel",			/* 36 */
   "fpgreen-outsel",		/* 37 */
   "fpgreen-micboost",		/* 38 */
@@ -525,25 +530,25 @@ static const char *ad1988remap[] = {
 
 #if 0
 static const char *stac9200remap[] = {
-  "",				/* 0 */
-  "",				/* 0x01 */
+  ES,				/* 0 */
+  ES,				/* 0x01 */
   "play",			/* 0x02 */
   "rec",			/* 0x03 */
   "spdif-in",			/* 0x04 */
   "spdif-out",			/* 0x05 */
-  "",				/* 0x06 */
+  ES,				/* 0x06 */
   "playmux",			/* 0x07 */
-  "",				/* 0x08 */
-  "",				/* 0x09 */
+  ES,				/* 0x08 */
+  ES,				/* 0x09 */
   "recmux",			/* 0x0a */
   "mainvol",			/* 0x0b */
   "inputmux",			/* 0x0c */
-  "",				/* 0x0d */
-  "",				/* 0x0e */
-  "",				/* 0x0f */
-  "",				/* 0x10 */
-  "",				/* 0x11 */
-  "",				/* 0x12 */
+  ES,				/* 0x0d */
+  ES,				/* 0x0e */
+  ES,				/* 0x0f */
+  ES,				/* 0x10 */
+  ES,				/* 0x11 */
+  ES,				/* 0x12 */
   "mono-mix",			/* 0x13 */
   "beep",			/* 0x14 */
   NULL
@@ -551,22 +556,22 @@ static const char *stac9200remap[] = {
 #endif
 
 static const char *stac920xremap[] = {
-  "",                           /* 0 */
-  "",                           /* 0x01 */
-  "",                 		/* 0x02 */
-  "",            		/* 0x03 */
-  "",                  		/* 0x04 */
-  "",                  		/* 0x05 */
-  "",                  		/* 0x06 */
-  "",                  		/* 0x07 */
-  "",                       	/* 0x08 */
-  "",                       	/* 0x09 */
-  "",                           /* 0x0a */
-  "",                           /* 0x0b */
-  "",                           /* 0x0c */
-  "",                           /* 0x0d */
-  "",                           /* 0x0e */
-  "",                           /* 0x0f */
+  ES,                           /* 0 */
+  ES,                           /* 0x01 */
+  ES,                 		/* 0x02 */
+  ES,            		/* 0x03 */
+  ES,                  		/* 0x04 */
+  ES,                  		/* 0x05 */
+  ES,                  		/* 0x06 */
+  ES,                  		/* 0x07 */
+  ES,                       	/* 0x08 */
+  ES,                       	/* 0x09 */
+  ES,                           /* 0x0a */
+  ES,                           /* 0x0b */
+  ES,                           /* 0x0c */
+  ES,                           /* 0x0d */
+  ES,                           /* 0x0e */
+  ES,                           /* 0x0f */
   "front",                 	/* 0x10 */
   "rear",                  	/* 0x11 */
   "rec1",                       /* 0x12 */
@@ -588,39 +593,39 @@ static const char *stac920xremap[] = {
   "digital-in",                 /* 0x22 */
   "beep",                       /* 0x23 */
   "mastervol",                  /* 0x24 */
-  "",                       	/* 0x25 */
+  ES,                       	/* 0x25 */
   NULL
 };
 
 static const char *stac925xremap[] = {
-  "",                           /* 0 */
-  "",                           /* 0x01 */
+  ES,                           /* 0 */
+  ES,                           /* 0x01 */
   "play",                       /* 0x02 */
   "rec",                        /* 0x03 */
   "spdif-in",                   /* 0x04 */
   "spdif-out",          	/* 0x05 */
   "output-mux",                	/* 0x06 */
-  "",                    	/* 0x07 */
-  "",                   	/* 0x08 */
+  ES,                    	/* 0x07 */
+  ES,                   	/* 0x08 */
   "rec-vol",                   	/* 0x09 */
-  "",                     	/* 0x0a */
-  "",                    	/* 0x0b */
-  "",                   	/* 0x0c */
-  "",                           /* 0x0d */
+  ES,                     	/* 0x0a */
+  ES,                    	/* 0x0b */
+  ES,                   	/* 0x0c */
+  ES,                           /* 0x0d */
   "vol",                   	/* 0x0e */
   "input-mux",                  /* 0x0f */
-  "",                           /* 0x10 */
-  "",                           /* 0x11 */
+  ES,                           /* 0x10 */
+  ES,                           /* 0x11 */
   "mono-mix",                   /* 0x12 */
   "beep",                   	/* 0x13 */
   "rec-mux",                    /* 0x14 */
-  "",                       	/* 0x15 */
+  ES,                       	/* 0x15 */
   NULL
 };
 
 static const char *stac922xremap[] = {
-  "",				/* 0 */
-  "",				/* 0x01 */
+  ES,				/* 0 */
+  ES,				/* 0x01 */
   "front",			/* 0x02 */
   "center/LFE",			/* 0x03 */
   "rear",			/* 0x04 */
@@ -629,14 +634,14 @@ static const char *stac922xremap[] = {
   "rec2",			/* 0x07 */
   "spdif-out",			/* 0x08 */
   "spdif-in",			/* 0x09 */
-  "",				/* 0x0a */
-  "",				/* 0x0b */
-  "",				/* 0x0c */
-  "",				/* 0x0d */
-  "",				/* 0x0e */
-  "",				/* 0x0f */
-  "",				/* 0x10 */
-  "",				/* 0x11 */
+  ES,				/* 0x0a */
+  ES,				/* 0x0b */
+  ES,				/* 0x0c */
+  ES,				/* 0x0d */
+  ES,				/* 0x0e */
+  ES,				/* 0x0f */
+  ES,				/* 0x10 */
+  ES,				/* 0x11 */
   "rec1mux",			/* 0x12 */
   "rec2mux",			/* 0x13 */
   "pcbeep",			/* 0x14 */
@@ -651,8 +656,8 @@ static const char *stac922xremap[] = {
 };
 
 static const char *stac923xremap[] = {
-  "",                           /* 0 */
-  "",                           /* 0x01 */
+  ES,                           /* 0 */
+  ES,                           /* 0x01 */
   "front",                 	/* 0x02 */
   "center/LFE",            	/* 0x03 */
   "rear",                  	/* 0x04 */
@@ -661,14 +666,14 @@ static const char *stac923xremap[] = {
   "rec1",                       /* 0x07 */
   "rec2",                  	/* 0x08 */
   "rec3",                   	/* 0x09 */
-  "",                           /* 0x0a */
-  "",                           /* 0x0b */
-  "",                           /* 0x0c */
-  "",                           /* 0x0d */
-  "",                           /* 0x0e */
-  "",                           /* 0x0f */
-  "",                   	/* 0x10 */
-  "",                   	/* 0x11 */
+  ES,                           /* 0x0a */
+  ES,                           /* 0x0b */
+  ES,                           /* 0x0c */
+  ES,                           /* 0x0d */
+  ES,                           /* 0x0e */
+  ES,                           /* 0x0f */
+  ES,                   	/* 0x10 */
+  ES,                   	/* 0x11 */
   "cd",                    	/* 0x12 */
   "dig-mic1",                   /* 0x13 */
   "dig-mic2",                   /* 0x14 */
@@ -689,118 +694,118 @@ static const char *stac923xremap[] = {
 
 static const char *conexant_modem_remap[] =
 {
-	"",		/* 0x00 */
-	"",		/* 0x01 */
-	"",		/* 0x02 */
-	"",		/* 0x03 */
-	"",		/* 0x04 */
-	"",		/* 0x05 */
-	"",		/* 0x06 */
-	"",		/* 0x07 */
-	"",		/* 0x08 */
-	"",		/* 0x09 */
-	"",		/* 0x0a */
-	"",		/* 0x0b */
-	"",		/* 0x0c */
-	"",		/* 0x0d */
-	"",		/* 0x0e */
-	"",		/* 0x0f */
-	"",		/* 0x10 */
-	"",		/* 0x11 */
-	"",		/* 0x12 */
-	"",		/* 0x13 */
-	"",		/* 0x14 */
-	"",		/* 0x15 */
-	"",		/* 0x16 */
-	"",		/* 0x17 */
-	"",		/* 0x18 */
-	"",		/* 0x19 */
-	"",		/* 0x1a */
-	"",		/* 0x1b */
-	"",		/* 0x1c */
-	"",		/* 0x1d */
-	"",		/* 0x1e */
-	"",		/* 0x1f */
-	"",		/* 0x20 */
-	"",		/* 0x21 */
-	"",		/* 0x22 */
-	"",		/* 0x23 */
-	"",		/* 0x24 */
-	"",		/* 0x25 */
-	"",		/* 0x26 */
-	"",		/* 0x27 */
-	"",		/* 0x28 */
-	"",		/* 0x29 */
-	"",		/* 0x2a */
-	"",		/* 0x2b */
-	"",		/* 0x2c */
-	"",		/* 0x2d */
-	"",		/* 0x2e */
-	"",		/* 0x2f */
-	"",		/* 0x30 */
-	"",		/* 0x31 */
-	"",		/* 0x32 */
-	"",		/* 0x33 */
-	"",		/* 0x34 */
-	"",		/* 0x35 */
-	"",		/* 0x36 */
-	"",		/* 0x37 */
-	"",		/* 0x38 */
-	"",		/* 0x39 */
-	"",		/* 0x3a */
-	"",		/* 0x3b */
-	"",		/* 0x3c */
-	"",		/* 0x3d */
-	"",		/* 0x3e */
-	"",		/* 0x3f */
-	"",		/* 0x40 */
-	"",		/* 0x41 */
-	"",		/* 0x42 */
-	"",		/* 0x43 */
-	"",		/* 0x44 */
-	"",		/* 0x45 */
-	"",		/* 0x46 */
-	"",		/* 0x47 */
-	"",		/* 0x48 */
-	"",		/* 0x49 */
-	"",		/* 0x4a */
-	"",		/* 0x4b */
-	"",		/* 0x4c */
-	"",		/* 0x4d */
-	"",		/* 0x4e */
-	"",		/* 0x4f */
-	"",		/* 0x50 */
-	"",		/* 0x51 */
-	"",		/* 0x52 */
-	"",		/* 0x53 */
-	"",		/* 0x54 */
-	"",		/* 0x55 */
-	"",		/* 0x56 */
-	"",		/* 0x57 */
-	"",		/* 0x58 */
-	"",		/* 0x59 */
-	"",		/* 0x5a */
-	"",		/* 0x5b */
-	"",		/* 0x5c */
-	"",		/* 0x5d */
-	"",		/* 0x5e */
-	"",		/* 0x5f */
-	"",		/* 0x60 */
-	"",		/* 0x61 */
-	"",		/* 0x62 */
-	"",		/* 0x63 */
-	"",		/* 0x64 */
-	"",		/* 0x65 */
-	"",		/* 0x66 */
-	"",		/* 0x67 */
-	"",		/* 0x68 */
-	"",		/* 0x69 */
-	"",		/* 0x6a */
-	"",		/* 0x6b */
-	"",		/* 0x6c */
-	"",		/* 0x6d */
-	"",		/* 0x6e */
-	"",		/* 0x6f */
+	ES,		/* 0x00 */
+	ES,		/* 0x01 */
+	ES,		/* 0x02 */
+	ES,		/* 0x03 */
+	ES,		/* 0x04 */
+	ES,		/* 0x05 */
+	ES,		/* 0x06 */
+	ES,		/* 0x07 */
+	ES,		/* 0x08 */
+	ES,		/* 0x09 */
+	ES,		/* 0x0a */
+	ES,		/* 0x0b */
+	ES,		/* 0x0c */
+	ES,		/* 0x0d */
+	ES,		/* 0x0e */
+	ES,		/* 0x0f */
+	ES,		/* 0x10 */
+	ES,		/* 0x11 */
+	ES,		/* 0x12 */
+	ES,		/* 0x13 */
+	ES,		/* 0x14 */
+	ES,		/* 0x15 */
+	ES,		/* 0x16 */
+	ES,		/* 0x17 */
+	ES,		/* 0x18 */
+	ES,		/* 0x19 */
+	ES,		/* 0x1a */
+	ES,		/* 0x1b */
+	ES,		/* 0x1c */
+	ES,		/* 0x1d */
+	ES,		/* 0x1e */
+	ES,		/* 0x1f */
+	ES,		/* 0x20 */
+	ES,		/* 0x21 */
+	ES,		/* 0x22 */
+	ES,		/* 0x23 */
+	ES,		/* 0x24 */
+	ES,		/* 0x25 */
+	ES,		/* 0x26 */
+	ES,		/* 0x27 */
+	ES,		/* 0x28 */
+	ES,		/* 0x29 */
+	ES,		/* 0x2a */
+	ES,		/* 0x2b */
+	ES,		/* 0x2c */
+	ES,		/* 0x2d */
+	ES,		/* 0x2e */
+	ES,		/* 0x2f */
+	ES,		/* 0x30 */
+	ES,		/* 0x31 */
+	ES,		/* 0x32 */
+	ES,		/* 0x33 */
+	ES,		/* 0x34 */
+	ES,		/* 0x35 */
+	ES,		/* 0x36 */
+	ES,		/* 0x37 */
+	ES,		/* 0x38 */
+	ES,		/* 0x39 */
+	ES,		/* 0x3a */
+	ES,		/* 0x3b */
+	ES,		/* 0x3c */
+	ES,		/* 0x3d */
+	ES,		/* 0x3e */
+	ES,		/* 0x3f */
+	ES,		/* 0x40 */
+	ES,		/* 0x41 */
+	ES,		/* 0x42 */
+	ES,		/* 0x43 */
+	ES,		/* 0x44 */
+	ES,		/* 0x45 */
+	ES,		/* 0x46 */
+	ES,		/* 0x47 */
+	ES,		/* 0x48 */
+	ES,		/* 0x49 */
+	ES,		/* 0x4a */
+	ES,		/* 0x4b */
+	ES,		/* 0x4c */
+	ES,		/* 0x4d */
+	ES,		/* 0x4e */
+	ES,		/* 0x4f */
+	ES,		/* 0x50 */
+	ES,		/* 0x51 */
+	ES,		/* 0x52 */
+	ES,		/* 0x53 */
+	ES,		/* 0x54 */
+	ES,		/* 0x55 */
+	ES,		/* 0x56 */
+	ES,		/* 0x57 */
+	ES,		/* 0x58 */
+	ES,		/* 0x59 */
+	ES,		/* 0x5a */
+	ES,		/* 0x5b */
+	ES,		/* 0x5c */
+	ES,		/* 0x5d */
+	ES,		/* 0x5e */
+	ES,		/* 0x5f */
+	ES,		/* 0x60 */
+	ES,		/* 0x61 */
+	ES,		/* 0x62 */
+	ES,		/* 0x63 */
+	ES,		/* 0x64 */
+	ES,		/* 0x65 */
+	ES,		/* 0x66 */
+	ES,		/* 0x67 */
+	ES,		/* 0x68 */
+	ES,		/* 0x69 */
+	ES,		/* 0x6a */
+	ES,		/* 0x6b */
+	ES,		/* 0x6c */
+	ES,		/* 0x6d */
+	ES,		/* 0x6e */
+	ES,		/* 0x6f */
 	"modem-control",/* 0x70 */ // Vendor defined widget
 	"modem-in",	/* 0x71 */
 	"modem-out",	/* 0x72 */
@@ -858,7 +863,7 @@ static const codec_desc_t codecs[] = {
   {0x83847615, "STAC9229D", VF_NONE, (char **) &stac923xremap },
   {0x83847616, "STAC9228X", VF_NONE, (char **) &stac923xremap },
   {0x83847617, "STAC9228D", VF_NONE, (char **) &stac923xremap },
-  {0x83847618, "STAC9227X", VF_NONE, (char **) &stac923xremap },
+  {0x83847618, "STAC9227X", VF_NONE, (char **) &stac923xremap }, /* Intel D975XBX2 (at least) */
   {0x83847619, "STAC9227D", VF_NONE, (char **) &stac923xremap },
 
   {0x838476a4, "STAC9255", VF_NONE, (char **) &stac925xremap },
@@ -891,8 +896,8 @@ static const codec_desc_t codecs[] = {
 };
 
 static const char *abit_AA8_remap[] = {
-  "",				/* 0 */
-  "",				/* 1 */
+  ES,				/* 0 */
+  ES,				/* 1 */
   "front",			/* 2 */
   "rear",			/* 3 */
   "center/LFE",			/* 4 */
@@ -929,8 +934,8 @@ static const char *abit_AA8_remap[] = {
 };
 
 static const char *vaio_remap[] = {
-	"",		/* 0x00 */
-	"",		/* 0x01 */
+	ES,		/* 0x00 */
+	ES,		/* 0x01 */
 	"headphone",	/* 0x02 */
 	"pcm",		/* 0x03 */ // Unused
 	"pcm",		/* 0x04 */ // Unused
@@ -959,8 +964,8 @@ static const char *vaio_remap[] = {
 
 static const char *alc262_vaio_remap[] =
 {
-        "",             /* 0x00 */
-        "",             /* 0x01 */
+        ES,             /* 0x00 */
+        ES,             /* 0x01 */
         "speaker",              /* 0x02 */
         "headphone",            /* 0x03 */
         "vendor",               /* 0x04 */
@@ -1034,6 +1039,12 @@ static const codec_desc_t subdevices[] = {
   /* 2nd codec (#1) is "Conexant2c06" modem */
   {0x104d2200, "Vaio/HDMI", VF_NONE, (char **) &alc262_vaio_remap, 0, NULL_mixer_init, 0x10ec0262, 0x104d9016}, 
   /****/
+
+  /*
+   * Sony Vaio SZ (SZ650) has two codecs, STAC9872AK and Conexant modem.
+   * Assume the audio codec is identical with Vaio AGN (above).
+   */
+  {0x104d1e00, "Vaio/STAC9872AK", VF_NONE, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d9008},
 
   {0, "Unknown"}
 };

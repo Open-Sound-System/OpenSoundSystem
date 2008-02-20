@@ -23,6 +23,8 @@ fi
 
 NOTIFY=0
 
+mkdir $OSSLIBDIR/logs > /dev/null 2>&1
+
 LOG=$OSSLIBDIR/logs/soundon.log
 echo "Open Sound System starting" `date` > $LOG
 echo "OSS version: " `cat $OSSLIBDIR/version.dat` >> $LOG 2>&1

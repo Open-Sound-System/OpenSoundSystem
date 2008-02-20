@@ -260,6 +260,27 @@ do_corb_write (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 }
 
 static int
+do_corb_write_nomutex (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
+	       unsigned int verb, unsigned int parm)
+{
+  unsigned int wp;
+  unsigned int tmp;
+  oss_native_word flags;
+  hda_devc *devc = (hda_devc *) dc;
+
+  tmp = (cad << 28) | (d << 27) | (nid << 20) | (verb << 8) | (parm & 0xffff);
+  wp = PCI_READB (devc->osdev, devc->azbar + HDA_CORBWP) & 0x00ff;
+
+  wp = (wp + 1) % devc->corbsize;
+
+  devc->corb[wp] = tmp;
+  devc->rirb_empty++;
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_CORBWP, wp);
+
+  return 1;
+}
+
+static int
 do_corb_read (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 	      unsigned int verb, unsigned int parm, unsigned int *upper,
 	      unsigned int *lower)
@@ -268,9 +289,9 @@ do_corb_read (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
   hda_devc *devc = (hda_devc *) dc;
   oss_native_word flags;
 
-  do_corb_write (devc, cad, nid, d, verb, parm);
-
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
+  do_corb_write_nomutex (devc, cad, nid, d, verb, parm);
+
   tmout = CORB_LOOPS;
   while (devc->rirb_empty)
     {
@@ -302,9 +323,9 @@ do_corb_read_poll (void *dc, unsigned int cad, unsigned int nid,
   hda_devc *devc = (hda_devc *) dc;
   oss_native_word flags;
 
-  do_corb_write (devc, cad, nid, d, verb, parm);
-
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
+  do_corb_write_nomutex (devc, cad, nid, d, verb, parm);
+
   tmout = CORB_LOOPS;
   while (devc->rirb_empty)
     {
@@ -1355,7 +1376,7 @@ spdif_mixer_init (int dev)
 static void
 install_outputdevs (hda_devc * devc)
 {
-  int i, j, n, pass, audio_dev;
+  int i, n, pass, audio_dev, output_num=0;
   char tmp_name[64];
   hdaudio_endpointinfo_t *endpoints;
 
@@ -1380,41 +1401,41 @@ install_outputdevs (hda_devc * devc)
  * endpoints and then the digital one(s).
  */
   for (pass = 0; pass < 2; pass++)
-    for (j = 0; j < n; j++)
+    for (i = 0; i < n; i++)
       {
 	adev_p adev;
-	hda_portc *portc = &devc->output_portc[j];
+	hda_portc *portc = &devc->output_portc[i];
 	unsigned int formats = AFMT_S16_LE;
 	int opts = ADEV_AUTOMODE | ADEV_NOINPUT;
 
-	if (i == 0)
+	if (output_num == 0)
 	  portc->max_channels = 8;
 	else
 	  portc->max_channels = 2;
 
 /* Skip endpoints that are not physically connected on the motherboard. */
-	if (endpoints[j].skip)
+	if (endpoints[i].skip)
 	  continue;
 
-	if (n >= MAX_OUTPUTS)
+	if (output_num >= MAX_OUTPUTS)
 	{
-		cmn_err(CE_CONT, "Too many output endpoints. Endpoint %d ignored.\n", j);
+		cmn_err(CE_CONT, "Too many output endpoints. Endpoint %d ignored.\n", i);
 		continue;
 	}
 
 	switch (pass)
 	  {
 	  case 0:		/* Pick analog ones */
-	    if (endpoints[j].is_digital)
+	    if (endpoints[i].is_digital)
 	      continue;
 	    break;
 
 	  case 1:		/* Pick digital one(s) */
-	    if (!endpoints[j].is_digital)
+	    if (!endpoints[i].is_digital)
 	      continue;
 	  }
 
-	if (endpoints[j].is_digital)
+	if (endpoints[i].is_digital)
 	  {
 	    char devname[16];
 	    opts |= ADEV_SPECIAL;
@@ -1422,8 +1443,8 @@ install_outputdevs (hda_devc * devc)
 	    oss_audio_set_devname (devname);
 	  }
 
-	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[j].name);
-	sprintf (tmp_name, "High Definition Audio %s", endpoints[j].name);
+	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
+	sprintf (tmp_name, "HD Audio %s", endpoints[i].name);
 
 	if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 					       devc->osdev,
@@ -1436,7 +1457,7 @@ install_outputdevs (hda_devc * devc)
 	    return;
 	  }
 
-	if (i == 0)
+	if (output_num == 0)
 	  devc->first_dev = audio_dev;
 
 	adev = audio_engines[audio_dev];
@@ -1453,12 +1474,12 @@ install_outputdevs (hda_devc * devc)
 	  adev->dmabuf_alloc_flags |= DMABUF_LARGE | DMABUF_QUIET;
 	adev->min_block = 128;	/* Hardware limitation */
 	adev->min_fragments = 4;	/* Vmix doesn't work without this */
-	portc->num = i;
+	portc->num = output_num;
 	portc->open_mode = 0;
 	portc->audio_enabled = 0;
 	portc->audiodev = audio_dev;
 	portc->port_type = PT_OUTPUT;
-	portc->endpoint = &endpoints[j];
+	portc->endpoint = &endpoints[i];
 	init_adev_caps (devc, adev, portc->endpoint);
 	portc->engine = NULL;
 
@@ -1477,14 +1498,14 @@ install_outputdevs (hda_devc * devc)
 					  DIG_PRO | DIG_CONSUMER)) != 0)
 	      {
 		cmn_err (CE_WARN,
-			 "S/PDIF driver install failed. error %d\n", err);
+			 "S/PDIF driver install failed. Error %d\n", err);
 	      }
 	    else
 	      {
 		hdaudio_mixer_set_initfunc (devc->mixer, spdif_mixer_init);
 	      }
 	  }
-	  i++;
+	  output_num++;
       }
 }
 
