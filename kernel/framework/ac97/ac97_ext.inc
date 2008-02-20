@@ -1192,36 +1192,6 @@ ac97_micboost_ctl (int dev, int ctrl, unsigned int cmd, int value)
 }
 
 static int
-ac97_micboost_ctl (int dev, int ctrl, unsigned int cmd, int value)
-{
-  ac97_devc *devc = mixer_devs[dev]->devc;
-  int tmp;
-
-  if (cmd == SNDCTL_MIX_READ)
-    {
-	return !!devc->micboost;
-    }
-
-  if (cmd == SNDCTL_MIX_WRITE)
-    {
-	value = !!value;
-
-	tmp = codec_read (devc, 0x0e);
-
-	if (value)
-	  devc->micboost = 0x40;
-	else
-	  devc->micboost = 0x00;
-
-	codec_write (devc, 0x0e, (tmp & ~0x40) | devc->micboost);
-
-	return value;
-    }
-
-  return -EINVAL;
-}
-
-static int
 ac97_recselect_ctl (int dev, int ctrl, unsigned int cmd, int value)
 {
   int tmp;
