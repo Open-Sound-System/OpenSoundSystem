@@ -1,7 +1,5 @@
 /*
  * Purpose: Low level routines for the ESI (Egosys) Juli@ card
- *
- * The Juli@ mixer driver is incomplete and doesn't work yet.
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2005. All rights reserved.
 
@@ -203,39 +201,52 @@ static void
 julia_set_rate (envy24ht_devc * devc)
 {
   int i, data;
-  
-  for (i = 0; rate_sel[i].rate; i++)
-    if ((rate_sel[i].rate == devc->speed)||(rate_sel[i].rate == -1)) 
-	break;
-  
-    /* Set rate by GPIO */
-  if (rate_sel[i].rate != -1)
-    {
-	data = INW (devc->osdev, devc->ccs_base + 0x14);
-	data &= ~0x0f;
-	data |= rate_sel[i].clks;
-	OUTW (devc->osdev, data, devc->ccs_base + 0x14);
-    }
-
-  i2c_write (devc, AK4358_ADDRESS, 0, 0x06); /* reset ak4358 */
+  int adc = 0x00;
 
   if (devc->speed <= 48000)
 	devc->m_DACVolume[2] = 0x4f; /* DFS=normal-speed */	
   else if (devc->speed <= 96000)
+    {
+	adc = 0x04;
 	devc->m_DACVolume[2] = 0x5f; /* DFS=double-speed */
+    }
   else
+    {
+	adc = 0x03;
 	devc->m_DACVolume[2] = 0x6f; /* DFS=quad-speed */
+    }
+    
+  data = INW (devc->osdev, devc->ccs_base + 0x14);
+  data &= ~0x70f;
+  data |= adc << 8;
+
+  for (i = 0; rate_sel[i].rate; i++)
+    if (rate_sel[i].rate == devc->speed) 
+	data |= rate_sel[i].clks;
+  
+  OUTW (devc->osdev, data, devc->ccs_base + 0x14);
 
   OUTB (devc->osdev, 0x80, devc->mt_base + 0x05);   /* RESET */
   OUTB (devc->osdev, 0x00, devc->mt_base + 0x05);
-  OUTB (devc->osdev, 0x10, devc->mt_base + 0x01);
+  
+  if (devc->speed == 8000)
+	OUTB (devc->osdev, 0x06, devc->mt_base + 0x01);
+  else if (devc->speed == 9600)
+	OUTB (devc->osdev, 0x03, devc->mt_base + 0x01);
+  else if (devc->speed == 11025)
+	OUTB (devc->osdev, 0x0a, devc->mt_base + 0x01);
+  else if (devc->speed == 12000)
+	OUTB (devc->osdev, 0x02, devc->mt_base + 0x01);
+  else
+	OUTB (devc->osdev, 0x10, devc->mt_base + 0x01);
 
     /* Restore ak4358 regs and set DFS */
   for (i = 0; i <= 0x0c; i++)
     i2c_write (devc, AK4358_ADDRESS, i, devc->m_DACVolume[i]);
     /* Restore ak4114 */
   ak4114_init (devc);
-  julia_set_deemph (devc, devc->monitor[4]);
+  if (devc->monitor[4] == 1)
+    julia_set_deemph (devc, 1);
 }
 
 static void
