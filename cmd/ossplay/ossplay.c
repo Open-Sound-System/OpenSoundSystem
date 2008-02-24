@@ -53,13 +53,34 @@ adpcm_coeff;
 
 int verbose = 0, quiet = 0, fixedspeed = 0;
 int exitstatus = 0;
-char *prog;
 
 int audiofd = 0;
 
 char audio_devname[32] = "/dev/dsp";
 extern void play_mpeg (char *in_name, int fd, unsigned char *hdr, int l);
 static void select_playtgt (char *playtgt);
+
+static off_t
+oss_lseek_stdin(int fd, off_t off, int w)
+{
+  off_t i;
+  ssize_t bytes_read;
+  char buf[BUFSIZ];
+
+  if (off < 0) return -1;
+  if (w == SEEK_END) return -1;
+  if (off == 0) return 0;
+  i = off;
+  while (i > 0)
+  {
+    bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
+    if (bytes_read == -1) return -1;
+    i -= bytes_read;
+  }
+  return off;
+}
+
+static off_t (*oss_lseek)(int fd, off_t o, int w) = lseek;
 
 static int
 le_int (unsigned char *p, int l)
@@ -91,8 +112,8 @@ be_int (unsigned char *p, int l)
   return val;
 }
 
-void
-usage (void)
+static void
+usage (char *prog)
 {
   fprintf (stderr, "Usage: %s [options...] filename...\n", prog);
   fprintf (stderr, "  Options:  -v             Verbose output\n");
@@ -107,7 +128,7 @@ usage (void)
   exit (-1);
 }
 
-void
+static void
 describe_error (void)
 {
   switch (errno)
@@ -388,7 +409,15 @@ play_ms_adpcm_wave (char *filename, int fd, unsigned char *hdr, int l)
 {
   int i, n, dataleft, x;
 
-  adpcm_coeff coeff[32];
+  adpcm_coeff coeff[32] = {
+    {256, 0},
+    {512, -256},
+    {0, 0},
+    {192, 64},
+    {240, 0},
+    {460, -208},
+    {392, -232}
+  };
   static int AdaptionTable[] = { 230, 230, 230, 230, 307, 409, 512, 614,
     768, 614, 512, 409, 307, 230, 230, 230
   };
@@ -398,9 +427,9 @@ play_ms_adpcm_wave (char *filename, int fd, unsigned char *hdr, int l)
   int channels = 1;
   int bits = 8;
   int speed = 11025;
-  int p = 12, max, outp;
-  int nBlockAlign;
-  int wSamplesPerBlock, wNumCoeff;
+  int p = 12, max, outp = 0;
+  int nBlockAlign = 256;
+  int wSamplesPerBlock = 496, wNumCoeff = 7;
   int fmt = -1;
   int nib;
 
@@ -455,7 +484,7 @@ play_ms_adpcm_wave (char *filename, int fd, unsigned char *hdr, int l)
       if (verbose > 3)
 	fprintf (stderr, "DATA chunk. Offs = %d, len = %d\n", p, n);
 
-      if (lseek (fd, p, SEEK_SET) == -1)
+      if (oss_lseek (fd, p, SEEK_SET) == -1)
 	{
 	  perror (filename);
 	  fprintf (stderr, "Can't seek to the data chunk\n");
@@ -631,7 +660,7 @@ play_wave (char *filename, int fd, unsigned char *hdr, int l)
       if (verbose > 3)
 	fprintf (stderr, "DATA chunk. Offs = %d, len = %d\n", p, n);
 
-      if (lseek (fd, p, SEEK_SET) == -1)
+      if (oss_lseek (fd, p, SEEK_SET) == -1)
 	{
 	  perror (filename);
 	  fprintf (stderr, "Can't seek to the data chunk\n");
@@ -781,7 +810,7 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
       return;
     }
 
-  if (lseek (fd, p, SEEK_SET) == -1)
+  if (oss_lseek (fd, p, SEEK_SET) == -1)
     {
       perror (filename);
       fprintf (stderr, "Can't seek to the data chunk\n");
@@ -827,7 +856,7 @@ play_aiff (char *filename, int fd, unsigned char *hdr, int l)
   return;
 
 #if 0
-  if (lseek (fd, p, SEEK_SET) == -1)
+  if (oss_lseek (fd, p, SEEK_SET) == -1)
     {
       perror (filename);
       fprintf (stderr, "Can't seek to the data chunk\n");
@@ -913,7 +942,7 @@ play_8svx (char *filename, int fd, unsigned char *hdr, int l)
 	     filename, 8 /* bits */ , (channels == 1) ? "mono" : "stereo",
 	     speed);
 
-  if (lseek (fd, p, SEEK_SET) == -1)
+  if (oss_lseek (fd, p, SEEK_SET) == -1)
     {
       perror (filename);
       fprintf (stderr, "Can't seek to the data chunk\n");
@@ -936,7 +965,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
   int channels = 1, bits = 8;
   int fmt, tmp;
 
-  int loopcount = 0, loopoffs;
+  int loopcount = 0, loopoffs = 4;
 
   data_offs = le_int (&hdr[0x14], 2);
   vers = le_int (&hdr[0x16], 2);
@@ -953,7 +982,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 
    /*LINTED*/ while (1)
     {
-      lseek (fd, data_offs, SEEK_SET);
+      oss_lseek (fd, data_offs, SEEK_SET);
 
       if (read (fd, buf, 1) != 1)
 	return;
@@ -1116,7 +1145,19 @@ play_file (char *filename)
   unsigned char buf[1024];
   char *suffix;
 
-  if ((fd = open (filename, O_RDONLY, 0)) == -1)
+  if (!strcmp(filename, "-"))
+    {
+      FILE *fp;
+
+      fp = fdopen(0, "rb");
+      fd = fileno(fp);
+      /*
+       * Use emulation if stdin is not seekable (e.g. on Linux).
+       */
+      if (lseek (fd, 0, SEEK_CUR) == -1) oss_lseek = oss_lseek_stdin;
+    }
+  else fd = open (filename, O_RDONLY, 0);
+  if (fd == -1)
     {
       perror (filename);
       exitstatus++;
@@ -1143,7 +1184,7 @@ play_file (char *filename)
       return;
     }
 
-  lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
+  oss_lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
 
 /*
  * Try to detect the file type - First .wav
@@ -1309,7 +1350,7 @@ select_playtgt (char *playtgt)
 
   if (*playtgt == 0 || strcmp (playtgt, "?") == 0)
     {
-      printf ("\nPossible recording sources for the selected device:\n\n");
+      printf ("\nPossible playback targets for the selected device:\n\n");
 
       for (i = 0; i < ei.nvalues; i++)
 	{
@@ -1339,7 +1380,7 @@ select_playtgt (char *playtgt)
     }
 
   fprintf (stderr,
-	   "Unknown playback target name '%s' - use -i? to get the list\n",
+	   "Unknown playback target name '%s' - use -o? to get the list\n",
 	   playtgt);
   exit (-1);
 }
@@ -1347,12 +1388,11 @@ select_playtgt (char *playtgt)
 int
 main (int argc, char *argv[])
 {
-  int i, n, c;
+  char *prog;
+  extern int optind;
+  int i, c;
 
   prog = argv[0];
-
-  n = argc;
-  i = 1;
 
   while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:")) != EOF)
     {
@@ -1405,25 +1445,21 @@ main (int argc, char *argv[])
 	  break;
 
 	default:
-	  usage ();
+	  usage (prog);
 	}
 
-      i++;
     }
 
-  if (i > 1)
-    {
-      argc -= i - 1;
-      argv += i - 1;
-    }
+  argc -= optind - 1;
+  argv += optind - 1;
+
+  if (argc < 2)
+    usage (prog);
 
   open_device ();
 
   if (playtgt != NULL)
     select_playtgt (playtgt);
-
-  if (argc < 2)
-    usage ();
 
   for (i = 1; i < argc; i++)
     play_file (argv[i]);

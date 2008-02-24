@@ -14,21 +14,20 @@ The filename parameter is name of the (.wav) file to be produced. Output can be
 sent to stdot by giving - as the file name.
 
 OPTIONS
--s<rate> 	Select the playback rate for raw PCM audio (eg -s48000)
--b<bits> 	Select the number of bits/sample (8/16/32) (eg. -b8 or -b16)
--c<channels> 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc (-c2 
--d<devname>  	Select <devname> as the device (eg -d/dev/dsp2)
+-s<rate> 	Select the playback rate for raw PCM audio (eg -s48000).
+-b<bits> 	Select the number of bits/sample (8/16/32) (eg. -b8 or -b16).
+-c<channels> 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc. 
+-d<devname>  	Select <devname> as the device (eg -d/dev/dsp2).
 -S		Record in stereo (obsolete - use -c2 instead).
 -R		Open audio device in raw mode to disable virtual mixing and
-		sample rate/format
+		sample rate/format.
 		conversions. Can be used when recording from a digital source
 		(S/PDIF input).
--v		Verbose information
--d<device> 	Select the device to record from (eg. -d/dev/dsp2)
--l		Display level meters (character based)
+-v		Verbose output.
+-l		Display level meters (character based).
 -i<recsrc|?> 	Select the recording source or display available recording 
-		sources if '?' is supplied:
-		eg: ossrecord -i? will display:
+		sources if '?' is supplied.
+		e.g. ossrecord -i? may display:
 			        vol
         			line (currently selected)
         			mic
@@ -41,10 +40,10 @@ OPTIONS
 		argument must have %d (or %02d) somewhere in the file to
 		guarantee unique filenames. If no %d is given then subsequent
 		recordings will overwrite the previous one(s). This option is
-		usefull only with loopback audio devices or if the -t option
+		useful only with loopback audio devices or if the -t option
 		is used.
 -r<command> 	This option launches the <command> in background after 
-		recording the file was completed. The name of the recorded file
+		recording the file has completed. The name of the recorded file
 		will be given as the (only) command line argument. When the -m 
 		option is used the script will run in parallel while recording
 		the next file. See the COMMAND SCRIPT section (below) for more
@@ -52,14 +51,14 @@ OPTIONS
 -a<amplification>
 		Multiply recorded samples by integer given as argument. Only
 		supported in 16 and 32 bit modes.
+-t<maxsecs>	Do not record more than <maxsecs> seconds in a single recording
+		operation.
+-L<level>	Set the recording level to <level>.
 -h		Display usage instructions.
 
-FILES
-/usr/bin/ossrecord
-
 COMMAND SCRIPT
-		The -r command line argument makes it possible to execute
-		a script or program after recording of the wave file is finished.
+		The -r command line argument makes it possible to execute a
+		script or program after recording of the wave file is finished.
 		Below is a simple scell script that does MP3 encoding using
 		lame.
 
@@ -67,7 +66,7 @@ COMMAND SCRIPT
 
 WAVENAME=$1
 
-M1P3NAME=$1.mp3
+MP3NAME=$1.mp3
 
 lame -m s -h --preset studio $WAVENAME $MP3NAME
 
@@ -85,6 +84,9 @@ echo
 ossrecord -S -b16 -s48 - | lame -m j - -
 
 exit 0
+
+FILES
+/usr/bin/ossrecord
 
 AUTHOR
 4Front Technologies

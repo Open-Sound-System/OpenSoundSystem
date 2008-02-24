@@ -31,7 +31,7 @@ then
   do
     if test -f /proc/$n/cmdline
     then
-      echo $n `cat /proc/$n/cmdline | sed 's/\x00/ /'`
+      echo $n `cat /proc/$n/cmdline | sed 's/\x00/ /g'`
     else
       echo $n Unknown
     fi

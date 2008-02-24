@@ -504,7 +504,9 @@ usage (void)
 {
   fprintf
     (stderr,
-     "Usage: %s [-s<speed> -b<bits{8|16|32}> (-c<channels>|-S) -v -l -m<nfiles> -d<device> -i<recsrc>|?] -a<amplification>filename.wav\n",
+     "Usage: %s [-s<speed> -b<bits{8|16|32}> -c<channels> -v -l -m<nfiles> "
+     "-d<device> -t<maxsecs> -L<level> -i<recsrc>|? -a<amplification>] "
+     "filename.wav\n",
      program);
   exit (0);
 }
@@ -597,7 +599,10 @@ do_record (char *dspdev, char *wave_name)
     }
 
   if (strcmp(wave_name, "-") == 0)
-     wave_fp = fdopen (1, "wb");
+    {
+      wave_fp = fdopen (1, "wb");
+      verbose = 0;
+    }
   else
      wave_fp = fopen (wave_name, "wb");
 
