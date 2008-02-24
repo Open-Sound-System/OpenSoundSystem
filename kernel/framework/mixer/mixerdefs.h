@@ -38,7 +38,7 @@ static const mixer_def_t mixer_defs[] = {
   {"digi96.mode", "SPDIF AESEBU ADAT"},
   {"digi96.data", "AUDIO DATA"},
   {"envy24.rate",
-   "8000 9600 11025 12000 16000 22050 24000 32000 44100 48000 88200 96000 192000"},
+   "8000 9600 11025 12000 16000 22050 24000 32000 44100 48000 64000 88200 96000 176400 192000"},
   {"envy24.sync", "INTERNAL SPDIF WCLOCK"},
   {"envy24.spdin", "COAX OPTICAL"},
   {"gain.out1/2", "+4DB CONSUMER -10DB"},
