@@ -407,7 +407,7 @@ ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
       if (portc != &devc->play_portc[0])
 	return -EINVAL;
       left = (devc->gains[0] & 0xff) * 100 / 0x7f;
-      right = ((devc->gains[5] >> 8) & 0xff) * 100 / 0x7f;
+      right = ((devc->gains[0] >> 8) & 0xff) * 100 / 0x7f;
       return *arg = (left | (right << 8));
       break;
 
