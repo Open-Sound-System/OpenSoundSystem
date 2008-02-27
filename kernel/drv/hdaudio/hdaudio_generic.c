@@ -172,7 +172,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 						   MIXF_CENTIBEL)) < 0)
 		return err;
 	      /* Setup initial volume */
-	      val = (maxval * 8) / 10;	/* 80% of the maximum */
+	      val = (maxval * 9) / 10;	/* 90% of the maximum */
 	      val = val | (val << 16);
 
 	      hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE,
@@ -278,7 +278,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		return err;
 
 	      /* setup volume */
-	      val = (maxval * 8) / 10;	/* 80% of the maximum */
+	      val = (maxval * 9) / 10;	/* 90% of the maximum */
 	      val = val | (val << 16);
 	      hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE,
 				   val);
@@ -511,7 +511,7 @@ attach_pin_widget (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 					       MIXNUM (widget, CT_SELECT, 0),
 					       hdaudio_set_control,
 					       MIXT_ENUM,
-					       "function",
+					       "mode",
 					       inselects + outselects,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)

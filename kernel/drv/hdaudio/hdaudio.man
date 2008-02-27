@@ -16,7 +16,7 @@ DESCRIPTION
 
  HDAUDIO MIXER
   The Intel HDA mixer is a new type of mixer that doesn't have
-  the normal volume controls found on AC97 or Legacy SB devices.
+  the normal volume controls found on AC97 or legacy SB devices.
   The HDA mixer presents a concept of Jacks and you can configure
   any jack to be either an output or an input jack.
 
@@ -29,18 +29,25 @@ DESCRIPTION
 	o Grey = Side		o Pink = Mic
 
  Some Azalia codecs support front panel connectors and so if you see
- green2 and pink2 connectors, then these are for front panel
+ fp-green and fp-pink connectors, then these are for front panel
  speaker and mic/line-in Jacks.
 
+ There is a function selector for most of the analog audio jacks (for example
+ connector.pink.mode). This selector is used to control if the jack is used
+ as an input (microphone or line in) or output (front, rear, side, speaker,
+ etc).
 
- The Input Jacks can be used to control Line-in or Mic-In. and
- you can configure them to any of the inputs. The Rec2 channel
- indicates Front Panel recording jack that can be set to mic or
- line-in.
+KNOWN PROBLEMS
+In general Azalia based systems (laptops/motherboards) would require a custom
+driver to work properly. Due to enormous number of different systems it is not
+possible to develop such custom drivers for all systems. A generic driver is 
+used for systems that don't have dedicated drivers.
 
- OPTIONS
-
-LIMITATION
+Unfortunately the mixer and control panel interface (see ossmix(1)) 
+for "generic" systems is very cryptic and difficult to
+understand. To solve problems with volumes or signal routing you need to
+start ossxmix(1) and change the controls one at time until you get the desired
+effect.
 
 FILES
   CONFIGFILEPATH/hdaudio.conf Device configuration file

@@ -98,16 +98,16 @@ select_recsrc (char *srcname)
 
   if (*srcname == 0 || strcmp (srcname, "?") == 0)
     {
-      printf ("\nPossible recording sources for the selected device:\n\n");
+      fprintf (stderr, "\nPossible recording sources for the selected device:\n\n");
 
       for (i = 0; i < ei.nvalues; i++)
 	{
-	  printf ("\t%s", ei.strings + ei.strindex[i]);
+	  fprintf (stderr, "\t%s", ei.strings + ei.strindex[i]);
 	  if (i == src)
-	    printf (" (currently selected)");
-	  printf ("\n");
+	    fprintf (stderr, " (currently selected)");
+	  fprintf (stderr, "\n");
 	}
-      printf ("\n");
+      fprintf (stderr, "\n");
       exit (0);
     }
 
@@ -147,6 +147,17 @@ open_audio (void)
       perror (dspdev);
       exit (-1);
     }
+
+  if (verbose)
+     {
+  	oss_audioinfo ai;
+
+	ai.dev=-1;
+
+	if (ioctl(audio_fd, SNDCTL_ENGINEINFO, &ai) != -1)
+	   fprintf (stderr, "Recording from %s\n", ai.name);
+	   
+     }
 
   if (raw_mode)
     {
@@ -299,14 +310,14 @@ intr (int i)
   if (verbose)
     {
       decorate ();
-      printf ("\nStopped (%d).\n", i);
+      fprintf (stderr, "\nStopped (%d).\n", i);
     }
-  printf ("\n");
+  fprintf (stderr, "\n");
   fflush (stdout);
   end ();
   if (*script)
     {
-      printf ("Waiting for the '%s' script(s) to finish - please stand by\n",
+      fprintf (stderr, "Waiting for the '%s' script(s) to finish - please stand by\n",
 	      script);
       while (wait (NULL) != -1);
     }
@@ -319,12 +330,12 @@ segv (int i)
   if (verbose)
     {
       decorate ();
-      printf ("\nStopped.(signal %d)\n", i);
+      fprintf (stderr, "\nStopped.(signal %d)\n", i);
     }
   end ();
   if (*script)
     {
-      printf ("Waiting for the '%s' script(s) to finish - please stand by\n",
+      fprintf (stderr, "Waiting for the '%s' script(s) to finish - please stand by\n",
 	      script);
       while (wait (NULL) != -1);
     }
@@ -336,7 +347,7 @@ decorate (void)
 {
   int x1, x2, i;
   float secs;
-  printf ("\r%s [", current_filename);
+  fprintf (stderr, "\r%s [", current_filename);
   x1 = x;
   x2 = x + 10;
 
@@ -354,15 +365,15 @@ decorate (void)
     }
 
   for (i = 0; i < x1; i++)
-    printf (" ");
+    fprintf (stderr, " ");
   for (i = x1; i < x2; i++)
-    printf (".");
+    fprintf (stderr, ".");
   for (i = 0; i < 10 - x2; i++)
-    printf (" ");
+    fprintf (stderr, " ");
   secs = (float) (data_size / (speed * (bits / 8) * channels));
 
   if (secs < 60.0)
-    printf ("] %1.2f secs", secs);
+    fprintf (stderr, "] %1.2f secs", secs);
   else
     {
       int hours, mins;
@@ -372,7 +383,7 @@ decorate (void)
 
       hours = mins / 60;
       mins = mins % 60;
-      printf ("] %02d:%02d:%02.2f", hours, mins, secs);
+      fprintf (stderr, "] %02d:%02d:%02.2f", hours, mins, secs);
     }
   if (ii == 0)
     {
@@ -495,7 +506,7 @@ update_level (void *inbuf, int l)
   for (i = 0; i < v; i++)
     tmp[i] = template[i];
 
-  printf ("\rVU %s", tmp);
+  fprintf (stderr, "\rVU %s", tmp);
   fflush (stdout);
 }
 
@@ -619,11 +630,11 @@ do_record (char *dspdev, char *wave_name)
   if (verbose)
     {
       if (channels == 1)
-	printf ("Recording wav: Speed %dHz %d bits Mono\n", speed, bits);
+	fprintf (stderr, "Recording wav: Speed %dHz %d bits Mono\n", speed, bits);
       if (channels == 2)
-	printf ("Recording wav: Speed %dHz %d bits Stereo\n", speed, bits);
+	fprintf (stderr, "Recording wav: Speed %dHz %d bits Stereo\n", speed, bits);
       if (channels > 2)
-	printf ("Recording wav: Speed %dHz %d bits %d channels\n", speed,
+	fprintf (stderr, "Recording wav: Speed %dHz %d bits %d channels\n", speed,
 		bits, channels);
     }
   data_size = 0;
@@ -697,7 +708,7 @@ do_record (char *dspdev, char *wave_name)
   if (verbose)
     {
       decorate ();
-      printf ("\nDone.\n");
+      fprintf (stderr, "\nDone.\n");
     }
   end ();
   return 0;
@@ -780,7 +791,6 @@ main (int argc, char *argv[])
 	verbose = 1;
 	break;
 
-
       case 'l':
 	level_meters = 1;
 	break;
@@ -831,7 +841,7 @@ main (int argc, char *argv[])
 	  datalimit = tmp_datalimit;
 	  if ((err = do_record (dspdev, tmpname)) != 0)
 	    exit (err);
-	  printf ("\n");
+	  fprintf (stderr, "\n");
 	}
       if (*script)
 	{

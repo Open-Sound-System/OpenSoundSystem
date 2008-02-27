@@ -1655,23 +1655,26 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
       goto done;
     }
 
-  if (mode == OPEN_WRITE)
-    {
-      redirect = adev->redirect_out;
-    }
-  else if (mode == OPEN_READ)
-    {
-      redirect = adev->redirect_in;
-    }
-  else
-    {
-      /*
-       * Read-write open. Check that redirection for both directions are
-       * identical.
-       */
-      if (adev->redirect_out == adev->redirect_in)
-	redirect = adev->redirect_out;
-    }
+  if (!open_excl)
+     {
+	  if (mode == OPEN_WRITE)
+	    {
+	      redirect = adev->redirect_out;
+	    }
+	  else if (mode == OPEN_READ)
+	    {
+	      redirect = adev->redirect_in;
+	    }
+	  else
+	    {
+	      /*
+	       * Read-write open. Check that redirection for both directions are
+	       * identical.
+	       */
+	      if (adev->redirect_out == adev->redirect_in)
+		redirect = adev->redirect_out;
+	    }
+     }
   DDB (cmn_err
        (CE_CONT, "Redirect=%d (%d, %d)\n", redirect, adev->redirect_out,
 	adev->redirect_in));
@@ -4613,7 +4616,7 @@ launch_output (adev_p adev, dmap_p dmap)
 
   if (!(dmap->flags & DMAP_PREPARED))
     {
-      cmn_err (CE_WARN, "launch_output while not prepared.\n");
+      cmn_err (CE_WARN, "launch_output while not prepared. Engine=%d\n", adev->engine_num);
       return -EIO;
     }
 
