@@ -80,10 +80,12 @@ typedef unsigned long long oss_uint64_t;	/* Unsigned 64 bit integer */
 #include <sys/cred_impl.h>
 #endif
 
+#ifndef SOL9
 #include <sys/ddifm.h>
 #include <sys/fm/protocol.h>
 #include <sys/fm/util.h>
 #include <sys/fm/io/ddi.h>
+#endif
 
 #undef HZ
 #define OSS_HZ hz
@@ -145,8 +147,10 @@ struct _oss_device_t
 /* USB fields */
   udi_usb_devc *usbdev;
 
+#ifndef SOL9
 /* Fault management (FMA) */
   int fm_capabilities;
+#endif
 #endif
 };
 
@@ -468,6 +472,7 @@ extern void *oss_memcpy (void *s1, const void *s2, size_t n);
 #define memcpy oss_memcpy
 #endif
 
+#ifndef SOL9
 /*
  * Fault management (FMA) support.
  */
@@ -485,3 +490,4 @@ extern void *oss_memcpy (void *s1, const void *s2, size_t n);
 #define FMA_IMPACT(osdev, impact) \
 	if (osdev->fm_capabilities != 0) \
 	   ddi_fm_service_impact(osdev->dip, impact)
+#endif

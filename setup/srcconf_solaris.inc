@@ -65,8 +65,7 @@ check_sysdep (conf_t * conf, struct utsname *un)
     }
   else if (strcmp (tmp, "sparcv9") == 0)
     {
-      //strcpy (conf->OSflags, "-xarch=v9 -dalign");
-      strcpy (conf->OSflags, "-m64 -dalign");
+      strcpy (conf->OSflags, "-xarch=v9 -dalign");
       strcpy (conf->platform, "sparc");
     }
   else if (strcmp (tmp, "sparc") == 0)
