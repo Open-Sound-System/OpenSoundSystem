@@ -2142,3 +2142,97 @@ _ossxmix_calloc (size_t nm, size_t sz)
   return ptr;
 }
 
+#ifdef STATUSICON
+/*ARGSUSED*/
+static void
+activate_mainwindow (GtkStatusIcon * icon, guint button, guint etime,
+		     gpointer data)
+{
+  if (GTK_WIDGET_VISIBLE (window)) gtk_widget_hide (window);
+  else popup_mainwindow (NULL, NULL);
+}
+
+/*ARGSUSED*/
+static void
+popup_mainwindow (GtkWidget * w, gpointer data)
+{
+  gtk_widget_show (window);
+  gtk_window_present (GTK_WINDOW (window));
+}
+
+/*
+ * Popup menu when clicking on status icon
+ */
+/*ARGSUSED*/
+static void
+trayicon_popupmenu (GtkStatusIcon * icon, guint button, guint etime,
+		    gpointer data)
+{
+  static GtkWidget *tray_menu = NULL;
+
+  if (tray_menu == NULL)
+    {
+      GtkWidget *item;
+      tray_menu = gtk_menu_new ();
+
+      item = gtk_menu_item_new_with_label ("Restore");
+      g_signal_connect (G_OBJECT (item), "activate",
+                        G_CALLBACK (popup_mainwindow), NULL);
+      gtk_menu_append (tray_menu, item);
+      item = gtk_menu_item_new_with_label ("Quit");
+      gtk_menu_append (tray_menu, item);
+      g_signal_connect (G_OBJECT (item), "activate",
+                        G_CALLBACK (gtk_main_quit), NULL);
+    }
+
+  gtk_widget_show_all (tray_menu);
+
+  gtk_menu_popup (GTK_MENU (tray_menu), NULL, NULL,
+                  gtk_status_icon_position_menu, status_icon,
+                  button, etime);
+}
+#endif /* STATUSICON */
+
+static void *
+#ifdef DEBUG
+_ossxmix_malloc (size_t sz, char *f, int l)
+#else
+_ossxmix_malloc (size_t sz)
+#endif
+{
+  void *ptr;
+
+#ifdef DEBUG
+  printf ("malloc(%lu)\t%s:%d\n", (unsigned long)sz, f, l);
+#endif
+  ptr = malloc (sz);
+  if (ptr == NULL) {
+    /* Not all libcs support using %z for size_t */
+    fprintf (stderr, "Can't allocate %lu bytes\n", (unsigned long)sz);
+    exit (-1);
+  }
+  return ptr;
+}
+
+static void *
+#ifdef DEBUG
+_ossxmix_calloc (size_t nm, size_t sz, char *f, int l)
+#else
+_ossxmix_calloc (size_t nm, size_t sz)
+#endif
+{
+  void *ptr;
+
+#ifdef DEBUG
+  printf ("calloc(%lu, %lu)\t%s:%d\n", (unsigned long)nm, (unsigned long)sz,
+	  f, l);
+#endif
+  ptr = calloc (nm, sz);
+  if (ptr == NULL) {
+    fprintf (stderr, "Couldn't allocate %lu entries of size %lu\n",
+	     (unsigned long)nm, (unsigned long)sz);
+    exit (-1);
+  }
+  return ptr;
+}
+

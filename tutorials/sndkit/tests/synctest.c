@@ -49,6 +49,17 @@ main (int argc, char *argv[])
 	  perror ("SNDCTL_DSP_SYNCGROUP");
 	  exit (-1);
 	}
+/*
+ * Note! It is very important to write some data to all output devices
+ * between calling SNDCTL_DSP_SYNCGROUP and SNDCTL_DSP_SYNCSTART. Otherwise
+ * playback will not start properly. However do not write more data than
+ * there is room in device's DMA buffer.
+ *
+ * In applications that record audio, process it and then play back it's
+ * necessary to write two fragments of silence to the output device(s) before
+ * starting the group. Otherwise output device(s) will run out of data before
+ * the first read from the input device returns.
+ */
 
       if (write (fd[ndevs], buf, sizeof (buf)) != sizeof (buf))
 	{

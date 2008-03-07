@@ -1433,6 +1433,8 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
     case SNDCTL_MIX_NREXT:	/* Return # of mixer extensions for device */
       val = *arg;
       *arg = 0;
+      if (val==-1)
+	 val=orig_dev;
       if (val < 0 || val >= num_mixers)
 	return -ENXIO;
       if (mixer_devs[val] == NULL || mixer_devs[val]->unloaded

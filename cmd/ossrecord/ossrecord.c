@@ -300,7 +300,7 @@ end ()
 	    }
 	}
     }
-  if (nfiles > 0)
+  if (nfiles > 1)
     open_audio ();
 }
 
@@ -325,7 +325,7 @@ intr (int i)
 }
 
 static void
-segv (int i)
+fatal_signal (int i)
 {
   if (verbose)
     {
@@ -824,7 +824,8 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  signal (SIGSEGV, segv);
+  signal (SIGSEGV, fatal_signal);
+  signal (SIGPIPE, fatal_signal);
   signal (SIGINT, intr);
 
   if (nfiles > 1)		/* Record multiple files */

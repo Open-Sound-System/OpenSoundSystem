@@ -809,6 +809,7 @@ vmix_open (int dev, int mode, int open_flags)
   vmix_mixer_t *mixer = portc->mixer;
   oss_native_word flags;
   int start = 0;
+cmn_err(CE_CONT, "==== Vmix open %d\n", dev);
 
   if (mode & portc->disabled_modes)
     return -EACCES;
@@ -866,11 +867,13 @@ vmix_open (int dev, int mode, int open_flags)
     portc->do_src = 0;
   if (mixer->open_devices++ == 0)
     start = 1;
+cmn_err(CE_CONT, "Open devices %d (open)\n", mixer->open_devices);
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
 
   if (start)
     {
       int err;
+cmn_err(CE_CONT, "Start engines\n");
 
       if ((err = start_engines (mixer)) < 0)
 	{
@@ -893,10 +896,12 @@ vmix_close (int dev, int mode)
   vmix_mixer_t *mixer = portc->mixer;
   oss_native_word flags;
   int stop = 0;
+cmn_err(CE_CONT, "==== Vmix close %d\n", dev);
 
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
   if (mixer->open_devices-- == 1)
     stop = 1;
+cmn_err(CE_CONT, "Open devices %d (Close)\n", mixer->open_devices);
   portc->open_mode = 0;
   portc->trigger_bits = 0;
   portc->play_mixing_func = NULL;
@@ -905,6 +910,7 @@ vmix_close (int dev, int mode)
 
   if (stop)
     {
+cmn_err(CE_CONT, "Stop\n");
       stop_engines (mixer);
     }
 

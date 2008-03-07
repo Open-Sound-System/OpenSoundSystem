@@ -1423,6 +1423,13 @@ typedef unsigned short oss_peaks_t[MAX_PEAK_CHANNELS];
 #     define DSP_BIND_SPDIF           0x00000100
 #     define DSP_BIND_REAR            0x00000200
 
+#ifdef sun
+/* Not part of OSS. Reserved for internal use by Solaris */
+#define X_SADA_GET_PLAYTGT_MASK	__SIOR ('P', 66, int)
+#define X_SADA_GET_PLAYTGT	__SIOR ('P', 67, int)
+#define X_SADA_SET_PLAYTGT	__SIOWR('P', 68, int)
+#endif
+
 #ifndef NO_LEGACY_MIXER
 /*
  ****************************************************************************
