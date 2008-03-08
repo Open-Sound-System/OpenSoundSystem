@@ -39,7 +39,8 @@ enum {
  AIFF_FILE,
  AIFC_FILE,
  _8SVX_FILE,
- _16SV_FILE
+ _16SV_FILE,
+ MAUD_FILE
 };
 
 int prev_speed = 0, prev_bits = 0, prev_channels = 0;
@@ -935,6 +936,9 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 #define BODY_HUNK 0x424f4459
 #define CHAN_HUNK 0x4348414e
 
+#define MDAT_HUNK 0x4D444154
+#define MHDR_HUNK 0x4D484452
+
 #define alaw_FMT 0x616C6177
 #define ALAW_FMT 0x414C4157
 #define ulaw_FMT 0x756C6177
@@ -945,8 +949,11 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 #define FL32_FMT 0x464C3332
 #define ima4_FMT 0x696D6134
 #define NONE_FMT 0x4E4F4E45
-#define MS01_FMT 0x4D530001
+#define ms02_FMT 0x6D730002
+#define ms11_FMT 0x6D730011
 #define raw_FMT  0x72617720
+#define in24_FMT 0x696e3234
+#define ni24_FMT 0x6e693234
 #define in32_FMT 0x696E3332
 #define ni32_FMT 0x6E693332
 
@@ -963,6 +970,13 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
 #define READ(fd, buf, len, n) \
   do { \
+    if (chunk_size < len) \
+      { \
+        fprintf (stderr, \
+                 "%s: error: chunk " #n "size is too small.\n", filename); \
+        if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
+        else return; \
+      } \
     if (read(fd, buf, len) < len) \
       { \
         fprintf (stderr, "%s: error: cannot read " #n "chunk.\n", filename); \
@@ -972,10 +986,13 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
     SEEK (fd, chunk_size - len, n); \
   } while (0)
 
-  int channels = 1, bits = 8, format = AFMT_S8, speed = 11025;
+  int channels = 1, bits = 8, format, speed = 11025;
   int found = 0, chunk_size = 18, sound_size = 0, total_size;
   long double COMM_rate;
   unsigned int chunk_id, timestamp, sound_loc = 0, offset = 0, csize = 12;
+
+  if (type == _16SV_FILE) format = AFMT_S16_BE;
+  else format = AFMT_S8;
 
   total_size = be_int (buf + 4, 4);
   do
@@ -1001,13 +1018,6 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                          "%s: error: COMM hunk not singular!\n", filename);
                 return;
               }
-            if ((chunk_size < 18) || ((chunk_size < 22) && (type == AIFC_FILE)))
-              {
-                fprintf (stderr,
-                         "%s: error: impossibly small COMM chunk size.\n",
-                         filename);
-                return;
-              }
             if (type == AIFC_FILE) READ (fd, buf, 22, COMM);
             else READ (fd, buf, 18, COMM);
             found |= COMM_FOUND;
@@ -1026,17 +1036,17 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                  case 32: format = AFMT_S32_BE; break;
                  default: format = AFMT_S16_BE; break;
               }
-            memcpy (&COMM_rate, buf + 8, sizeof (COMM_rate));
 #if AFMT_S16_NE == AFMT_S16_LE
             {
-              char tmp, *s = (char *) &COMM_rate; int i;
+              unsigned char tmp, *s = buf + 8; int i;
 
-              for (i=0; i<5; i++)
+              for (i=0; i < 5; i++)
                 {
                   tmp = s[i]; s[i] = s[9-i]; s[9-i] = tmp;
                 }
             }
 #endif
+            memcpy (&COMM_rate, buf + 8, sizeof (COMM_rate));
             speed = (int)COMM_rate;
 
             if (type != AIFC_FILE)
@@ -1047,11 +1057,15 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
             switch (be_int (buf + 18, 4))
               {
-                case NONE_FMT:
-                case in32_FMT:
-                case twos_FMT: break;
-                case ni32_FMT:
+                case NONE_FMT: break;
+                case twos_FMT: format = AFMT_S16_BE; break;
+                case in24_FMT: format = AFMT_S24_BE; break;
+                case in32_FMT: format = AFMT_S32_BE; break;
+                case ni24_FMT: format = AFMT_S24_LE; break;
+                case ni32_FMT: format = AFMT_S32_LE; break;
                 case sowt_FMT:
+                /* Apple Docs refer to this as AFMT_S16_LE only, but some
+                   programs misinterpret this. */
                   switch (bits)
                     {
                       case 8: format = AFMT_S8; break;
@@ -1061,6 +1075,8 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                       default: format = AFMT_S16_LE; break;
                     } break;
                 case raw_FMT:
+                /* Apple Docs refer to this as AFMT_U8 only, but some programs
+                   misinterpret this. */
                   switch (bits)
                     {
                       case 8: format = AFMT_U8; break;
@@ -1071,17 +1087,18 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                 case ALAW_FMT: format = AFMT_A_LAW; break;
                 case ulaw_FMT:
                 case ULAW_FMT: format = AFMT_MU_LAW; break;
+                case ms11_FMT:
                 case ima4_FMT: format = AFMT_IMA_ADPCM; break;
 #if 0
                 case fl32_FMT:
                 case FL32_FMT: format = AFMT_FLOAT; break;
-                case MS01_FMT: format = -1; break;
+                case ms02_FMT: format = -1; break; /* MS ADPCM */
 #endif
                 default:
                   fprintf (stderr,
-                          "%s: error: %c%c%c%c compression is not supported\n",
-                          filename, *(buf + 18), *(buf + 19),
-                          *(buf + 20), *(buf + 21));
+                           "%s: error: %c%c%c%c compression is not supported\n",
+                           filename, *(buf + 18), *(buf + 19),
+                           *(buf + 20), *(buf + 21));
                   return;
               }
               break;
@@ -1118,12 +1135,6 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             SEEK (fd, chunk_size - 8, SSND);
             break;
           case FVER_HUNK:
-            if (chunk_size != 4)
-              {
-                fprintf (stderr,
-                         "%s: warning: FVER size different than 4 bytes.\n",
-                         filename);
-              }
             READ (fd, buf, 4, FVER);
             timestamp = be_int (buf, 4);
             found |= FVER_FOUND;
@@ -1132,10 +1143,9 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
           /* 8SVX chunks */
           case VHDR_HUNK: READ (fd, buf, 14, VHDR);
                           speed = be_int (buf + 12, 2);
-                          if (type == _16SV_FILE) format = AFMT_S16_BE;
-                          else format = AFMT_S8;
                           found |= COMM_FOUND;
                           break;
+          case MDAT_HUNK: /* MAUD chunk */
           case BODY_HUNK: sound_size = chunk_size;
                           sound_loc = csize + 4;
                           found |= SSND_FOUND;
@@ -1144,12 +1154,37 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                              goto stdinext;
                           SEEK (fd, chunk_size, BODY);
                           break;
-          case CHAN_HUNK: READ (fd, buf, 12, CHAN);
-                          channels = be_int (buf + 8, 4);
+          case CHAN_HUNK: READ (fd, buf, 4, CHAN);
+                          channels = be_int (buf, 4);
                           channels = (channels & 0x01) +
                                      ((channels & 0x02) >> 1) +
                                      ((channels & 0x04) >> 2) +
                                      ((channels & 0x08) >> 3);
+                          break;
+
+          /* MAUD chunks */
+          case MHDR_HUNK: READ (fd, buf, 20, MHDR);
+                          bits = be_int (buf + 4, 2);
+                          switch (bits)
+                            {
+                              case 8: format = AFMT_S8; break;
+                              case 16: format = AFMT_S16_BE; break;
+                              case 24: format = AFMT_S24_BE; break;
+                              case 32: format = AFMT_S32_BE; break;
+                              default: format = AFMT_S16_BE; break;
+                            }
+                          speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
+                          channels = be_int (buf + 16, 2);
+                          switch (be_int (buf + 18, 2))
+                            {
+                              case 0: /* NONE */ break;
+                              case 2: format = AFMT_A_LAW; break;
+                              case 3: format = AFMT_MU_LAW; break;
+                              case 6: format = AFMT_IMA_ADPCM; break;
+                              default: fprintf(stderr, "%s: format not"
+                                               "supported", filename);
+                            }
+                          found |= COMM_FOUND;
                           break;
 
           /* common chunks */
@@ -1166,16 +1201,16 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                 else len = chunk_size;
                 switch (chunk_id)
                   {
-                    case NAME_HUNK: fprintf (stderr, "Name: \n");
+                    case NAME_HUNK: fprintf (stderr, "Name: ");
                                     READ (fd, buf, len, NAME);
                                     break;
-                    case AUTH_HUNK: fprintf (stderr, "Author: \n");
+                    case AUTH_HUNK: fprintf (stderr, "Author: ");
                                     READ (fd, buf, len, AUTH);
                                     break;
-                    case COPY_HUNK: fprintf (stderr, "Copyright: \n");
+                    case COPY_HUNK: fprintf (stderr, "Copyright: ");
                                     READ (fd, buf, len, COPY);
                                     break;
-                    case ANNO_HUNK: fprintf (stderr, "Annonations: \n");
+                    case ANNO_HUNK: fprintf (stderr, "Annonations: ");
                                     READ (fd, buf, len, ANNO);
                                     break;
                   }
@@ -1225,8 +1260,10 @@ stdinext:
         fprintf(stderr, "Playing AIFC file %s, ", filename);
       else if (type == _8SVX_FILE)
         fprintf(stderr, "Playing 8SVX file %s, ", filename);
-      else
+      else if (type == _16SV_FILE)
         fprintf(stderr, "Playing 16SV file %s, ", filename);
+      else
+        fprintf(stderr, "Playing MAUD file %s, ", filename);
       print_verbose (format, channels, speed);
     }
 
@@ -1491,6 +1528,13 @@ play_file (char *filename)
       memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "16SV", 4) == 0)
     {
       play_iff (filename, fd, buf, _16SV_FILE);
+      goto done;
+    }
+
+  if (l > 11 &&
+      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "MAUD", 4) == 0)
+    {
+      play_iff (filename, fd, buf, MAUD_FILE);
       goto done;
     }
 
