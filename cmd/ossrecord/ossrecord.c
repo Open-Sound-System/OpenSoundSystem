@@ -31,7 +31,7 @@
 #define WAVE_STEREO  2
 
 
-typedef struct
+typedef struct __attribute__ ((__packed__))
 {
   char main_chunk[4];
   unsigned int length;
@@ -43,7 +43,7 @@ typedef struct
   unsigned short modus;
   unsigned int sample_fq;
   unsigned int byte_p_sec;
-  unsigned short byte_p_spl;
+  unsigned short block_align;
   unsigned short bit_p_spl;
 
   char data_chunk[4];
@@ -265,15 +265,15 @@ static void
 write_head (void)
 {
   memcpy ((char *) &wh.main_chunk, RIFF, 4);
-  wh.length = bswap (datalimit + sizeof (WaveHeader));
+  wh.length = bswap (datalimit + sizeof (WaveHeader) - 8);
   memcpy ((char *) &wh.chunk_type, WAVE, 4);
   memcpy ((char *) &wh.sub_chunk, FMT, 4);
   wh.sc_len = bswap (16);
   wh.format = bswaps (PCM_CODE);
   wh.modus = bswaps (channels);
   wh.sample_fq = bswap (speed);
-  wh.byte_p_spl = bswaps ((bits / 8) * channels);
-  wh.byte_p_sec = bswap (speed * wh.modus * wh.byte_p_spl);
+  wh.block_align = bswaps ((bits / 8) * channels);
+  wh.byte_p_sec = bswap (speed * channels * (bits / 8));
   wh.bit_p_spl = bswaps (bits);
   memcpy ((char *) &wh.data_chunk, DATA, 4);
   wh.data_length = bswap (datalimit);
