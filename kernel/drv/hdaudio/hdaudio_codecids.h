@@ -1012,6 +1012,7 @@ extern int hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int 
 extern int hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_travelmate4060_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
@@ -1029,6 +1030,7 @@ static const codec_desc_t subdevices[] = {
 
   {0x10250000, "Ferrari5k/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010a},
   {0x10250000, "Acer_aspire5052/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010f},
+  {0x1025160d, "Acer_travelmate4060/ALC260", VF_NONE, (char **) &alc260remap, 0, hdaudio_travelmate4060_mixer_init, 0x10ec0260, 0x1025008f},
 
   /*
    **** Sony Vaio VGN-AR51 ***
