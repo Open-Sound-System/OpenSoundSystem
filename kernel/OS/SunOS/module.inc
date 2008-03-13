@@ -134,20 +134,34 @@ _info (struct modinfo *modinfop)
 
 /*ARGSUSED*/
 static int
-ossdrv_getinfo (dev_info_t * dip, ddi_info_cmd_t cmd, void *arg,
+ossdrv_getinfo (dev_info_t * dontcare_dip, ddi_info_cmd_t cmd, void *arg,
 		void **result)
 {
   dev_t dev;
   register int error;
   int instance;
-
-  if (dip == NULL)
-    {
-      /* cmn_err (CE_WARN, "ossdrv_getinfo: dip==NULL\n"); */
-      return DDI_FAILURE;
-    }
+  dev_info_t *dip;
+  oss_cdev_t *cdev;
+  int minor;
 
   dev = (dev_t) arg;
+
+  minor = getminor (dev);
+
+  if (minor >= oss_num_cdevs)
+   {
+	*result = NULL;
+	return DDI_FAILURE;
+   }
+
+  if ((cdev = oss_cdevs[minor]) == NULL || cdev->osdev == NULL)
+   {
+	*result = NULL;
+	return DDI_FAILURE;
+   }
+
+  dip = cdev->osdev->dip;
+
   instance = ddi_get_instance (dip);
 
   switch (cmd)
@@ -168,7 +182,7 @@ ossdrv_getinfo (dev_info_t * dip, ddi_info_cmd_t cmd, void *arg,
   DDB (cmn_err (CE_CONT,
 		"oss_getinfo: returns %d, result=%lx instance=%d dev=%x\n",
 		error, (unsigned long)*result, instance, (unsigned int)dev));
-  return (error);
+  return error;
 }
 
 static int
