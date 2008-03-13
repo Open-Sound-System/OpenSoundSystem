@@ -5,7 +5,8 @@ ossmkdep.c
 
 This is a simple utility that is used by "make dep". It lists the dependencies
 of each the source files given in the command line. This utility is used since
-GNU cpp is not available in all environments we support.
+GNU cpp is not available in all environments we support. It will be compiled 
+and used automatically when OSS is built.
 
 readtimings.c
 
@@ -52,3 +53,10 @@ vib, vil, vis, viu are similar commands for editing OS dependent files
 for Freebsd, Linux, Solaris and SCO UnixWare/OpenServer (respectively). These
 commands are usefull if you like to edit the build.sh file only for Linux (vil).
 The fif buils.sh script will open them for all operating systems.
+
+mixgen.c
+
+This is a tool to generate dedicated mixer modules for HDAudio based laptops
+and motherboards. Actually this program will generate just a template that
+needs to be edited and fine tuned manually. Full instructions are available
+at "http://developer.opensound.com/hdaudio_mixers.html".
