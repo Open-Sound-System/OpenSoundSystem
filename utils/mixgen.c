@@ -616,7 +616,7 @@ dump_widgets (void)
     {
       if (widgets[i].valid)
 	{
-	  if (widgets[i][0].name == 0) /* Empty string */
+	  if (widgets[i].name[0] == 0) /* Empty string */
 	     printf("\tES,\n");
 	  else
 	     printf ("\t\"%s\",\t\t/* 0x%02x */\n", widgets[i].name, i);
