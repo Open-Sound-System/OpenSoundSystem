@@ -2,9 +2,9 @@ NAME
 ossplay - Open Sound System playback applet.
 
 DESCRIPTION
-The ossplay applet plays raw PCM, Microsoft RIFF (.wav) and Sun ULaw (.au) 
+The ossplay program plays raw PCM, Microsoft RIFF (.wav) and Sun ULaw (.au) 
 audio files. By default the application will try to determine the audio 
-file's format and plays audio based on the stored inforation about bit/sample,
+file's format and play audio based on the stored inforation about bit/sample,
 number of channels and sampling rate.
 
 
@@ -37,7 +37,6 @@ device.
 
 Thus, ./ossrecord -imic - | ./ossplay - will not work when using vmix.
 However, ./ossrecord -imic - | ./ossplay -R - will work.
-audioloop(7) offers a more dedicated mechanism for audio redirection.
 
 FILES
 /usr/bin/ossplay
