@@ -9,7 +9,8 @@ number of channels and sampling rate.
 
 
 OPTIONS
--v		Verbose output
+-v		Verbose output. Multiple invocations increase the level
+		of verbosity.
 -R		Disable redirection to virtual mixer engines and sample
 		rate/format conversions. Should not be used unless absolutely
 		necessary.
@@ -21,6 +22,22 @@ OPTIONS
 -o<playtarget> 	Selects the play target name if the device supports multiple
 		play targets (such as front, rear, side). 
 -o? 		Prints the list of available play targets.
+
+INTERRUPT
+Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing
+the currently played file and skip to the next file.
+
+SEE ALSO
+ossrecord(1), ossmix(1), ossxmix(1)
+
+NOTES
+The vmix subsystem redirects the recording source selection to the 
+actual device only if there is just one application using the same 
+device.
+
+Thus, ./ossrecord -imic - | ./ossplay - will not work when using vmix.
+However, ./ossrecord -imic - | ./ossplay -R - will work.
+audioloop(7) offers a more dedicated mechanism for audio redirection.
 
 FILES
 /usr/bin/ossplay

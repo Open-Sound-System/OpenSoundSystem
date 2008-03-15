@@ -20,14 +20,14 @@
 #include <ctype.h>
 #include <soundcard.h>
 #include <errno.h>
+#include <signal.h>
 
 #undef  MPEG_SUPPORT
 
-#define WAVE_FORMAT_PCM			0x0001
-#define WAVE_FORMAT_ADPCM		0x0002
-#define WAVE_FORMAT_ALAW		0x0006
-#define WAVE_FORMAT_MULAW		0x0007
-#define WAVE_FORMAT_IMA_ADPCM		0x0011
+#define AFMT_MS_ADPCM -(AFMT_S16_LE | 0x1000000)
+#define AFMT_CR_ADPCM_2 -(AFMT_U8 | 0x1000000)
+#define AFMT_CR_ADPCM_3 -(AFMT_U8 | 0x2000000)
+#define AFMT_CR_ADPCM_4 -(AFMT_U8 | 0x4000000)
 
 /* Magic numbers used in Sun and NeXT audio files (.au/.snd) */
 #define SUN_MAGIC 	0x2e736e64	/* Really '.snd' */
@@ -35,22 +35,44 @@
 #define DEC_MAGIC	0x2e736400	/* Really '\0ds.' (for DEC) */
 #define DEC_INV_MAGIC	0x0064732e	/* '\0ds.' upside-down */
 
+/* Magic numbers for file formats based on IFF */
+#define FORM_MAGIC	0x464f524d	/* 'FORM' */
+#define AIFF_MAGIC	0x41494646	/* 'AIFF' */
+#define AIFC_MAGIC	0x41494643	/* 'AIFC' */
+#define _8SVX_MAGIC	0x38535658	/* '8SVX' */
+#define _16SV_MAGIC	0x31365356	/* '16SV' */
+
+/* Magic numbers for .wav files */
+#define RIFF_MAGIC	0x52494646	/* 'RIFF' */
+#define RIFX_MAGIC	0x52494658	/* 'RIFX' */
+#define WAVE_MAGIC	0x57415645	/* 'WAVE' */
+
+/* Beginning of magic for Creative .voc files */
+#define Crea_MAGIC	0x43726561	/* 'Crea' */
+
 enum {
- AIFF_FILE,
- AIFC_FILE,
- _8SVX_FILE,
- _16SV_FILE,
- MAUD_FILE
+  AIFF_FILE,
+  AIFC_FILE,
+  WAVE_FILE,
+  WAVE_FILE_BE,
+  _8SVX_FILE,
+  _16SV_FILE,
+  MAUD_FILE
 };
 
-int prev_speed = 0, prev_bits = 0, prev_channels = 0;
+#define DEFAULT_CHANNELS	1
+#define DEFAULT_BITS		8
+#define DEFAULT_SPEED		11025
+static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
+static int force_speed = -1, force_bits = -1, force_channels = -1;
+static int raw_mode = 0, verbose = 0, quiet = 0, fixedspeed = 0;
+static int exitstatus = 0, audiofd = 0, quitflag = 0;
 #ifdef MPEG_SUPPORT
-int mpeg_enabled = 0;
+static int mpeg_enabled = 0;
 #endif
-int raw_mode = 0;
 
-int default_speed = 11025, default_bits = 8, default_channels = 1;
 static char current_filename[64] = "";
+static char audio_devname[32] = "/dev/dsp";
 static char *playtgt = NULL;
 
 typedef struct
@@ -59,19 +81,16 @@ typedef struct
 }
 adpcm_coeff;
 
-int verbose = 0, quiet = 0, fixedspeed = 0;
-int exitstatus = 0;
-
-int audiofd = 0;
-
-char audio_devname[32] = "/dev/dsp";
+#ifdef MPEG_SUPPORT
 extern void play_mpeg (char *, int, unsigned char *, int);
+#endif
 
 static int be_int (unsigned char *, int);
 static void describe_error (void);
-static void dump_data (int, int);
-static void dump_data_24 (int, int);
-static void dump_msadpcm (int, int, int, int, int, adpcm_coeff *);
+static int dump_data (int, unsigned int);
+static int dump_data_24 (int, unsigned int);
+static int dump_creative_adpcm (int, unsigned int, int);
+static int dump_msadpcm (int, unsigned int, int, int, int, adpcm_coeff *);
 static char * filepart (char *);
 static void find_devname (char *, char *);
 static int le_int (unsigned char *, int);
@@ -83,8 +102,6 @@ static off_t oss_lseek_stdin (int, off_t, int);
 static void play_iff (char *, int, unsigned char *, int);
 static void play_au (char *, int, unsigned char *, int);
 static void play_file (char *);
-static void play_ms_adpcm_wave (char *, int, unsigned char *, int);
-static void play_wave (char *, int, unsigned char *, int);
 static void play_voc (char *, int, unsigned char *, int);
 static void print_verbose (int, int, int);
 static void usage (char *);
@@ -96,16 +113,17 @@ oss_lseek_stdin (int fd, off_t off, int w)
   ssize_t bytes_read;
   char buf[BUFSIZ];
 
-  if (off < 0) return -1;
   if (w == SEEK_END) return -1;
+  if (off < 0) return -1;
   if (off == 0) return 0;
   i = off;
   while (i > 0)
-  {
-    bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
-    if (bytes_read == -1) return -1;
-    i -= bytes_read;
-  }
+    {
+      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
+      if (bytes_read == -1) return -1;
+      else if (bytes_read == 0) return off;
+      i -= bytes_read;
+    }
   return off;
 }
 
@@ -153,9 +171,9 @@ usage (char *prog)
   fprintf (stderr,
 	   "            -c<channels>   Change number of channels for unrecognized files.\n");
   fprintf (stderr,
-           "            -o<playtgt>|?    Select/Query output target.\n");
+           "            -o<playtgt>|?  Select/Query output target.\n");
   fprintf (stderr,
-           "            -R               Open sound device in raw mode.\n");
+           "            -R             Open sound device in raw mode.\n");
   exit (-1);
 }
 
@@ -268,8 +286,43 @@ find_devname (char *devname, char *num)
   close (mixer_fd);
 }
 
-static void
-dump_data (int fd, int filesize)
+#define OREAD(fd, buf, len) \
+  do { \
+    if (quitflag == 1) \
+      { \
+        quitflag = 0; \
+        ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
+        return -1; \
+      } \
+    if ((l = read (fd, buf, len)) <= 0) \
+      { \
+        if (quitflag == 1) \
+          { \
+            quitflag = 0; \
+            ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
+            return -1; \
+          } \
+        return 0; \
+      } \
+  } while(0)
+
+#define OWRITE(fd, buf, len) \
+  do { \
+   if (write (fd, buf, len) == -1) \
+     { \
+        if ((errno == EINTR) && (quitflag == 1)) \
+          { \
+            quitflag = 0; \
+            ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
+            return -1; \
+          } \
+        perror (audio_devname); \
+        exit (-1); \
+     } \
+  } while (0)
+
+static int
+dump_data (int fd, unsigned int filesize)
 {
   int bsize, l;
   unsigned char buf[1024];
@@ -283,24 +336,17 @@ dump_data (int fd, int filesize)
       if (l > filesize)
 	l = filesize;
 
-
-      if ((l = read (fd, buf, l)) <= 0)
-	{
-	  return;
-	}
-
-      if (write (audiofd, buf, l) == -1)
-	{
-	  perror (audio_devname);
-	  exit (-1);
-	}
+      OREAD (fd, buf, l);
+      OWRITE (audiofd, buf, l);
 
       filesize -= l;
     }
+
+  return 0;
 }
 
-static void
-dump_data_24 (int fd, int filesize)
+static int
+dump_data_24 (int fd, unsigned int filesize)
 {
 /*
  * Dump 24 bit packed audio data to the device (after converting to 32 bit).
@@ -324,10 +370,7 @@ dump_data_24 (int fd, int filesize)
       if (l < 3)
 	break;
 
-      if ((l = read (fd, buf, l)) <= 0)
-	{
-	  return;
-	}
+      OREAD (fd, buf, l);
 
       outlen = 0;
 
@@ -341,30 +384,28 @@ dump_data_24 (int fd, int filesize)
 
 	}
 
-      if (write (audiofd, outbuf, outlen * sizeof (int)) == -1)
-	{
-	  perror (audio_devname);
-	  exit (-1);
-	}
+      OWRITE (audiofd, outbuf, outlen * sizeof (int));
 
       filesize -= l;
     }
+  return 0;
 }
 
 /*ARGSUSED*/
 static int
-setup_device (int fd, int channels, int bits, int speed)
+setup_device (int fd, int channels, int format, int speed)
 {
   int tmp;
 
-  if (verbose > 4)
-    fprintf (stderr, "Setup device %d/%d/%d\n", channels, bits, speed);
-
-  if (speed != prev_speed || bits != prev_bits || channels != prev_channels)
+  if (force_speed != -1) speed = force_speed;
+  if (force_channels != -1) channels = force_channels;
+  if (format < 0) format = -format & 0xffffff;
+  else if (force_bits != -1) format = force_bits;
+  if (speed != prev_speed || format != prev_bits || channels != prev_channels)
     {
 #if 0
-      ioctl (audiofd, SNDCTL_DSP_SYNC, 0);
-      ioctl (audiofd, SNDCTL_DSP_HALT, 0);
+      ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
+      ioctl (audiofd, SNDCTL_DSP_HALT, NULL);
 #else
       close (audiofd);
       open_device ();
@@ -374,18 +415,21 @@ setup_device (int fd, int channels, int bits, int speed)
     }
 
   /*
-   * Report the current filename as the son name.
+   * Report the current filename as the song name.
    */
   ioctl (audiofd, SNDCTL_SETSONG, current_filename);	/* No error checking */
 
   prev_speed = speed;
   prev_channels = channels;
-  prev_bits = bits;
+  prev_bits = format;
 
   tmp = APF_NORMAL;
   ioctl (audiofd, SNDCTL_DSP_PROFILE, &tmp);
 
-  tmp = bits;
+  tmp = format;
+
+  if (verbose > 4)
+    fprintf (stderr, "Setup device %d/%d/%d\n", channels, format, speed);
 
   if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &tmp) == -1)
     {
@@ -394,10 +438,10 @@ setup_device (int fd, int channels, int bits, int speed)
       return 0;
     }
 
-  if (tmp != bits)
+  if (tmp != format)
     {
       fprintf (stderr, "%s doesn't support this audio format (%x/%x).\n",
-	       audio_devname, bits, tmp);
+	       audio_devname, format, tmp);
       return 0;
     }
 
@@ -438,163 +482,69 @@ setup_device (int fd, int channels, int bits, int speed)
 static void 
 print_verbose (int format, int channels, int speed)
 {
-  char chn[32], fmt[32];
+  char chn[32], *fmt = "";
 
   if (channels == 1)
     strcpy (chn, "mono");
   else if (channels == 2)
     strcpy (chn, "stereo");
   else
-    snprintf (chn, sizeof(channels), "%d channels", channels);
+    snprintf (chn, sizeof(chn), "%d channels", channels);
 
   switch (format)
     {
-       case AFMT_VORBIS: /* Not yet implemented in OSS drivers */
-       case AFMT_QUERY: snprintf(fmt, sizeof(fmt), "Invallid format"); break;
-       case AFMT_IMA_ADPCM: snprintf(fmt, sizeof(fmt), "4 bits"); break;
-       case AFMT_MU_LAW:
-       case AFMT_A_LAW:
+       case AFMT_QUERY: fmt = "Invallid format"; break;
+       case AFMT_IMA_ADPCM: fmt = "ADPCM"; break;
+       case AFMT_MS_ADPCM: fmt = "MS-ADPCM"; break;
+       case AFMT_MU_LAW: fmt = "mu-law"; break;
+       case AFMT_A_LAW: fmt = "A-law"; break;
        case AFMT_U8:
-       case AFMT_S8: snprintf(fmt, sizeof(fmt), "8 bits"); break;
+       case AFMT_S8: fmt = "8 bits"; break;
        case AFMT_S16_LE:
        case AFMT_S16_BE:
-       case AFMT_MPEG:
        case AFMT_U16_LE:
-       case AFMT_U16_BE: snprintf(fmt, sizeof(fmt), "16 bits"); break;
+       case AFMT_U16_BE: fmt = "16 bits"; break;
        case AFMT_S24_LE:
        case AFMT_S24_BE:
-       case AFMT_S24_PACKED: snprintf(fmt, sizeof(fmt), "24 bits"); break;
+       case AFMT_S24_PACKED: fmt = "24 bits"; break;
        case AFMT_SPDIF_RAW:
        case AFMT_S32_LE:
-       case AFMT_S32_BE: snprintf(fmt, sizeof(fmt), "32 bits"); break;
-       case AFMT_FLOAT: snprintf(fmt, sizeof(fmt), "float"); break;
+       case AFMT_S32_BE: fmt = "32 bits"; break;
+       case AFMT_FLOAT: fmt = "float"; break;
+       case AFMT_VORBIS: fmt = "vorbis"; break;
+       case AFMT_MPEG: fmt = "mpeg"; break;
     }
   fprintf (stderr, "%s/%s/%d Hz\n", fmt, chn, speed);
 }
 
-static void
-play_ms_adpcm_wave (char *filename, int fd, unsigned char *hdr, int l)
-{
-  int i, n, dataleft, x;
-
-  adpcm_coeff coeff[32] = {
-    {256, 0},
-    {512, -256},
-    {0, 0},
-    {192, 64},
-    {240, 0},
-    {460, -208},
-    {392, -232}
-  };
-  int channels = 1;
-  int format = AFMT_U8;
-  int speed = 11025;
-  int p = 12;
-  int nBlockAlign = 256;
-  int wSamplesPerBlock = 496, wNumCoeff = 7;
-  int fmt = -1;
-
-  /* filelen = le_int (&hdr[4], 4); */
-
-  while (p < l - 16 && memcmp (&hdr[p], "data", 4) != 0)
-    {
-      n = le_int (&hdr[p + 4], 4);
-
-      if (memcmp (&hdr[p], "fmt ", 4) == 0)
-	{
-	  if (verbose > 4)
-	    fprintf (stderr, "Reading FMT chunk again, len = %d\n", n);
-
-	  fmt = le_int (&hdr[p + 8], 2);
-	  channels = le_int (&hdr[p + 10], 2);
-	  speed = le_int (&hdr[p + 12], 4);
-	  nBlockAlign = le_int (&hdr[p + 20], 2);
-	  /* bytes_per_sample = le_int (&hdr[p + 20], 2); */
-
-	  format = AFMT_S16_LE;
-
-	  wSamplesPerBlock = le_int (&hdr[p + 26], 2);
-	  wNumCoeff = le_int (&hdr[p + 28], 2);
-
-	  x = p + 30;
-
-	  for (i = 0; i < wNumCoeff; i++)
-	    {
-	      coeff[i].coeff1 = (short) le_int (&hdr[x], 2);
-	      x += 2;
-	      coeff[i].coeff2 = (short) le_int (&hdr[x], 2);
-	      x += 2;
-	    }
-
-	  if (verbose > 3)
-            {
-              fprintf (stderr, "fmt %04x ", fmt);
-              print_verbose (format, channels, speed);
-            }
-	}
-
-      p += n + 8;
-    }
-
-  if (p < l - 16 && memcmp (&hdr[p], "data", 4) == 0)
-    {
-
-      dataleft = n = le_int (&hdr[p + 4], 4);
-      p += 8;
-
-      if (verbose > 3)
-	fprintf (stderr, "DATA chunk. Offs = %d, len = %d\n", p, n);
-
-      if (oss_lseek (fd, p, SEEK_SET) == -1)
-	{
-	  perror (filename);
-	  fprintf (stderr, "Can't seek to the data chunk\n");
-	  return;
-	}
-
-      if (fmt != WAVE_FORMAT_ADPCM)
-	{
-	  fprintf (stderr, "%s: Unsupported wave format %04x\n", filename,
-		   fmt);
-	  return;
-	}
-
-      if (verbose)
-        {
-          fprintf (stderr, "Playing MS ADPCM WAV file %s, ", filename);
-          print_verbose (format, channels, speed);
-        }
-
-      if (!setup_device (fd, channels, format, speed))
-	return;
-
-      dump_msadpcm (fd, dataleft, channels, nBlockAlign,
-                    wSamplesPerBlock, coeff);
-    }
-}
-
-static void
-dump_msadpcm (int fd, int dataleft, int channels, int nBlockAlign,
+static int
+dump_msadpcm (int fd, unsigned int dataleft, int channels, int nBlockAlign,
               int wSamplesPerBlock, adpcm_coeff *coeff)
 {
-  int i, n, nib, max, outp = 0;
+  int i, n, nib, max, outp = 0, x;
   unsigned char buf[4096];
   unsigned char outbuf[64 * 1024];
   int AdaptionTable[] = {
     230, 230, 230, 230, 307, 409, 512, 614,
     768, 614, 512, 409, 307, 230, 230, 230
   };
+  int predictor[2], delta[2], samp1[2], samp2[2];
 
 /*
  * Playback procedure
  */
-#define OUT_SAMPLE(s) { \
-	if (s>32767)s=32767;else if(s<-32768)s=-32768; \
-	outbuf[outp++] = (unsigned char)(s & 0xff); \
-	outbuf[outp++] = (unsigned char)((s>>8) & 0xff); \
-	n+=2; \
-	if (outp>=max){write(audiofd, outbuf, outp);outp=0;}\
-	}
+#define OUT_SAMPLE(s) \
+ do { \
+   if (s > 32767) s = 32767; else if (s < -32768) s = -32768; \
+   outbuf[outp++] = (unsigned char)(s & 0xff); \
+   outbuf[outp++] = (unsigned char)((s >> 8) & 0xff); \
+   n += 2; \
+   if (outp >= max) \
+     { \
+       OWRITE (audiofd, outbuf, outp); \
+       outp = 0; \
+     } \
+ } while(0)
 
 #define GETNIBBLE \
 	((nib==0) ? \
@@ -617,9 +567,8 @@ dump_msadpcm (int fd, int dataleft, int channels, int nBlockAlign,
       while (dataleft > nBlockAlign &&
 	     read (fd, buf, nBlockAlign) == nBlockAlign)
 	{
-	  int predictor[2], delta[2], samp1[2], samp2[2];
+	  x = 0;
 
-	  int x = 0;
 	  dataleft -= nBlockAlign;
 
 	  nib = 0;
@@ -676,232 +625,186 @@ dump_msadpcm (int fd, int dataleft, int channels, int nBlockAlign,
 	}
 
   if (outp > 0)
-    write (audiofd, outbuf, outp /*(outp+3) & ~3 */ );
+    OWRITE (audiofd, outbuf, outp /*(outp+3) & ~3 */ );
+  return 0;
 }
 
-static void
-play_wave (char *filename, int fd, unsigned char *hdr, int l)
+static int
+dump_creative_adpcm (int fd, unsigned int filesize, int format)
 {
-  int filelen;
+  const unsigned char T2[4][3] = {
+    { 128, 6, 1 },
+    { 32,  4, 1 },
+    { 8,   2, 1 },
+    { 2,   0, 1 }
+  };
 
-  int n;
+  const unsigned char T3[3][3] = {
+    { 128, 5, 3 },
+    { 16,  2, 3 },
+    { 2,   0, 1 }
+  };
 
-  int channels = 1;
-  int bits = 8;
-  int format = AFMT_U8;
-  int speed = 11025;
-  int p = 12;
-  int fmt = -1;
+  const unsigned char T4[2][3] = {
+    { 128, 4, 7 },
+    { 8,   0, 7 }
+  };
 
-  filelen = le_int (&hdr[4], 4);
+  const unsigned char * t_row[4] = { T4[0], T4[1] };
+  const unsigned char * const * table = t_row;
 
-  if (verbose > 2)
-    fprintf (stderr, "Filelen = %d\n", filelen);
+  int bsize = 1024, l;
+  unsigned char buf[1024], obuf[4096];
 
-  while (p < l - 16 && memcmp (&hdr[p], "data", 4) != 0)
+  signed char limit = 5, sign, shift = 0, ratio = 2;
+  int step = 0, pred, i, j, val;
+
+  if (filesize == 0) return 0;
+
+  if (format == AFMT_CR_ADPCM_2)
     {
-      n = le_int (&hdr[p + 4], 4);
-
-      if (memcmp (&hdr[p], "fmt ", 4) == 0)
-	{
-	  if (verbose > 3)
-	    fprintf (stderr, "FMT chunk, len = %d\n", n);
-
-	  fmt = le_int (&hdr[p + 8], 2);
-	  channels = le_int (&hdr[p + 10], 2);
-	  speed = le_int (&hdr[p + 12], 4);
-	  /* bytes_per_sec = le_int (&hdr[p + 16], 4); */
-	  /* bytes_per_sample = le_int (&hdr[p + 20], 2); */
-
-	  bits = le_int (&hdr[p + 22], 2);
-
-	  if (fmt == WAVE_FORMAT_ADPCM)
-	    {
-	      play_ms_adpcm_wave (filename, fd, hdr, l);
-	      return;
-	    }
-
-	  if (verbose > 3)
-	    fprintf (stderr, "fmt %04x, bits %d, chn %d, speed %d\n",
-		     fmt, bits, channels, speed);
-	}
-
-      p += n + 8;
+      limit = 1;
+      step = shift = 2;
+      ratio = 4;
+      for (i=0; i < 4; i++) t_row[i] = T2[i];
+    }
+  else if (format == AFMT_CR_ADPCM_3)
+    {
+      limit = 3;
+      ratio = 3;
+      for (i=0; i < 3; i++) t_row[i] = T3[i];
     }
 
-  if (p < l - 16 && memcmp (&hdr[p], "data", 4) == 0)
+  OREAD (fd, buf, 1);
+  filesize--;
+  pred = *buf;
+  if (pred < 0) pred = 0;
+  else if (pred > 255) pred = 255;
+  OWRITE (audiofd, buf, 1);
+
+  while (filesize)
     {
+      l = bsize;
 
-      n = le_int (&hdr[p + 4], 4);
-      p += 8;
+      if (l > filesize)
+	l = filesize;
 
-      if (verbose > 3)
-	fprintf (stderr, "DATA chunk. Offs = %d, len = %d\n", p, n);
+      OREAD (fd, buf, l);
+      for (i=0; i < l; i++)
+        for (j=0; j < ratio; j++)
+          {
+            sign = (buf[i] & table[j][0])?-1:1;
+            val = (buf[i] >> table[j][1]) & table[j][2];
+            pred += sign*(val << step);
+            if (pred > 255) pred = 255;
+            else if (pred < 0) pred = 0;
+            obuf[ratio*i+j] = pred;
+            if ((val >= limit) && (step < 3+shift)) step++;
+            if ((val == 0) && (step > shift)) step--;
+          }
+      OWRITE (audiofd, obuf, ratio*l);
 
-      if (oss_lseek (fd, p, SEEK_SET) == -1)
-	{
-	  perror (filename);
-	  fprintf (stderr, "Can't seek to the data chunk\n");
-	  return;
-	}
-
-
-      if (fmt != WAVE_FORMAT_PCM)
-	switch (fmt)
-	  {
-	  case WAVE_FORMAT_ALAW:
-	    if (verbose > 1)
-	      fprintf (stderr, "ALAW encoded wave file\n");
-	    format = AFMT_A_LAW;
-	    break;
-
-	  case WAVE_FORMAT_MULAW:
-	    if (verbose > 1)
-	      fprintf (stderr, "MULAW encoded wave file\n");
-	    format = AFMT_MU_LAW;
-	    break;
-
-	  case WAVE_FORMAT_IMA_ADPCM:
-	    if (verbose > 1)
-	      fprintf (stderr, "IMA ADPCM encoded wave file\n");
-	    format = AFMT_IMA_ADPCM;
-	    break;
-
-	  default:
-	    fprintf (stderr, "%s: Unsupported wave format %04x\n", filename,
-		     fmt);
-	    return;
-	  }
-      else format = bits;
-
-      if (bits == 32)
-	{
-	  format = AFMT_S32_LE;
-	}
-      else if (bits == 24)
-	{
-	  format = AFMT_S32_LE;
-	}
-
-      if (verbose)
-        {
-           fprintf(stderr, "Playing WAV file %s, ", filename);
-           print_verbose (format, channels, speed);
-        }
-
-      if (!setup_device (fd, channels, format, speed))
-	return;
-
-      if (bits != 24)
-	{
-	  dump_data (fd, n);
-	}
-      else
-	{
-	  dump_data_24 (fd, n);
-	}
+      filesize -= l;
     }
+
+  return 0;
 }
-
+ 
 /*ARGSUSED*/
 static void
 play_au (char *filename, int fd, unsigned char *hdr, int l)
 {
+  int channels = 1, format = AFMT_S8, speed = 11025;
+  unsigned int filelen, fmt = 0, i, p = 24, an_len = 0;
 
-  char *fmts = "<Unknown format>";
-  int filelen;
+  p = be_int (hdr + 4, 4);
+  filelen = be_int (hdr + 8, 4);
+  fmt = be_int (hdr + 12, 4);
+  speed = be_int (hdr + 16, 4);
+  channels = be_int (hdr + 20, 4);
 
-  int i;
-
-  int channels = 1;
-  int format = AFMT_U8;
-  int speed = 11025;
-  int p = 24;
-  int fmt = -1;
-
-  p = be_int (&hdr[4], 4);
-  filelen = be_int (&hdr[8], 4);
-  fmt = be_int (&hdr[12], 4);
-  speed = be_int (&hdr[16], 4);
-  channels = be_int (&hdr[20], 4);
-
-  if (filelen == -1)
-    filelen = 0x7fffffff;
+  if (verbose > 2)
+    {
+      if (filelen == (unsigned int)-1)
+        fprintf (stderr, "%s: Filelen: unspecified\n", filename);
+      else
+        fprintf (stderr, "%s: Filelen: %u\n", filename, filelen);
+    }
+  if (verbose > 3) fprintf (stderr, "%s: Offset: %u\n", filename, p);
+  if (filelen == (unsigned int)-1) filelen = 0x7fffffff;
 
   switch (fmt)
     {
     case 1:
       format = AFMT_MU_LAW;
-      fmts = "mu-law";
       break;
 
     case 2:
       format = AFMT_S8;
-      fmts = "8 bit";
       break;
 
     case 3:
       format = AFMT_S16_BE;
-      fmts = "16 bit";
       break;
 
     case 4:
       format = AFMT_S24_BE;
-      fmts = "24 bit";
       break;
 
     case 5:
       format = AFMT_S32_BE;
-      fmts = "32 bit";
       break;
 
     case 6:
     case 7:
-      fprintf (stderr, "Floating point encoded .au files are not supported");
-      fmts = "floating point";
+      fprintf (stderr, "%s: Floating point encoded .au files are not supported",
+               filename);
       break;
 
     case 23:
     case 24:
     case 25:
     case 26:
-      fprintf (stderr, "G.72x ADPCM encoded .au files are not supported");
-      fmts = "ADPCM";
+      fprintf (stderr, "%s: G.72x ADPCM encoded .au files are not supported",
+               filename);
       break;
 
     case 27:
       format = AFMT_A_LAW;
-      fmts = "A-Law";
       break;
 
     default:
-
       fprintf (stderr, "%s: Unknown encoding %d.\n", filename, fmt);
-      return;
-    }
-
-  if (oss_lseek (fd, p, SEEK_SET) == -1)
-    {
-      perror (filename);
-      fprintf (stderr, "Can't seek to the data chunk\n");
       return;
     }
 
   if (verbose)
     {
-      fprintf (stderr, "Playing .au file %s, %s/%s/%d Hz\n",
-	       filename, fmts, (channels == 1) ? "mono" : "stereo", speed);
+      fprintf (stderr, "Playing .au file %s, ", filename);
+      print_verbose (format, channels, speed);
 
-      if (verbose > 1)
+      if ((verbose > 1) && (p > 24))
 	{
-	  fprintf (stderr, "Annotations: ");
-	  for (i = 24; i < p; i++)
-	    if (isprint (hdr[i]))
-	      fprintf (stderr, "%c", hdr[i]);
-	    else
-	      fprintf (stderr, ".");
+          if (p > 1048) an_len = 1024;
+          else an_len = p - 24;
+          if (read (fd, hdr, an_len) < an_len)
+            {
+              fprintf (stderr, "%s: Can't read to pos %u\n", filename,
+                       an_len + 24);
+              return;
+            }
+	  fprintf (stderr, "%s: Annotations: ", filename);
+	  for (i = 0; i < an_len; i++)
+	    fprintf (stderr, "%c", isprint (hdr[i])?hdr[i]:'.');
 	  fprintf (stderr, "\n");
 	}
+    }
+
+  if (oss_lseek (fd, p - l - an_len, SEEK_CUR) == -1)
+    {
+      perror (filename);
+      fprintf (stderr, "Can't seek to the data chunk\n");
+      return;
     }
 
   if (!setup_device (fd, channels, format, speed))
@@ -914,6 +817,9 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
 static void
 play_iff (char *filename, int fd, unsigned char *buf, int type)
 {
+/*
+ * Generalized IFF parser - handles WAV, AIFF, AIFC, 8SVX, 16SV and MAUD.
+ */
   enum
   {
     COMM_BIT,
@@ -923,6 +829,8 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 #define COMM_FOUND (1 << COMM_BIT)
 #define SSND_FOUND (1 << SSND_BIT)
 #define FVER_FOUND (1 << FVER_BIT)
+
+#define LIST_HUNK 0x4c495354
 
 #define FVER_HUNK 0x46564552
 #define COMM_HUNK 0x434F4D4D
@@ -949,15 +857,17 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 #define FL32_FMT 0x464C3332
 #define ima4_FMT 0x696D6134
 #define NONE_FMT 0x4E4F4E45
-#define ms02_FMT 0x6D730002
-#define ms11_FMT 0x6D730011
 #define raw_FMT  0x72617720
 #define in24_FMT 0x696e3234
 #define ni24_FMT 0x6e693234
 #define in32_FMT 0x696E3332
 #define ni32_FMT 0x6E693332
 
-#define SEEK(fd, offset, n) \
+#define fmt_HUNK 0x666d7420
+#define data_HUNK 0x64617461
+#define INFO_HUNK 0x494e464f
+
+#define ASEEK(fd, offset, n) \
   do { \
     if (oss_lseek (fd, offset, SEEK_CUR) == -1) \
       { \
@@ -968,7 +878,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
       } \
   } while (0)
 
-#define READ(fd, buf, len, n) \
+#define AREAD(fd, buf, len, n) \
   do { \
     if (chunk_size < len) \
       { \
@@ -983,29 +893,57 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return; \
       } \
-    SEEK (fd, chunk_size - len, n); \
+    ASEEK (fd, chunk_size - len, n); \
+  } while (0)
+
+#define BITS2SFORMAT(endian) \
+  do { \
+    switch (bits) \
+      { \
+         case 8: format = AFMT_S8; break; \
+         case 16: format = AFMT_S16_##endian; break; \
+         case 24: format = AFMT_S32_##endian; break; \
+         case 32: format = AFMT_S32_##endian; break; \
+         default: format = AFMT_S16_##endian; break; \
+     } break; \
   } while (0)
 
   int channels = 1, bits = 8, format, speed = 11025;
-  int found = 0, chunk_size = 18, sound_size = 0, total_size;
   long double COMM_rate;
-  unsigned int chunk_id, timestamp, sound_loc = 0, offset = 0, csize = 12;
+  unsigned int chunk_id, chunk_size = 18, csize = 12, found = 0, offset = 0,
+               sound_loc = 0, sound_size = 0, timestamp, total_size;
+  int (*ne_int) (unsigned char *p, int l) = be_int;
 
-  if (type == _16SV_FILE) format = AFMT_S16_BE;
-  else format = AFMT_S8;
+  adpcm_coeff coeff[32] = {
+    {256, 0},
+    {512, -256},
+    {0, 0},
+    {192, 64},
+    {240, 0},
+    {460, -208},
+    {392, -232}
+  };
+  int nBlockAlign = 256;
+  int wSamplesPerBlock = 496, wNumCoeff = 7;
 
-  total_size = be_int (buf + 4, 4);
+  if (type == _8SVX_FILE) format = AFMT_S8;
+  else format = AFMT_S16_BE;
+  if (type == WAVE_FILE) ne_int = le_int;
+
+  total_size = ne_int (buf + 4, 4);
+  if (verbose > 2)
+    fprintf (stderr, "Filelen = %u\n", total_size);
   do
     {
       if (read (fd, buf, 8) < 8)
         {
-          fprintf (stderr, "%s: Cannot read AIFF chunk header at pos %d\n",
+          fprintf (stderr, "%s: Cannot read chunk header at pos %u\n",
                            filename, csize);
           if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta;
           return;
         }
       chunk_id = be_int (buf, 4);
-      chunk_size = be_int (buf + 4, 4);
+      chunk_size = ne_int (buf + 4, 4);
       if (chunk_size % 2) chunk_size += 1;
 
       switch (chunk_id)
@@ -1018,8 +956,8 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                          "%s: error: COMM hunk not singular!\n", filename);
                 return;
               }
-            if (type == AIFC_FILE) READ (fd, buf, 22, COMM);
-            else READ (fd, buf, 18, COMM);
+            if (type == AIFC_FILE) AREAD (fd, buf, 22, COMM);
+            else AREAD (fd, buf, 18, COMM);
             found |= COMM_FOUND;
 
             channels = be_int (buf, 2);
@@ -1028,14 +966,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 #endif
             bits = be_int (buf + 6, 2);
             bits += bits % 8;
-            switch (bits)
-              {
-                 case 8: format = AFMT_S8; break;
-                 case 16: format = AFMT_S16_BE; break;
-                 case 24: format = AFMT_S24_BE; break;
-                 case 32: format = AFMT_S32_BE; break;
-                 default: format = AFMT_S16_BE; break;
-              }
+            BITS2SFORMAT (BE);
 #if AFMT_S16_NE == AFMT_S16_LE
             {
               unsigned char tmp, *s = buf + 8; int i;
@@ -1063,17 +994,9 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                 case in32_FMT: format = AFMT_S32_BE; break;
                 case ni24_FMT: format = AFMT_S24_LE; break;
                 case ni32_FMT: format = AFMT_S32_LE; break;
-                case sowt_FMT:
+                case sowt_FMT: BITS2SFORMAT (LE); break;
                 /* Apple Docs refer to this as AFMT_S16_LE only, but some
                    programs misinterpret this. */
-                  switch (bits)
-                    {
-                      case 8: format = AFMT_S8; break;
-                      case 16: format = AFMT_S16_LE; break;
-                      case 24: format = AFMT_S24_LE; break;
-                      case 32: format = AFMT_S32_LE; break;
-                      default: format = AFMT_S16_LE; break;
-                    } break;
                 case raw_FMT:
                 /* Apple Docs refer to this as AFMT_U8 only, but some programs
                    misinterpret this. */
@@ -1087,12 +1010,10 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                 case ALAW_FMT: format = AFMT_A_LAW; break;
                 case ulaw_FMT:
                 case ULAW_FMT: format = AFMT_MU_LAW; break;
-                case ms11_FMT:
                 case ima4_FMT: format = AFMT_IMA_ADPCM; break;
 #if 0
                 case fl32_FMT:
                 case FL32_FMT: format = AFMT_FLOAT; break;
-                case ms02_FMT: format = -1; break; /* MS ADPCM */
 #endif
                 default:
                   fprintf (stderr,
@@ -1132,67 +1053,141 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
             if ((!strcmp (filename, "-")) && (oss_lseek == oss_lseek_stdin))
               goto stdinext;
-            SEEK (fd, chunk_size - 8, SSND);
+            ASEEK (fd, chunk_size - 8, SSND);
             break;
           case FVER_HUNK:
-            READ (fd, buf, 4, FVER);
+            AREAD (fd, buf, 4, FVER);
             timestamp = be_int (buf, 4);
             found |= FVER_FOUND;
             break;
 
           /* 8SVX chunks */
-          case VHDR_HUNK: READ (fd, buf, 14, VHDR);
-                          speed = be_int (buf + 12, 2);
-                          found |= COMM_FOUND;
-                          break;
+          case VHDR_HUNK:
+            AREAD (fd, buf, 14, VHDR);
+            speed = be_int (buf + 12, 2);
+            found |= COMM_FOUND;
+            break;
+          case data_HUNK: /* WAVE chunk */
+            if (verbose > 3)
+              fprintf (stderr, "DATA chunk. Offs = %u, "
+                       "len = %u\n", csize+8, chunk_size);
+            sound_loc = csize + 8;
           case MDAT_HUNK: /* MAUD chunk */
-          case BODY_HUNK: sound_size = chunk_size;
-                          sound_loc = csize + 4;
-                          found |= SSND_FOUND;
-                          if ((!strcmp (filename, "-")) &&
-                              (oss_lseek == oss_lseek_stdin))
-                             goto stdinext;
-                          SEEK (fd, chunk_size, BODY);
-                          break;
-          case CHAN_HUNK: READ (fd, buf, 4, CHAN);
-                          channels = be_int (buf, 4);
-                          channels = (channels & 0x01) +
-                                     ((channels & 0x02) >> 1) +
-                                     ((channels & 0x04) >> 2) +
-                                     ((channels & 0x08) >> 3);
-                          break;
+          case BODY_HUNK:
+            sound_size = chunk_size;
+            if (chunk_id != data_HUNK) sound_loc = csize + 4;
+            found |= SSND_FOUND;
+            if ((!strcmp (filename, "-")) &&
+                (oss_lseek == oss_lseek_stdin))
+              goto stdinext;
+            ASEEK (fd, chunk_size, BODY);
+            break;
+          case CHAN_HUNK:
+            AREAD (fd, buf, 4, CHAN);
+            channels = be_int (buf, 4);
+            channels = (channels & 0x01) +
+                       ((channels & 0x02) >> 1) +
+                       ((channels & 0x04) >> 2) +
+                       ((channels & 0x08) >> 3);
+            break;
 
           /* MAUD chunks */
-          case MHDR_HUNK: READ (fd, buf, 20, MHDR);
-                          bits = be_int (buf + 4, 2);
-                          switch (bits)
-                            {
-                              case 8: format = AFMT_S8; break;
-                              case 16: format = AFMT_S16_BE; break;
-                              case 24: format = AFMT_S24_BE; break;
-                              case 32: format = AFMT_S32_BE; break;
-                              default: format = AFMT_S16_BE; break;
-                            }
-                          speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
-                          channels = be_int (buf + 16, 2);
-                          switch (be_int (buf + 18, 2))
-                            {
-                              case 0: /* NONE */ break;
-                              case 2: format = AFMT_A_LAW; break;
-                              case 3: format = AFMT_MU_LAW; break;
-                              case 6: format = AFMT_IMA_ADPCM; break;
-                              default: fprintf(stderr, "%s: format not"
-                                               "supported", filename);
-                            }
-                          found |= COMM_FOUND;
-                          break;
+          case MHDR_HUNK:
+            AREAD (fd, buf, 20, MHDR);
+            bits = be_int (buf + 4, 2);
+            BITS2SFORMAT (BE);
+            speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
+            channels = be_int (buf + 16, 2);
+            switch (be_int (buf + 18, 2))
+              {
+                case 0: /* NONE */ break;
+                case 2: format = AFMT_A_LAW; break;
+                case 3: format = AFMT_MU_LAW; break;
+                case 6: format = AFMT_IMA_ADPCM; break;
+                default: fprintf(stderr, "%s: format not"
+                                         "supported", filename);
+              }
+            found |= COMM_FOUND;
+            break;
+
+          /* WAVE chunks */
+          case fmt_HUNK: { int len, i, x;
+            if (found & COMM_FOUND)
+              {
+                fprintf (stderr, "%s: error: fmt hunk not singular!\n",
+                         filename);
+                return;
+              }
+            if (chunk_size > 1024) len = 1024;
+            else len = chunk_size;
+            AREAD (fd, buf, len, fmt);
+
+            format = ne_int (buf, 2);
+            if (verbose > 3)
+              fprintf (stderr, "FMT chunk: len = %u, fmt = %#x\n",
+                       chunk_size, format);
+
+            channels = ne_int (buf + 2, 2);
+            speed = ne_int (buf + 4, 4);
+            nBlockAlign = ne_int (buf + 12, 2);
+            bits = ne_int (buf + 14, 2);
+            bits += bits % 8;
+
+            if (format == 0xFFFE)
+              {
+                if (chunk_size < 40)
+                   {
+                     fprintf (stderr, "%s: invallid fmt chunk\n", filename);
+                     return;
+                   }
+                format = ne_int (buf + 24, 2);
+              }
+            switch (format)
+              {
+                case 0x1:
+                  if (type == WAVE_FILE) BITS2SFORMAT (LE);
+                  else BITS2SFORMAT (BE);
+                  if (bits == 8) format = AFMT_U8;
+                  break;
+                case 0x2: format = AFMT_MS_ADPCM; break;
+                case 0x6: format = AFMT_A_LAW; break;
+                case 0x7: format = AFMT_MU_LAW; break;
+                case 0x11: format = AFMT_IMA_ADPCM; break;
+#if 0
+                case 0x3: format = AFMT_FLOAT; break;
+                case 0x50: /* MPEG */
+                case 0x55: /* MPEG 3 */
+#endif
+                default:
+                  fprintf (stderr, "%s: Unsupported wave format %#x\n",
+                           filename, format);
+                  return;
+              }
+            found |= COMM_FOUND;
+
+            if ((format != AFMT_MS_ADPCM) || (chunk_size < 20)) break;
+            wSamplesPerBlock = ne_int (buf + 18, 2);
+            if (chunk_size < 22) break;
+            wNumCoeff = ne_int (buf + 20, 2);
+            if (wNumCoeff > 32) wNumCoeff = 32;
+
+            x = 22;
+
+            for (i = 0; (i < wNumCoeff) && (x < chunk_size); i++)
+              {
+                coeff[i].coeff1 = (short) ne_int (buf + x, 2);
+                x += 2;
+                coeff[i].coeff2 = (short) ne_int (buf + x, 2);
+                x += 2;
+              }
+            } break;
 
           /* common chunks */
           case NAME_HUNK:
           case AUTH_HUNK:
           case ANNO_HUNK:
           case COPY_HUNK:
-            if (verbose > 3)
+            if (verbose > 1)
               {
                 int i, len;
 
@@ -1201,27 +1196,32 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
                 else len = chunk_size;
                 switch (chunk_id)
                   {
-                    case NAME_HUNK: fprintf (stderr, "Name: ");
-                                    READ (fd, buf, len, NAME);
-                                    break;
-                    case AUTH_HUNK: fprintf (stderr, "Author: ");
-                                    READ (fd, buf, len, AUTH);
-                                    break;
-                    case COPY_HUNK: fprintf (stderr, "Copyright: ");
-                                    READ (fd, buf, len, COPY);
-                                    break;
-                    case ANNO_HUNK: fprintf (stderr, "Annonations: ");
-                                    READ (fd, buf, len, ANNO);
-                                    break;
+                    case NAME_HUNK:
+                      fprintf (stderr, "Name: ");
+                      AREAD (fd, buf, len, NAME);
+                      break;
+                    case AUTH_HUNK:
+                      fprintf (stderr, "Author: ");
+                      AREAD (fd, buf, len, AUTH);
+                      break;
+                    case COPY_HUNK:
+                      fprintf (stderr, "Copyright: ");
+                      AREAD (fd, buf, len, COPY);
+                      break;
+                    case ANNO_HUNK:
+                      fprintf (stderr, "Annonations: ");
+                      AREAD (fd, buf, len, ANNO);
+                      break;
                   }
                 for (i = 0; i < len; i++)
-                  fprintf (stderr, "%c", buf[i]?buf[i]:' ');
+                  fprintf (stderr, "%c", isprint (buf[i])?buf[i]:' ');
                 fprintf (stderr, "\n");
                 break;
               }
 
-          default: SEEK (fd, chunk_size, UNKNOWN);
-                   break;
+          default:
+            ASEEK (fd, chunk_size, UNKNOWN);
+            break;
        }
 
       csize += chunk_size + 8;
@@ -1258,6 +1258,8 @@ stdinext:
         fprintf(stderr, "Playing AIFF file %s, ", filename);
       else if (type == AIFC_FILE)
         fprintf(stderr, "Playing AIFC file %s, ", filename);
+      else if ((type == WAVE_FILE) || (type == WAVE_FILE_BE))
+        fprintf(stderr, "Playing WAVE file %s, ", filename);
       else if (type == _8SVX_FILE)
         fprintf(stderr, "Playing 8SVX file %s, ", filename);
       else if (type == _16SV_FILE)
@@ -1267,10 +1269,19 @@ stdinext:
       print_verbose (format, channels, speed);
     }
 
-  if (!setup_device (fd, channels, format, speed))
-    return;
+  switch (format)
+    {
+      case AFMT_MS_ADPCM:
+        if (!setup_device (fd, channels, AFMT_S16_LE, speed)) return;
+        dump_msadpcm (fd, sound_size, channels, nBlockAlign,
+                      wSamplesPerBlock, coeff);
+        break;
+      default: 
+        if (!setup_device (fd, channels, format, speed)) return;
+        if (bits != 24) dump_data (fd, sound_size);
+        else dump_data_24 (fd, sound_size);
+    }
 
-  dump_data (fd, sound_size);
   return;
 }
 
@@ -1278,17 +1289,31 @@ stdinext:
 static void
 play_voc (char *filename, int fd, unsigned char *hdr, int l)
 {
-  int data_offs, vers, id, len, blklen;
+#define VREAD(fd, buf, len) \
+  do { \
+    if (read (fd, buf, len) < len) \
+      { \
+        fprintf (stderr, "%s: Can't read %d bytes at pos %d\n", \
+                 filename, len, l); \
+        return; \
+      } \
+    pos += len; \
+  } while (0)
+
+  unsigned int data_offs, vers, id, len, blklen, fmt, tmp,
+               loopcount = 0, loopoffs = 4, pos = l + 7;
   unsigned char buf[256], block[256];
-  int speed = 11025;
-  int channels = 1, bits = 8;
-  int fmt, tmp;
+  int speed = 11025, channels = 1, bits = 8, format = AFMT_U8;
 
-  int loopcount = 0, loopoffs = 4;
+  if (read (fd, hdr + 19, 7) < 7)
+    {
+      fprintf (stderr, "%s: Not a valid .VOC file\n", filename);
+      return;
+    }
 
-  data_offs = le_int (&hdr[0x14], 2);
-  vers = le_int (&hdr[0x16], 2);
-  id = le_int (&hdr[0x18], 2);
+  data_offs = le_int (hdr + 0x14, 2);
+  vers = le_int (hdr + 0x16, 2);
+  id = le_int (hdr + 0x18, 2);
 
   if ((((~vers) + 0x1234) & 0xffff) != id)
     {
@@ -1301,65 +1326,85 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 
    /*LINTED*/ while (1)
     {
-      oss_lseek (fd, data_offs, SEEK_SET);
+      if (oss_lseek (fd, data_offs - pos, SEEK_CUR) == -1)
+        {
+          fprintf (stderr, "%s: Can't seek to pos %d\n", filename, data_offs);
+          return;
+        }
+      pos = data_offs + 4;
 
-      if (read (fd, buf, 1) != 1)
-	return;
+      if ((tmp = read (fd, buf, 1)) < 1)
+        {
+          /* Don't warn when read returns 0 - it may be end of file. */
+          if (tmp != 0)
+            fprintf (stderr, "%s: Can't read 1 byte at pos %d\n", filename, l);
+          return;
+        }
 
       if (buf[0] == 0)
 	return;			/* End */
 
-      if (read (fd, &buf[1], 3) != 3)
+      if (read (fd, buf + 1, 3) != 3)
 	{
 	  fprintf (stderr, "%s: Truncated .VOC file (%d)\n",
 		   filename, buf[0]);
 	  return;
 	}
 
-      blklen = len = le_int (&buf[1], 3);
+      blklen = len = le_int (buf + 1, 3);
 
       if (verbose > 3)
-	fprintf (stderr, "%0x: Block type %d, len %d\n",
-		 data_offs, buf[0], len);
+	fprintf (stderr, "%s: %0x: Block type %d, len %d\n",
+		 filename, data_offs, buf[0], len);
       switch (buf[0])
 	{
 
 	case 1:		/* Sound data block */
-	  if (read (fd, block, 2) != 2)
-	    return;
+	  VREAD (fd, block, 2);
 
 	  tmp = 256 - block[0];	/* Time constant */
-	  speed = (1000000 + tmp / 2) / tmp;
+	  speed = (1000000 + tmp / 2) / tmp / channels;
 
 	  fmt = block[1];
 	  len -= 2;
 
-	  if (fmt != 0)
-	    {
-	      fprintf (stderr,
-		       "%s: Only PCM encoded .VOC file supported\n",
-		       filename);
-	      return;
-	    }
+          switch (fmt)
+            {
+              case 0: format = AFMT_U8; break;
+              case 1: format = AFMT_CR_ADPCM_4; break;
+              case 2: format = AFMT_CR_ADPCM_3; break;
+              case 3: format = AFMT_CR_ADPCM_2; break;
+              case 4: format = AFMT_S16_LE; break;
+              case 6: format = AFMT_A_LAW; break;
+              case 7: format = AFMT_MU_LAW; break;
+              default:
+                fprintf (stderr,
+                         "%s: encoding %d is not supported\n", filename, fmt);
+                return;
+            }
 
-	  if (!setup_device (fd, channels, bits, speed))
+	  if (!setup_device (fd, channels, format, speed))
 	    return;
 
 	case 2:		/* Continuation data */
-	  dump_data (fd, len);
+          if ((format < 0) && (dump_creative_adpcm (fd, len, format) == -1))
+            return;
+          else if (dump_data (fd, len) == -1)
+            return;
+          pos += len;
 	  break;
 
 	case 3:		/* Silence */
-	  if (read (fd, block, 3) != 3)
-	    return;
+	  VREAD (fd, block, 3);
 	  len = le_int (block, 2);
 	  tmp = 256 - block[2];	/* Time constant */
 	  speed = (1000000 + tmp / 2) / tmp;
-	  if (!setup_device (fd, 1, 8, speed))
+	  if (!setup_device (fd, 1, -AFMT_U8, speed))
 	    return;
 	  {
 	    int i;
 	    unsigned char empty[1024];
+
 	    for (i = 0; i < 1024; i++)
 	      empty[i] = 0x80;
 
@@ -1373,13 +1418,26 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 		len -= i;
 	      }
 	    if (!fixedspeed)
-	      ioctl (audiofd, SNDCTL_DSP_POST, 0);
+	      ioctl (audiofd, SNDCTL_DSP_POST, NULL);
 	  }
 	  break;
 
+        case 5: 	/* Text */
+          if (verbose)
+            {
+              int i;
+
+              if (len > 256) len = 256;
+              VREAD (fd, block, len);
+              fprintf (stderr, "Text: ");
+              for (i = 0; i < len; i++)
+                fprintf (stderr, "%c", isprint(block[i])?block[i]:'.');
+              fprintf (stderr, "\n");
+            }
+          break;
+
 	case 6:		/* Loop start */
-	  if (read (fd, block, 2) != 2)
-	    return;
+	  VREAD (fd, block, 2);
 	  loopoffs = data_offs + blklen + 4;
 	  loopcount = le_int (block, 2);
 	  break;
@@ -1395,46 +1453,59 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 	  break;
 
 	case 8:		/* Sampling parameters */
-	  if (read (fd, block, 4) != 4)
-	    return;
+	  VREAD (fd, block, 4);
 
-	  bits = 8;
+          speed = 256000000/(channels * (65536 - le_int (block, 2)));
 	  channels = block[3] + 1;
 	  fmt = block[2];
-	  if (fmt != 0)
-	    {
-	      fprintf (stderr,
-		       "%s: Only PCM encoded .VOC file supported\n",
-		       filename);
-	      return;
-	    }
+          switch (fmt)
+            {
+              case 0: format = AFMT_U8; break;
+              case 1: format = AFMT_CR_ADPCM_4; break;
+              case 2: format = AFMT_CR_ADPCM_3; break;
+              case 3: format = AFMT_CR_ADPCM_2; break;
+              case 4: format = AFMT_S16_LE; break;
+              case 6: format = AFMT_A_LAW; break;
+              case 7: format = AFMT_MU_LAW; break;
+              default:
+                fprintf (stderr,
+                         "%s: encoding %d is not supported\n", filename, fmt);
+                return;
+            }
 	  break;
 
 	case 9:		/* New format sound data */
-	  if (read (fd, block, 12) != 12)
-	    return;
+	  VREAD (fd, block, 12);
 
 	  len -= 12;
 
-	  speed = le_int (&block[0], 2);
+	  speed = le_int (block, 2);
 	  bits = block[2];
 	  channels = block[3];
-	  fmt = le_int (&block[4], 2);
+	  fmt = le_int (block + 4, 2);
 
-	  if (fmt != 0 && fmt != 4 && fmt != 7)
-	    {
-	      fprintf (stderr,
-		       "%s: Only PCM or mu-Law encoded .VOC file supported\n",
-		       filename);
-	      return;
-	    }
+          switch (fmt)
+            {
+              case 0: format = AFMT_U8; break;
+              case 1: format = AFMT_CR_ADPCM_4; break;
+              case 2: format = AFMT_CR_ADPCM_3; break;
+              case 3: format = AFMT_CR_ADPCM_2; break;
+              case 4: format = AFMT_S16_LE; break;
+              case 6: format = AFMT_A_LAW; break;
+              case 7: format = AFMT_MU_LAW; break;
+              default:
+                fprintf (stderr,
+                         "%s: encoding %d is not supported\n", filename, fmt);
+                return;
+            }
 
-	  if (fmt == 7)
-	    bits = AFMT_MU_LAW;
-
-	  if (!setup_device (fd, channels, bits, speed))
+	  if (!setup_device (fd, channels, format, speed))
 	    return;
-	  dump_data (fd, len);
+          if ((format < 0) && (dump_creative_adpcm (fd, len, format) == -1))
+            return;
+          else if (dump_data (fd, len) == -1)
+            return;
+          pos += len;
 	  break;
 	}
 
@@ -1483,8 +1554,7 @@ play_file (char *filename)
       return;
     }
 
-  strncpy (current_filename, filepart (filename),
-	   sizeof (current_filename) - 1);
+  strncpy (current_filename, filepart (filename), sizeof (current_filename));
   current_filename[sizeof (current_filename) - 1] = 0;
 
   if ((l = read (fd, buf, 12)) == -1)
@@ -1500,75 +1570,63 @@ play_file (char *filename)
     }
 
 /*
- * Try to detect the file type - First .aiff
+ * Try to detect the file type - First .wav
  */
-
-  if (l > 11 &&
-      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "AIFF", 4) == 0)
+  switch (be_int (buf, 4))
     {
-      play_iff (filename, fd, buf, AIFF_FILE);
-      goto done;
+      case SUN_MAGIC:
+      case DEC_MAGIC:
+      case SUN_INV_MAGIC:
+      case DEC_INV_MAGIC:
+        if ((i = read (fd, buf + 12, 12)) == -1)
+          {
+            perror (filename);
+            goto seekerror;
+          }
+        l += i;
+        if (l < 24) break;
+        play_au (filename, fd, buf, l);
+        goto done;
+      case Crea_MAGIC:
+        if ((i = read (fd, buf + 12, 7)) == -1)
+          {
+            perror (filename);
+            goto seekerror;
+          }
+        l += i;
+        if ((l < 19) || (memcmp (buf, "Creative Voice File", 19))) break;
+        play_voc (filename, fd, buf, l);
+        goto done;
+      case RIFF_MAGIC:
+        if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
+        play_iff (filename, fd, buf, WAVE_FILE);
+        goto done;
+      case RIFX_MAGIC:
+        if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
+        play_iff (filename, fd, buf, WAVE_FILE_BE);
+        goto done;
+      case FORM_MAGIC:
+        if (l < 12) break;
+        switch (be_int (buf + 8, 4))
+          {
+            case AIFF_MAGIC:
+              play_iff (filename, fd, buf, AIFF_FILE);
+              goto done;
+            case AIFC_MAGIC:
+              play_iff (filename, fd, buf, AIFC_FILE);
+              goto done;
+            case _8SVX_MAGIC:
+              play_iff (filename, fd, buf, _8SVX_FILE);
+              goto done;
+            case _16SV_MAGIC:
+              play_iff (filename, fd, buf, _16SV_FILE);
+              goto done;
+            default: break;
+          }
+      default: break;
     }
-
-  if (l > 11 &&
-      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "AIFC", 4) == 0)
-    {
-      play_iff (filename, fd, buf, AIFC_FILE);
-      goto done;
-    }
-
-  if (l > 11 &&
-      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "8SVX", 4) == 0)
-    {
-      play_iff (filename, fd, buf, _8SVX_FILE);
-      goto done;
-    }
-
-  if (l > 11 &&
-      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "16SV", 4) == 0)
-    {
-      play_iff (filename, fd, buf, _16SV_FILE);
-      goto done;
-    }
-
-  if (l > 11 &&
-      memcmp (&buf[0], "FORM", 4) == 0 && memcmp (&buf[8], "MAUD", 4) == 0)
-    {
-      play_iff (filename, fd, buf, MAUD_FILE);
-      goto done;
-    }
-
-  if ((i = read (fd, buf + 12, sizeof (buf) - 12)) == -1)
-    {
-      perror (filename);
-      goto seekerror;
-    }
-  l += i;
 
   oss_lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
-
-  if (l > 16 &&
-      memcmp (&buf[0], "RIFF", 4) == 0 && memcmp (&buf[8], "WAVE", 4) == 0)
-    {
-      play_wave (filename, fd, buf, l);
-      goto done;
-    }
-
-  if (l > 24 &&
-      (*(unsigned int *) &buf[0] == SUN_MAGIC ||
-       *(unsigned int *) &buf[0] == DEC_MAGIC ||
-       *(unsigned int *) &buf[0] == SUN_INV_MAGIC ||
-       *(unsigned int *) &buf[0] == DEC_INV_MAGIC))
-    {
-      play_au (filename, fd, buf, l);
-      goto done;
-    }
-
-  if (l > 32 && memcmp (&buf[0], "Creative Voice File", 16) == 0)
-    {
-      play_voc (filename, fd, buf, l);
-      goto done;
-    }
 
 /*
  *	The file was not identified by it's content. Try using the file name
@@ -1598,9 +1656,9 @@ play_file (char *filename)
       if (!quiet)
 	fprintf (stderr,
 		 "%s: Unknown format. Assuming RAW audio (%d/%d/%d.\n",
-		 filename, default_speed, default_bits, default_channels);
+		 filename, DEFAULT_SPEED, DEFAULT_BITS, DEFAULT_CHANNELS);
 
-      if (!setup_device (fd, default_channels, default_bits, default_speed))
+      if (!setup_device (fd, DEFAULT_CHANNELS, DEFAULT_BITS, DEFAULT_SPEED))
 	return;
 
       dump_data (fd, 0x7fffffff);
@@ -1625,7 +1683,7 @@ play_file (char *filename)
       if (verbose)
 	fprintf (stderr, "%s: Playing RAW file.\n", filename);
 
-      if (!setup_device (fd, default_channels, default_bits, default_speed))
+      if (!setup_device (fd, DEFAULT_CHANNELS, DEFAULT_BITS, DEFAULT_SPEED))
 	return;
 
       dump_data (fd, 0x7fffffff);
@@ -1664,7 +1722,7 @@ done:
   close (fd);
 
   if (!fixedspeed)
-    ioctl (audiofd, SNDCTL_DSP_SYNC, 0);
+    ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
   return;
 seekerror:
   exitstatus++;
@@ -1731,8 +1789,22 @@ select_playtgt (char *playtgt)
   exit (-1);
 }
 
+static void get_int (int signum)
+{
+#if 0
+  if (quitflag == 1)
+    {
+#ifdef SIGQUIT
+      signal (SIGQUIT, SIG_DFL);
+      kill (getpid(), SIGQUIT);
+#endif
+    } 
+#endif
+  quitflag = 1;
+}
+
 int
-main (int argc, char *argv[])
+main (int argc, char **argv)
 {
   char *prog;
   extern int optind;
@@ -1779,15 +1851,15 @@ main (int argc, char *argv[])
 #endif
 
 	case 'b':
-	  sscanf (optarg, "%d", &default_bits);
+	  sscanf (optarg, "%d", &force_bits);
 	  break;
 
 	case 's':
-	  sscanf (optarg, "%d", &default_speed);
+	  sscanf (optarg, "%d", &force_speed);
 	  break;
 
 	case 'c':
-	  sscanf (optarg, "%d", &default_channels);
+	  sscanf (optarg, "%d", &force_channels);
 	  break;
 
 	default:
@@ -1807,9 +1879,14 @@ main (int argc, char *argv[])
   if (playtgt != NULL)
     select_playtgt (playtgt);
 
+#ifdef SIGQUIT
+  signal (SIGQUIT, get_int);
+#endif
+
   for (i = 1; i < argc; i++)
     play_file (argv[i]);
 
   close (audiofd);
   return exitstatus;
 }
+
