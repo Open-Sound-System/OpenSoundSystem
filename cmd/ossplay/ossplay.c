@@ -24,10 +24,12 @@
 
 #undef  MPEG_SUPPORT
 
-#define AFMT_MS_ADPCM -(AFMT_S16_LE | 0x1000000)
-#define AFMT_CR_ADPCM_2 -(AFMT_U8 | 0x1000000)
-#define AFMT_CR_ADPCM_3 -(AFMT_U8 | 0x2000000)
-#define AFMT_CR_ADPCM_4 -(AFMT_U8 | 0x4000000)
+#define AFMT_MS_ADPCM	-(AFMT_S16_LE | 0x1000000)
+#define AFMT_CR_ADPCM_2	-(AFMT_U8 | 0x1000000)
+#define AFMT_CR_ADPCM_3	-(AFMT_U8 | 0x2000000)
+#define AFMT_CR_ADPCM_4	-(AFMT_U8 | 0x4000000)
+#define AFMT_FIBO_DELTA	-(AFMT_U8 | 0x10000000)
+#define AFMT_EXP_DELTA	-(AFMT_U8 | 0x20000000)
 
 /* Magic numbers used in Sun and NeXT audio files (.au/.snd) */
 #define SUN_MAGIC 	0x2e736e64	/* Really '.snd' */
@@ -41,6 +43,7 @@
 #define AIFC_MAGIC	0x41494643	/* 'AIFC' */
 #define _8SVX_MAGIC	0x38535658	/* '8SVX' */
 #define _16SV_MAGIC	0x31365356	/* '16SV' */
+#define MAUD_MAGIC	0x4D415544	/* 'MAUD' */
 
 /* Magic numbers for .wav files */
 #define RIFF_MAGIC	0x52494646	/* 'RIFF' */
@@ -98,6 +101,7 @@ static void describe_error (void);
 static int dump_data (int, unsigned int);
 static int dump_data_24 (int, unsigned int, int);
 static int dump_creative_adpcm (int, unsigned int, int);
+static int dump_fibonacci_delta (int, unsigned int, int);
 static int dump_msadpcm (int, unsigned int, int, int, int, adpcm_coeff *);
 static int dump_sound (int, unsigned int, int, int, int, void *);
 static char * filepart (char *);
@@ -353,6 +357,10 @@ dump_sound (int fd, unsigned int filesize, int format, int channels,
       case AFMT_CR_ADPCM_4:
         if (!setup_device (fd, AFMT_U8, channels, speed)) return -2;
         return dump_creative_adpcm (fd, filesize, format);
+      case AFMT_FIBO_DELTA:
+      case AFMT_EXP_DELTA:
+        if (!setup_device (fd, AFMT_U8, channels, speed)) return -2;
+        return dump_fibonacci_delta (fd, filesize, format);
       case AFMT_S24_LE:
         if (!setup_device (fd, AFMT_S32_NE, channels, speed)) return -2;
         return dump_data_24 (fd, filesize, 0);
@@ -434,6 +442,53 @@ dump_data_24 (int fd, unsigned int filesize, int big_endian)
 
       filesize -= l;
     }
+  return 0;
+}
+
+static int
+dump_fibonacci_delta (int fd, unsigned int filesize, int format)
+{
+  const char CodeToDelta[16] = { -34, -21, -13, -8, -5, -3, -2, -1,
+                                  0, 1, 2, 3, 5, 8, 13, 21 };
+  const char CodeToExpDelta[16] = { -128, -64, -32, -16, -8, -4, -2, -1,
+                                     0, 1, 2, 4, 8, 16, 32, 64 };
+
+  int bsize, l, i, x;
+  unsigned char buf[1024], obuf[2048], d;
+  const char * table;
+
+  if (format == AFMT_EXP_DELTA) table = CodeToExpDelta;
+  else table = CodeToDelta;
+
+  bsize = sizeof (buf);
+
+  OREAD (fd, buf, 1);
+  x = *buf;
+  OWRITE (audiofd, buf, 1);
+
+  while (filesize)
+    {
+      l = bsize;
+
+      if (l > filesize)
+        l = filesize;
+
+      OREAD (fd, buf, l);
+      for (i = 1; i < 2*l; ++i)
+        {
+          d = buf[i/2];
+          if (i & 1) d &= 0xF;
+          else d >>= 4;
+          x += CodeToDelta[d];
+          if (x > 255) x = 255;
+          if (x < 0) x = 0;
+          obuf[i] = x;
+        }
+      OWRITE (audiofd, obuf, 2*l);
+
+      filesize -= l;
+    }
+
   return 0;
 }
 
@@ -555,6 +610,8 @@ print_verbose (int format, int channels, int speed)
        case AFMT_FLOAT: fmt = "float"; break;
        case AFMT_VORBIS: fmt = "vorbis"; break;
        case AFMT_MPEG: fmt = "mpeg"; break;
+       case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
+       case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
     }
   fprintf (stderr, "%s/%s/%d Hz\n", fmt, chn, speed);
 }
@@ -571,6 +628,7 @@ dump_msadpcm (int fd, unsigned int dataleft, int channels, int nBlockAlign,
     768, 614, 512, 409, 307, 230, 230, 230
   };
   int predictor[2], delta[2], samp1[2], samp2[2];
+  int pred, new, error_delta, i_delta;
 
 /*
  * Playback procedure
@@ -645,8 +703,6 @@ dump_msadpcm (int fd, unsigned int dataleft, int channels, int nBlockAlign,
 	  while (n < (wSamplesPerBlock * 2 * channels))
 	    for (i = 0; i < channels; i++)
 	      {
-		int pred, new, error_delta, i_delta;
-
 		pred = ((samp1[i] * coeff[predictor[i]].coeff1)
 			+ (samp2[i] * coeff[predictor[i]].coeff2)) / 256;
 		i_delta = error_delta = GETNIBBLE;
@@ -720,8 +776,6 @@ dump_creative_adpcm (int fd, unsigned int filesize, int format)
   OREAD (fd, buf, 1);
   filesize--;
   pred = *buf;
-  if (pred < 0) pred = 0;
-  else if (pred > 255) pred = 255;
   OWRITE (audiofd, buf, 1);
 
   while (filesize)
@@ -910,7 +964,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
   do { \
     if (oss_lseek (fd, offset, SEEK_CUR) == -1) \
       { \
-        fprintf (stderr, "%s: error: cannot seek to end of " #n "chunk.\n", \
+        fprintf (stderr, "%s: error: cannot seek to end of " #n " chunk.\n", \
                  filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return; \
@@ -922,13 +976,13 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
     if (chunk_size < len) \
       { \
         fprintf (stderr, \
-                 "%s: error: chunk " #n "size is too small.\n", filename); \
+                 "%s: error: chunk " #n " size is too small.\n", filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return; \
       } \
     if (read(fd, buf, len) < len) \
       { \
-        fprintf (stderr, "%s: error: cannot read " #n "chunk.\n", filename); \
+        fprintf (stderr, "%s: error: cannot read " #n " chunk.\n", filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return; \
       } \
@@ -1099,10 +1153,20 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             found |= FVER_FOUND;
             break;
 
-          /* 8SVX chunks */
+          /* 8SVX / 16SV chunks */
           case VHDR_HUNK:
-            AREAD (fd, buf, 14, VHDR);
+            AREAD (fd, buf, 16, VHDR);
             speed = be_int (buf + 12, 2);
+            if (type == _8SVX_FILE) switch (buf[15])
+              {
+                case 0: format = AFMT_S8; break;
+                case 1: format = AFMT_FIBO_DELTA; break;
+                case 2: format = AFMT_EXP_DELTA; break;
+                default:
+                 fprintf (stderr, "%s: Unsupported compression %d\n",
+                          filename, buf[15]);
+                return;
+              }
             found |= COMM_FOUND;
             break;
           case data_HUNK: /* WAVE chunk */
@@ -1636,6 +1700,9 @@ play_file (char *filename)
               goto done;
             case _16SV_MAGIC:
               play_iff (filename, fd, buf, _16SV_FILE);
+              goto done;
+            case MAUD_MAGIC:
+              play_iff (filename, fd, buf, MAUD_FILE);
               goto done;
             default: break;
           }
