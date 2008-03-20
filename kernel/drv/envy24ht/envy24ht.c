@@ -1527,7 +1527,7 @@ envy24ht_open_output (int dev, int mode, int open_flags)
   oss_native_word flags;
   adev_p adev = audio_engines[dev];
 
-  if (mode == OPEN_READ)
+  if (mode & OPEN_READ)
     {
       cmn_err (CE_CONT, "Recording is not possible with %s\n", adev->devnode);
       return -ENOTSUP;
@@ -1575,7 +1575,7 @@ envy24ht_close (int dev, int mode)
 
   if (portc->open_mode & OPEN_READ)
     devc->busy_rec_channels &= ~portc->used_chmask;
-  else
+  if (portc->open_mode & OPEN_WRITE)
     devc->busy_play_channels &= ~portc->used_chmask;
   portc->open_mode = 0;
 
