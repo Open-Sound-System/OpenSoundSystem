@@ -1422,7 +1422,6 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
 	    for (i=0;i<oss_num_cards;i++)
       	    if (!cards[i]->available)
 	       {
-cmn_err(CE_CONT, "Reusing osdev%d\n", i);
 	  	    osdev = cards[i];
 	            break;
 	       }
@@ -1549,7 +1548,6 @@ osdev_delete (oss_device_t * osdev)
   if (osdev == NULL)
     return;
   osdev->available = 0;
-cmn_err(CE_CONT, "Make osdev %s unavailable\n", osdev->nick);
 
   switch (osdev->dev_type)
     {

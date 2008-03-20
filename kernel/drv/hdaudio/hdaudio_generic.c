@@ -86,9 +86,10 @@ static int
 attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		   widget_t * widget, int group, int group_mode)
 {
-  int i, err, ninputs;
+  int i, cnum, ninputs;
   int g = group;
   int use_mutegroup = 0;
+  oss_mixext *ent;
 
 /*
  * Control for input amplifier(s)
@@ -161,7 +162,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		  name = tmp;
 		}
 
-	      if ((err = mixer_ext_create_control (mixer->mixer_dev,
+	      if ((cnum = mixer_ext_create_control (mixer->mixer_dev,
 						   group,
 						   num,
 						   hdaudio_set_control,
@@ -170,7 +171,13 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 						   MIXF_READABLE |
 						   MIXF_WRITEABLE |
 						   MIXF_CENTIBEL)) < 0)
-		return err;
+		return cnum;
+
+	      /* Copy RGB color */
+	      if (widget->rgbcolor != 0)
+	      if ((ent = mixer_find_ext (dev, cnum)) != NULL)
+		 ent->rgbcolor = widget->rgbcolor;
+
 	      /* Setup initial volume */
 	      val = (maxval * 9) / 10;	/* 90% of the maximum */
 	      val = val | (val << 16);
@@ -194,7 +201,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		  name = tmp;
 		}
 
-	      if ((err = mixer_ext_create_control (mixer->mixer_dev,
+	      if ((cnum = mixer_ext_create_control (mixer->mixer_dev,
 						   g,
 						   MIXNUM (widget,
 							   CT_INMUTE, i),
@@ -202,7 +209,11 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 						   MIXT_ONOFF, name, 2,
 						   MIXF_READABLE |
 						   MIXF_WRITEABLE)) < 0)
-		return err;
+		return cnum;
+	      /* Copy RGB color */
+	      if (widget->rgbcolor != 0)
+	      if ((ent = mixer_find_ext (dev, cnum)) != NULL)
+		 ent->rgbcolor = widget->rgbcolor;
 
 	      hdaudio_set_control (mixer->mixer_dev,
 				   MIXNUM (widget, CT_INMUTE, i),
@@ -267,7 +278,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		  name = tmp;
 		}
 
-	      if ((err = mixer_ext_create_control (mixer->mixer_dev,
+	      if ((cnum = mixer_ext_create_control (mixer->mixer_dev,
 						   group,
 						   num, hdaudio_set_control,
 						   typ,
@@ -275,7 +286,12 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 						   MIXF_READABLE |
 						   MIXF_WRITEABLE |
 						   MIXF_CENTIBEL)) < 0)
-		return err;
+		return cnum;
+
+	      /* Copy RGB color */
+	      if (widget->rgbcolor != 0)
+	      if ((ent = mixer_find_ext (dev, cnum)) != NULL)
+		 ent->rgbcolor = widget->rgbcolor;
 
 	      /* setup volume */
 	      val = (maxval * 9) / 10;	/* 90% of the maximum */
@@ -294,7 +310,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 	      name = tmpname;
 	    }
 
-	  if ((err = mixer_ext_create_control (mixer->mixer_dev,
+	  if ((cnum = mixer_ext_create_control (mixer->mixer_dev,
 					       group,
 					       MIXNUM (widget,
 						       CT_OUTMUTE, 0),
@@ -302,7 +318,12 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 					       MIXT_ONOFF, name, 2,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
-	    return err;
+	    return cnum;
+
+	      /* Copy RGB color */
+	      if (widget->rgbcolor != 0)
+	      if ((ent = mixer_find_ext (dev, cnum)) != NULL)
+		 ent->rgbcolor = widget->rgbcolor;
 
 	  hdaudio_set_control (mixer->mixer_dev,
 			       MIXNUM (widget, CT_OUTMUTE, 0),
@@ -370,6 +391,9 @@ attach_selector (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
       cmn_err (CE_WARN, "Cannot locate the mixer extension (a)\n");
       return -EIO;
     }
+
+  /* Copy RGB color */
+  ext->rgbcolor = widget->rgbcolor;
 
   memset (ext->enum_present, 0, sizeof (ext->enum_present));
 
@@ -525,6 +549,8 @@ attach_pin_widget (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 	      cmn_err (CE_WARN, "Cannot locate the mixer extension (b)\n");
 	      return -EIO;
 	    }
+  	  /* Copy RGB color */
+  	  ext->rgbcolor = widget->rgbcolor;
 
 	  memset (ext->enum_present, 0, sizeof (ext->enum_present));
 

@@ -19,13 +19,17 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 
   DDB (cmn_err (CE_CONT, "hdaudio_Asus_P4B_E_mixer_init got called.\n"));
 
-  HDA_OUTAMP (0x04, top_group, "front", 90);
-  HDA_OUTAMP (0x0a, top_group, "side", 90);
-  HDA_OUTAMP (0x05, top_group, "center/LFE", 90);
-  HDA_OUTAMP (0x06, top_group, "rear", 90);
-  HDA_OUTAMP (0x03, top_group, "headphone", 90);
-  HDA_OUTAMP (0x21, top_group, "input-mix", 90);
-  HDA_OUTAMP (0x10, top_group, "pcbeep", 90);
+  HDA_OUTAMP (0x04, top_group, "front", 100);
+  HDA_COLOR (ctl, OSS_RGB_GREEN);
+  HDA_OUTAMP (0x0a, top_group, "side", 100);
+  HDA_COLOR (ctl, OSS_RGB_GRAY);
+  HDA_OUTAMP (0x05, top_group, "center/LFE", 100);
+  HDA_COLOR (ctl, OSS_RGB_ORANGE);
+  HDA_OUTAMP (0x06, top_group, "rear", 100);
+  HDA_COLOR (ctl, OSS_RGB_BLACK);
+  HDA_OUTAMP (0x03, top_group, "headphone", 100);
+  HDA_OUTAMP (0x21, top_group, "input-mix", 100);
+  HDA_OUTAMP (0x10, top_group, "pcbeep", 100);
 
   /* Handle misc widgets */
   {
@@ -45,14 +49,29 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
       /* Src 0x3b=black-micboost */
       /* Src 0x18=cd */
       /* Src 0x1a=beep */
-      HDA_INAMP (0x20, 0, group, "fp-pink", 90);	/* From widget 0x39 */
-      HDA_INAMP (0x20, 1, group, "blue", 90);	/* From widget 0x33 */
-      HDA_INAMP (0x20, 2, group, "fp-green", 90);	/* From widget 0x38 */
-      HDA_INAMP (0x20, 3, group, "green", 90);	/* From widget 0x3d */
-      HDA_INAMP (0x20, 4, group, "pink", 90);	/* From widget 0x34 */
-      HDA_INAMP (0x20, 5, group, "black", 90);	/* From widget 0x3b */
-      HDA_INAMP (0x20, 6, group, "cd", 90);	/* From widget 0x18 */
-      HDA_INAMP (0x20, 7, group, "pcbeep", 90);	/* From widget 0x1a */
+      HDA_INAMP (0x20, 0, group, "fp-pink", 100);	/* From widget 0x39 */
+      HDA_COLOR (ctl, OSS_RGB_PINK);
+
+      HDA_INAMP (0x20, 1, group, "blue", 100);	/* From widget 0x33 */
+      HDA_COLOR (ctl, OSS_RGB_BLUE);
+
+      HDA_INAMP (0x20, 2, group, "fp-green", 100);	/* From widget 0x38 */
+      HDA_COLOR (ctl, OSS_RGB_GREEN);
+
+      HDA_INAMP (0x20, 3, group, "green", 100);	/* From widget 0x3d */
+      HDA_COLOR (ctl, OSS_RGB_GREEN);
+
+      HDA_INAMP (0x20, 4, group, "pink", 100);	/* From widget 0x34 */
+      HDA_COLOR (ctl, OSS_RGB_PINK);
+
+      HDA_INAMP (0x20, 5, group, "black", 100);	/* From widget 0x3b */
+      HDA_COLOR (ctl, OSS_RGB_BLACK);
+
+      HDA_INAMP (0x20, 6, group, "cd", 100);	/* From widget 0x18 */
+      HDA_COLOR (ctl, 0);
+
+      HDA_INAMP (0x20, 7, group, "pcbeep", 100);	/* From widget 0x1a */
+      HDA_COLOR (ctl, 0);
 
 #if 0
       // This seems to be unnecessary selector
@@ -110,7 +129,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  {
 	    HDA_CHOICES (ctl, "fp-green pink cd orange grey green input-mix");
 	  }
-	HDA_OUTAMP (0x0c, group, "-", 90);
+	HDA_OUTAMP (0x0c, group, "-", 100);
       }
 
     if (HDA_ADC_GROUP (0x09, group, rec_group, "rec2", n, "record", 4))	/* ADC widget 0x09 */
@@ -129,7 +148,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  {
 	    HDA_CHOICES (ctl, "fp-green pink cd orange grey green input-mix");
 	  }
-	HDA_OUTAMP (0x0d, group, "-", 90);
+	HDA_OUTAMP (0x0d, group, "-", 100);
       }
 
     if (HDA_ADC_GROUP (0x0f, group, rec_group, "rec3", n, "record", 4))	/* ADC widget 0x0f */
@@ -148,7 +167,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  {
 	    HDA_CHOICES (ctl, "fp-green pink cd orange grey green input-mix");
 	  }
-	HDA_OUTAMP (0x0e, group, "-", 90);
+	HDA_OUTAMP (0x0e, group, "-", 100);
       }
   }
 
@@ -179,7 +198,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	}
 	/* Widget 0x38 (fpgreen-micboost) */
 	/* Src 0x11=fp-green */
-	HDA_OUTAMP (0x38, group, "micboost", 90);
+	HDA_OUTAMP (0x38, group, "micboost", 100);
       }
 
     if (HDA_PIN_GROUP (0x14, group, pin_group, "fp-pink", n, "connector", 4))	/* Pin widget 0x14 */
@@ -201,7 +220,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	}
 	/* Widget 0x39 (fppink-micboost) */
 	/* Src 0x14=fp-pink */
-	HDA_OUTAMP (0x39, group, "micboost", 90);
+	HDA_OUTAMP (0x39, group, "micboost", 100);
       }
 
     if (HDA_PIN_GROUP (0x12, group, pin_group, "green", n, "connector", 0))	/* Pin widget 0x12 */
@@ -223,7 +242,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	}
 	/* Widget 0x3d (green-micboost) */
 	/* Src 0x12=green */
-	HDA_OUTAMP (0x3d, group, "micboost", 90);
+	HDA_OUTAMP (0x3d, group, "micboost", 100);
       }
 
     if (HDA_PIN_GROUP (0x13, group, pin_group, "int-black", n, "connector", 4))	/* Pin widget 0x13 */
@@ -231,7 +250,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	/* Src 0x2d=mono-mixdown */
 	if (HDA_PINSELECT (0x13, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "mono-out input");
-	HDA_OUTAMP (0x13, group, "invol", 90);
+	HDA_OUTAMP (0x13, group, "invol", 100);
 
 	/* Widget 0x2d (mono-mixdown) */
 	/* Src 0x1e=mono-mix */
@@ -266,7 +285,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INMUTE (0x2c, 1, amp_group, "input-mix", UNMUTE);	/* From widget 0x21 */
 	}
 	/* Src 0x15=linein */
-	HDA_OUTAMP (0x3a, group, "micboost", 90);
+	HDA_OUTAMP (0x3a, group, "micboost", 100);
       }
 
     if (HDA_PIN_GROUP (0x16, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x16 */
@@ -288,7 +307,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	}
 	/* Widget 0x3b (black-micboost) */
 	/* Src 0x16=black */
-	HDA_OUTAMP (0x3b, group, "micboost", 90);
+	HDA_OUTAMP (0x3b, group, "micboost", 100);
       }
 
     if (HDA_PIN_GROUP (0x17, group, pin_group, "pink", n, "connector", 0))	/* Pin widget 0x17 */
@@ -309,7 +328,7 @@ hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	  HDA_INMUTE (0x26, 1, amp_group, "input-mix", UNMUTE);	/* From widget 0x21 */
 	}
 	/* Src 0x17=mic */
-	HDA_OUTAMP (0x3c, group, "micboost", 90);
+	HDA_OUTAMP (0x3c, group, "micboost", 100);
       }
 
 #if 0

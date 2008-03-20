@@ -25,9 +25,9 @@ extern int hda_codec_add_miscgroup(int dev, hdaudio_mixer_t * mixer, int cad, in
 
 extern int hda_codec_add_outamp(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int group, const char *name, int percent, unsigned int flags);
 extern int hda_codec_add_outmute(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int group, const char *name, int state);
-#define HDA_OUTAMP(wid, group, name, percent) hda_codec_add_outamp(dev, mixer, cad, wid, group, name, percent, 0)
+#define HDA_OUTAMP(wid, group, name, percent) ctl=hda_codec_add_outamp(dev, mixer, cad, wid, group, name, percent, 0)
 #define HDA_OUTAMP_F(wid, group, name, percent, flags) hda_codec_add_outamp(dev, mixer, cad, wid, group, name, percent, flags)
-#define HDA_OUTMUTE(wid, group, name, muted) hda_codec_add_outmute(dev, mixer, cad, wid, group, name, muted)
+#define HDA_OUTMUTE(wid, group, name, muted) ctl=hda_codec_add_outmute(dev, mixer, cad, wid, group, name, muted)
 
 extern int hda_codec_add_inamp(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int ix, int group, const char *name, int percent, int flags);
 extern int hda_codec_add_inmute(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int ix, int group, const char *name, int muted);
@@ -35,10 +35,10 @@ extern int hda_codec_set_inmute(int dev, hdaudio_mixer_t * mixer, int cad, int w
 extern int hda_codec_add_insrc(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int ix, int group, const char *name, int muted);
 extern int hda_codec_add_insrcselect(int dev, hdaudio_mixer_t * mixer, int cad, int wid, int group, int *ctl, const char *name, int initial_selection);
 
-#define HDA_INAMP(wid, ix, group, name, percent) hda_codec_add_inamp(dev, mixer, cad, wid, ix, group, name, percent, 0)
-#define HDA_INAMP_F(wid, ix, group, name, percent, flags) hda_codec_add_inamp(dev, mixer, cad, wid, ix, group, name, percent, flags)
+#define HDA_INAMP(wid, ix, group, name, percent) ctl=hda_codec_add_inamp(dev, mixer, cad, wid, ix, group, name, percent, 0)
+#define HDA_INAMP_F(wid, ix, group, name, percent, flags) ctl=hda_codec_add_inamp(dev, mixer, cad, wid, ix, group, name, percent, flags)
 
-#define HDA_INMUTE(wid, ix, group, name, muted) hda_codec_add_inmute(dev, mixer, cad, wid, ix, group, name, muted)
+#define HDA_INMUTE(wid, ix, group, name, muted) ctl=hda_codec_add_inmute(dev, mixer, cad, wid, ix, group, name, muted)
 #define HDA_SET_INMUTE(wid, ix, muted) hda_codec_set_inmute(dev, mixer, cad, wid, ix, muted)
 #define HDA_INSRC(wid, ix, group, name, muted) hda_codec_add_insrc(dev, mixer, cad, wid, ix, group, name, muted)
 #define HDA_INSRC_SELECT(wid, group, ctl, name, initial_selection) \
@@ -53,6 +53,9 @@ extern int hda_codec_add_pinselect(int dev, hdaudio_mixer_t *mixer, int cad, int
 
 extern int hda_codec_add_choices(int dev, hdaudio_mixer_t *mixer, int ctl, const char *choiselist);
 #define HDA_CHOICES(ctl, choicelist) hda_codec_add_choices(dev, mixer, ctl, choicelist)
+
+extern int hda_codec_set_color(int dev, hdaudio_mixer_t *mixer, int ctl, int color);
+#define HDA_COLOR(ctl, color) hda_codec_set_color(dev, mixer, ctl, color)
 
 #endif
 

@@ -23,7 +23,7 @@
 #define EXTERNC extern
 #endif /* EXTERN_C_WRAPPERS */
 
-#define OSS_VERSION	0x040003
+#define OSS_VERSION	0x040004
 
 #define SOUND_VERSION	OSS_VERSION
 #define OPEN_SOUND_SYSTEM
@@ -1814,8 +1814,24 @@ typedef struct oss_mixext
 
   char extname[32];
   int update_counter;
-  int filler[7];
+  int rgbcolor;		/* 0 means default color (not black) . Otherwise 24 bit RGB color */
+  int filler[6];
 } oss_mixext;
+
+/*
+ * Recommended colors to be used in the rgbcolor field. These match the
+ * colors used as the audio jack colors in HD audio motherboards.
+ */
+#define OSS_RGB_BLUE	0x7aabde		// Light blue
+#define OSS_RGB_GREEN	0xb3c98c		// Lime green
+#define OSS_RGB_PINK	0xe88c99
+#define OSS_RGB_GRAY	0xd1ccc4
+#define OSS_RGB_BLACK	0x2b2926		// Light black
+#define OSS_RGB_ORANGE	0xe89e47
+#define OSS_RGB_RED	0xff0000
+#define OSS_RGB_YELLOW	0xffff00
+#define OSS_RGB_PURPLE	0x800080
+#define OSS_RGB_WHITE	0xf8f8ff
 
 typedef struct oss_mixext_root
 {

@@ -618,6 +618,8 @@ mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
  */
   if (mixer_devs[dev]->names_checked)
     expand_names (dev);
+  else
+    strcpy(mixext->extname, mixext->id);
 
 /*
  * Mark groups with tall controls such as peak meters and sliders as
@@ -1103,7 +1105,22 @@ touch_mixer (int dev)
 		    ent->desc &= MIXEXT_SCOPE_OUTPUT;
 		  if ((1 << i) & MONITOR_MASK)
 		    ent->desc &= MIXEXT_SCOPE_MONITOR;
-		}
+
+		      /*
+		       * Set the RGB color for some of the controls
+		       * to match the usual jack color.
+		       */
+
+		      switch (i)
+		      {
+		      case SOUND_MIXER_MIC: ent->rgbcolor=OSS_RGB_PINK; break;
+		      case SOUND_MIXER_LINE: ent->rgbcolor=OSS_RGB_BLUE; break;
+		      case SOUND_MIXER_VOLUME: ent->rgbcolor=OSS_RGB_GREEN; break;
+		      case SOUND_MIXER_REARVOL: ent->rgbcolor=OSS_RGB_BLACK; break;
+		      case SOUND_MIXER_SIDEVOL: ent->rgbcolor=OSS_RGB_GRAY; break;
+		      case SOUND_MIXER_CENTERVOL: ent->rgbcolor=OSS_RGB_ORANGE; break;
+		      }
+		 }
 
 	      if (recmask & (1 << i))
 		{

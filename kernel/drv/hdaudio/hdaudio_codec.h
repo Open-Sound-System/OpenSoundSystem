@@ -284,6 +284,7 @@ typedef struct
 #define PIN_OUT		3
   hdaudio_endpointinfo_t *endpoint;
   int current_selector;
+  int rgbcolor;	/* RGB value of the jack color */
 } widget_t;
 
 typedef int (*hda_mixer_init_func) (int dev, hdaudio_mixer_t * mixer, int cad,

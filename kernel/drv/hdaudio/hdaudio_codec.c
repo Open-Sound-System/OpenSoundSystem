@@ -113,18 +113,35 @@ propagate_names (hdaudio_mixer_t * mixer)
 	      if (widget->nconn != 1)
 		continue;
 
+#if 0
 	      if (src_widget->wid_type == NT_PIN
 		  || src_widget->wid_type == NT_DAC)
 		continue;
 
-#if 0
 	      if (src_widget->wid_type != NT_MIXER && src_widget->wid_type != NT_VENDOR)	/* Mixer */
 		continue;
 #endif
 
-	      strcpy (src_widget->name, widget->name);
+	      strcpy (widget->name, src_widget->name);
+
+	      /*
+	       * Copy widget's RGB color to all widgets in the path
+	       */
+	      if (widget->rgbcolor == 0)
+		 widget->rgbcolor = src_widget->rgbcolor;
 	    }
 	}
+#if 1
+  // Debugging code
+    for (c = 0; c < mixer->ncodecs; c++)
+    if (mixer->codecs[c] != &NULL_codec)
+    for (w = 1; w < mixer->codecs[c]->nwidgets; w++)
+    {
+	      widget_t *widget = &mixer->codecs[c]->widgets[w];
+
+	      cmn_err(CE_CONT, "w= %02x rgb=%06x: %s (%s)\n", w, widget->rgbcolor, widget->name, widget->color);
+    }
+#endif
 }
 
 static void
@@ -1003,6 +1020,8 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
   widget->cad = cad;
   widget->wid = wid;
 
+  widget->rgbcolor = 0;
+
   group_type = group_type_in & 0xff;
   widget->group_type = group_type_in;
 
@@ -1392,6 +1411,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	      int conn = (conf >> 30) & 0x03;
 
 	      int color;
+	      int  no_color=0;
 	      char *name = NULL, *loc = "", *color_name = NULL;
 
 	      color = (conf >> 12) & 0x0f;
@@ -1426,6 +1446,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		  break;
 		case 0x1:
 		  name = "speaker";
+		  no_color=1;
 		  widget->pin_type = PIN_OUT;
 		  break;
 		case 0x2:
@@ -1434,21 +1455,26 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		  break;
 		case 0x3:
 		  name = "cd";
+		  no_color=1;
 		  widget->pin_type = PIN_IN;
 		  break;
 		case 0x4:
 		  name = "spdifout";
+		  no_color=1;
 		  widget->pin_type = PIN_OUT;
 		  break;
 		case 0x5:
 		  name = "digout";
+		  no_color=1;
 		  widget->pin_type = PIN_OUT;
 		  break;
 		case 0x6:
 		  name = "modem";
+		  no_color=1;
 		  break;
 		case 0x7:
 		  name = "phone";
+		  no_color=1;
 		  break;
 		case 0x8:
 		  name = "linein";
@@ -1463,15 +1489,19 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		  break;
 		case 0xb:
 		  name = "telephony";
+		  no_color=1;
 		  break;
 		case 0xc:
 		  name = "spdifin";
+		  no_color=1;
 		  break;
 		case 0xd:
 		  name = "digin";
+		  no_color=1;
 		  break;
 		case 0xe:
 		  name = "reserved";
+		  no_color=1;
 		  break;
 		case 0xf:	/* Unused pin widget */
 		  widget->skip = 1;
@@ -1484,41 +1514,60 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		{
 		case 0x1:
 		  color_name = "black";
+		  widget->rgbcolor = OSS_RGB_BLACK;
 		  break;
 		case 0x2:
-		  color_name = "grey";
+		  color_name = "gray";
+		  widget->rgbcolor = OSS_RGB_GRAY;
 		  break;
 		case 0x3:
 		  color_name = "blue";
+		  widget->rgbcolor = OSS_RGB_BLUE;
 		  break;
 		case 0x4:
 		  color_name = "green";
+		  widget->rgbcolor = OSS_RGB_GREEN;
 		  break;
 		case 0x5:
 		  color_name = "red";
+		  widget->rgbcolor = OSS_RGB_RED;
 		  break;
 		case 0x6:
 		  color_name = "orange";
+		  widget->rgbcolor = OSS_RGB_ORANGE;
 		  break;
 		case 0x7:
 		  color_name = "yellow";
+		  widget->rgbcolor = OSS_RGB_YELLOW;
 		  break;
 		case 0x8:
 		  color_name = "purple";
+		  widget->rgbcolor = OSS_RGB_PURPLE;
 		  break;
 		case 0x9:
 		  color_name = "pink";
+		  widget->rgbcolor = OSS_RGB_PINK;
 		  break;
 		case 0xe:
 		  color_name = "white";
+		  widget->rgbcolor = OSS_RGB_WHITE;
 		  break;
 
 		default:
 		  if (name != NULL)
 		    color_name = name;
 		  else
-		    color_name = "invisible";
+		    color_name = "internal";
 		}
+
+	      if (no_color)
+		 widget->rgbcolor = 0;
+
+	      if (default_device == 0xf) /* Not present */
+	      {
+		      widget->rgbcolor=0;
+		      color_name = "internal";
+	      }
 
 	      sprintf (widget->color, "%s%s", loc, color_name);
 /*
@@ -2680,6 +2729,7 @@ create_outgain_selector (hdaudio_mixer_t * mixer, widget_t * widget,
   int ctl, i;
   int maxval;
   int offs, step, range;
+  oss_mixext *ent;
 
   char tmp[128], *t;
 
@@ -2729,6 +2779,10 @@ create_outgain_selector (hdaudio_mixer_t * mixer, widget_t * widget,
     }
 
   mixer_ext_set_strings (mixer->mixer_dev, ctl, tmp, 0);
+  /* Copy RGB color */
+  if (widget->rgbcolor != 0)
+      if ((ent = mixer_find_ext (mixer->mixer_dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
 
   return 0;
 }
@@ -2743,6 +2797,7 @@ create_ingain_selector (hdaudio_mixer_t * mixer, codec_t * codec,
   int ctl, i;
   int maxval;
   int offs, step, range;
+  oss_mixext *ent;
 
   char tmp[128], *t;
 
@@ -2792,6 +2847,10 @@ create_ingain_selector (hdaudio_mixer_t * mixer, codec_t * codec,
     }
 
   mixer_ext_set_strings (mixer->mixer_dev, ctl, tmp, 0);
+  /* Copy RGB color */
+  if (widget->color != 0)
+     if ((ent = mixer_find_ext (mixer->mixer_dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
   return 0;
 }
 
@@ -2804,6 +2863,7 @@ hda_codec_add_outamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
   int typ, num, maxval, val, ctl = 0;
   int range, step;
+  oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -2854,6 +2914,10 @@ hda_codec_add_outamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
       /* setup volume */
       val = (maxval * percent) / 100;
       val = val | (val << 16);
+      /* Copy RGB color */
+      if (widget->rgbcolor != 0)
+      if ((ent = mixer_find_ext (dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
       hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE, val);
     }
 
@@ -2867,6 +2931,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   widget_t *widget;
   codec_t *codec;
   int typ, num, maxval, val, ctl = 0;
+  oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -2891,11 +2956,17 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 					   MIXF_READABLE |
 					   MIXF_WRITEABLE)) < 0)
 	return ctl;
+      /* Copy RGB color */
+      if (widget->rgbcolor != 0)
+      if ((ent = mixer_find_ext (dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
 
       hdaudio_set_control (mixer->mixer_dev,
 			   MIXNUM (widget, CT_OUTMUTE, 0),
 			   SNDCTL_MIX_WRITE, muted);
+      return ctl;
     }
+  return 0;
 }
 
 int
@@ -2903,8 +2974,10 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 		     int ix, int group, const char *name, int percent, int flags)
 {
   widget_t *widget;
+  widget_t *src_widget;
   codec_t *codec;
   int typ, num, maxval, val, ctl = 0, range, step;
+  oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -2954,11 +3027,18 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 				       MIXF_READABLE |
 				       MIXF_WRITEABLE | MIXF_CENTIBEL | flags)) < 0)
     return ctl;
+
   /* Setup initial volume */
   val = (maxval * percent) / 100;
   val = val | (val << 16);
 
   hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE, val);
+
+  /* Copy RGB color */
+  src_widget = &codec->widgets[widget->connections[ix]];
+  if (src_widget->rgbcolor != 0)
+      if ((ent = mixer_find_ext (dev, ctl)) != NULL)
+	 ent->rgbcolor = src_widget->rgbcolor;
 
   return ctl;
 }
@@ -2969,6 +3049,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
+  oss_mixext *ent;
   int typ, num, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
@@ -2994,6 +3075,10 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 				       MIXT_ONOFF, name, 2,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
+  /* Copy RGB color */
+  if (widget->rgbcolor != 0)
+      if ((ent = mixer_find_ext (dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
 
   hdaudio_set_control (mixer->mixer_dev,
 		       MIXNUM (widget, CT_INMUTE, ix),
@@ -3030,6 +3115,7 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
+  oss_mixext *ent;
   int typ, num, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
@@ -3055,6 +3141,10 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 				       MIXT_ONOFF, name, 2,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
+  /* Copy RGB color */
+  if (widget->rgbcolor != 0)
+     if ((ent = mixer_find_ext (dev, ctl)) != NULL)
+	 ent->rgbcolor = widget->rgbcolor;
 
   hdaudio_set_control (mixer->mixer_dev,
 		       MIXNUM (widget, CT_INSRC, ix),
@@ -3093,6 +3183,9 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
     return 0;
 
   ext = mixer_find_ext (mixer->mixer_dev, *ctl);
+  /* Copy RGB color */
+  if (widget->color != 0)
+     ext->rgbcolor = widget->rgbcolor;
 
   if (ext == NULL)
     {
@@ -3166,6 +3259,9 @@ hda_codec_add_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
       cmn_err (CE_WARN, "Cannot locate the mixer extension (x)\n");
       return -EIO;
     }
+  /* Copy RGB color */
+  if (widget->color != 0)
+     ext->rgbcolor = widget->rgbcolor;
 
   memset (ext->enum_present, 0, sizeof (ext->enum_present));
 
@@ -3240,6 +3336,9 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
       return -EIO;
     }
 
+  /* Copy RGB color */
+  if (widget->color != 0)
+     ext->rgbcolor = widget->rgbcolor;
   memset (ext->enum_present, 0, sizeof (ext->enum_present));
 
   for (i = 0; i < widget->nconn; i++)
@@ -3331,4 +3430,16 @@ hda_codec_add_choices (int dev, hdaudio_mixer_t * mixer, int ctl,
   mixer_ext_set_strings (dev, ctl, choiselist, 0);
 
   return 0;
+}
+
+int
+hda_codec_set_color(int dev, hdaudio_mixer_t *mixer, int ctl, int color)
+{
+  oss_mixext *ext;
+
+  if ((ext = mixer_find_ext (mixer->mixer_dev, ctl)) != NULL)
+  {
+     ext->rgbcolor = color;
+//cmn_err(CE_CONT, "Mixer %s rgb->%06x\n", ext->extname, ext->rgbcolor);
+  }
 }

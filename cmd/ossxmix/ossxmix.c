@@ -851,6 +851,9 @@ load_devinfo (int dev)
 
   for (i = 0; i < n; i++)
     {
+      GdkColor color;
+      int change_color=0;
+
       mask = 0xff;
       shift = 8;
       expand = TRUE;
@@ -877,6 +880,18 @@ load_devinfo (int dev)
 	  mask = 0xffff;
 	  shift = 16;
 	}
+
+      if (thisrec->rgbcolor != 0)
+      {
+	/*
+	 * Pick the 8 bit RGB component colors and expand them to 16 bits
+	 */
+      	color.red =	(thisrec->rgbcolor & 0xff0000) >> 8;
+      	color.green =	(thisrec->rgbcolor & 0x00ff00);
+      	color.blue =	(thisrec->rgbcolor & 0x0000ff) << 8;
+	change_color=1;
+
+      }
 
       switch (thisrec->type)
 	{
@@ -1008,6 +1023,8 @@ load_devinfo (int dev)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
 		     extnames[dev][i], parent);
           wid = gtk_check_button_new_with_label (get_name (dev, i));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
 	  connect_onoff (thisrec, GTK_OBJECT (wid));
 	  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (wid), val);
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
@@ -1036,16 +1053,6 @@ load_devinfo (int dev)
 	  if (pw == NULL)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
 		     extnames[dev][i], parent);
-#if 0
-	  adjust = GTK_OBJECT (gtk_adjustment_new (left, 0, mx, 1, 5, 0));
-	  adjust2 = GTK_OBJECT (gtk_adjustment_new (right, 0, mx, 1, 5, 0));
-	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
-	  gtk_scale_set_digits (GTK_SCALE (wid), 0);
-	  gtk_scale_set_draw_value (GTK_SCALE (wid), FALSE);
-	  wid2 = gtk_vscale_new (GTK_ADJUSTMENT (adjust2));
-	  gtk_scale_set_digits (GTK_SCALE (wid2), 0);
-	  gtk_scale_set_draw_value (GTK_SCALE (wid2), FALSE);
-#endif
 	  wid = gtk_vu_new ();
 	  wid2 = gtk_vu_new ();
 
@@ -1151,6 +1158,8 @@ load_devinfo (int dev)
 			 0);
 
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
 #ifndef GTK1_ONLY
 	  gtk_widget_set_size_request (wid, width, 80);
 #endif
@@ -1158,6 +1167,8 @@ load_devinfo (int dev)
 	  gtk_scale_set_draw_value (GTK_SCALE (wid), FALSE);
 
 	  wid2 = gtk_vscale_new (GTK_ADJUSTMENT (adjust2));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid2, GTK_STATE_NORMAL, &color);
 #ifndef GTK1_ONLY
 	  gtk_widget_set_size_request (wid2, width, 80);
 #endif
@@ -1258,9 +1269,13 @@ load_devinfo (int dev)
 	  create_update (NULL, adjust, adjust2, NULL, thisrec, WHAT_UPDATE,
 			 0);
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
 	  gtk_scale_set_digits (GTK_SCALE (wid), 0);
 	  gtk_scale_set_draw_value (GTK_SCALE (wid), FALSE);
 	  wid2 = gtk_vscale_new (GTK_ADJUSTMENT (adjust2));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid2, GTK_STATE_NORMAL, &color);
 	  gtk_scale_set_digits (GTK_SCALE (wid2), 0);
 	  gtk_scale_set_draw_value (GTK_SCALE (wid2), FALSE);
 
@@ -1307,6 +1322,8 @@ load_devinfo (int dev)
 	  connect_scrollers (thisrec, adjust, NULL, NULL);
 	  create_update (NULL, adjust, NULL, NULL, thisrec, WHAT_UPDATE, 0);
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
 #ifndef GTK1_ONLY
 	  gtk_widget_set_size_request (wid, -1, 80);
 #endif
@@ -1349,6 +1366,8 @@ load_devinfo (int dev)
 		     extnames[dev][i], parent);
 
 	  wid = gtk_combo_new ();
+	  if (change_color)
+	     gtk_widget_modify_fg (wid, GTK_STATE_NORMAL, &color);
 	  {
 	    GList *opt = NULL;
 
@@ -1365,6 +1384,8 @@ load_devinfo (int dev)
 	  connect_enum (thisrec, GTK_OBJECT (GTK_COMBO (wid)->entry));
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, i);
 	  frame = gtk_frame_new (get_name (dev, i));
+	  if (change_color)
+	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
 	  manage_label (frame, thisrec);
 	  gtk_box_pack_start (GTK_BOX (pw), frame, TRUE, FALSE, 0);
 	  gtk_container_add (GTK_CONTAINER (frame), wid);
