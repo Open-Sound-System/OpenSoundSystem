@@ -1232,7 +1232,7 @@ ac97_mixext_init (int dev)
   if ((ctl =
      mixer_ext_create_control (dev, 0, 0,
 			     ac97_micboost_ctl, MIXT_ONOFF,
-			     "micboost", 2,
+			     "micboost", 1,
 			     MIXF_READABLE | MIXF_WRITEABLE)) < 0)
      return ctl;
 

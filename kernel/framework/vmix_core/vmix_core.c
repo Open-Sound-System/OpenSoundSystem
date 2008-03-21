@@ -1928,7 +1928,7 @@ vmix_core_attach (oss_device_t * osdev, int multich_enable)
   osdev->devc = devc;
   vmix_devc = devc;
 
-  oss_register_device (osdev, "OSS transparent virtual support");
+  oss_register_device (osdev, "OSS transparent virtual mixer");
 
   return 1;
 }

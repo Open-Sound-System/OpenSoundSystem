@@ -965,7 +965,7 @@ add_controls_for_feature (ossusb_devc * devc, usb_audio_unit_t * un,
 	if (type == MIXT_SLIDER)
 	  max = devc->controls[ctl].max - devc->controls[ctl].min;
 	else
-	  max = 2;
+	  max = 1;
 
 	if (max > 255)
 	  max = 255;
