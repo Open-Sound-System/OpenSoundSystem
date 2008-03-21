@@ -200,6 +200,10 @@ check_tooltip(oss_mixext *rec, GtkWidget *wid)
   if (ioctl (mixer_fd, SNDCTL_MIX_DESCRIPTION, &ei) == -1)
      return;
 
+/*
+ * Separate the first line which contains the tooltip from the subsequent lines
+ * which contain the optional help text.
+ */
   p=ei.strings;
 
   while (*p && *p != '\n') p++; /* Find a line feed */

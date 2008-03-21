@@ -62,7 +62,12 @@ else
 fi
 
 # Copy the ".devices" files for all drivers to devices.list
-cat `find $SRCDIR/kernel -name .devices`|grep -v '^#' > devices.list
+cat `find $SRCDIR/kernel/drv -name .devices`|grep -v '^#' > devices.list
+
+if test -d $SRCDIR/kernel/nonfree/drv
+then
+  cat `find $SRCDIR/kernel/nonfree/drv -name .devices`|grep -v '^#' >> devices.list
+fi
 
 echo BLDDIR=$BLDDIR > .directories
 echo SRCDIR=$SRCDIR >> .directories

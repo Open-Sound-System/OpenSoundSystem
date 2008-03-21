@@ -131,7 +131,7 @@ propagate_names (hdaudio_mixer_t * mixer)
 		 widget->rgbcolor = src_widget->rgbcolor;
 	    }
 	}
-#if 1
+#if 0
   // Debugging code
     for (c = 0; c < mixer->ncodecs; c++)
     if (mixer->codecs[c] != &NULL_codec)
