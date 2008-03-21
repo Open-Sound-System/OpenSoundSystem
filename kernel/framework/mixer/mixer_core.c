@@ -198,6 +198,8 @@ oss_mixer_ext_info (oss_mixext * ent)
     return -ENXIO;
 
   dev = ent->dev;
+  if (!mixer_devs[dev]->enabled || mixer_devs[dev]->unloaded)
+    return -ENXIO;
   touch_mixer (dev);
 
   ctrl = ent->ctrl;
