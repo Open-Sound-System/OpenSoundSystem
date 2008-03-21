@@ -186,6 +186,42 @@ static GtkStatusIcon *status_icon = NULL;
 #endif /* STATUSICON */
 
 static void
+check_tooltip(oss_mixext *rec, GtkWidget *wid)
+{
+  oss_mixer_enuminfo ei;
+  char *p;
+
+  if (!(rec->flags & MIXF_DESCR)) /* No description available */
+     return;
+
+  ei.dev = rec->dev;
+  ei.ctrl = rec->ctrl;
+
+  if (ioctl (mixer_fd, SNDCTL_MIX_DESCRIPTION, &ei) == -1)
+     return;
+
+  p=ei.strings;
+
+  while (*p && *p != '\n') p++; /* Find a line feed */
+
+  if (*p=='\n')
+     *p++=0;
+  if (*p==0)
+     p=NULL;
+
+#if GTK_CHECK_VERSION(2,12,0)
+  gtk_widget_set_tooltip_text(wid, ei.strings);
+#else
+  {
+	  GtkTooltips *tip;
+
+	  tip = gtk_tooltips_new();
+	  gtk_tooltips_set_tip(tip, wid, ei.strings, p);
+  }
+#endif
+}
+
+static void
 store_name (int dev, int n, char *name, char **extnames)
 {
   char *src = name;
@@ -959,6 +995,7 @@ load_devinfo (int dev)
 	    create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, i);
 	  gtk_widget_set_name (wid, extnames[i]);
 	  update_label (thisrec, wid, val);
+	  check_tooltip(thisrec, wid);
 	  gtk_widget_show (wid);
 	  break;
 
@@ -982,6 +1019,7 @@ load_devinfo (int dev)
 	  wid = gtk_button_new_with_label (extnames[i]);
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
 	  gtk_widget_set_name (wid, extnames[i]);
+	  check_tooltip(thisrec, wid);
 	  gtk_widget_show (wid);
 	  break;
 
@@ -1012,6 +1050,7 @@ load_devinfo (int dev)
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
 	  gtk_widget_set_name (wid, extnames[i]);
+	  check_tooltip(thisrec, wid);
 	  gtk_widget_show (wid);
 	  break;
 
@@ -1038,6 +1077,7 @@ load_devinfo (int dev)
 		     extnames[i], parent);
 	  wid = gtk_vu_new ();
 	  wid2 = gtk_vu_new ();
+	  check_tooltip(thisrec, wid);
 
 	  connect_peak (thisrec, wid, wid2);
 	  gtk_widget_set_name (wid, extnames[i]);
@@ -1085,6 +1125,7 @@ load_devinfo (int dev)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
 		     extnames[i], parent);
 	  wid = gtk_vu_new ();
+	  check_tooltip(thisrec, wid);
 
 	  connect_peak (thisrec, wid, NULL);
 	  gtk_widget_set_name (wid, extnames[i]);
@@ -1144,6 +1185,7 @@ load_devinfo (int dev)
 			 0);
 
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
+	  check_tooltip(thisrec, wid);
 #ifndef GTK1_ONLY
 	  if (change_color)
 	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
@@ -1210,6 +1252,7 @@ load_devinfo (int dev)
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
 		     extnames[i], parent);
 	  wid = gtk_joy_new ();
+	  check_tooltip(thisrec, wid);
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
 
 	  if (strcmp (extnames[parent], extnames[i]) != 0)
@@ -1315,6 +1358,7 @@ load_devinfo (int dev)
 	  connect_scrollers (thisrec, adjust, NULL, NULL);
 	  create_update (NULL, adjust, NULL, NULL, thisrec, WHAT_UPDATE, 0);
 	  wid = gtk_vscale_new (GTK_ADJUSTMENT (adjust));
+	  check_tooltip(thisrec, wid);
 #ifndef GTK1_ONLY
 	  if (change_color)
 	     gtk_widget_modify_bg (wid, GTK_STATE_NORMAL, &color);
@@ -1360,6 +1404,7 @@ load_devinfo (int dev)
 		     extnames[i], parent);
 
 	  wid = gtk_combo_new ();
+	  check_tooltip(thisrec, wid);
 #ifndef GTK1_ONLY
 	  if (change_color)
 	     gtk_widget_modify_fg (wid, GTK_STATE_NORMAL, &color);

@@ -225,7 +225,7 @@ oss_mixer_ext_info (oss_mixext * ent)
 }
 
 static int
-mixer_ext_enum (oss_mixer_enuminfo * ent)
+mixer_ext_get_enuminfo (oss_mixer_enuminfo * ent)
 {
 
   int dev, ctrl;
@@ -257,6 +257,44 @@ mixer_ext_enum (oss_mixer_enuminfo * ent)
   memcpy ((char *) ent,
 	  (char *) mixer_devs[dev]->extensions[ctrl].enum_info,
 	  sizeof (*ent));
+  ent->ctrl = ctrl;
+  return 0;
+}
+
+static int
+mixer_ext_get_description (oss_mixer_enuminfo * ent)
+{
+
+  int dev, ctrl;
+  char *s;
+
+  if (ent == NULL)
+    return -EFAULT;
+
+  dev = ent->dev;
+  ctrl = ent->ctrl;
+  memset (ent, 0, sizeof (*ent));
+
+  if (dev < 0 || dev >= num_mixers)
+    {
+      return -ENXIO;
+    }
+
+  touch_mixer (dev);
+
+  if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
+    {
+      return -EIDRM;
+    }
+
+  if (mixer_devs[dev]->extensions[ctrl].description == NULL)
+    {
+      return -EIO;
+    }
+
+  s = mixer_devs[dev]->extensions[ctrl].description;
+
+  strncpy(ent->strings, s, sizeof(ent->strings)-1);
   ent->ctrl = ctrl;
   return 0;
 }
@@ -344,6 +382,36 @@ mixer_ext_set_enum (oss_mixer_enuminfo * ent)
       mixer_devs[dev]->extensions[extnr].enum_info = NULL;
       return -EIO;
     }
+
+  return 0;
+}
+
+int
+mixer_ext_set_description (int dev, int ctrl, const char *desc)
+{
+  int l = strlen(desc);
+
+  if (dev < 0 || dev >= num_mixers)
+    return -ENXIO;
+
+  touch_mixer (dev);
+
+  if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
+    return -EIDRM;
+
+  if (l >= OSS_ENUM_STRINGSIZE)
+     l = OSS_ENUM_STRINGSIZE-1;
+
+    mixer_devs[dev]->extensions[ctrl].description =
+      PMALLOC (mixer_devs[dev]->osdev, l+1);
+
+  if (mixer_devs[dev]->extensions[ctrl].description == NULL)
+    return -EIO;
+
+  strncpy (mixer_devs[dev]->extensions[ctrl].description,
+	  desc, l);
+
+  mixer_devs[dev]->extensions[ctrl].ext.flags |= MIXF_DESCR;
 
   return 0;
 }
@@ -507,6 +575,8 @@ mixer_ext_create_group_flags (int dev, int parent, const char *id,
   oss_mixext_desc *mixext_desc;
   int enumber;
 
+  flags &= ~MIXF_DESCR;
+
   if (mixer_devs[dev]->extensions == NULL)
     {
       cmn_err (CE_WARN, "Mixer extensions not initialized for device %d\n",
@@ -571,6 +641,8 @@ mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
   oss_mixext *mixext;
   oss_mixext_desc *mixext_desc;
   int enumber;
+
+  flags &= ~MIXF_DESCR;
 
   if (mixer_devs[dev]->extensions == NULL)
     {
@@ -1472,7 +1544,11 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       break;
 
     case SNDCTL_MIX_ENUMINFO:
-      return mixer_ext_enum ((oss_mixer_enuminfo *) arg);
+      return mixer_ext_get_enuminfo ((oss_mixer_enuminfo *) arg);
+      break;
+
+    case SNDCTL_MIX_DESCRIPTION:
+      return mixer_ext_get_description ((oss_mixer_enuminfo *) arg);
       break;
 
     case SNDCTL_MIX_READ:

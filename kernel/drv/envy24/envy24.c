@@ -2967,7 +2967,7 @@ static int
 envy24_mix_init (int dev)
 {
   envy24_devc *devc = mixer_devs[dev]->devc;
-  int group, err;
+  int group, err, ctl;
   int n;
 
   extern int envy24_mixerstyle;
@@ -3051,12 +3051,13 @@ envy24_mix_init (int dev)
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return err;
 
-  if ((err = mixer_ext_create_control (dev, group,
+  if ((ctl = mixer_ext_create_control (dev, group,
 				       6, envy24_set_control,
 				       MIXT_VALUE,
 				       "ENVY24_ACTRATE", 96000,
 				       MIXF_READABLE)) < 0)
-    return err;
+    return ctl;
+  mixer_ext_set_description(dev, ctl, "Sample rate currently used by the device");
 
 #if 1
   if (devc->model_data->auxdrv->get_locked_status)

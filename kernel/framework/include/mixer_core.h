@@ -22,6 +22,7 @@ typedef struct
   oss_mixext ext;
   mixer_ext_fn handler;
   oss_mixer_enuminfo *enum_info;
+  char *description; /* For "tooltips" */
 }
 oss_mixext_desc;
 
@@ -120,6 +121,7 @@ oss_mixext *mixer_find_ext (int dev, int enumber);
 extern int mixer_ext_truncate (int dev, int index);
 extern int mixer_ext_set_strings (int dev, int ctl, const char *s,
 				  int version);
+extern int mixer_ext_set_description (int dev, int ctrl, const char *desc);
 extern int oss_mixer_ioctl (int dev, struct fileinfo *bogus, unsigned int cmd,
 			    ioctl_arg arg);
 #endif

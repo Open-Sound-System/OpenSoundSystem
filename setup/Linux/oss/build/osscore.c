@@ -2018,6 +2018,7 @@ EXPORT_FUNC (mixer_ext_create_device);
 EXPORT_SYMBOL (mixer_ext_recrw);
 EXPORT_SYMBOL (mixer_ext_rw);
 EXPORT_SYMBOL (mixer_ext_set_enum);
+EXPORT_SYMBOL (mixer_ext_set_description);
 EXPORT_SYMBOL (osdev_create);
 EXPORT_FUNC (osdev_clone);
 EXPORT_SYMBOL (osdev_delete);

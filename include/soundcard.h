@@ -1788,6 +1788,7 @@ typedef struct oss_mixext
 #	define MIXF_RECVOL	0x00001000	/* PCM recording volume control */
 #	define MIXF_MONVOL	0x00002000	/* Input->output monitor volume */
 #	define MIXF_WIDE	0x00004000	/* Enum control has wide labels */
+#	define MIXF_DESCR	0x00008000	/* Description (tooltip) available */
   char id[16];			/* Mnemonic ID (mainly for internal use) */
   int parent;			/* Entry# of parent (group) node (-1 if root) */
 
@@ -1850,6 +1851,7 @@ typedef struct oss_mixer_value
 } oss_mixer_value;
 
 #define OSS_ENUM_MAXVALUE	255
+#define OSS_ENUM_STRINGSIZE	3000
 typedef struct oss_mixer_enuminfo
 {
   int dev;
@@ -1857,7 +1859,7 @@ typedef struct oss_mixer_enuminfo
   int nvalues;
   int version;			/* Read the manual */
   short strindex[OSS_ENUM_MAXVALUE];
-  char strings[3000];
+  char strings[OSS_ENUM_STRINGSIZE];
 } oss_mixer_enuminfo;
 
 #define OPEN_READ	PCM_ENABLE_INPUT
@@ -1986,6 +1988,8 @@ typedef struct oss_card_info
 #define SNDCTL_CARDINFO		__SIOWR('X',11, oss_card_info)
 #define SNDCTL_ENGINEINFO	__SIOWR('X',12, oss_audioinfo)
 #define SNDCTL_AUDIOINFO_EX	__SIOWR('X',13, oss_audioinfo)
+
+#define SNDCTL_MIX_DESCRIPTION	__SIOWR('X',14, oss_mixer_enuminfo)
 
 /* ioctl codes 'X', 200-255 are reserved for internal use */
 

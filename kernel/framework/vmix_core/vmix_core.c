@@ -233,7 +233,7 @@ vmix_outportc_vu (int dev, int ctrl, unsigned int cmd, int value)
 static int
 create_output_controls (int mixer_dev)
 {
-  int group, err, i;
+  int group, err, i, ctl;
   vmix_mixer_t *mixer = mixer_devs[mixer_dev]->vmix_devc;
   char tmp[32];
 
@@ -241,15 +241,16 @@ create_output_controls (int mixer_dev)
        * Create the vmix volume slider and peak meter to the top panel.
        */
       sprintf (tmp, "vmix%d-src", mixer->instance_num);
-      if ((err = mixer_ext_create_control (mixer_dev, 0, 512, vmix_outvol,
+      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 512, vmix_outvol,
 					   MIXT_ENUM,
 					   tmp, 7,
 					   MIXF_READABLE | MIXF_WRITEABLE)) <
 	  0)
-	return err;
+	return ctl;
 
-      mixer_ext_set_strings (mixer_dev, err,
+      mixer_ext_set_strings (mixer_dev, ctl,
 			     "Fast Low Medium High High+ Production OFF", 0);
+      mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by virtual mixer.");
 
   if (!(mixer->vmix_flags & VMIX_NOMAINVOL))
     {
