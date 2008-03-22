@@ -537,7 +537,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
       if (mixer->inputdev == -1)	/* No input device */
 	return -EINVAL;
-      if (mixer->open_devices < 2 && mixer->record_engine.channels <= 2)
+      if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
       return -EINVAL;
@@ -547,7 +547,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
       if (mixer->inputdev == -1)	/* No input device */
 	return -EINVAL;
-      if (mixer->open_devices < 2 && mixer->record_engine.channels <= 2)
+      if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
       return *arg = portc->rec_choffs / 2;
@@ -558,7 +558,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       if (mixer->inputdev == -1)	/* No input device */
 	return -EINVAL;
 
-      if (mixer->open_devices < 2 && mixer->record_engine.channels <= 2)
+      if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
       val = (*arg) * 2;
@@ -579,7 +579,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 	if (mixer->inputdev == -1)
 	  return -EINVAL;
 
-	if (mixer->open_devices < 2 && mixer->record_engine.channels <= 2)
+	if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	  return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
 	names = audio_engines[mixer->inputdev]->inch_names;
@@ -867,6 +867,7 @@ vmix_open (int dev, int mode, int open_flags)
     portc->do_src = 0;
   if (mixer->open_devices++ == 0)
     start = 1;
+  mixer->open_inputs++;
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
 
   if (start)
@@ -877,6 +878,7 @@ vmix_open (int dev, int mode, int open_flags)
 	{
 	  MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 	  mixer->open_devices = 0;
+	  mixer->open_inputs=0;
 	  portc->open_mode = 0;
 	  MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
 	  return err;
@@ -898,6 +900,7 @@ vmix_close (int dev, int mode)
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
   if (mixer->open_devices-- == 1)
     stop = 1;
+  mixer->open_inputs--;
   portc->open_mode = 0;
   portc->trigger_bits = 0;
   portc->play_mixing_func = NULL;

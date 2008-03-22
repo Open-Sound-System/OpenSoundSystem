@@ -94,7 +94,7 @@ struct _vmix_mixer_t		/* Instance specific data */
 
   int installed_ok;
 
-  int open_devices;
+  int open_devices, open_inputs;
   struct fileinfo master_finfo, input_finfo;
   int masterdev_opened;
 
