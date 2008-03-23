@@ -883,9 +883,13 @@ vmix_open (int dev, int mode, int open_flags)
    */
   if (mode == PCM_ENABLE_INPUT)
     portc->do_src = 0;
+
   if (mixer->open_devices++ == 0)
     start = 1;
-  mixer->open_inputs++;
+
+  if (mode & PCM_ENABLE_INPUT)
+     mixer->open_inputs++;
+
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
 
   if (start)
@@ -918,7 +922,10 @@ vmix_close (int dev, int mode)
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
   if (mixer->open_devices-- == 1)
     stop = 1;
-  mixer->open_inputs--;
+
+  if (mode & PCM_ENABLE_INPUT)
+     mixer->open_inputs--;
+
   portc->open_mode = 0;
   portc->trigger_bits = 0;
   portc->play_mixing_func = NULL;
