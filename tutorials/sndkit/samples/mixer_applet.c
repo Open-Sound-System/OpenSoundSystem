@@ -37,6 +37,8 @@
 
 oss_sysinfo sysinfo;
 
+#define MAX_CTL	50
+
 static int mixer_dev = -1;	/* Use the default mixer */
 
 int
@@ -84,11 +86,17 @@ find_default_mixer (int mixer_fd)
 }
 
 void
-show_control (int mixer_fd, char *name, int mixer_dev, int ctl)
+show_controls (int mixer_fd, char *heading, int mixer_dev, int ctls[], int count)
 {
   oss_mixext ext;
   oss_mixer_value val;
+  int ctl, i;
 
+  printf("\n***** %s *****\n", heading);
+
+  for (i=0;i<count;i++)
+  {
+	  ctl = ctls[i];
 /*
  * Obtain the mixer extension definition. It might be a good idea to cache
  * this info in global variables so that doesn't need to be reloaded
@@ -135,7 +143,7 @@ show_control (int mixer_fd, char *name, int mixer_dev, int ctl)
       exit (-1);
     }
 
-  printf ("%s (%s) ", name, ext.extname);
+  printf ("\t%3d: %s\t ", ctl, ext.extname);
 
   switch (ext.type)
     {
@@ -163,13 +171,20 @@ show_control (int mixer_fd, char *name, int mixer_dev, int ctl)
 
 /*
  * Sometimes there may be just a MUTE control instead of a slider. However
- * it's also possible that there is both mute and a slider. This simple
- * sample program cannot handle that case but real-life applications should be
- * able to do it.
+ * it's also possible that there is both mute and a slider.
  */
     case MIXT_ONOFF:
-      printf ("enum (mute?) %d ", val.value);
+      printf ("ONOFF/mute %d ", val.value);
       break;
+
+/*
+ * Enumerated controls may be used for example for recording source
+ * selection.
+ */
+    case MIXT_ENUM:
+      printf ("Selection %d ", val.value);
+      break;
+
 
     default:
       printf ("Unknown control type (%d), value=0x%08x ", ext.type,
@@ -177,6 +192,8 @@ show_control (int mixer_fd, char *name, int mixer_dev, int ctl)
     }
 
   printf ("\n");
+  }
+
 }
 
 int
@@ -185,10 +202,21 @@ main (int argc, char *argv[])
   int mixer_fd = -1;
   int i, n;
 
-  int mainvol_ctl = -1;
-  int pcmvol_ctl = -1;
-  int recvol_ctl = -1;
-  int monvol_ctl = -1;
+  /*
+   * Bins for the mixer controls.
+   */
+#define ADD_TO_BIN(bin, ctl) \
+  if (n_##bin >= MAX_CTL) \
+  { \
+	  fprintf(stderr, #bin " table is full\n"); exit(-1); \
+  } \
+  bin##_ctls[n_##bin++] = ctl
+
+  int mainvol_ctls[MAX_CTL];
+  int pcmvol_ctls[MAX_CTL];
+  int recvol_ctls[MAX_CTL];
+  int monvol_ctls[MAX_CTL];
+  int n_mainvol=0, n_pcmvol=0, n_recvol=0, n_monvol=0;
 
 /*
  * Get the mixer device number from command line.
@@ -269,14 +297,18 @@ main (int argc, char *argv[])
 	}
 
 /*
- * The MIXF_MAINVOL, MIXF_PCMVOL and MIXF_RECVOL flags are used to mark
+ * The MIXF_MAINVOL, MIXF_PCMVOL, MIXF_MONVOL and MIXF_RECVOL flags are used to mark
  * potential main volume, pcm and recording level controls. This makes it
  * possible to implement support for these common types of controls without
  * having to implement fully featured mixer program.
  *
- * Mixer applets using this simplified interface must ignore all mixer controls
- * that don't have any of these three flags. This is an absolute requirement.
- * Breaking it will cause serious problems.
+ * Mixer applets using this simplified interface should ignore all mixer
+ * controls that don't have any of these three flags. However
+ *
+ * Note that while mixer controls should have at most one of thse flags defined
+ * it may happen that some devices violate this rule. It's up to 
+ * application what it does with such controls. Preferably it gets added
+ * to all of the bins.
  */
 
       if (ext.
@@ -288,32 +320,28 @@ main (int argc, char *argv[])
 	    {
 	      printf ("Mainvol ");
 
-	      if (mainvol_ctl == -1)
-		mainvol_ctl = i;
+	      ADD_TO_BIN(mainvol, i);
 	    }
 
 	  if (ext.flags & MIXF_PCMVOL)
 	    {
 	      printf ("PCMvol ");
 
-	      if (pcmvol_ctl == -1)
-		pcmvol_ctl = i;
+	      ADD_TO_BIN(pcmvol, i);
 	    }
 
 	  if (ext.flags & MIXF_RECVOL)
 	    {
 	      printf ("Recvol ");
 
-	      if (recvol_ctl == -1)
-		recvol_ctl = i;
+	      ADD_TO_BIN(recvol, i);
 	    }
 
 	  if (ext.flags & MIXF_MONVOL)
 	    {
 	      printf ("Monvol ");
 
-	      if (recvol_ctl == -1)
-		recvol_ctl = i;
+	      ADD_TO_BIN(monvol, i);
 	    }
 
 	  printf ("%s\n", ext.extname);
@@ -327,23 +355,23 @@ main (int argc, char *argv[])
  */
   printf ("\n");
 
-  if (mainvol_ctl >= 0)
-    show_control (mixer_fd, "Vol", mixer_dev, mainvol_ctl);
+  if (n_mainvol > 0)
+    show_controls (mixer_fd, "Main volume controls", mixer_dev, mainvol_ctls, n_mainvol);
   else
     printf ("No main volume control available\n");
 
-  if (pcmvol_ctl >= 0)
-    show_control (mixer_fd, "Pcm", mixer_dev, pcmvol_ctl);
+  if (n_pcmvol > 0)
+    show_controls (mixer_fd, "Pcm volume controls", mixer_dev, pcmvol_ctls, n_pcmvol);
   else
     printf ("No pcm volume control available\n");
 
-  if (recvol_ctl >= 0)
-    show_control (mixer_fd, "Rec", mixer_dev, recvol_ctl);
+  if (n_recvol > 0)
+    show_controls (mixer_fd, "Rec volumei controls", mixer_dev, recvol_ctls, n_recvol);
   else
     printf ("No rec volume control available\n");
 
-  if (monvol_ctl >= 0)
-    show_control (mixer_fd, "Mon", mixer_dev, monvol_ctl);
+  if (n_monvol > 0)
+    show_controls (mixer_fd, "Monitor volume controls", mixer_dev, monvol_ctls, n_monvol);
   else
     printf ("No monitor volume control available\n");
 
