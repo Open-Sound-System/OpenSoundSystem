@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 int fd_in;
 int sample_rate = 48000;

@@ -25,7 +25,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
 

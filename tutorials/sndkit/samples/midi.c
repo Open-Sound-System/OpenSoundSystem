@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 #define DEVICE "/dev/midi"
 

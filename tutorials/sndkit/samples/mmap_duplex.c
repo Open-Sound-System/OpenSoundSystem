@@ -16,7 +16,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 /*
  * Note that the mmap approach bypasses the OSS drivers completely so you are

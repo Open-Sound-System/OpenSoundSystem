@@ -21,7 +21,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/select.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 char *devname = "/dev/dsp";
 char *devname_in = NULL;

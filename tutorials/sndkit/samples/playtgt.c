@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include "../../../include/soundcard.h"
+#include <soundcard.h>
 #include <time.h>
 
 int
