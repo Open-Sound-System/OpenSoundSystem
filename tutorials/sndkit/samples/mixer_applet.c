@@ -12,7 +12,6 @@
  * audio/wave/pcm playback volume and/or recording input level. It cannot be
  * used for anything else.
  *
- *
  * This program demonstrates three main techniques to be used by mixer applets:
  *
  * 1) How to find the default mixer device that controls the primary
@@ -25,6 +24,7 @@
  *    the given device.
  *
  * 3) How to read the current volume and how to change it.
+ *
  */
 
 #include <stdio.h>
@@ -224,7 +224,6 @@ main (int argc, char *argv[])
   if (argc > 1)
     mixer_dev = atoi (argv[1]);
 
-
 /*
  * Open /dev/mixer. This device file can be used regardless of the actual
  * mixer device number.
@@ -343,6 +342,13 @@ main (int argc, char *argv[])
 
 	      ADD_TO_BIN(monvol, i);
 	    }
+/*
+ * It is possible that many/most/all mixer controls don't have any of the above
+ * flags set. This means that such controls are for expert use only. It is
+ * recommended that mixer applets have an [Advanced options] button that is
+ * enabled if such controls are found. This button can launch ossxmix (or
+ * some configurable program).
+ */
 
 	  printf ("%s\n", ext.extname);
 	}
@@ -366,7 +372,7 @@ main (int argc, char *argv[])
     printf ("No pcm volume control available\n");
 
   if (n_recvol > 0)
-    show_controls (mixer_fd, "Rec volumei controls", mixer_dev, recvol_ctls, n_recvol);
+    show_controls (mixer_fd, "Rec volume controls", mixer_dev, recvol_ctls, n_recvol);
   else
     printf ("No rec volume control available\n");
 
@@ -376,6 +382,12 @@ main (int argc, char *argv[])
     printf ("No monitor volume control available\n");
 
   close (mixer_fd);
+
+  if (n_mainvol + n_pcmvol + n_recvol + n_monvol == 0)
+     {
+	     printf("\nNo 'simple' mixer controls available for this device\n");
+	     printf("It may be a good idea to start ossxmix which can access advanced options.\n");
+     }
 
   exit (0);
 }
