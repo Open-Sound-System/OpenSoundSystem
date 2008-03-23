@@ -9,7 +9,7 @@ gen_inputtest (void)
   int i;
 
   printf ("// Input test program\n");
-  printf ("#include \"vu.inc\"\n");
+  printf ("#include \"vu.mac\"\n");
   printf (".gpr VUTMP\n");
   printf (".gpr TMP\n");
 
@@ -42,7 +42,7 @@ gen_outputtest (void)
   int i;
 
   printf ("// Output test program\n");
-  printf ("#include \"vu.inc\"\n");
+  printf ("#include \"vu.mac\"\n");
   printf (".parm VU 0 stereopeak\n");
   printf (".gpr VUTMP\n");
   printf (".gpr TMP\n");

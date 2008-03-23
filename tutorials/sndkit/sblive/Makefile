@@ -4,7 +4,7 @@ INCLUDE=-I$(SRCDIR)
 LDFLAGS=
 INSTALLDIR=/usr/local/bin
 INSTALLLIB=/usr/lib/oss
-CFLAGS=$(INCLUDE)
+CFLAGS=$(INCLUDE) -DUSERLAND
 
 all: asm10k ld10k emu10k.bin1 emu10k.bin2 emu10k1_dsp.h emu10k2_dsp.h
 
@@ -34,13 +34,13 @@ ld10k: ld10k.c
 asm10k: asm10k.c
 		$(CC) $(CFLAGS) $(INCLUDE) -o asm10k asm10k.c
 
-emu10k.bin1: emu10k.dsp asm10k equalizer.inc emu10k1.inc
+emu10k.bin1: emu10k.dsp asm10k equalizer.mac emu10k1.mac
 		./emuasm1 emu10k.dsp
 
-emu10k.bin2: emu10k.dsp asm10k equalizer.inc emu10k2.inc
+emu10k.bin2: emu10k.dsp asm10k equalizer.mac emu10k2.mac
 		./emuasm2 emu10k.dsp
 
-test.bin2: test.dsp asm10k equalizer.inc emu10k2.inc
+test.bin2: test.dsp asm10k equalizer.mac emu10k2.mac
 		./emuasm2 test.dsp
 
 emu10k1_dsp.h:	emu10k.bin1 mkheader

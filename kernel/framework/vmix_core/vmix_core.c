@@ -543,6 +543,20 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       return -EINVAL;
       break;
 
+/*
+ * Recording source selection. This can be done in two different ways depending
+ * on the hardware capabilities: 
+ *
+ * 1) If the input master device has multiple channels then select one of
+ *    the stereo pairs. It is likely that such device is a professional
+ *    audio card that uses fixed inputs anyway.
+ * 2) For stereo input only devices bypass the RECSRC ioctl calls to the
+ *    actual hardware driver. However this cannot be done when multiple
+ *    client applications have the same device opened for recording. In
+ *    such situation switching the recording source would disturb other
+ *    applications that already have recording going on.
+ */
+
     case SNDCTL_DSP_GET_RECSRC:
 
       if (mixer->inputdev == -1)	/* No input device */
@@ -594,10 +608,14 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 	if (n <= 1)		/* Only one alternative */
 	  {
+	    /* 
+	     * It might be better to get the name of the current recording
+	     * source from the master device. However for the time being
+	     * we will return just "default".
+	     */
 	    ei->nvalues = 1;
 	    ei->strindex[0] = 0;
 	    sprintf (ei->strings, "default");
-
 	  }
 	else
 	  {

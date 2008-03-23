@@ -2,7 +2,10 @@
  * Purpose: Global definitions for the SB Live/Audigy driver
  */
 #define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 1996-2005. All rights reserved.
+
+#ifndef USERLAND
 #include "uart401.h"
+#endif
 
 #define EMU10K1_MAGIC		0xe10001
 #define EMU10K2_MAGIC		0xe10002

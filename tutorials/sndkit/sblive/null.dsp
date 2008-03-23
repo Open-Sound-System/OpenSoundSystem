@@ -1,4 +1,4 @@
-#include "emu10k2.inc"
+#include "emu10k2.mac"
 
 .gpr AUX_L
 .gpr AUX_R

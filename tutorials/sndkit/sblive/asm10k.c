@@ -8,12 +8,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#define oss_native_ulong unsigned long
-#define sound_os_info unsigned long
+#define oss_native_word unsigned long
+#define oss_mutex_t unsigned long
+#define oss_device_t unsigned long
 #define ac97_devc unsigned long
+#define oss_midi_inputbyte_t char
+#define uart401_devc unsigned long
 typedef int oss_mutex;
 #include <sys/soundcard.h>
-#include <drivers/sblive/sblive.h>
+#include "../../../kernel/drv/sblive/sblive.h"
 
 #define MAX_NAME 64
 #define MAX_SYMBOLS	1024
@@ -25,6 +28,7 @@ int input_base = 0x10;
 int output_base = 0x20;
 
 static char line[4096] = "", *lineptr = line;
+static char lastline[4096];
 
 typedef struct
 {
@@ -95,6 +99,7 @@ getline (char *buf, int len)
       if (*line != '#')
 	lineno++;
 
+      strcpy(lastline, line);
     }
 
   s = buf;
@@ -116,6 +121,7 @@ getline (char *buf, int len)
 static void
 error (char *msg)
 {
+  fprintf (stderr, "%s\n", lastline);
   fprintf (stderr, "Error '%s' on line %d\n", msg, lineno);
   errors++;
 }

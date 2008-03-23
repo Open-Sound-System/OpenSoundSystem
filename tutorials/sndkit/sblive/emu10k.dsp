@@ -35,7 +35,7 @@
 //.parm MAIN			100		stereo		VOL
 
 #ifdef HAVE_EQ
-#include "equalizer.inc"
+#include "equalizer.mac"
 #endif
 
 // Monitor volumes and peak meters
@@ -105,9 +105,9 @@
 .gpr VU_R
 
 #ifdef AUDIGY
-#include "emu10k2.inc"
+#include "emu10k2.mac"
 #else
-#include "emu10k1.inc"
+#include "emu10k1.mac"
 #endif
 
 #ifdef AUDIGY
@@ -124,7 +124,7 @@
 # endif
 #endif
 
-#include "vu.inc"
+#include "vu.mac"
 
 #ifdef AUDIGY
 // Take wavetable engine front sends (0,1)

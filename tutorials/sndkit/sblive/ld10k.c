@@ -4,12 +4,15 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#define oss_native_ulong unsigned long
-#define sound_os_info unsigned long
+#define oss_native_word unsigned long
+#define oss_mutex_t unsigned long
+#define oss_device_t unsigned long
 #define ac97_devc unsigned long
+#define oss_midi_inputbyte_t char
+#define uart401_devc unsigned long
 typedef int oss_mutex;
 #include <sys/soundcard.h>
-#include <drivers/sblive/sblive.h>
+#include "../../../kernel/drv/sblive/sblive.h"
 
 int work_done = 0;
 int ossfd;
