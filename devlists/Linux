@@ -117,6 +117,7 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 maestro	pci125d,1968	ESS Maestro-2 
 maestro	pci125d,1978	ESS Maestro-2E 
 maestro	pci1285,100	ESS Maestro-1 
+midiloop	MIDILOOP	OSS MIDI Loopback driver
 neomagic	pci10c8,8005	Neomagic NM2200AV
 ossusb	usbif,class1	Generic USB audio/MIDI device (BETA)
 ossusb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)

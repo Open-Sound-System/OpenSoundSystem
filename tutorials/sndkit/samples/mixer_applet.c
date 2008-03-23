@@ -174,7 +174,11 @@ show_controls (int mixer_fd, char *heading, int mixer_dev, int ctls[], int count
  * it's also possible that there is both mute and a slider.
  */
     case MIXT_ONOFF:
-      printf ("ONOFF/mute %d ", val.value);
+      printf ("ONOFF %d ", val.value);
+      break;
+
+    case MIXT_MUTE:
+      printf ("mute %d ", val.value);
       break;
 
 /*

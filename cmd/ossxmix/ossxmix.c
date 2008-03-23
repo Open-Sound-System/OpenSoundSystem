@@ -1028,6 +1028,7 @@ load_devinfo (int dev)
 	  break;
 
 	case MIXT_ONOFF:
+	case MIXT_MUTE: // TODO: Mute could have custom widget
 	  if (!show_all)
 	    break;
 	  parent = thisrec->parent;
@@ -1630,6 +1631,7 @@ do_update (ctlrec_t * srec)
   switch (srec->mixext->type)
     {
     case MIXT_ONOFF:
+    case MIXT_MUTE:
       gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (srec->gang), val);
       break;
 

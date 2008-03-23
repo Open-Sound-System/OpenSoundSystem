@@ -213,6 +213,7 @@ verbose_devinfo (int dev)
 	  break;
 
 	case MIXT_ONOFF:
+	case MIXT_MUTE:
 	  printf ("On/off switch: '%s' (%s), parent=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->flags);
@@ -557,6 +558,7 @@ show_devinfo (int dev)
 	  break;
 
 	case MIXT_ONOFF:
+	case MIXT_MUTE:
 	  printf ("%s ON|OFF", extrec[i].extname);
 	  val.dev = dev;
 	  val.ctrl = i;
@@ -712,6 +714,7 @@ dump_devinfo (int dev)
 	  break;
 
 	case MIXT_ONOFF:
+	case MIXT_MUTE:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
 	  val.dev = dev;
 	  val.ctrl = i;
@@ -887,7 +890,7 @@ change_level (int dev, char *cname, char *arg)
       right = (val.value >> 8) & 0xff;
     }
 
-  if (extrec.type == MIXT_ONOFF)
+  if (extrec.type == MIXT_ONOFF || extrec.type == MIXT_MUTE)
     printf ("Value of mixer control %s set to %s\n", cname,
 	    val.value ? "ON" : "OFF");
   else if (extrec.type == MIXT_ENUM)
@@ -955,7 +958,7 @@ show_level (int dev, char *cname)
       shift = 16;
     }
 
-  if (extrec.type == MIXT_ONOFF)
+  if (extrec.type == MIXT_ONOFF || extrec.type == MIXT_MUTE)
     printf ("Value of mixer control %s is currently set to %s\n", cname,
 	    val.value ? "ON" : "OFF");
   else if (extrec.type == MIXT_ENUM)

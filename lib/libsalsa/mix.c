@@ -233,7 +233,7 @@ snd_mixer_selem_has_playback_switch (snd_mixer_elem_t * elem)
 {
   dbg_printf ("snd_mixer_selem_has_playback_switch()\n");
 
-  if (elem->ext.type == MIXT_ONOFF)
+  if (elem->ext.type == MIXT_ONOFF || elem->ext.type == MIXT_MUTE)
     return 1;
   return 0;
 }

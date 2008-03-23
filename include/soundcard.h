@@ -23,7 +23,7 @@
 #define EXTERNC extern
 #endif /* EXTERN_C_WRAPPERS */
 
-#define OSS_VERSION	0x040004
+#define OSS_VERSION	0x040090 // Pre 4.1
 
 #define SOUND_VERSION	OSS_VERSION
 #define OPEN_SOUND_SYSTEM
@@ -1765,6 +1765,9 @@ typedef struct oss_mixext
  */
 #	define MIXT_MONOSLIDER16	19
 #	define MIXT_STEREOSLIDER16	20
+#	define MIXT_MUTE	21	/* Mute=1, unmute=0 */
+
+  /**************************************************************/
 
   /* Possible value range (minvalue to maxvalue) */
   /* Note that maxvalue may also be smaller than minvalue */

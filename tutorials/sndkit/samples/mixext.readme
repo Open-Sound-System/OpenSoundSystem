@@ -122,23 +122,13 @@ mixer extension API. To make your life easier you should always ignore
 MIXT_MARKER and everything before it (except the root entry of course).
 
 MIXT_ONOFF
+MIXT_MUTE
 MIXT_ENUM
 
-These controls are quite similar. MIXT_ONOFF has only two
+These controls are quite similar. MIXT_ONOFF and MIXT_MUTE have only two
 possible values that are 0 (OFF) and 1 (ON). MIXT_ENUM has more
 alternatives (the available values are 0 to maxvalue (returned by 
 the SNDCTL_MIX_EXTINFO ioctl call.
-
-Example:
-
-The SB Live/Audigy driver exports a SBLIVE_SPKMODE setting
-with maxvalue=3. This means that there are 4 permitted values (0, 1, 2 and 3).
-To find out the meaning of these values you need to look at the mixer.def
-file shipped with OSS. It contains the following line:
-
-"spkmode ENUM FRONT REAR FRONT+REAR 3D"
-
-From this line you can see that 0=FRONT, 1=REAR, 2=FRONT+REAR and 3=3D
 
 However there is still one more thing. Some of the enum values are not always
 available. For this the application should check the enum_present field to see

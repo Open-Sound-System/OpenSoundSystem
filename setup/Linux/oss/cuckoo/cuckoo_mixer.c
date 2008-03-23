@@ -78,6 +78,7 @@ get_mixer_info (snd_kcontrol_t * kcontrol, snd_ctl_elem_info_t * uinfo)
       break;
 
     case MIXT_ONOFF:
+    case MIXT_MUTE:
       uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
       uinfo->count = 1;
       uinfo->value.integer.min = 0;
@@ -174,6 +175,7 @@ mixer_get (snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
       break;
 
     case MIXT_ONOFF:
+    case MIXT_MUTE:
       ucontrol->value.integer.value[0] = !!val.value;
       break;
 
@@ -230,6 +232,7 @@ mixer_put (snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
       break;
 
     case MIXT_ONOFF:
+    case MIXT_MUTE:
       val.value = !!ucontrol->value.integer.value[0];
       if ((err =
 	   oss_mixer_ext (dev, OSS_DEV_MIXER, SNDCTL_MIX_WRITE,
@@ -304,6 +307,7 @@ add_control (cuckoo_t * chip, int dev, int ix, oss_mixext * ext, char *name)
     {
     case MIXT_ENUM:
     case MIXT_ONOFF:
+    case MIXT_MUTE:
     case MIXT_STEREOSLIDER:
     case MIXT_SLIDER:
     case MIXT_MONOSLIDER:

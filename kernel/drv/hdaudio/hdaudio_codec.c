@@ -2952,7 +2952,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 					   MIXNUM (widget,
 						   CT_OUTMUTE, 0),
 					   hdaudio_set_control,
-					   MIXT_ONOFF, name, 2,
+					   MIXT_MUTE, name, 2,
 					   MIXF_READABLE |
 					   MIXF_WRITEABLE)) < 0)
 	return ctl;
@@ -3072,7 +3072,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 				       MIXNUM (widget,
 					       CT_INMUTE, ix),
 				       hdaudio_set_control,
-				       MIXT_ONOFF, name, 2,
+				       MIXT_MUTE, name, 2,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
   /* Copy RGB color */

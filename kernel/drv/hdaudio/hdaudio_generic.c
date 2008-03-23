@@ -206,7 +206,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 						   MIXNUM (widget,
 							   CT_INMUTE, i),
 						   hdaudio_set_control,
-						   MIXT_ONOFF, name, 2,
+						   MIXT_MUTE, name, 2,
 						   MIXF_READABLE |
 						   MIXF_WRITEABLE)) < 0)
 		return cnum;
@@ -315,7 +315,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 					       MIXNUM (widget,
 						       CT_OUTMUTE, 0),
 					       hdaudio_set_control,
-					       MIXT_ONOFF, name, 2,
+					       MIXT_MUTE, name, 2,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return cnum;
