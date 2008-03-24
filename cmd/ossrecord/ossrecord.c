@@ -30,8 +30,7 @@
 #define WAVE_MONO    1
 #define WAVE_STEREO  2
 
-
-typedef struct __attribute__ ((__packed__))
+typedef struct /* __attribute__ ((__packed__)) */
 {
   char main_chunk[4];
   unsigned int length;

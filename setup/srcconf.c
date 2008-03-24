@@ -112,20 +112,20 @@ parse_config (FILE * f, conf_t * conf)
 
       if (strcmp (parms, "$GTKCFLAGS") == 0)
 	{
-	  if (getenv ("GTK2") != NULL)
-	    parms = "`pkg-config gtk+-2.0 --cflags`";
-
 	  if (getenv ("GTK1") != NULL)
 	    parms = "`gtk-config --cflags` -DGTK1_ONLY";
+	  else
+	  if (getenv ("GTK2") != NULL)
+	    parms = "`pkg-config gtk+-2.0 --cflags`";
 	}
 
       if (strcmp (parms, "$GTKLDFLAGS") == 0)
 	{
-	  if (getenv ("GTK2") != NULL)
-	    parms = "`pkg-config gtk+-2.0 --libs`";
-
 	  if (getenv ("GTK1") != NULL)
 	    parms = "`gtk-config --libs`";
+	  else
+	  if (getenv ("GTK2") != NULL)
+	    parms = "`pkg-config gtk+-2.0 --libs`";
 	}
 
       if (strcmp (line, "project") == 0)

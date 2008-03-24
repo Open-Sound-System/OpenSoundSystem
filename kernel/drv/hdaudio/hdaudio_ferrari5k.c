@@ -37,9 +37,9 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 
 	n=0;
 
-	HDA_GROUP(pin_group, top_group, "connector");
+	HDA_GROUP(pin_group, top_group, "jack");
 
-	if (HDA_PIN_GROUP(0x15, group, pin_group, "int-speaker", n, "connector", 8))	/* Pin widget 0x15 */
+	if (HDA_PIN_GROUP(0x15, group, pin_group, "int-speaker", n, "jack", 8))	/* Pin widget 0x15 */
 	   {
 		/* Src 0xc=front */
 		/* Src 0xd=rear */
@@ -51,7 +51,7 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		//HDA_INAMP(0x15, 0, group, "inlevel", 90);	/* From widget 0x0c */
 	   }
 
-	if (HDA_PIN_GROUP(0x14, group, pin_group, "headphone", n, "connector", 8))	/* Pin widget 0x14 */
+	if (HDA_PIN_GROUP(0x14, group, pin_group, "headphone", n, "jack", 8))	/* Pin widget 0x14 */
 	   {
 		/* Src 0xc=front */
 		/* Src 0xd=rear */
@@ -63,7 +63,7 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		HDA_INAMP(0x14, 0, group, "inlevel", 90);	/* From widget 0x0c */
 	   }
 
-	if (HDA_PIN_GROUP(0x18, group, pin_group, "ext-mic", n, "connector", 8))	/* Pin widget 0x18 */
+	if (HDA_PIN_GROUP(0x18, group, pin_group, "ext-mic", n, "jack", 8))	/* Pin widget 0x18 */
 	   {
 		/* Src 0xc=front */
 		/* Src 0xd=rear */
@@ -75,7 +75,7 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		HDA_INAMP(0x18, 0, group, "inlevel", 90);	/* From widget 0x0c */
 	   }
 
-	if (HDA_PIN_GROUP(0x19, group, pin_group, "int-mic", n, "connector", 8))	/* Pin widget 0x19 */
+	if (HDA_PIN_GROUP(0x19, group, pin_group, "int-mic", n, "jack", 8))	/* Pin widget 0x19 */
 	   {
 		/* Src 0xc=front */
 		/* Src 0xd=rear */
@@ -92,7 +92,7 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		HDA_INAMP(0x19, 0, group, "inlevel", 90);	/* From widget 0x0c */
 	   }
 
-	if (HDA_PIN_GROUP(0x1a, group, pin_group, "line-out", n, "connector", 8))	/* Pin widget 0x1a */
+	if (HDA_PIN_GROUP(0x1a, group, pin_group, "line-out", n, "jack", 8))	/* Pin widget 0x1a */
 	   {
 		/* Src 0xc=front */
 		/* Src 0xd=rear */

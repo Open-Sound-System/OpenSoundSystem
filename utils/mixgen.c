@@ -281,7 +281,7 @@ handle_pin_widget (int wid, mixgen_widget_t * widget)
     return 0;
 
   printf
-    ("\n\tif (HDA_PIN_GROUP(0x%02x, group, pin_group, \"%s\", n, \"connector\", 4))\t/* Pin widget 0x%02x */\n",
+    ("\n\tif (HDA_PIN_GROUP(0x%02x, group, pin_group, \"%s\", n, \"jack\", 4))\t/* Pin widget 0x%02x */\n",
      wid, widget->widget_info.color, wid);
   printf ("\t   {\n");
 
@@ -721,7 +721,7 @@ main (int argc, char *argv[])
   printf ("\tint n, group, pin_group;\n");
   printf ("\n\tn=0;\n");
 
-  printf ("\n\tHDA_GROUP(pin_group, top_group, \"connector\");\n");
+  printf ("\n\tHDA_GROUP(pin_group, top_group, \"jack\");\n");
 
   for (i = 0; i < num_widgets; i++)
     {

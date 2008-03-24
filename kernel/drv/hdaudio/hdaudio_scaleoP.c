@@ -133,9 +133,9 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 
     n = 0;
 
-    HDA_GROUP (pin_group, top_group, "connector");
+    HDA_GROUP (pin_group, top_group, "jack");
 
-    if (HDA_PIN_GROUP (0x14, group, pin_group, "green", n, "connector", 4))	/* Pin widget 0x14 */
+    if (HDA_PIN_GROUP (0x14, group, pin_group, "green", n, "jack", 4))	/* Pin widget 0x14 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -149,7 +149,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x14, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x15, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x15 */
+    if (HDA_PIN_GROUP (0x15, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x15 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -163,7 +163,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x15, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x16, group, pin_group, "orange", n, "connector", 4))	/* Pin widget 0x16 */
+    if (HDA_PIN_GROUP (0x16, group, pin_group, "orange", n, "jack", 4))	/* Pin widget 0x16 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -177,7 +177,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x16, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x17, group, pin_group, "grey", n, "connector", 4))	/* Pin widget 0x17 */
+    if (HDA_PIN_GROUP (0x17, group, pin_group, "grey", n, "jack", 4))	/* Pin widget 0x17 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -191,7 +191,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x17, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x18, group, pin_group, "pink", n, "connector", 4))	/* Pin widget 0x18 */
+    if (HDA_PIN_GROUP (0x18, group, pin_group, "pink", n, "jack", 4))	/* Pin widget 0x18 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -205,7 +205,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x18, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x1a, group, pin_group, "blue", n, "connector", 4))	/* Pin widget 0x1a */
+    if (HDA_PIN_GROUP (0x1a, group, pin_group, "blue", n, "jack", 4))	/* Pin widget 0x1a */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -219,7 +219,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x1a, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x1b, group, pin_group, "fp-green", n, "connector", 4))	/* Pin widget 0x1b */
+    if (HDA_PIN_GROUP (0x1b, group, pin_group, "fp-green", n, "jack", 4))	/* Pin widget 0x1b */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -233,7 +233,7 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_INAMP (0x1b, 0, group, "in", 90);	/* From widget 0x0c */
       }
 
-    if (HDA_PIN_GROUP (0x19, group, pin_group, "fp-pink", n, "connector", 4))	/* Pin widget 0x19 */
+    if (HDA_PIN_GROUP (0x19, group, pin_group, "fp-pink", n, "jack", 4))	/* Pin widget 0x19 */
       {
 	/* Src 0xc=front */
 	/* Src 0xd=rear */
@@ -251,13 +251,13 @@ hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
     /*
      * Non-used pins
      */
-    if (HDA_PIN_GROUP (0x1c, group, pin_group, "int-aux", n, "connector", 4))	/* Pin widget 0x1c */
+    if (HDA_PIN_GROUP (0x1c, group, pin_group, "int-aux", n, "jack", 4))	/* Pin widget 0x1c */
       {
 	if (HDA_PINSELECT (0x1c, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "input");
       }
 
-    if (HDA_PIN_GROUP (0x1d, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x1d */
+    if (HDA_PIN_GROUP (0x1d, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x1d */
       {
 	if (HDA_PINSELECT (0x1d, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "input");

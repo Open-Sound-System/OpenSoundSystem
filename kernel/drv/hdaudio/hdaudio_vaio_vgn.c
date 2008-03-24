@@ -31,16 +31,16 @@ hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 
     n = 0;
 
-    HDA_GROUP (pin_group, top_group, "connector");
+    HDA_GROUP (pin_group, top_group, "jack");
 
-    if (HDA_PIN_GROUP (0x0a, group, pin_group, "headphone", n, "connector", 4))	/* Pin widget 0x0a */
+    if (HDA_PIN_GROUP (0x0a, group, pin_group, "headphone", n, "jack", 4))	/* Pin widget 0x0a */
       {
 	/* Src 0x2=pcm2 */
 	if (HDA_PINSELECT (0x0a, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "pcm2-out input");
       }
 
-    if (HDA_PIN_GROUP (0x0b, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x0b */
+    if (HDA_PIN_GROUP (0x0b, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x0b */
       {
 	/* Src 0x4=pcm */
 	if (HDA_PINSELECT (0x0b, ctl, group, "mode", -1))
@@ -50,7 +50,7 @@ hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_OUTAMP (0x04, group, "-", 90);
       }
 
-    if (HDA_PIN_GROUP (0x0c, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x0c */
+    if (HDA_PIN_GROUP (0x0c, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x0c */
       {
 	/* Src 0x3=pcm */
 	if (HDA_PINSELECT (0x0c, ctl, group, "mode", -1))
@@ -60,14 +60,14 @@ hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	HDA_OUTAMP (0x03, group, "-", 90);
       }
 
-    if (HDA_PIN_GROUP (0x0d, group, pin_group, "red", n, "connector", 4))	/* Pin widget 0x0d */
+    if (HDA_PIN_GROUP (0x0d, group, pin_group, "red", n, "jack", 4))	/* Pin widget 0x0d */
       {
 	/* Src 0x2=pcm2 */
 	if (HDA_PINSELECT (0x0d, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "pcm2-out input");
       }
 
-    if (HDA_PIN_GROUP (0x0e, group, pin_group, "black", n, "connector", 4))	/* Pin widget 0x0e */
+    if (HDA_PIN_GROUP (0x0e, group, pin_group, "black", n, "jack", 4))	/* Pin widget 0x0e */
       {
 	if (HDA_PINSELECT (0x0e, ctl, group, "mode", -1))
 	  HDA_CHOICES (ctl, "input");

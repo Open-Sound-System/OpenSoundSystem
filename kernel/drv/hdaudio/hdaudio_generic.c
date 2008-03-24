@@ -790,7 +790,7 @@ hdaudio_generic_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 	{
 	  if ((group =
 	       mixer_ext_create_group (mixer->mixer_dev, parent_group,
-				       "connector")) < 0)
+				       "jack")) < 0)
 	    return group;
 	}
 

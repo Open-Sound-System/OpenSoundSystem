@@ -85,13 +85,15 @@ case `uname` in
 	"5.9")
 		echo Setting up for Solaris 9
 		SOL9=1
-		export SOL9
+		GTK1=1
+		export SOL9 GTK1
 		;;
 
 	"5.8")
 		echo Setting up for Solaris 8
 		SOL9=1
-		export SOL9
+		GTK1=1
+		export SOL9 GTK1
 		;;
 	*)
 		echo Using Solaris10 specific script
