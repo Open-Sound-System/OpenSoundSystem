@@ -3045,7 +3045,7 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 
 int
 hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
-		      int ix, int group, const char *name, int muted)
+		      int ix, int group, const char *name, int muted, unsigned int flags)
 {
   widget_t *widget;
   codec_t *codec;
@@ -3073,7 +3073,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 					       CT_INMUTE, ix),
 				       hdaudio_set_control,
 				       MIXT_MUTE, name, 2,
-				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+				       flags | MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
   /* Copy RGB color */
   if (widget->rgbcolor != 0)

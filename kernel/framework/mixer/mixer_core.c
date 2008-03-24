@@ -910,6 +910,7 @@ expand_names (int dev)
 	case MIXT_MONOPEAK:
 	case MIXT_STEREOPEAK:
 	case MIXT_ONOFF:
+	case MIXT_MUTE:
 	case MIXT_ENUM:
 	case MIXT_VALUE:
 	case MIXT_HEXVALUE:

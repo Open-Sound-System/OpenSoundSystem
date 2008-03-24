@@ -82,6 +82,9 @@ find_default_mixer (int mixer_fd)
 	}
     }
 
+  printf("Mixer device %d seems to be the most probable motherboard device\n",
+	 default_mix);
+
   return default_mix;
 }
 
@@ -390,7 +393,7 @@ main (int argc, char *argv[])
   if (n_mainvol + n_pcmvol + n_recvol + n_monvol == 0)
      {
 	     printf("\nNo 'simple' mixer controls available for this device\n");
-	     printf("It may be a good idea to start ossxmix which can access advanced options.\n");
+	     printf("It may be a good idea to start 'ossxmix -d %d' which can access advanced options.\n", mixer_dev);
      }
 
   exit (0);
