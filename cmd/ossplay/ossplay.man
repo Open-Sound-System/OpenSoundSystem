@@ -30,14 +30,6 @@ the currently played file and skip to the next file.
 SEE ALSO
 ossrecord(1), ossmix(1), ossxmix(1)
 
-NOTES
-The vmix subsystem redirects the recording source selection to the 
-actual device only if there is just one application using the same 
-device.
-
-Thus, ./ossrecord -imic - | ./ossplay - will not work when using vmix.
-However, ./ossrecord -imic - | ./ossplay -R - will work.
-
 FILES
 /usr/bin/ossplay
 
