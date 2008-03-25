@@ -107,7 +107,7 @@ WORD gwDSPConnectIn = KCONNECT_ADC1;	/* Default ADC1 */
 #include "kernelbn.inc"
 
 
-extern __inline__ unsigned
+unsigned int
 GetPosition (allegro_devc * devc, unsigned char Direction)
 {
   oss_native_word flags;
