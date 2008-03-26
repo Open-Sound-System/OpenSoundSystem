@@ -1,5 +1,5 @@
 #include "ossplay.h"
-#include "dump.h"
+#include "decode.h"
 
 typedef unsigned int (decfunc_t) (unsigned char **, unsigned char *,
                                   unsigned int, void *);
@@ -51,12 +51,12 @@ static unsigned int decode_msadpcm (unsigned char **, unsigned char *,
                                     unsigned int, void *);
 static unsigned int decode_nul (unsigned char **, unsigned char *,
                                 unsigned int, void *);
-static int dump (int, unsigned int, int, decoders_queue_t *);
+static int decode (int, unsigned int, int, decoders_queue_t *);
 static fib_values_t * setup_fib (int, int);
 static cradpcm_values_t * setup_cr (int, int);
 
 int
-dump_sound (int fd, unsigned int filesize, int format, int channels,
+decode_sound (int fd, unsigned int filesize, int format, int channels,
             int speed, void * metadata)
 {
   decoders_queue_t * dec, * decoders = NULL;
@@ -143,7 +143,7 @@ dump_sound (int fd, unsigned int filesize, int format, int channels,
   dec->next = decoders;
 
   if (!setup_device (fd, format, channels, speed)) return -2;
-  res = dump (fd, filesize, bsize, dec);
+  res = decode (fd, filesize, bsize, dec);
 
   decoders = dec;
   while (decoders != NULL)
@@ -159,7 +159,7 @@ dump_sound (int fd, unsigned int filesize, int format, int channels,
 }
 
 static int
-dump (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
+decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
 {
   unsigned int dataleft = filesize, outl;
   unsigned char *buf, *obuf;

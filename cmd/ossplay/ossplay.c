@@ -12,7 +12,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
 #include "ossplay.h"
-#include "dump.h"
+#include "decode.h"
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -488,7 +488,7 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
       return;
     }
 
-  dump_sound (fd, filelen, format, channels, speed, NULL);
+  decode_sound (fd, filelen, format, channels, speed, NULL);
 }
 
 /*ARGSUSED*/
@@ -956,7 +956,7 @@ stdinext:
       print_verbose (format, channels, speed);
     }
 
-  dump_sound (fd, sound_size, format, channels, speed, (void *)&msadpcm_val);
+  decode_sound (fd, sound_size, format, channels, speed, (void *)&msadpcm_val);
 
   return;
 }
@@ -1060,7 +1060,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
             }
 
 	case 2:		/* Continuation data */
-          if (dump_sound (fd, len, format, channels, speed, NULL) < 0)
+          if (decode_sound (fd, len, format, channels, speed, NULL) < 0)
             return;
           pos += len;
 	  break;
@@ -1168,7 +1168,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
                 return;
             }
 
-          if (dump_sound (fd, len, format, channels, speed, NULL) < 0)
+          if (decode_sound (fd, len, format, channels, speed, NULL) < 0)
             return;
           pos += len;
 	  break;
@@ -1310,7 +1310,7 @@ play_file (char *filename)
       if (verbose)
 	fprintf (stdout, "Playing raw mu-Law file %s\n", filename);
 
-      dump_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
+      decode_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
       goto done;
     }
 
@@ -1321,7 +1321,7 @@ play_file (char *filename)
 		 "%s: Unknown format. Assuming RAW audio (%d/%d/%d.\n",
 		 filename, DEFAULT_SPEED, DEFAULT_FORMAT, DEFAULT_CHANNELS);
 
-      dump_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                   DEFAULT_SPEED, NULL);
       goto done;
     }
@@ -1331,7 +1331,7 @@ play_file (char *filename)
       if (verbose)
 	fprintf (stdout, "%s: Playing CD-R (cdwrite) file.\n", filename);
 
-      dump_sound (fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
+      decode_sound (fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
       goto done;
     }
 
@@ -1341,7 +1341,7 @@ play_file (char *filename)
       if (verbose)
 	fprintf (stdout, "%s: Playing RAW file.\n", filename);
 
-      dump_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                   DEFAULT_SPEED, NULL);
       goto done;
     }
