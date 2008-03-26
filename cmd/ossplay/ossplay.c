@@ -56,12 +56,12 @@ enum {
 #define DEFAULT_CHANNELS	1
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
-int force_speed = -1, force_bits = -1, force_channels = -1;
-int audiofd = 0, quitflag = 0;
+int force_speed = -1, force_bits = -1, force_channels = -1, amplification = 1;
+int audiofd = 0, quitflag = 0, quiet = 0;
 char audio_devname[32] = "/dev/dsp";
 
 static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
-static int raw_mode = 0, verbose = 0, quiet = 0, exitstatus = 0;
+static int raw_mode = 0, verbose = 0, exitstatus = 0;
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
@@ -301,7 +301,7 @@ setup_device (int fd, int format, int channels, int speed)
   tmp = format;
 
   if (verbose > 4)
-    fprintf (stderr, "Setup device %d/%d/%d\n", channels, format, speed);
+    fprintf (stdout, "Setup device %d/%d/%d\n", channels, format, speed);
 
   if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &tmp) == -1)
     {
@@ -388,7 +388,7 @@ print_verbose (int format, int channels, int speed)
        case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
        case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
     }
-  fprintf (stderr, "%s/%s/%d Hz\n", fmt, chn, speed);
+  fprintf (stdout, "%s/%s/%d Hz\n", fmt, chn, speed);
 }
 
 /*ARGSUSED*/
@@ -407,12 +407,12 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
   if (verbose > 2)
     {
       if (filelen == (unsigned int)-1)
-        fprintf (stderr, "%s: Filelen: unspecified\n", filename);
+        fprintf (stdout, "%s: Filelen: unspecified\n", filename);
       else
-        fprintf (stderr, "%s: Filelen: %u\n", filename, filelen);
+        fprintf (stdout, "%s: Filelen: %u\n", filename, filelen);
     }
   if (verbose > 3) fprintf (stderr, "%s: Offset: %u\n", filename, p);
-  if (filelen == (unsigned int)-1) filelen = 0x7fffffff;
+  if (filelen == (unsigned int)-1) filelen = UINT_MAX;
 
   switch (fmt)
     {
@@ -461,7 +461,7 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
 
   if (verbose)
     {
-      fprintf (stderr, "Playing .au file %s, ", filename);
+      fprintf (stdout, "Playing .au file %s, ", filename);
       print_verbose (format, channels, speed);
 
       if ((verbose > 1) && (p > 24))
@@ -474,10 +474,10 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
                        an_len + 24);
               return;
             }
-	  fprintf (stderr, "%s: Annotations: ", filename);
+	  fprintf (stdout, "%s: Annotations: ", filename);
 	  for (i = 0; i < an_len; i++)
-	    fprintf (stderr, "%c", isprint (hdr[i])?hdr[i]:'.');
-	  fprintf (stderr, "\n");
+	    fprintf (stdout, "%c", isprint (hdr[i])?hdr[i]:'.');
+	  fprintf (stdout, "\n");
 	}
     }
 
@@ -609,7 +609,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
   total_size = ne_int (buf + 4, 4);
   if (verbose > 2)
-    fprintf (stderr, "Filelen = %u\n", total_size);
+    fprintf (stdout, "Filelen = %u\n", total_size);
   do
     {
       if (read (fd, buf, 8) < 8)
@@ -756,7 +756,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             break;
           case data_HUNK: /* WAVE chunk */
             if (verbose > 3)
-              fprintf (stderr, "DATA chunk. Offs = %u, "
+              fprintf (stdout, "DATA chunk. Offs = %u, "
                        "len = %u\n", csize+8, chunk_size);
             sound_loc = csize + 8;
           case MDAT_HUNK: /* MAUD chunk */
@@ -811,10 +811,10 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
             format = ne_int (buf, 2);
             if (verbose > 3)
-              fprintf (stderr, "FMT chunk: len = %u, fmt = %#x\n",
+              fprintf (stdout, "FMT chunk: len = %u, fmt = %#x\n",
                        chunk_size, format);
 
-            channels = ne_int (buf + 2, 2);
+            msadpcm_val.channels = channels = ne_int (buf + 2, 2);
             speed = ne_int (buf + 4, 4);
             msadpcm_val.nBlockAlign = ne_int (buf + 12, 2);
             bits = ne_int (buf + 14, 2);
@@ -878,31 +878,31 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
               {
                 int i, len;
 
-                fprintf (stderr, "%s: ", filename);
+                fprintf (stdout, "%s: ", filename);
                 if (chunk_size > 1024) len = 1024;
                 else len = chunk_size;
                 switch (chunk_id)
                   {
                     case NAME_HUNK:
-                      fprintf (stderr, "Name: ");
+                      fprintf (stdout, "Name: ");
                       AREAD (fd, buf, len, NAME);
                       break;
                     case AUTH_HUNK:
-                      fprintf (stderr, "Author: ");
+                      fprintf (stdout, "Author: ");
                       AREAD (fd, buf, len, AUTH);
                       break;
                     case COPY_HUNK:
-                      fprintf (stderr, "Copyright: ");
+                      fprintf (stdout, "Copyright: ");
                       AREAD (fd, buf, len, COPY);
                       break;
                     case ANNO_HUNK:
-                      fprintf (stderr, "Annonations: ");
+                      fprintf (stdout, "Annonations: ");
                       AREAD (fd, buf, len, ANNO);
                       break;
                   }
                 for (i = 0; i < len; i++)
-                  fprintf (stderr, "%c", isprint (buf[i])?buf[i]:' ');
-                fprintf (stderr, "\n");
+                  fprintf (stdout, "%c", isprint (buf[i])?buf[i]:' ');
+                fprintf (stdout, "\n");
                 break;
               }
 
@@ -942,17 +942,17 @@ stdinext:
   if (verbose)
     {
       if (type == AIFF_FILE)
-        fprintf(stderr, "Playing AIFF file %s, ", filename);
+        fprintf(stdout, "Playing AIFF file %s, ", filename);
       else if (type == AIFC_FILE)
-        fprintf(stderr, "Playing AIFC file %s, ", filename);
+        fprintf(stdout, "Playing AIFC file %s, ", filename);
       else if ((type == WAVE_FILE) || (type == WAVE_FILE_BE))
-        fprintf(stderr, "Playing WAVE file %s, ", filename);
+        fprintf(stdout, "Playing WAVE file %s, ", filename);
       else if (type == _8SVX_FILE)
-        fprintf(stderr, "Playing 8SVX file %s, ", filename);
+        fprintf(stdout, "Playing 8SVX file %s, ", filename);
       else if (type == _16SV_FILE)
-        fprintf(stderr, "Playing 16SV file %s, ", filename);
+        fprintf(stdout, "Playing 16SV file %s, ", filename);
       else
-        fprintf(stderr, "Playing MAUD file %s, ", filename);
+        fprintf(stdout, "Playing MAUD file %s, ", filename);
       print_verbose (format, channels, speed);
     }
 
@@ -998,7 +998,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
     }
 
   if (verbose)
-    fprintf (stderr, "Playing .VOC file %s\n", filename);
+    fprintf (stdout, "Playing .VOC file %s\n", filename);
 
    /*LINTED*/ while (1)
     {
@@ -1030,7 +1030,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
       blklen = len = le_int (buf + 1, 3);
 
       if (verbose > 3)
-	fprintf (stderr, "%s: %0x: Block type %d, len %d\n",
+	fprintf (stdout, "%s: %0x: Block type %d, len %d\n",
 		 filename, data_offs, buf[0], len);
       switch (buf[0])
 	{
@@ -1098,10 +1098,10 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 
               if (len > 256) len = 256;
               VREAD (fd, block, len);
-              fprintf (stderr, "Text: ");
+              fprintf (stdout, "Text: ");
               for (i = 0; i < len; i++)
-                fprintf (stderr, "%c", isprint(block[i])?block[i]:'.');
-              fprintf (stderr, "\n");
+                fprintf (stdout, "%c", isprint(block[i])?block[i]:'.');
+              fprintf (stdout, "\n");
             }
           break;
 
@@ -1308,12 +1308,9 @@ play_file (char *filename)
     {				/* Raw mu-Law data */
 
       if (verbose)
-	fprintf (stderr, "Playing raw mu-Law file %s\n", filename);
+	fprintf (stdout, "Playing raw mu-Law file %s\n", filename);
 
-      if (!setup_device (fd, AFMT_MU_LAW, 1, 8000))
-	return;
-
-      dump_data (fd, 0x7fffffff);
+      dump_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
       goto done;
     }
 
@@ -1324,7 +1321,7 @@ play_file (char *filename)
 		 "%s: Unknown format. Assuming RAW audio (%d/%d/%d.\n",
 		 filename, DEFAULT_SPEED, DEFAULT_FORMAT, DEFAULT_CHANNELS);
 
-      dump_sound (fd, 0x7fffffff, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+      dump_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                   DEFAULT_SPEED, NULL);
       goto done;
     }
@@ -1332,9 +1329,9 @@ play_file (char *filename)
   if (strcmp (suffix, ".cdr") == 0 || strcmp (suffix, ".CDR") == 0)
     {
       if (verbose)
-	fprintf (stderr, "%s: Playing CD-R (cdwrite) file.\n", filename);
+	fprintf (stdout, "%s: Playing CD-R (cdwrite) file.\n", filename);
 
-      dump_sound (fd, 0x7fffffff, AFMT_S16_BE, 2, 44100, NULL);
+      dump_sound (fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
       goto done;
     }
 
@@ -1342,9 +1339,9 @@ play_file (char *filename)
   if (strcmp (suffix, ".raw") == 0 || strcmp (suffix, ".RAW") == 0)
     {
       if (verbose)
-	fprintf (stderr, "%s: Playing RAW file.\n", filename);
+	fprintf (stdout, "%s: Playing RAW file.\n", filename);
 
-      dump_sound (fd, 0x7fffffff, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+      dump_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                   DEFAULT_SPEED, NULL);
       goto done;
     }
@@ -1363,7 +1360,7 @@ play_file (char *filename)
 	}
 
       if (verbose)
-	fprintf (stderr, "Playing MPEG audio file %s\n", filename);
+	fprintf (stdout, "Playing MPEG audio file %s\n", filename);
 
       if (!setup_device (fd, AFMT_S16_NE, 2, 44100))
 	return;
@@ -1470,7 +1467,7 @@ main (int argc, char **argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:")) != EOF)
+  while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:a:")) != EOF)
     {
       switch (c)
 	{
@@ -1516,6 +1513,10 @@ main (int argc, char **argv)
 	  sscanf (optarg, "%d", &force_channels);
 	  break;
 
+	case 'a':
+	  sscanf (optarg, "%d", &amplification);
+	  break;
+
 	default:
 	  usage (prog);
 	}
@@ -1538,7 +1539,10 @@ main (int argc, char **argv)
 #endif
 
   for (i = 1; i < argc; i++)
-    play_file (argv[i]);
+    {
+      play_file (argv[i]);
+      quitflag = 0;
+    }
 
   close (audiofd);
   return exitstatus;

@@ -1,216 +1,378 @@
 #include "ossplay.h"
 #include "dump.h"
 
-extern int force_speed, force_bits, force_channels;
-extern int audiofd, quitflag;
+typedef unsigned int (decfunc_t) (unsigned char **, unsigned char *,
+                                  unsigned int, void *);
+
+typedef struct fib_values {
+  unsigned char pred;
+  const char * table;
+} fib_values_t;
+
+typedef struct cradpcm_values {
+  const unsigned char * const * table;
+
+  signed char limit;
+  signed char shift;
+  signed char step;
+  unsigned char ratio;
+  unsigned char pred;
+} cradpcm_values_t;
+
+typedef struct decoders_queue {
+  struct decoders_queue * next;
+  decfunc_t * decoder;
+  unsigned char * outbuf;
+  char flag;
+  void * metadata;
+} decoders_queue_t;
+
+enum {
+  OBUF,
+  META
+};
+
+#define FREE_OBUF (1 << OBUF)
+#define FREE_META (1 << META)
+
+extern int force_speed, force_bits, force_channels, amplification;
+extern int audiofd, quitflag, quiet;
 extern char audio_devname[32];
 
-static int dump_data_24 (int, unsigned int, int);
-static int dump_creative_adpcm (int, unsigned int, int);
-static int dump_fibonacci_delta (int, unsigned int, int);
-static int dump_msadpcm (int, unsigned int, int, int, int, adpcm_coeff *);
-static int dump_creative_adpcm (int, unsigned int, int);
-
-#define OREAD(fd, buf, len) \
-  do { \
-    if (quitflag == 1) \
-      { \
-        quitflag = 0; \
-        ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
-        return -1; \
-      } \
-    if ((l = read (fd, buf, len)) <= 0) \
-      { \
-        if (quitflag == 1) \
-          { \
-            quitflag = 0; \
-            ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
-            return -1; \
-          } \
-        return 0; \
-      } \
-  } while(0)
-
-#define OWRITE(fd, buf, len) \
-  do { \
-   if (write (fd, buf, len) == -1) \
-     { \
-        if ((errno == EINTR) && (quitflag == 1)) \
-          { \
-            quitflag = 0; \
-            ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
-            return -1; \
-          } \
-        perror (audio_devname); \
-        exit (-1); \
-     } \
-  } while (0)
+static unsigned int decode_24 (unsigned char **, unsigned char *,
+                               unsigned int, void *);
+static unsigned int decode_amplify (unsigned char **, unsigned char *,
+                                    unsigned int, void *);
+static unsigned int decode_cr (unsigned char **, unsigned char *,
+                               unsigned int, void *);
+static unsigned int decode_fib (unsigned char **, unsigned char *,
+                                unsigned int, void *);
+static unsigned int decode_msadpcm (unsigned char **, unsigned char *,
+                                    unsigned int, void *);
+static unsigned int decode_nul (unsigned char **, unsigned char *,
+                                unsigned int, void *);
+static int dump (int, unsigned int, int, decoders_queue_t *);
+static fib_values_t * setup_fib (int, int);
+static cradpcm_values_t * setup_cr (int, int);
 
 int
 dump_sound (int fd, unsigned int filesize, int format, int channels,
             int speed, void * metadata)
 {
+  decoders_queue_t * dec, * decoders = NULL;
+  int res, bsize;
+
   if (force_speed != -1) speed = force_speed;
   if (force_channels != -1) channels = force_channels;
   if (force_bits != -1) format = force_bits;
+
+  if (filesize < 2) return 0;
+  dec = calloc (1, sizeof(decoders_queue_t));
+
   switch (format)
     {
       case AFMT_MS_ADPCM:
-        if (!setup_device (fd, AFMT_S16_LE, channels, speed)) return -2;
-        else
-          {
-            msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+        dec->metadata = metadata;
+        dec->decoder = decode_msadpcm;
+        bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
+        dec->outbuf = malloc (bsize * 4 * sizeof (char));
+        dec->flag = FREE_OBUF;
 
-            return dump_msadpcm (fd, filesize, channels, val->nBlockAlign,
-                                 val->wSamplesPerBlock, val->coeff);
-          }
+        format = AFMT_S16_LE;
+        break;
       case AFMT_CR_ADPCM_2:
       case AFMT_CR_ADPCM_3:
       case AFMT_CR_ADPCM_4:
-        if (!setup_device (fd, AFMT_U8, channels, speed)) return -2;
-        return dump_creative_adpcm (fd, filesize, format);
+        dec->metadata = (void *)setup_cr (fd, format);;
+        dec->flag = 1;
+        dec->decoder = decode_cr;
+        dec->outbuf = malloc (((cradpcm_values_t *)dec->metadata)->ratio *
+                               1024 * sizeof (char));
+        dec->flag = FREE_OBUF | FREE_META;
+
+        filesize--;
+        format = AFMT_U8;
+        bsize = 1024;
+        break;
       case AFMT_FIBO_DELTA:
       case AFMT_EXP_DELTA:
-        if (!setup_device (fd, AFMT_U8, channels, speed)) return -2;
-        return dump_fibonacci_delta (fd, filesize, format);
+        dec->metadata = (void *)setup_fib (fd, format);;
+        dec->flag = 1;
+        dec->decoder = decode_fib;
+        dec->outbuf = malloc (2048 * sizeof (char));
+        dec->flag = FREE_OBUF | FREE_META;
+
+        filesize--;
+        format = AFMT_U8;
+        bsize = 1024;
+        break;
       case AFMT_S24_LE:
-        if (!setup_device (fd, AFMT_S32_NE, channels, speed)) return -2;
-        return dump_data_24 (fd, filesize, 0);
+        dec->metadata = (void *)8;
+        dec->decoder = decode_24;
+        dec->outbuf = malloc (1024 * sizeof(int));
+        dec->flag = FREE_OBUF;
+
+        format = AFMT_S32_NE;
+        bsize = 1024 - 1024 % 3;
+        break;
       case AFMT_S24_BE:
-        if (!setup_device (fd, AFMT_S32_NE, channels, speed)) return -2;
-        return dump_data_24 (fd, filesize, 1);
+        dec->metadata = (void *)24;
+        dec->decoder = decode_24;
+        dec->outbuf = malloc (1024 * sizeof(int));
+        dec->flag = FREE_OBUF;
+
+        format = AFMT_S32_NE;
+        bsize = 1024 - 1024 % 3;
+        break;
       default:
-        if (!setup_device (fd, format, channels, speed)) return -2;
-        return dump_data (fd, filesize);
+        dec->decoder = decode_nul;
+        dec->outbuf = NULL;
+
+        bsize = 1024;
+        break;
     }
-  return 0;
-}
-
-int
-dump_data (int fd, unsigned int filesize)
-{
-  int bsize, l;
-  unsigned char buf[1024];
-
-  bsize = sizeof (buf);
-
-  while (filesize)
+  if (amplification > 1)
     {
-      l = bsize;
-
-      if (l > filesize)
-	l = filesize;
-
-      OREAD (fd, buf, l);
-      OWRITE (audiofd, buf, l);
-
-      filesize -= l;
+      decoders = malloc (sizeof (decoders_queue_t));
+      decoders->metadata = (void *)(long)format;
+      decoders->decoder = decode_amplify;
+      decoders->next = NULL;
+      decoders->outbuf = NULL;
+      decoders->flag = 0;
     }
+  dec->next = decoders;
 
-  return 0;
-}
+  if (!setup_device (fd, format, channels, speed)) return -2;
+  res = dump (fd, filesize, bsize, dec);
 
-static int
-dump_data_24 (int fd, unsigned int filesize, int big_endian)
-{
-/*
- * Dump 24 bit packed audio data to the device (after converting to 32 bit).
- */
-  int bsize, i, l;
-  unsigned char buf[1024];
-  int outbuf[1024], outlen = 0;
-
-  int sample_s32, v1;
-
-  bsize = sizeof (buf);
-
-  filesize -= filesize % 3;
-
-  if (big_endian) v1 = 24;
-  else v1 = 8;
-
-  while (filesize >= 3)
+  decoders = dec;
+  while (decoders != NULL)
     {
-      l = bsize - bsize % 3;
-      if (l > filesize)
-	l = filesize;
-
-      if (l < 3)
-	break;
-
-      OREAD (fd, buf, l);
-
-      outlen = 0;
-
-      for (i = 0; i < l; i += 3)
-	{
-	  unsigned int *u32 = (unsigned int *) &sample_s32;	/* Alias */
-
-	  *u32 = (buf[i] << v1) | (buf[i + 1] << 16) | (buf[i + 2] << (32-v1));
-	  outbuf[outlen++] = sample_s32;
-	}
-
-      OWRITE (audiofd, outbuf, outlen * sizeof (int));
-
-      filesize -= l;
+      if (decoders->flag & FREE_META) free (decoders->metadata);
+      if (decoders->flag & FREE_OBUF) free (decoders->outbuf);
+      decoders = decoders->next;
+      free (dec);
+      dec = decoders;
     }
-  return 0;
+
+  return res;
 }
 
 static int
-dump_fibonacci_delta (int fd, unsigned int filesize, int format)
+dump (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
 {
-  const char CodeToDelta[16] = { -34, -21, -13, -8, -5, -3, -2, -1,
-                                  0, 1, 2, 3, 5, 8, 13, 21 };
-  const char CodeToExpDelta[16] = { -128, -64, -32, -16, -8, -4, -2, -1,
-                                     0, 1, 2, 4, 8, 16, 32, 64 };
+  unsigned int dataleft = filesize, outl;
+  unsigned char *buf, *obuf;
+  decoders_queue_t * d;
 
-  int bsize, l, i, x;
-  unsigned char buf[1024], obuf[2048], d;
-  const char * table;
+  buf = malloc (bsize * sizeof(char));
 
-  if (format == AFMT_EXP_DELTA) table = CodeToExpDelta;
-  else table = CodeToDelta;
-
-  bsize = sizeof (buf);
-
-  OREAD (fd, buf, 1);
-  x = *buf;
-  OWRITE (audiofd, buf, 1);
-
-  while (filesize)
+  while (dataleft)
     {
-      l = bsize;
+      d = dec;
 
-      if (l > filesize)
-        l = filesize;
+      if (bsize > dataleft) bsize = dataleft;
 
-      OREAD (fd, buf, l);
-      for (i = 1; i < 2*l; ++i)
+      if (quitflag == 1)
         {
-          d = buf[i/2];
-          if (i & 1) d &= 0xF;
-          else d >>= 4;
-          x += CodeToDelta[d];
-          if (x > 255) x = 255;
-          if (x < 0) x = 0;
-          obuf[i] = x;
+          quitflag = 0;
+          ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
+          return -1;
         }
-      OWRITE (audiofd, obuf, 2*l);
+      if ((outl = read (fd, buf, bsize)) <= 0)
+        {
+          if (quitflag == 1)
+            {
+              quitflag = 0;
+              ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
+              return -1;
+            }
+          if ((dataleft) && (filesize != UINT_MAX) && (!quiet))
+            fprintf (stderr, "Sound data ended prematurily!\n");
+          return 0;
+        }
 
-      filesize -= l;
+      obuf = buf;
+      do
+        {
+          outl = d->decoder (&(d->outbuf), obuf, outl, d->metadata);
+          obuf = d->outbuf;
+          d = d->next;
+        }
+      while (d != NULL);
+
+     if (write (audiofd, obuf, outl) == -1)
+       {
+         if ((errno == EINTR) && (quitflag == 1))
+           {
+             quitflag = 0;
+             ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
+             return -1;
+           }
+          perror (audio_devname);
+          exit (-1);
+       }
+
+      dataleft -= bsize;
     }
 
   return 0;
 }
 
-static int
-dump_msadpcm (int fd, unsigned int dataleft, int channels, int nBlockAlign,
-              int wSamplesPerBlock, adpcm_coeff *coeff)
+static unsigned int
+decode_24 (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+           void * metadata)
 {
-  int i, n, nib, max, outp = 0, x;
-  unsigned char buf[4096];
-  unsigned char outbuf[64 * 1024];
+  unsigned int outlen = 0, i, * u32;
+  int sample_s32, v1 = (int)(long)metadata, * outbuf = (int *) * obuf;
+
+  for (i = 0; i < l; i += 3)
+    {
+      u32 = (unsigned int *) &sample_s32;	/* Alias */
+
+      *u32 = (buf[i] << v1) | (buf[i + 1] << 16) | (buf[i + 2] << (32-v1));
+      outbuf[outlen++] = sample_s32;
+    }
+
+  return outlen * sizeof(int);
+}
+
+static fib_values_t *
+setup_fib (int fd, int format)
+{
+  static const char CodeToDelta[16] = {
+    -34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21
+  };
+  static const char CodeToExpDelta[16] = {
+    -128, -64, -32, -16, -8, -4, -2, -1, 0, 1, 2, 4, 8, 16, 32, 64
+  };
+  unsigned char buf;
+  fib_values_t * val;
+
+  val = malloc (sizeof (fib_values_t));
+  if (format == AFMT_EXP_DELTA) val->table = CodeToExpDelta;
+  else val->table = CodeToDelta;
+
+  if (read (fd, &buf, 1) <= 0) return NULL;
+  val->pred = buf;
+
+  return val;
+}
+
+static cradpcm_values_t *
+setup_cr (int fd, int format)
+{
+  static const unsigned char T2[4][3] = {
+    { 128, 6, 1 },
+    { 32,  4, 1 },
+    { 8,   2, 1 },
+    { 2,   0, 1 }
+  };
+
+  static const unsigned char T3[3][3] = {
+    { 128, 5, 3 },
+    { 16,  2, 3 },
+    { 2,   0, 1 }
+  };
+
+  static const unsigned char T4[2][3] = {
+    { 128, 4, 7 },
+    { 8,   0, 7 }
+  };
+
+  static const unsigned char * t_row[4];
+
+  unsigned char buf;
+  cradpcm_values_t * val;
+  int i;
+
+  val = malloc (sizeof (cradpcm_values_t));
+  val->table = t_row;
+
+  if (format == AFMT_CR_ADPCM_2)
+    {
+      val->limit = 1;
+      val->step = val->shift = 2;
+      val->ratio = 4;
+      for (i=0; i < 4; i++) t_row[i] = T2[i];
+    }
+  else if (format == AFMT_CR_ADPCM_3)
+    {
+      val->limit = 3;
+      val->ratio = 3;
+      val->step = val->shift = 0;
+      for (i=0; i < 3; i++) t_row[i] = T3[i];
+    }
+  else /* if (format == AFMT_CR_ADPCM_4) */
+    {
+      val->limit = 5;
+      val->ratio = 2;
+      val->step = val->shift = 0;
+      for (i=0; i < 2; i++) t_row[i] = T4[i];
+    }
+
+  if (read (fd, &buf, 1) <= 0) return NULL;
+  val->pred = buf;
+
+  return val;
+}
+
+static unsigned int
+decode_cr (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+           void * metadata)
+{
+  cradpcm_values_t * val = (cradpcm_values_t *) metadata;
+  int i, j, value, pred = val->pred, step = val->step;
+  signed char sign;
+
+  for (i=0; i < l; i++)
+    for (j=0; j < val->ratio; j++)
+      {
+        sign = (buf[i] & val->table[j][0])?-1:1;
+        value = (buf[i] >> val->table[j][1]) & val->table[j][2];
+        pred += sign*(value << step);
+        if (pred > 255) pred = 255;
+        else if (pred < 0) pred = 0;
+        (*obuf)[val->ratio*i+j] = pred;
+        if ((value >= val->limit) && (step < 3+val->shift)) step++;
+        if ((value == 0) && (step > val->shift)) step--;
+      }
+
+  val->pred = pred;
+  val->step = step;
+  return val->ratio*l;
+}
+
+static unsigned int
+decode_fib (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+            void * metadata)
+{
+  fib_values_t * val = (fib_values_t *)metadata;
+  int i, x = val->pred;
+  unsigned char d;
+
+  for (i = 1; i < 2*l; i++)
+    {
+      d = buf[i/2];
+      if (i & 1) d &= 0xF;
+      else d >>= 4;
+      x += val->table[d];
+      if (x > 255) x = 255;
+      if (x < 0) x = 0;
+      (*obuf)[i] = x;
+    }
+
+  val->pred = x;
+  return 2*l;
+}
+
+static unsigned int
+decode_msadpcm (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+                void * metadata)
+{
+  msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+
+  int i, n = 0, nib = 0, outp = 0, x = 0, channels = val->channels;
   int AdaptionTable[] = {
     230, 230, 230, 230, 307, 409, 512, 614,
     768, 614, 512, 409, 307, 230, 230, 230
@@ -224,172 +386,100 @@ dump_msadpcm (int fd, unsigned int dataleft, int channels, int nBlockAlign,
 #define OUT_SAMPLE(s) \
  do { \
    if (s > 32767) s = 32767; else if (s < -32768) s = -32768; \
-   outbuf[outp++] = (unsigned char)(s & 0xff); \
-   outbuf[outp++] = (unsigned char)((s >> 8) & 0xff); \
+   (*obuf)[outp++] = (unsigned char)(s & 0xff); \
+   (*obuf)[outp++] = (unsigned char)((s >> 8) & 0xff); \
    n += 2; \
-   if (outp >= max) \
-     { \
-       OWRITE (audiofd, outbuf, outp); \
-       outp = 0; \
-     } \
  } while(0)
 
 #define GETNIBBLE \
-	((nib==0) ? \
-		(buf[x + nib++] >> 4) & 0x0f : \
-		buf[x++ + --nib] & 0x0f \
+        ((nib == 0) ? \
+                (buf[x + nib++] >> 4) & 0x0f : \
+                buf[x++ + --nib] & 0x0f \
 	)
 
-#if 0
-/*
- * There is no idea in using SNDCTL_DSP_GETBLKSIZE in applications like this.
- * Using some fixed local buffer size will work equally well.
- */
-      if (ioctl (audiofd, SNDCTL_DSP_GETBLKSIZE, &max) == -1)
-	perror ("SNDCTL_DSP_GETBLKSIZE");
-#else
-      max = 1024;
-#endif
-      outp = 0;
+  for (i = 0; i < channels; i++)
+    {
+      predictor[i] = buf[x];
+      x++;
+    }
 
-      while (dataleft > nBlockAlign &&
-	     read (fd, buf, nBlockAlign) == nBlockAlign)
-	{
-	  x = 0;
+  for (i = 0; i < channels; i++)
+    {
+      delta[i] = (short) le_int (&buf[x], 2);
+      x += 2;
+    }
 
-	  dataleft -= nBlockAlign;
+  for (i = 0; i < channels; i++)
+    {
+      samp1[i] = (short) le_int (&buf[x], 2);
+      x += 2;
+      OUT_SAMPLE (samp2[i]);
+    }
 
-	  nib = 0;
-	  n = 0;
+  for (i = 0; i < channels; i++)
+    {
+      samp2[i] = (short) le_int (&buf[x], 2);
+      x += 2;
+      OUT_SAMPLE (samp2[i]);
+    }
 
-	  for (i = 0; i < channels; i++)
-	    {
-	      predictor[i] = buf[x];
-	      x++;
-	    }
+  while (n < (val->wSamplesPerBlock * 2 * channels))
+    for (i = 0; i < channels; i++)
+      {
+        pred = ((samp1[i] * val->coeff[predictor[i]].coeff1)
+                + (samp2[i] * val->coeff[predictor[i]].coeff2)) / 256;
+        i_delta = error_delta = GETNIBBLE;
 
-	  for (i = 0; i < channels; i++)
-	    {
-	      delta[i] = (short) le_int (&buf[x], 2);
-	      x += 2;
-	    }
+        if (i_delta & 0x08)
+        i_delta -= 0x10;	/* Convert to signed */
 
-	  for (i = 0; i < channels; i++)
-	    {
-	      samp1[i] = (short) le_int (&buf[x], 2);
-	      x += 2;
-	      OUT_SAMPLE (samp1[i]);
-	    }
+        new = pred + (delta[i] * i_delta);
+        OUT_SAMPLE (new);
 
-	  for (i = 0; i < channels; i++)
-	    {
-	      samp2[i] = (short) le_int (&buf[x], 2);
-	      x += 2;
-	      OUT_SAMPLE (samp2[i]);
-	    }
+        delta[i] = delta[i] * AdaptionTable[error_delta] / 256;
+        if (delta[i] < 16) delta[i] = 16;
 
-	  while (n < (wSamplesPerBlock * 2 * channels))
-	    for (i = 0; i < channels; i++)
-	      {
-		pred = ((samp1[i] * coeff[predictor[i]].coeff1)
-			+ (samp2[i] * coeff[predictor[i]].coeff2)) / 256;
-		i_delta = error_delta = GETNIBBLE;
+        samp2[i] = samp1[i];
+        samp1[i] = new;
+      }
 
-		if (i_delta & 0x08)
-		  i_delta -= 0x10;	/* Convert to signed */
-
-		new = pred + (delta[i] * i_delta);
-		OUT_SAMPLE (new);
-
-		delta[i] = delta[i] * AdaptionTable[error_delta] / 256;
-		if (delta[i] < 16)
-		  delta[i] = 16;
-
-		samp2[i] = samp1[i];
-		samp1[i] = new;
-	      }
-	}
-
-  if (outp > 0)
-    OWRITE (audiofd, outbuf, outp /*(outp+3) & ~3 */ );
-  return 0;
+  return outp;
 }
 
-static int
-dump_creative_adpcm (int fd, unsigned int filesize, int format)
+static unsigned int
+decode_nul (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+            void * metadata)
 {
-  const unsigned char T2[4][3] = {
-    { 128, 6, 1 },
-    { 32,  4, 1 },
-    { 8,   2, 1 },
-    { 2,   0, 1 }
-  };
+  *obuf = buf;
+  return l;
+}
 
-  const unsigned char T3[3][3] = {
-    { 128, 5, 3 },
-    { 16,  2, 3 },
-    { 2,   0, 1 }
-  };
+static unsigned int
+decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+                void * metadata)
+{
+  int format = (int)(long)metadata, i, len;
 
-  const unsigned char T4[2][3] = {
-    { 128, 4, 7 },
-    { 8,   0, 7 }
-  };
-
-  const unsigned char * t_row[4] = { T4[0], T4[1] };
-  const unsigned char * const * table = t_row;
-
-  int bsize = 1024, l;
-  unsigned char buf[1024], obuf[4096];
-
-  signed char limit = 5, sign, shift = 0, ratio = 2;
-  int step = 0, pred, i, j, val;
-
-  if (filesize == 0) return 0;
-
-  if (format == AFMT_CR_ADPCM_2)
+  switch (format)
     {
-      limit = 1;
-      step = shift = 2;
-      ratio = 4;
-      for (i=0; i < 4; i++) t_row[i] = T2[i];
-    }
-  else if (format == AFMT_CR_ADPCM_3)
-    {
-      limit = 3;
-      ratio = 3;
-      for (i=0; i < 3; i++) t_row[i] = T3[i];
-    }
+      case AFMT_S16_NE:
+        {
+          short *s = (short *)buf;
+          len = l / 2;
 
-  OREAD (fd, buf, 1);
-  filesize--;
-  pred = *buf;
-  OWRITE (audiofd, buf, 1);
+          for (i = 0; i < len ; i++) s[i] *= amplification;
+        }
+        break;
+      case AFMT_S32_NE:
+        {
+          int *s = (int *)buf;
+          len = l / 4;
 
-  while (filesize)
-    {
-      l = bsize;
+          for (i = 0; i < len; i++) s[i] *= amplification;
+        }
+       break;
+   }
 
-      if (l > filesize)
-	l = filesize;
-
-      OREAD (fd, buf, l);
-      for (i=0; i < l; i++)
-        for (j=0; j < ratio; j++)
-          {
-            sign = (buf[i] & table[j][0])?-1:1;
-            val = (buf[i] >> table[j][1]) & table[j][2];
-            pred += sign*(val << step);
-            if (pred > 255) pred = 255;
-            else if (pred < 0) pred = 0;
-            obuf[ratio*i+j] = pred;
-            if ((val >= limit) && (step < 3+shift)) step++;
-            if ((val == 0) && (step > shift)) step--;
-          }
-      OWRITE (audiofd, obuf, ratio*l);
-
-      filesize -= l;
-    }
-
-  return 0;
+  *obuf = buf;
+  return l;
 }

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <soundcard.h>
 #include <sys/ioctl.h>
@@ -26,6 +27,8 @@ typedef struct msadpcm_values {
   int wSamplesPerBlock;
   int wNumCoeff;
   adpcm_coeff coeff[32];
+
+  int channels;
 }
 msadpcm_values_t;
 
