@@ -515,7 +515,7 @@ usage (void)
   fprintf
     (stderr,
      "Usage: %s [-s<speed> -b<bits{8|16|32}> -c<channels> -v -l -m<nfiles> "
-     "-d<device> -t<maxsecs> -L<level> -i<recsrc>|? -a<amplification>] "
+     "-d<device> -t<maxsecs> -L<level> -i<recsrc>|? -g<gain>] "
      "filename.wav\n",
      program);
   exit (0);
@@ -724,13 +724,12 @@ main (int argc, char *argv[])
   if (argc < 2)
     usage ();
 
-  while ((c = getopt (argc, argv, "SMRwvlhs:b:d:c:t:L:i:m:r:a:")) != EOF)
+  while ((c = getopt (argc, argv, "SMRwvlhs:b:d:c:t:L:i:m:r:g:")) != EOF)
     switch (c)
       {
-      case 'a':
+      case 'g':
 	amplification = atoi (optarg);
-	if (amplification==0)
-	   usage ();
+	if (amplification == 0) usage ();
       case 's':
 	speed = atoi (optarg);
 	if (speed == 0)

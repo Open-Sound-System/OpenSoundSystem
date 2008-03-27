@@ -48,10 +48,9 @@ OPTIONS
 		option is used the script will run in parallel while recording
 		the next file. See the COMMAND SCRIPT section (below) for more
 		info.
--a<amplification>
-		Amplify recorded samples by percentage given as argument. Only
-		supported in 16 and 32 bit modes. 100 (default) means normal signal level,
-		200 means double level.
+-g<gain>	Amplify recorded samples by percentage given as argument.
+		100 (default) means normal signal level, 200 means double level.
+		Only supported in 16 and 32 bit modes.
 -t<maxsecs>	Do not record more than <maxsecs> seconds in a single recording
 		operation.
 -L<level>	Set the recording level to <level>.

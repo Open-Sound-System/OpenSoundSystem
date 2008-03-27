@@ -174,8 +174,6 @@ decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
 
   while (dataleft)
     {
-      d = dec;
-
       if (bsize > dataleft) bsize = dataleft;
 
       if (quitflag == 1)
@@ -197,7 +195,7 @@ decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
           return 0;
         }
 
-      obuf = buf;
+      obuf = buf; d = dec;
       do
         {
           outl = d->decoder (&(d->outbuf), obuf, outl, d->metadata);
@@ -221,6 +219,7 @@ decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
       dataleft -= bsize;
     }
 
+  free (buf);
   return 0;
 }
 

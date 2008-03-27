@@ -142,9 +142,10 @@ static void
 usage (char *prog)
 {
   fprintf (stderr, "Usage: %s [options...] filename...\n", prog);
-  fprintf (stderr, "  Options:  -v             Verbose output\n");
-  fprintf (stderr, "            -q             No informative printouts\n");
+  fprintf (stderr, "  Options:  -v             Verbose output.\n");
+  fprintf (stderr, "            -q             No informative printouts.\n");
   fprintf (stderr, "            -d<devname>    Change output device.\n");
+  fprintf (stderr, "            -g<gain>       Change gain.\n");
   fprintf (stderr,
 	   "            -s<rate>       Change playback rate.\n");
   fprintf (stderr,
@@ -1467,7 +1468,7 @@ main (int argc, char **argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:a:")) != EOF)
+  while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:g:")) != EOF)
     {
       switch (c)
 	{
@@ -1513,7 +1514,7 @@ main (int argc, char **argv)
 	  sscanf (optarg, "%d", &force_channels);
 	  break;
 
-	case 'a':
+	case 'g':
 	  sscanf (optarg, "%d", &amplification);
 	  break;
 
