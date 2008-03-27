@@ -1215,28 +1215,6 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	      endpoint->ix = codec->num_outendpoints - 1;
 
 	      s = codec->num_outendpoints - 1;
-#if 0
-	      // TODO: What to do with this
-
-	      if (s < 8 && mixer->multich_map != 0
-		  && mixer->multich_map != 0x76543210)
-		{
-		  /*
-		   * Reorder the stream numbers so that front stream becomes 1 and
-		   * the other streams follow it. In this way it's possible to
-		   * get other DACs to play copy of the front stream.
-		   */
-
-		  int x;
-
-		  for (x = 0; x < 8; x++)
-		    if (s == (((mixer->multich_map) >> (x * 4)) & 0x0f))
-		      {
-			s = x;
-			break;
-		      }
-		}
-#endif
 
 	      endpoint->stream_number = endpoint->default_stream_number =
 		s + 1;
@@ -2271,16 +2249,15 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
       /*
        * Set up the converters for the other stereo pairs
        */
-#if 0
-	    // TODO: Fix this
+#if 1
+      // TODO: Test this
 
       int n = (channels + 1) / 2;
 
       for (i = 1; i < n; i++)
 	{
-	  int ix = (mixer->multich_map >> (i * 4)) & 0x0f;
 	  hdaudio_endpointinfo_t *ep;
-	  ep = &endpoint[ix];
+	  ep = &endpoint[i];
 
 	  corb_write (mixer, ep->cad, ep->base_wid, 0, SET_CONVERTER,
 		      (stream_number << 4) | (i * 2));
@@ -2301,16 +2278,9 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
        */
       if (endpoint->is_digital)
 	{
-	  int x = 0;
 	  unsigned int v, b;
 
-#if 0
-	  // TODO: Fix this
-	  for (x = 0; x < mixer->num_outendpoints; x++)
-	    if ((((mixer->multich_map) >> (x * 4)) & 0x0f) == 0)
-	      break;
-#endif
-	  hdaudio_codec_setup_endpoint (mixer, &mixer->outendpoints[x], rate,
+	  hdaudio_codec_setup_endpoint (mixer, &mixer->outendpoints[0], rate,
 					channels, fmt, stream_number, &tmp);
 
 	  if (fmt == AFMT_AC3)
@@ -2346,15 +2316,14 @@ hdaudio_codec_reset_endpoint (hdaudio_mixer_t * mixer,
   corb_write (mixer, endpoint->cad, endpoint->base_wid, 0, SET_CONVERTER,
 	      endpoint->iddle_stream << 4);
 
-#if 0
-  // TODO: Fix this
+#if 1
+  // TODO: Test this
   if (channels > 2)
     for (i = 1; i < n; i++)
       {
-	int ix = (mixer->multich_map >> (i * 4)) & 0x0f;
 	hdaudio_endpointinfo_t *ep;
 
-	ep = &endpoint[ix];
+	ep = &endpoint[i];
 
 	corb_write (mixer, ep->cad, ep->base_wid, 0, SET_CONVERTER,
 		    ep->iddle_stream << 4);

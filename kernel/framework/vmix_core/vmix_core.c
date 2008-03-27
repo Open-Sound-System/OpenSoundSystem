@@ -252,7 +252,7 @@ create_output_controls (int mixer_dev)
       if (mixer->max_channels>2)
 	 {
 	      sprintf (tmp, "vmix%d-channels", mixer->instance_num);
-	      if ((err = mixer_ext_create_control (mixer_dev, 0, 512, vmix_outvol,
+	      if ((err = mixer_ext_create_control (mixer_dev, 0, 511, vmix_outvol,
 						   MIXT_ENUM,
 						   tmp, 2,
 						   MIXF_READABLE | MIXF_WRITEABLE)) <
