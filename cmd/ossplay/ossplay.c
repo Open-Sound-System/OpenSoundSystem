@@ -56,7 +56,7 @@ enum {
 #define DEFAULT_CHANNELS	1
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
-int force_speed = -1, force_bits = -1, force_channels = -1, amplification = 1;
+int force_speed = -1, force_bits = -1, force_channels = -1, amplification = 100;
 int audiofd = 0, quitflag = 0, quiet = 0;
 char audio_devname[32] = "/dev/dsp";
 

@@ -62,7 +62,7 @@ FILE *wave_fp;
 int x = -10, ii = 0, time1 = 0;
 int verbose = 0;
 int level_meters = 0, level = 0;
-int amplification=1;
+int amplification = 100;
 int reclevel = 0;
 int nfiles = 1;
 char *program;
@@ -566,7 +566,7 @@ find_devname (char *devname, char *num)
 }
 
 static void
-amplify(unsigned char *b, int count)
+amplify (unsigned char *b, int count)
 {
 	switch (bits)
 	{
@@ -576,7 +576,7 @@ amplify(unsigned char *b, int count)
 			short *s=(short *)b;
 
 			for (i=0;i<l;i++)
-			    s[i] *= amplification;
+			    s[i] = s[i] * amplification / 100;
 		}
 		break;
 
@@ -586,7 +586,7 @@ amplify(unsigned char *b, int count)
 			int *s=(int *)b;
 
 			for (i=0;i<l;i++)
-			    s[i] *= amplification;
+			    s[i] = s[i] * amplification / 100;
 		}
 		break;
 
@@ -681,7 +681,7 @@ do_record (char *dspdev, char *wave_name)
 	  return 0;
 	}
 
-      if (amplification != 1)
+      if (amplification > 0)
      	 amplify (audiobuf, 512);
 
       fwrite (audiobuf, 1, l, wave_fp);

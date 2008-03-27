@@ -49,8 +49,9 @@ OPTIONS
 		the next file. See the COMMAND SCRIPT section (below) for more
 		info.
 -a<amplification>
-		Multiply recorded samples by integer given as argument. Only
-		supported in 16 and 32 bit modes.
+		Amplify recorded samples by percentage given as argument. Only
+		supported in 16 and 32 bit modes. 100 (default) means normal signal level,
+		200 means double level.
 -t<maxsecs>	Do not record more than <maxsecs> seconds in a single recording
 		operation.
 -L<level>	Set the recording level to <level>.
@@ -84,6 +85,9 @@ echo
 ossrecord -S -b16 -s48 - | lame -m j - -
 
 exit 0
+
+SEE ALSO
+ossplay(1), ossmix(1), ossxmix(1)
 
 FILES
 /usr/bin/ossrecord

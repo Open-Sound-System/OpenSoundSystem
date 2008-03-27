@@ -1,3 +1,8 @@
+/*
+ * Purpose: File format decode routines for ossplay
+ */
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
+
 #include "ossplay.h"
 #include "decode.h"
 
@@ -131,7 +136,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         bsize = 1024;
         break;
     }
-  if (amplification > 1)
+  if (amplification > 0)
     {
       decoders = malloc (sizeof (decoders_queue_t));
       decoders->metadata = (void *)(long)format;
@@ -351,7 +356,7 @@ decode_fib (unsigned char ** obuf, unsigned char * buf, unsigned int l,
   int i, x = val->pred;
   unsigned char d;
 
-  for (i = 1; i < 2*l; i++)
+  for (i = 0; i < 2*l; i++)
     {
       d = buf[i/2];
       if (i & 1) d &= 0xF;
@@ -467,7 +472,7 @@ decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
           short *s = (short *)buf;
           len = l / 2;
 
-          for (i = 0; i < len ; i++) s[i] *= amplification;
+          for (i = 0; i < len ; i++) s[i] = s[i] * amplification / 100;
         }
         break;
       case AFMT_S32_NE:
@@ -475,7 +480,7 @@ decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
           int *s = (int *)buf;
           len = l / 4;
 
-          for (i = 0; i < len; i++) s[i] *= amplification;
+          for (i = 0; i < len; i++) s[i] = s[i] * amplification / 100;
         }
        break;
    }

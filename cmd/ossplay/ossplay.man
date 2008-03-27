@@ -22,6 +22,9 @@ OPTIONS
 -o<playtarget> 	Selects the play target name if the device supports multiple
 		play targets (such as front, rear, side). 
 -o? 		Prints the list of available play targets.
+-a<amplification>
+		Amplify all played samples by percentage given as argument. 
+		100 (default) means normal signal level, 200 means double level.
 
 INTERRUPT
 Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing
