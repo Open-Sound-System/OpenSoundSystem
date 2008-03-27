@@ -3,17 +3,6 @@ int vmix_instances=8;
  * vmix_instances: Number of instances created by the vmix driver. Each
  * instance will drive a physical device (or a input/output device pair).
  */
-int vmix_multich_enable=0;
-/*
- * vmix_multich_enable: By default the virtual mixer engines don't support
- * more than two channels (stereo) and 16 bits of resolution. This is necessary
- * to decrease CPU usage in typical systems that don't have anything better
- * that cheap stereo speakers/headphones.
- *
- * To enable support for multiple channels and 24/32 bit sample format you need
- * to change vmix_multich_enable to 1. The drawback is that in this mode the 
- * system load caused by vmix is significantly higher.
- */
 int vmix_disable=0;
 /*
  * The vmix_disable option can be set to 1 to disable virtual mixing for all

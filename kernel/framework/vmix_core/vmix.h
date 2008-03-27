@@ -13,8 +13,6 @@
 #define MAX_REC_CHANNELS	12
 #define CHBUF_SAMPLES		2048	/* Max samples (frames) per fragment */
 
-extern int vmix_multich_enable;
-
 typedef struct _vmix_devc_t vmix_devc_t;
 typedef struct _vmix_mixer_t vmix_mixer_t;
 typedef struct _vmix_portc_t vmix_portc_t;
@@ -110,6 +108,8 @@ struct _vmix_mixer_t		/* Instance specific data */
   int rate;
 
   int src_quality;		/* Control panel setting */
+  int multich_enable;		/* Enable multi channel mode */
+  int max_channels;
 
   vmix_engine_t play_engine, record_engine;
 

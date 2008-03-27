@@ -385,7 +385,7 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
     fmt = AFMT_S16_OE;
   if (adev->iformat_mask & AFMT_S16_NE)
     fmt = AFMT_S16_NE;
-  if (vmix_multich_enable)
+  if (mixer->multich_enable)
     {
       if (adev->iformat_mask & AFMT_S32_NE)
 	fmt = AFMT_S32_OE;
@@ -400,7 +400,7 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
  * Number of channels
  */
   mixer->record_engine.channels = MAX_REC_CHANNELS;
-  if (!vmix_multich_enable)
+  if (!mixer->multich_enable)
     mixer->record_engine.channels = 2;
 
   /* Force the device to stereo before trying with (possibly) imultiple channels */

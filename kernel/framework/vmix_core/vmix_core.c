@@ -11,8 +11,6 @@
 #include <oss_config.h>
 #include "vmix.h"
 
-int vmix_multich_enable = 0;
-
 static const unsigned char peak_cnv[256] = {
   0, 18, 29, 36, 42, 47, 51, 54, 57, 60, 62, 65, 67, 69, 71, 72,
   74, 75, 77, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 89, 90,
@@ -77,6 +75,10 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	  return vol;
 	  break;
 
+	case 511:		/* Multi channel enable */
+	  return mixer->multich_enable;
+	  break;
+
 	case 512:		/* grc3<->interpolation selector */
 	  return mixer->src_quality;
 	  break;
@@ -99,6 +101,12 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 
 	  mixer_devs[dev]->modify_counter++;
 	  return vol | (vol << 16);
+	  break;
+
+	case 511:		/* Multich enable */
+	  mixer->multich_enable = !!value;
+	  mixer_devs[dev]->modify_counter++;
+	  return mixer->multich_enable;
 	  break;
 
 	case 512:		/* grc3<->interpolation selector */
@@ -237,9 +245,24 @@ create_output_controls (int mixer_dev)
   vmix_mixer_t *mixer = mixer_devs[mixer_dev]->vmix_devc;
   char tmp[32];
 
-      /*
-       * Create the vmix volume slider and peak meter to the top panel.
-       */
+  /*
+   * Misc vmix related mixer settings.
+   */
+
+      if (mixer->max_channels>2)
+	 {
+	      sprintf (tmp, "vmix%d-channels", mixer->instance_num);
+	      if ((err = mixer_ext_create_control (mixer_dev, 0, 512, vmix_outvol,
+						   MIXT_ENUM,
+						   tmp, 2,
+						   MIXF_READABLE | MIXF_WRITEABLE)) <
+		  0)
+		return err;
+	
+	      mixer_ext_set_strings (mixer_dev, err,
+				     "Stereo Multich", 0);
+	 }
+
       sprintf (tmp, "vmix%d-src", mixer->instance_num);
       if ((ctl = mixer_ext_create_control (mixer_dev, 0, 512, vmix_outvol,
 					   MIXT_ENUM,
@@ -252,6 +275,9 @@ create_output_controls (int mixer_dev)
 			     "Fast Low Medium High High+ Production OFF", 0);
       mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by virtual mixer.");
 
+      /*
+       * Create the vmix volume slider and peak meter to the top panel.
+       */
   if (!(mixer->vmix_flags & VMIX_NOMAINVOL))
     {
       sprintf (tmp, "vmix%d-vol", mixer->instance_num);
@@ -1638,6 +1664,7 @@ check_masterdev (void *mx)
   /* TODO: Prevent the other virtual drivers from picking this one */
 
   mixer->vmix_flags = adev->vmix_flags;
+  mixer->max_channels = adev->max_channels;
 /*
  * The device is OK. Next check for the input/duplex capability.
  */
@@ -1915,12 +1942,10 @@ oss_create_vmix (void *devc, int masterdev, int inputdev, int numoutputs,
 }
 
 int
-vmix_core_attach (oss_device_t * osdev, int multich_enable)
+vmix_core_attach (oss_device_t * osdev)
 {
   vmix_devc_t *devc;
   static int vmix_loaded = 0;
-
-  vmix_multich_enable = multich_enable;
 
 #ifdef VMIX_USE_FLOAT
   int check;

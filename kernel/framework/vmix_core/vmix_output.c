@@ -494,7 +494,7 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
   if (adev->oformat_mask & AFMT_S16_NE)
     fmt = AFMT_S16_NE;
 
-  if (vmix_multich_enable)	/* Better quality enabled */
+  if (mixer->multich_enable)	/* Better quality enabled */
     {
       if (adev->oformat_mask & AFMT_S32_NE)
 	fmt = AFMT_S32_OE;
@@ -535,7 +535,7 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
  * Number of channels
  */
   mixer->play_engine.channels = MAX_PLAY_CHANNELS;
-  if (!vmix_multich_enable)
+  if (!mixer->multich_enable)
     mixer->play_engine.channels = 2;
 
 

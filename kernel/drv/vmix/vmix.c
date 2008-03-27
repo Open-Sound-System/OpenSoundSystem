@@ -20,7 +20,6 @@
  * Config options
  */
 extern int vmix_instances;
-extern int vmix_multich_enable;
 extern int vmix_disable;
 
 extern int vmix1_masterdev;
@@ -71,7 +70,7 @@ extern int vmix8_numloops;
 extern int vmix8_inputdev;
 extern int vmix8_rate;
 
-extern int vmix_core_attach (oss_device_t * osdev, int multich_enable);
+extern int vmix_core_attach (oss_device_t * osdev);
 extern void oss_create_vmix (void *devc, int masterdev, int inputdev,
 			     int numoutputs, int numloops, int rate);
 
@@ -86,7 +85,7 @@ vmix_attach (oss_device_t * osdev)
   if (vmix_disable)
     return 1;
 
-  if (!vmix_core_attach (osdev, vmix_multich_enable))
+  if (!vmix_core_attach (osdev))
     return 0;
 
   devc = osdev->devc;
