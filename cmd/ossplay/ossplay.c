@@ -78,8 +78,8 @@ static char * filepart (char *);
 static void find_devname (char *, char *);
 static void select_playtgt (char *);
 static void open_device (void);
-static off_t (*oss_lseek) (int, off_t, int) = lseek;
-static off_t oss_lseek_stdin (int, off_t, int);
+static off_t (*ossplay_lseek) (int, off_t, int) = lseek;
+static off_t ossplay_lseek_stdin (int, off_t, int);
 static void play_iff (char *, int, unsigned char *, int);
 static void play_au (char *, int, unsigned char *, int);
 static void play_file (char *);
@@ -88,7 +88,7 @@ static void print_verbose (int, int, int);
 static void usage (char *);
 
 static off_t
-oss_lseek_stdin (int fd, off_t off, int w)
+ossplay_lseek_stdin (int fd, off_t off, int w)
 {
   off_t i;
   ssize_t bytes_read;
@@ -482,7 +482,7 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
 	}
     }
 
-  if (oss_lseek (fd, p - l - an_len, SEEK_CUR) == -1)
+  if (ossplay_lseek (fd, p - l - an_len, SEEK_CUR) == -1)
     {
       perror (filename);
       fprintf (stderr, "Can't seek to the data chunk\n");
@@ -548,7 +548,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
 
 #define ASEEK(fd, offset, n) \
   do { \
-    if (oss_lseek (fd, offset, SEEK_CUR) == -1) \
+    if (ossplay_lseek (fd, offset, SEEK_CUR) == -1) \
       { \
         fprintf (stderr, "%s: error: cannot seek to end of " #n " chunk.\n", \
                  filename); \
@@ -729,7 +729,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             sound_loc = csize + 16 + offset;
             sound_size = chunk_size - 8;
 
-            if ((!strcmp (filename, "-")) && (oss_lseek == oss_lseek_stdin))
+            if ((!strcmp (filename, "-")) && (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
             ASEEK (fd, chunk_size - 8, SSND);
             break;
@@ -766,7 +766,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             if (chunk_id != data_HUNK) sound_loc = csize + 4;
             found |= SSND_FOUND;
             if ((!strcmp (filename, "-")) &&
-                (oss_lseek == oss_lseek_stdin))
+                (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
             ASEEK (fd, chunk_size, BODY);
             break;
@@ -932,7 +932,7 @@ nexta:
     if ((type == AIFC_FILE) && ((found & FVER_FOUND) == 0))
       fprintf(stderr, "%s: Couldn't find AIFFC FVER chunk.\n", filename);
 
-    if (oss_lseek (fd, sound_loc, SEEK_SET) == -1)
+    if (ossplay_lseek (fd, sound_loc, SEEK_SET) == -1)
       {
         perror (filename);
         fprintf (stderr, "Can't seek in file\n");
@@ -1003,7 +1003,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 
    /*LINTED*/ while (1)
     {
-      if (oss_lseek (fd, data_offs - pos, SEEK_CUR) == -1)
+      if (ossplay_lseek (fd, data_offs - pos, SEEK_CUR) == -1)
         {
           fprintf (stderr, "%s: Can't seek to pos %d\n", filename, data_offs);
           return;
@@ -1198,7 +1198,7 @@ static void
 play_file (char *filename)
 {
   int fd, l, i;
-  unsigned char buf[1024];
+  unsigned char buf[PLAYBUF_SIZE];
   char *suffix;
 
   if (!strcmp(filename, "-"))
@@ -1210,7 +1210,7 @@ play_file (char *filename)
       /*
        * Use emulation if stdin is not seekable (e.g. on Linux).
        */
-      if (lseek (fd, 0, SEEK_CUR) == -1) oss_lseek = oss_lseek_stdin;
+      if (lseek (fd, 0, SEEK_CUR) == -1) ossplay_lseek = ossplay_lseek_stdin;
     }
   else fd = open (filename, O_RDONLY, 0);
   if (fd == -1)
@@ -1295,7 +1295,7 @@ play_file (char *filename)
       default: break;
     }
 
-  oss_lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
+  ossplay_lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
 
 /*
  *	The file was not identified by it's content. Try using the file name

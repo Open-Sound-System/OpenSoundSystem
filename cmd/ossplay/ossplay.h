@@ -10,6 +10,8 @@
 #include <soundcard.h>
 #include <sys/ioctl.h>
 
+#define PLAYBUF_SIZE	1024
+
 #define AFMT_MS_ADPCM	-(AFMT_S16_LE | 0x1000000)
 #define AFMT_CR_ADPCM_2	-(AFMT_U8 | 0x1000000)
 #define AFMT_CR_ADPCM_3	-(AFMT_U8 | 0x2000000)

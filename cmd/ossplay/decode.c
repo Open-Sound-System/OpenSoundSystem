@@ -28,7 +28,6 @@ typedef struct decoders_queue {
   struct decoders_queue * next;
   decfunc_t * decoder;
   unsigned char * outbuf;
-  char flag;
   void * metadata;
 } decoders_queue_t;
 
@@ -36,9 +35,6 @@ enum {
   OBUF,
   META
 };
-
-#define FREE_OBUF (1 << OBUF)
-#define FREE_META (1 << META)
 
 extern int force_speed, force_bits, force_channels, amplification;
 extern int audiofd, quitflag, quiet;
@@ -84,7 +80,6 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
         obsize = 4 * bsize * sizeof (char);
         dec->outbuf = malloc (obsize);
-        dec->flag = FREE_OBUF;
 
         format = AFMT_S16_LE;
         break;
@@ -94,12 +89,10 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         bsize = 1024;
         dec->metadata = (void *)setup_cr (fd, format);;
         if (dec->metadata == NULL) goto exit;
-        dec->flag = 1;
         dec->decoder = decode_cr;
         obsize = ((cradpcm_values_t *)dec->metadata)->ratio *
                    1024 * sizeof (char);
         dec->outbuf = malloc (obsize);
-        dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -108,11 +101,9 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       case AFMT_EXP_DELTA:
         dec->metadata = (void *)setup_fib (fd, format);;
         if (dec->metadata == NULL) goto exit;
-        dec->flag = 1;
         dec->decoder = decode_fib;
         obsize = 2048 * sizeof (char);
         dec->outbuf = malloc (obsize);
-        dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -123,7 +114,6 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
-        dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -133,7 +123,6 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
-        dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -154,7 +143,6 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
           decoders->decoder = decode_8_to_s16;
           obsize *= 2;
           decoders->outbuf = malloc (obsize);
-          decoders->flag = FREE_OBUF;
           decoders->next = malloc (sizeof (decoders_queue_t));
           decoders = decoders->next;
           format = AFMT_S16_NE;
@@ -163,7 +151,6 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
       decoders->outbuf = NULL;
-      decoders->flag = 0;
     }
 
   if (!setup_device (fd, format, channels, speed)) return -2;
@@ -173,8 +160,8 @@ exit:
   decoders = dec;
   while (decoders != NULL)
     {
-      if (decoders->flag & FREE_META) free (decoders->metadata);
-      if (decoders->flag & FREE_OBUF) free (decoders->outbuf);
+      if (decoders->metadata!=NULL) free (decoders->metadata);
+      if (decoders->outbuf != NULL) free (decoders->outbuf);
       decoders = decoders->next;
       free (dec);
       dec = decoders;
