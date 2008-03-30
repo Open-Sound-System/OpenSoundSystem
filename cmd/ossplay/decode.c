@@ -197,7 +197,7 @@ decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
               ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
               return -1;
             }
-          if ((dataleft) && (filesize != UINT_MAX) && (!quiet))
+          if ((dataleft) && (filesize != UINT_MAX) && (quiet < 2))
             fprintf (stderr, "Sound data ended prematurily!\n");
           return 0;
         }

@@ -1,5 +1,9 @@
 NAME
-ossplay - Open Sound System playback applet.
+ossplay - Open Sound System playback program.
+
+SYNOPSIS
+ossplay [-Rhlvq] [ -b bits ] [ -c channels ] [ -d devname ] [ -g gain ] 
+        [ -o playtarget | ? ] [ -s rate ] filename | - ...
 
 DESCRIPTION
 The ossplay program plays raw PCM, Microsoft RIFF (.wav) and Sun ULaw (.au) 
@@ -10,19 +14,21 @@ number of channels and sampling rate.
 OPTIONS
 -v		Verbose output. Multiple invocations increase the level
 		of verbosity.
--R		Disable redirection to virtual mixer engines and sample
-		rate/format conversions. Should not be used unless absolutely
-		necessary.
--q		Quiet (no information printed)
--d<devname> 	Select <devname> as the device (eg -d/dev/dsp2)
--s<rate> 	Select the playback rate for raw PCM audio (eg -s48000)
--b<bits> 	Select the number of bits/sample (8/16/24/32) (eg. -b8 or -b16)
+-q		Quiet (no information printed).
+-l		Loop playback indefinately.
+-d<devname> 	Select <devname> as the device (eg -d/dev/dsp2).
+-s<rate> 	Select the playback rate for raw PCM audio (eg -s48000).
+-b<bits> 	Select the number of bits/sample (8/16/24/32) (eg. -b8 or -b16).
 -c<channels 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc.
 -o<playtarget> 	Selects the play target name if the device supports multiple
 		play targets (such as front, rear, side). 
 -o? 		Prints the list of available play targets.
 -g<gain>	Amplify all played samples by percentage given as argument. 
 		100 (default) means normal signal level, 200 means double level.
+-R		Disable redirection to virtual mixer engines and sample
+		rate/format conversions. Should not be used unless absolutely
+		necessary.
+-h		Display usage information.
 
 INTERRUPT
 Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing

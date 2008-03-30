@@ -61,7 +61,7 @@ int audiofd = 0, quitflag = 0, quiet = 0;
 char audio_devname[32] = "/dev/dsp";
 
 static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
-static int raw_mode = 0, verbose = 0, exitstatus = 0;
+static int raw_mode = 0, verbose = 0, exitstatus = 0, loop = 0;
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
@@ -146,14 +146,11 @@ usage (char *prog)
   fprintf (stderr, "            -q             No informative printouts.\n");
   fprintf (stderr, "            -d<devname>    Change output device.\n");
   fprintf (stderr, "            -g<gain>       Change gain.\n");
-  fprintf (stderr,
-	   "            -s<rate>       Change playback rate.\n");
-  fprintf (stderr,
-	   "            -b<bits>       Change number of bits.\n");
-  fprintf (stderr,
-	   "            -c<channels>   Change number of channels.\n");
-  fprintf (stderr,
-           "            -o<playtgt>|?  Select/Query output target.\n");
+  fprintf (stderr, "            -s<rate>       Change playback rate.\n");
+  fprintf (stderr, "            -b<bits>       Change number of bits.\n");
+  fprintf (stderr, "            -c<channels>   Change number of channels.\n");
+  fprintf (stderr, "            -o<playtgt>|?  Select/Query output target.\n");
+  fprintf (stderr, "            -l             Loop playback indefinitely.\n");
   fprintf (stderr,
            "            -R             Open sound device in raw mode.\n");
   exit (-1);
@@ -301,7 +298,7 @@ setup_device (int fd, int format, int channels, int speed)
 
   tmp = format;
 
-  if (verbose > 4)
+  if (verbose > 1)
     fprintf (stdout, "Setup device %d/%d/%d\n", channels, format, speed);
 
   if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &tmp) == -1)
@@ -343,7 +340,7 @@ setup_device (int fd, int format, int channels, int speed)
       return 0;
     }
 
-  if (tmp != speed && !quiet)
+  if (tmp != speed && quiet < 2)
     {
       fprintf (stderr, "Warning: Playback using %d Hz (file %d Hz)\n",
 	       tmp, speed);
@@ -405,14 +402,14 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
   speed = be_int (hdr + 16, 4);
   channels = be_int (hdr + 20, 4);
 
-  if (verbose > 2)
+  if (verbose > 1)
     {
       if (filelen == (unsigned int)-1)
         fprintf (stdout, "%s: Filelen: unspecified\n", filename);
       else
         fprintf (stdout, "%s: Filelen: %u\n", filename, filelen);
     }
-  if (verbose > 3) fprintf (stderr, "%s: Offset: %u\n", filename, p);
+  if (verbose > 2) fprintf (stderr, "%s: Offset: %u\n", filename, p);
   if (filelen == (unsigned int)-1) filelen = UINT_MAX;
 
   switch (fmt)
@@ -460,12 +457,12 @@ play_au (char *filename, int fd, unsigned char *hdr, int l)
       return;
     }
 
-  if (verbose)
+  if (!quiet)
     {
       fprintf (stdout, "Playing .au file %s, ", filename);
       print_verbose (format, channels, speed);
 
-      if ((verbose > 1) && (p > 24))
+      if ((verbose) && (p > 24))
 	{
           if (p > 1048) an_len = 1024;
           else an_len = p - 24;
@@ -609,7 +606,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
   if (type == WAVE_FILE) ne_int = le_int;
 
   total_size = ne_int (buf + 4, 4);
-  if (verbose > 2)
+  if (verbose > 1)
     fprintf (stdout, "Filelen = %u\n", total_size);
   do
     {
@@ -756,7 +753,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             found |= COMM_FOUND;
             break;
           case data_HUNK: /* WAVE chunk */
-            if (verbose > 3)
+            if (verbose > 2)
               fprintf (stdout, "DATA chunk. Offs = %u, "
                        "len = %u\n", csize+8, chunk_size);
             sound_loc = csize + 8;
@@ -811,7 +808,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
             AREAD (fd, buf, len, fmt);
 
             format = ne_int (buf, 2);
-            if (verbose > 3)
+            if (verbose > 2)
               fprintf (stdout, "FMT chunk: len = %u, fmt = %#x\n",
                        chunk_size, format);
 
@@ -875,7 +872,7 @@ play_iff (char *filename, int fd, unsigned char *buf, int type)
           case AUTH_HUNK:
           case ANNO_HUNK:
           case COPY_HUNK:
-            if (verbose > 1)
+            if (verbose)
               {
                 int i, len;
 
@@ -940,7 +937,7 @@ nexta:
       }
 
 stdinext:
-  if (verbose)
+  if (!quiet)
     {
       if (type == AIFF_FILE)
         fprintf(stdout, "Playing AIFF file %s, ", filename);
@@ -998,7 +995,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
       return;
     }
 
-  if (verbose)
+  if (!quiet)
     fprintf (stdout, "Playing .VOC file %s\n", filename);
 
    /*LINTED*/ while (1)
@@ -1030,7 +1027,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 
       blklen = len = le_int (buf + 1, 3);
 
-      if (verbose > 3)
+      if (verbose > 2)
 	fprintf (stdout, "%s: %0x: Block type %d, len %d\n",
 		 filename, data_offs, buf[0], len);
       switch (buf[0])
@@ -1093,7 +1090,7 @@ play_voc (char *filename, int fd, unsigned char *hdr, int l)
 	  break;
 
         case 5: 	/* Text */
-          if (verbose)
+          if (!quiet)
             {
               int i;
 
@@ -1308,7 +1305,7 @@ play_file (char *filename)
   if (strcmp (suffix, ".au") == 0 || strcmp (suffix, ".AU") == 0)
     {				/* Raw mu-Law data */
 
-      if (verbose)
+      if (!quiet)
 	fprintf (stdout, "Playing raw mu-Law file %s\n", filename);
 
       decode_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
@@ -1329,7 +1326,7 @@ play_file (char *filename)
 
   if (strcmp (suffix, ".cdr") == 0 || strcmp (suffix, ".CDR") == 0)
     {
-      if (verbose)
+      if (!quiet)
 	fprintf (stdout, "%s: Playing CD-R (cdwrite) file.\n", filename);
 
       decode_sound (fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
@@ -1339,7 +1336,7 @@ play_file (char *filename)
 
   if (strcmp (suffix, ".raw") == 0 || strcmp (suffix, ".RAW") == 0)
     {
-      if (verbose)
+      if (!quiet)
 	fprintf (stdout, "%s: Playing RAW file.\n", filename);
 
       decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
@@ -1360,7 +1357,7 @@ play_file (char *filename)
 	  goto done;
 	}
 
-      if (verbose)
+      if (!quiet)
 	fprintf (stdout, "Playing MPEG audio file %s\n", filename);
 
       if (!setup_device (fd, AFMT_S16_NE, 2, 44100))
@@ -1468,7 +1465,7 @@ main (int argc, char **argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "Rqvhfd:o:b:s:c:g:")) != EOF)
+  while ((c = getopt (argc, argv, "Rb:c:d:g:hlo:qs:v")) != EOF)
     {
       switch (c)
 	{
@@ -1481,7 +1478,7 @@ main (int argc, char **argv)
 	  break;
 
 	case 'q':
-	  quiet = 1;
+	  quiet++;
 	  verbose = 0;
 	  break;
 
@@ -1518,6 +1515,10 @@ main (int argc, char **argv)
 	  sscanf (optarg, "%d", &amplification);
 	  break;
 
+        case 'l':
+          loop = 1;
+          break;
+
 	default:
 	  usage (prog);
 	}
@@ -1539,11 +1540,12 @@ main (int argc, char **argv)
   signal (SIGQUIT, get_int);
 #endif
 
-  for (i = 1; i < argc; i++)
+  do for (i = 1; i < argc; i++)
     {
       play_file (argv[i]);
       quitflag = 0;
     }
+  while (loop);
 
   close (audiofd);
   return exitstatus;
