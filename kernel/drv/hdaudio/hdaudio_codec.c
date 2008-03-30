@@ -793,6 +793,109 @@ hdaudio_mix_init (int dev)
   return 0;
 }
 
+static void
+copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
+{
+	int i, n;
+
+/*
+ * Install output endpoints from the codec to the global endpoint table.
+ */
+
+  for (i = 0; i < codec->num_outendpoints; i++)
+    {
+      hdaudio_endpointinfo_t *ep = &codec->outendpoints[i];
+      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+    }
+
+	n=mixer->num_outendpoints;
+	for (i=0;i<codec->num_outendpoints;i++)
+	{
+	  int ix = (codec->multich_map >> (i * 4)) & 0x0f;
+          hdaudio_endpointinfo_t *ep = &codec->outendpoints[ix];
+
+       	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+
+	  if (ep->skip || ep->already_used)
+	     continue;
+
+	  switch (pass)
+	  {
+	  case 0: /* Pick analog endpoints */
+		if (ep->is_digital)
+		   continue;
+		break;
+
+	  case 1: /* Pick digital endpoints */
+		if (!ep->is_digital)
+		   continue;
+		break;
+	  }
+
+	  if (n >= HDA_MAX_OUTSTREAMS)
+	     {
+		  cmn_err (CE_WARN,
+			   "Too many output endpoints (%d)\n",
+			   n);
+		  continue;
+	     }
+
+	  memcpy(&mixer->outendpoints[n], ep, sizeof(*ep));
+	  ep->already_used=1;
+
+	  n++;
+	}
+	mixer->num_outendpoints=n;
+
+/*
+ * Install input endpoints from the codec to the global endpoint table.
+ */
+
+  for (i = 0; i < codec->num_inendpoints; i++)
+    {
+      hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
+      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+    }
+
+	n=mixer->num_inendpoints;
+	for (i=0;i<codec->num_inendpoints;i++)
+	{
+          hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
+
+       	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
+
+	  if (ep->skip || ep->already_used)
+	     continue;
+
+	  switch (pass)
+	  {
+	  case 0: /* Pick analog endpoints */
+		if (ep->is_digital)
+		   continue;
+		break;
+
+	  case 1: /* Pick digital endpoints */
+		if (!ep->is_digital)
+		   continue;
+		break;
+	  }
+
+	  if (n >= HDA_MAX_OUTSTREAMS)
+	     {
+		  cmn_err (CE_WARN,
+			   "Too many input endpoints (%d)\n",
+			   n);
+		  continue;
+	     }
+
+	  memcpy(&mixer->inendpoints[n], ep, sizeof(*ep));
+	  ep->already_used=1;
+
+	  n++;
+	}
+	mixer->num_inendpoints=n;
+}
+
  /*ARGSUSED*/
   hdaudio_mixer_t *
 hdaudio_mixer_create (char *name, void *devc,
@@ -859,6 +962,18 @@ hdaudio_mixer_create (char *name, void *devc,
       cmn_err (CE_WARN, "No hdaudio codecs were detected\n");
       return NULL;
     }
+
+/*
+ * The attach_codec routine copied all analog endpoints to the global endpoint
+ * table. Now pick possible digital endpoints from the active codecs.
+ */
+
+  for (i = 0; i < 16; i++)
+    if (mixer->codecmask & (1 << i))
+    if (mixer->codecs[i]->active)
+      {
+  	copy_endpoints(mixer, mixer->codecs[i], 1); /* Copy digital endpoints from codec to mixer */
+      }
 
   if (!mixer->remap_avail)
      check_names (mixer);
@@ -1785,109 +1900,6 @@ polish_widget_list (hdaudio_mixer_t * mixer, int cad)
     }
 }
 
-static void
-copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
-{
-	int i, n;
-
-/*
- * Install output endpoints from the codec to the global endpoint table.
- */
-
-  for (i = 0; i < codec->num_outendpoints; i++)
-    {
-      hdaudio_endpointinfo_t *ep = &codec->outendpoints[i];
-      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
-    }
-
-	n=mixer->num_outendpoints;
-	for (i=0;i<codec->num_outendpoints;i++)
-	{
-	  int ix = (codec->multich_map >> (i * 4)) & 0x0f;
-          hdaudio_endpointinfo_t *ep = &codec->outendpoints[ix];
-
-       	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
-
-	  if (ep->skip || ep->already_used)
-	     continue;
-
-	  switch (pass)
-	  {
-	  case 0: /* Pick analog endpoints */
-		if (ep->is_digital)
-		   continue;
-		break;
-
-	  case 1: /* Pick digital endpoints */
-		if (!ep->is_digital)
-		   continue;
-		break;
-	  }
-
-	  if (n >= HDA_MAX_OUTSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many output endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->outendpoints[n], ep, sizeof(*ep));
-	  ep->already_used=1;
-
-	  n++;
-	}
-	mixer->num_outendpoints=n;
-
-/*
- * Install input endpoints from the codec to the global endpoint table.
- */
-
-  for (i = 0; i < codec->num_inendpoints; i++)
-    {
-      hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
-      ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
-    }
-
-	n=mixer->num_inendpoints;
-	for (i=0;i<codec->num_inendpoints;i++)
-	{
-          hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
-
-       	  ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
-
-	  if (ep->skip || ep->already_used)
-	     continue;
-
-	  switch (pass)
-	  {
-	  case 0: /* Pick analog endpoints */
-		if (ep->is_digital)
-		   continue;
-		break;
-
-	  case 1: /* Pick digital endpoints */
-		if (!ep->is_digital)
-		   continue;
-		break;
-	  }
-
-	  if (n >= HDA_MAX_OUTSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many input endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->inendpoints[n], ep, sizeof(*ep));
-	  ep->already_used=1;
-
-	  n++;
-	}
-	mixer->num_inendpoints=n;
-}
-
 /* ARGSUSED */
 static int
 attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
@@ -2113,8 +2125,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
       polish_widget_list (mixer, cad);
     }
 
-  copy_endpoints(mixer, codec, 0);
-  copy_endpoints(mixer, codec, 1); // TODO: Move this somewhere else
+  copy_endpoints(mixer, codec, 0); /* Copy analog endpoints from codec to mixer */
 
   return (has_audio_group) ? 0 : -EIO;
 }

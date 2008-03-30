@@ -72,7 +72,6 @@ struct hda_portc
   int num;
   int open_mode;
   int speed, bits, channels;
-  int max_channels;
   int audio_enabled;
   int trigger_bits;
   int audiodev;
@@ -453,19 +452,19 @@ hda_audio_set_channels (int dev, short arg)
     arg = 2;
 #endif
 
-  if (arg > portc->max_channels)
-    arg = portc->max_channels;
+  if (arg > adev->max_channels)
+  {
+    arg = adev->max_channels;
+  }
 
   if (arg != 1 && arg != 2 && arg != 4 && arg != 6 && arg != 8)
     {
-      cmn_err (CE_NOTE, "Ignored request for %d channels\n", arg);
+      cmn_err (CE_NOTE, "Ignored request for odd number (%d) of channels\n", arg);
       return portc->channels = 2;
     }
 
   if (arg < adev->min_channels)
     arg = adev->min_channels;
-  if (arg > adev->max_channels)
-    arg = adev->max_channels;
 
   /*
    * Check if more output endpoints need to be allocated
@@ -1408,11 +1407,6 @@ install_outputdevs (hda_devc * devc)
 	unsigned int formats = AFMT_S16_LE;
 	int opts = ADEV_AUTOMODE | ADEV_NOINPUT;
 
-	if (output_num == 0)
-	  portc->max_channels = 8;
-	else
-	  portc->max_channels = 2;
-
 /* Skip endpoints that are not physically connected on the motherboard. */
 	if (endpoints[i].skip)
 	  continue;
@@ -1469,8 +1463,13 @@ install_outputdevs (hda_devc * devc)
 	adev->min_rate = 8000;
 	adev->max_rate = 192000;
 	adev->min_channels = 2;
-	adev->max_channels = portc->max_channels;
-	if (portc->max_channels > 4)
+
+	if (output_num == 0)
+	  adev->max_channels = 8;
+	else
+	  adev->max_channels = 2;
+
+	if (adev->max_channels > 4)
 	  adev->dmabuf_alloc_flags |= DMABUF_LARGE | DMABUF_QUIET;
 	adev->min_block = 128;	/* Hardware limitation */
 	adev->min_fragments = 4;	/* Vmix doesn't work without this */
@@ -1547,7 +1546,6 @@ install_inputdevs (hda_devc * devc)
 	  sprintf (devname, "spdin%d", devc->num_spdin++);
 	  oss_audio_set_devname (devname);
 	}
-      portc->max_channels = 2;
 
       //sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
       sprintf (tmp_name, "High Definition Audio %s", endpoints[i].name);

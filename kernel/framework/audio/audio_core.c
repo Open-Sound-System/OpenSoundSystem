@@ -476,7 +476,7 @@ oss_audio_set_channels (int dev, int ch)
     return ret;
 
   /* For the time being only stereo <->mono is possible */
-  if (ch > ret)
+  if (ch != ret)
     if (!((ch == 1 && ret == 2) || (ch == 2 && ret == 1)))
       return ret;
 
