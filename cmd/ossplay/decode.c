@@ -36,6 +36,9 @@ enum {
   META
 };
 
+#define FREE_OBUF (1 << OBUF)
+#define FREE_META (1 << META)
+
 extern int force_speed, force_bits, force_channels, amplification;
 extern int audiofd, quitflag, quiet;
 extern char audio_devname[32];
@@ -80,6 +83,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
         obsize = 4 * bsize * sizeof (char);
         dec->outbuf = malloc (obsize);
+	dec->flag = FREE_OBUF;
 
         format = AFMT_S16_LE;
         break;
@@ -93,6 +97,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         obsize = ((cradpcm_values_t *)dec->metadata)->ratio *
                    1024 * sizeof (char);
         dec->outbuf = malloc (obsize);
+	dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -104,6 +109,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_fib;
         obsize = 2048 * sizeof (char);
         dec->outbuf = malloc (obsize);
+	dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -114,6 +120,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
+	dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -123,6 +130,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
+	dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -151,6 +159,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
       decoders->outbuf = NULL;
+      decoders->flag = 0;
     }
 
   if (!setup_device (fd, format, channels, speed)) return -2;
@@ -160,8 +169,8 @@ exit:
   decoders = dec;
   while (decoders != NULL)
     {
-      if (decoders->metadata!=NULL) free (decoders->metadata);
-      if (decoders->outbuf != NULL) free (decoders->outbuf);
+      if (decoders->flag & FREE_META) free (decoders->metadata);
+      if (decoders->flag & FREE_OBUF) free (decoders->outbuf);
       decoders = decoders->next;
       free (dec);
       dec = decoders;
