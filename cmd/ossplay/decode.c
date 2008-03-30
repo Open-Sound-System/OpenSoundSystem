@@ -46,6 +46,8 @@ extern char audio_devname[32];
 
 static unsigned int decode_24 (unsigned char **, unsigned char *,
                                unsigned int, void *);
+static unsigned int decode_8_to_s16 (unsigned char **, unsigned char *,
+                                    unsigned int, void *);
 static unsigned int decode_amplify (unsigned char **, unsigned char *,
                                     unsigned int, void *);
 static unsigned int decode_cr (unsigned char **, unsigned char *,
@@ -65,7 +67,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
             int speed, void * metadata)
 {
   decoders_queue_t * dec, * decoders = NULL;
-  int res, bsize;
+  int bsize, obsize, res = -2;
 
   if (force_speed != -1) speed = force_speed;
   if (force_channels != -1) channels = force_channels;
@@ -80,7 +82,8 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->metadata = metadata;
         dec->decoder = decode_msadpcm;
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
-        dec->outbuf = malloc (bsize * 4 * sizeof (char));
+        obsize = 4 * bsize * sizeof (char);
+        dec->outbuf = malloc (obsize);
         dec->flag = FREE_OBUF;
 
         format = AFMT_S16_LE;
@@ -88,23 +91,27 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       case AFMT_CR_ADPCM_2:
       case AFMT_CR_ADPCM_3:
       case AFMT_CR_ADPCM_4:
+        bsize = 1024;
         dec->metadata = (void *)setup_cr (fd, format);;
+        if (dec->metadata == NULL) goto exit;
         dec->flag = 1;
         dec->decoder = decode_cr;
-        dec->outbuf = malloc (((cradpcm_values_t *)dec->metadata)->ratio *
-                               1024 * sizeof (char));
+        obsize = ((cradpcm_values_t *)dec->metadata)->ratio *
+                   1024 * sizeof (char);
+        dec->outbuf = malloc (obsize);
         dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
-        bsize = 1024;
         break;
       case AFMT_FIBO_DELTA:
       case AFMT_EXP_DELTA:
         dec->metadata = (void *)setup_fib (fd, format);;
+        if (dec->metadata == NULL) goto exit;
         dec->flag = 1;
         dec->decoder = decode_fib;
-        dec->outbuf = malloc (2048 * sizeof (char));
+        obsize = 2048 * sizeof (char);
+        dec->outbuf = malloc (obsize);
         dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
@@ -114,7 +121,8 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       case AFMT_S24_LE:
         dec->metadata = (void *)8;
         dec->decoder = decode_24;
-        dec->outbuf = malloc (1024 * sizeof(int));
+        obsize = 1024 * sizeof(int);
+        dec->outbuf = malloc (obsize);
         dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
@@ -123,7 +131,8 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       case AFMT_S24_BE:
         dec->metadata = (void *)24;
         dec->decoder = decode_24;
-        dec->outbuf = malloc (1024 * sizeof(int));
+        obsize = 1024 * sizeof(int);
+        dec->outbuf = malloc (obsize);
         dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
@@ -131,25 +140,36 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         break;
       default:
         dec->decoder = decode_nul;
-        dec->outbuf = NULL;
 
-        bsize = 1024;
+        obsize = bsize = 1024;
         break;
     }
-  if (amplification > 0)
+  if ((amplification > 0) && (amplification != 100))
     {
       decoders = malloc (sizeof (decoders_queue_t));
+      dec->next = decoders;
+      if ((format == AFMT_U8) || (format == AFMT_S8))
+        {
+          decoders->metadata = (void *)(long)format;
+          decoders->decoder = decode_8_to_s16;
+          obsize *= 2;
+          decoders->outbuf = malloc (obsize);
+          decoders->flag = FREE_OBUF;
+          decoders->next = malloc (sizeof (decoders_queue_t));
+          decoders = decoders->next;
+          format = AFMT_S16_NE;
+        }
       decoders->metadata = (void *)(long)format;
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
       decoders->outbuf = NULL;
       decoders->flag = 0;
     }
-  dec->next = decoders;
 
   if (!setup_device (fd, format, channels, speed)) return -2;
   res = decode (fd, filesize, bsize, dec);
 
+exit:
   decoders = dec;
   while (decoders != NULL)
     {
@@ -319,6 +339,22 @@ setup_cr (int fd, int format)
   val->pred = buf;
 
   return val;
+}
+
+static unsigned int
+decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf, unsigned int l,
+                void * metadata)
+{
+  int format = (int)(long)metadata;
+  unsigned int i;
+  short * outbuf = (short *) * obuf;
+
+  if (format == AFMT_U8) for (i = 0; i < l; i++)
+    outbuf[i] = (buf[i] - 128) << 8;
+  else for (i = 0; i < l; i++)
+    outbuf[i] = buf[i] << 8;
+
+  return 2*l;
 }
 
 static unsigned int

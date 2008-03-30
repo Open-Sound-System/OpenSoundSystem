@@ -23,7 +23,6 @@ OPTIONS
 -o? 		Prints the list of available play targets.
 -g<gain>	Amplify all played samples by percentage given as argument. 
 		100 (default) means normal signal level, 200 means double level.
-		Only supported in 16 and 32 bit modes.
 
 INTERRUPT
 Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing
