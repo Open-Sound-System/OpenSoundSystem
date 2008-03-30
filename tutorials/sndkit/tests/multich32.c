@@ -1,6 +1,9 @@
 /*
  * Multi channel audio test.
  *
+ * NOTE! ***** THIS PROGRAM SEEMS TO BE BROKEN. DON'T USE IT AS A TEMPLATE FOR
+ * 	 NEW PROGRAMS. *****
+ *
  * This program is intended to test playback of 32 bit samples using 4 or more
  * channels at 48000 Hz. The program plays sine wave pulses sequentially on
  * channels 0 to N-1.

@@ -4,6 +4,14 @@
  * This program is intended to test playback of 16 bit samples using 4 or more
  * channels at 48000 Hz. The program plays sine wave pulses sequentially on
  * channels 0 to N-1.
+ *
+ * Arguments:
+ *
+ * 1:	Number of channelts (default is 8).
+ * 2:	Audio device (/dev/dsp by default).
+ * 3-N: Options
+ * 	  -b	Bypass virtual mixer
+ * 	  -r	Raw mode (disables automatic sample rate/format conversions)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +37,8 @@ main (int argc, char *argv[])
   int fd, l, i, n = 0, ch, p = 0, phase = 0, arg, channels, srate, thisch = 0;
   int tick = 0;
   int nch = 8;
+  int bypass_vmix=0;
+  int disable_format_conversions=0;
 
   short buf[1024];
 
@@ -39,11 +49,30 @@ main (int argc, char *argv[])
   if (argc > 2)
     dev = argv[2];
 
-  if ((fd = open (dev, O_WRONLY, 0)) == -1)
+  for (i=3;i<argc;i++)
+  if (argv[i][0]=='-')
+  switch (argv[i][1])
+  {
+  case 'b': /* Bypass virtual mixer */
+	  bypass_vmix = O_EXCL;
+	  break;
+
+  case 'r': /* Use raw mode (disable automatic format conversions) */
+	  disable_format_conversions=1;
+	  break;
+  }
+
+  if ((fd = open (dev, O_WRONLY|bypass_vmix, 0)) == -1)
     {
       perror (dev);
       exit (-1);
     }
+
+  if (disable_format_conversions)
+     {
+  	arg=0;
+  	ioctl(fd, SNDCTL_DSP_COOKEDMODE, &arg);
+     }
 
   arg = nch;
   if (ioctl (fd, SNDCTL_DSP_CHANNELS, &arg) == -1)
