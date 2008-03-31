@@ -576,14 +576,7 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
   hda_portc *portc = audio_engines[dev]->portc;
   extern int hdaudio_snoopy;
 
-/*
- * The following debugging ioctl calls may be dangerous
- * so don't enable them by default. The "snoopy" utility
- * can be used when this option is enabled. In addition
- * only root can make these calls.
- */
-
-  if (hdaudio_snoopy)
+  //if (hdaudio_snoopy)
     switch (cmd)
       {
       case HDA_IOCTL_WRITE:

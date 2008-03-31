@@ -29,6 +29,7 @@ typedef struct decoders_queue {
   decfunc_t * decoder;
   unsigned char * outbuf;
   void * metadata;
+  unsigned int flag;
 } decoders_queue_t;
 
 enum {
