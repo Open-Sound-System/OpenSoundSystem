@@ -7,7 +7,7 @@
 #include "decode.h"
 
 typedef unsigned int (decfunc_t) (unsigned char **, unsigned char *,
-                                  unsigned int, void *);
+                                  const unsigned int, void *);
 
 typedef struct fib_values {
   unsigned char pred;
@@ -23,6 +23,13 @@ typedef struct cradpcm_values {
   unsigned char ratio;
   unsigned char pred;
 } cradpcm_values_t;
+
+typedef struct verbose_values {
+  char tstring[20];
+  unsigned int * datamark;
+  int format;
+  unsigned long constant;
+} verbose_values_t;
 
 typedef struct decoders_queue {
   struct decoders_queue * next;
@@ -41,40 +48,51 @@ enum {
 #define FREE_META (1 << META)
 
 extern int force_speed, force_bits, force_channels, amplification;
-extern int audiofd, quitflag, quiet;
+extern int audiofd, quitflag, quiet, verbose;
 extern char audio_devname[32];
 
 static unsigned int decode_24 (unsigned char **, unsigned char *,
-                               unsigned int, void *);
+                               const unsigned int, void *);
 static unsigned int decode_8_to_s16 (unsigned char **, unsigned char *,
-                                    unsigned int, void *);
+                                    const unsigned int, void *);
 static unsigned int decode_amplify (unsigned char **, unsigned char *,
-                                    unsigned int, void *);
+                                    const unsigned int, void *);
 static unsigned int decode_cr (unsigned char **, unsigned char *,
-                               unsigned int, void *);
+                               const unsigned int, void *);
+static unsigned int decode_endian (unsigned char **, unsigned char *,
+                                   const unsigned int, void *);
 static unsigned int decode_fib (unsigned char **, unsigned char *,
-                                unsigned int, void *);
+                                const unsigned int, void *);
+static unsigned int decode_verbose (unsigned char **, unsigned char *,
+                                    const unsigned int, void *);
 static unsigned int decode_msadpcm (unsigned char **, unsigned char *,
-                                    unsigned int, void *);
+                                    const unsigned int, void *);
 static unsigned int decode_nul (unsigned char **, unsigned char *,
-                                unsigned int, void *);
-static int decode (int, unsigned int, int, decoders_queue_t *);
-static fib_values_t * setup_fib (int, int);
+                                const unsigned int, void *);
+static int decode (int, unsigned int *, int, decoders_queue_t *);
+static float format2ibits (int);
+static int format2obits (int);
 static cradpcm_values_t * setup_cr (int, int);
+static fib_values_t * setup_fib (int, int);
+static verbose_values_t * setup_verbose (int, int, int, float, unsigned int *);
+static char * totime (double);
 
 int
 decode_sound (int fd, unsigned int filesize, int format, int channels,
             int speed, void * metadata)
 {
-  decoders_queue_t * dec, * decoders = NULL;
+  decoders_queue_t * dec, * decoders;
   int bsize, obsize, res = -2;
+  float ibits;
 
   if (force_speed != -1) speed = force_speed;
   if (force_channels != -1) channels = force_channels;
   if (force_bits != -1) format = force_bits;
 
+  ibits = format2ibits (format);
+
   if (filesize < 2) return 0;
-  dec = calloc (1, sizeof(decoders_queue_t));
+  decoders = dec = calloc (1, sizeof(decoders_queue_t));
 
   switch (format)
     {
@@ -84,7 +102,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
         obsize = 4 * bsize * sizeof (char);
         dec->outbuf = malloc (obsize);
-	dec->flag = FREE_OBUF;
+        dec->flag = FREE_OBUF;
 
         format = AFMT_S16_LE;
         break;
@@ -98,7 +116,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         obsize = ((cradpcm_values_t *)dec->metadata)->ratio *
                    1024 * sizeof (char);
         dec->outbuf = malloc (obsize);
-	dec->flag = FREE_OBUF | FREE_META;
+        dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -110,7 +128,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_fib;
         obsize = 2048 * sizeof (char);
         dec->outbuf = malloc (obsize);
-	dec->flag = FREE_OBUF | FREE_META;
+        dec->flag = FREE_OBUF | FREE_META;
 
         filesize--;
         format = AFMT_U8;
@@ -121,7 +139,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
-	dec->flag = FREE_OBUF;
+        dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -131,7 +149,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         dec->decoder = decode_24;
         obsize = 1024 * sizeof(int);
         dec->outbuf = malloc (obsize);
-	dec->flag = FREE_OBUF;
+        dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
         bsize = 1024 - 1024 % 3;
@@ -142,20 +160,38 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
         obsize = bsize = 1024;
         break;
     }
-  if ((amplification > 0) && (amplification != 100))
+
+  if ((amplification != 100) || (verbose))
     {
-      decoders = malloc (sizeof (decoders_queue_t));
-      dec->next = decoders;
-      if ((format == AFMT_U8) || (format == AFMT_S8))
+      if ((format == AFMT_S16_OE) || (format == AFMT_S32_OE))
         {
-          decoders->metadata = (void *)(long)format;
-          decoders->decoder = decode_8_to_s16;
-          obsize *= 2;
-          decoders->outbuf = malloc (obsize);
           decoders->next = malloc (sizeof (decoders_queue_t));
           decoders = decoders->next;
+          decoders->decoder = decode_endian;
+          decoders->metadata = (void *)(long)format;
+          format = (format == AFMT_S16_OE)?AFMT_S16_NE:AFMT_S32_NE;
+          decoders->next = NULL;
+          decoders->outbuf = NULL;
+          decoders->flag = 0;
+        }
+      else if (format2obits (format) == 8)
+        {
+          decoders->next = malloc (sizeof (decoders_queue_t));
+          decoders = decoders->next;
+          decoders->decoder = decode_8_to_s16;
+          decoders->metadata = (void *)(long)format;
+          decoders->next = NULL;
+          obsize *= 2;
+          decoders->outbuf = malloc (obsize);
+          decoders->flag = FREE_OBUF;
           format = AFMT_S16_NE;
         }
+    }
+
+  if ((amplification > 0) && (amplification != 100))
+    {
+      decoders->next = malloc (sizeof (decoders_queue_t));
+      decoders = decoders->next;
       decoders->metadata = (void *)(long)format;
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
@@ -163,8 +199,20 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       decoders->flag = 0;
     }
 
+  if (verbose)
+    {
+      decoders->next = malloc (sizeof (decoders_queue_t));
+      decoders = decoders->next;
+      decoders->metadata = (void *)setup_verbose (format, channels, speed,
+                                                  ibits, &filesize);
+      decoders->decoder = decode_verbose;
+      decoders->next = NULL;
+      decoders->outbuf = NULL;
+      decoders->flag = FREE_META;
+    }
+
   if (!setup_device (fd, format, channels, speed)) return -2;
-  res = decode (fd, filesize, bsize, dec);
+  res = decode (fd, &filesize, bsize, dec);
 
 exit:
   decoders = dec;
@@ -181,33 +229,36 @@ exit:
 }
 
 static int
-decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
+decode (int fd, unsigned int * datamark, int bsize, decoders_queue_t * dec)
 {
-  unsigned int dataleft = filesize, outl;
-  unsigned char *buf, *obuf;
+  unsigned int filesize = *datamark, outl;
+  unsigned char * buf, * obuf;
   decoders_queue_t * d;
 
   buf = malloc (bsize * sizeof(char));
+  *datamark = 0;
 
-  while (dataleft)
+  while (*datamark < filesize)
     {
-      if (bsize > dataleft) bsize = dataleft;
+      if (bsize > filesize - *datamark) bsize = filesize - *datamark;
 
       if (quitflag == 1)
         {
-          quitflag = 0;
+          free (buf);
           ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
+          if (verbose) fprintf (stderr, "\r\n");
           return -1;
         }
       if ((outl = read (fd, buf, bsize)) <= 0)
         {
+          if (verbose) fprintf (stdout, "\r\n");
           if (quitflag == 1)
             {
-              quitflag = 0;
+              free (buf);
               ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
               return -1;
             }
-          if ((dataleft) && (filesize != UINT_MAX) && (quiet < 2))
+          if ((outl == 0) & (filesize != UINT_MAX) && (quiet < 2))
             fprintf (stderr, "Sound data ended prematurily!\n");
           return 0;
         }
@@ -221,28 +272,30 @@ decode (int fd, unsigned int filesize, int bsize, decoders_queue_t * dec)
         }
       while (d != NULL);
 
-     if (write (audiofd, obuf, outl) == -1)
-       {
-         if ((errno == EINTR) && (quitflag == 1))
-           {
-             quitflag = 0;
-             ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
-             return -1;
-           }
-          perror (audio_devname);
-          exit (-1);
-       }
+      if (write (audiofd, obuf, outl) == -1)
+        {
+          if ((errno == EINTR) && (quitflag == 1))
+            {
+              free (buf);
+              ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
+              if (verbose) fprintf (stdout, "\r\n");
+              return -1;
+            }
+           perror (audio_devname);
+           exit (-1);
+        }
 
-      dataleft -= bsize;
+      *datamark += bsize;
     }
 
   free (buf);
+  if (verbose) fprintf (stdout, "\r\n");
   return 0;
 }
 
 static unsigned int
-decode_24 (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-           void * metadata)
+decode_24 (unsigned char ** obuf, unsigned char * buf,
+           const unsigned int l, void * metadata)
 {
   unsigned int outlen = 0, i, * u32;
   int sample_s32, v1 = (int)(long)metadata, * outbuf = (int *) * obuf;
@@ -339,24 +392,104 @@ setup_cr (int fd, int format)
 }
 
 static unsigned int
-decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-                void * metadata)
+decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
+                 const unsigned int l, void * metadata)
 {
   int format = (int)(long)metadata;
   unsigned int i;
   short * outbuf = (short *) * obuf;
+  static const short mu_law_table[256] = { 
+    -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956, 
+    -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764, 
+    -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412, 
+    -11900,-11388,-10876,-10364,-9852, -9340, -8828, -8316, 
+    -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140, 
+    -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092, 
+    -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004, 
+    -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980, 
+    -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436, 
+    -1372, -1308, -1244, -1180, -1116, -1052, -988,  -924, 
+    -876,  -844,  -812,  -780,  -748,  -716,  -684,  -652, 
+    -620,  -588,  -556,  -524,  -492,  -460,  -428,  -396, 
+    -372,  -356,  -340,  -324,  -308,  -292,  -276,  -260, 
+    -244,  -228,  -212,  -196,  -180,  -164,  -148,  -132, 
+    -120,  -112,  -104,  -96,   -88,   -80,   -72,   -64, 
+    -56,   -48,   -40,   -32,   -24,   -16,   -8,     0, 
+    32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956, 
+    23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764, 
+    15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412, 
+    11900, 11388, 10876, 10364, 9852,  9340,  8828,  8316, 
+    7932,  7676,  7420,  7164,  6908,  6652,  6396,  6140, 
+    5884,  5628,  5372,  5116,  4860,  4604,  4348,  4092, 
+    3900,  3772,  3644,  3516,  3388,  3260,  3132,  3004, 
+    2876,  2748,  2620,  2492,  2364,  2236,  2108,  1980, 
+    1884,  1820,  1756,  1692,  1628,  1564,  1500,  1436, 
+    1372,  1308,  1244,  1180,  1116,  1052,  988,   924, 
+    876,   844,   812,   780,   748,   716,   684,   652, 
+    620,   588,   556,   524,   492,   460,   428,   396, 
+    372,   356,   340,   324,   308,   292,   276,   260, 
+    244,   228,   212,   196,   180,   164,   148,   132, 
+    120,   112,   104,   96,    88,    80,    72,    64, 
+    56,    48,    40,    32,    24,    16,    8,     0 
+  };
 
-  if (format == AFMT_U8) for (i = 0; i < l; i++)
-    outbuf[i] = (buf[i] - 128) << 8;
-  else for (i = 0; i < l; i++)
-    outbuf[i] = buf[i] << 8;
+  static const short a_law_table[256] = { 
+    -5504, -5248, -6016, -5760, -4480, -4224, -4992, -4736, 
+    -7552, -7296, -8064, -7808, -6528, -6272, -7040, -6784, 
+    -2752, -2624, -3008, -2880, -2240, -2112, -2496, -2368, 
+    -3776, -3648, -4032, -3904, -3264, -3136, -3520, -3392, 
+    -22016,-20992,-24064,-23040,-17920,-16896,-19968,-18944, 
+    -30208,-29184,-32256,-31232,-26112,-25088,-28160,-27136, 
+    -11008,-10496,-12032,-11520,-8960, -8448, -9984, -9472, 
+    -15104,-14592,-16128,-15616,-13056,-12544,-14080,-13568, 
+    -344,  -328,  -376,  -360,  -280,  -264,  -312,  -296, 
+    -472,  -456,  -504,  -488,  -408,  -392,  -440,  -424, 
+    -88,   -72,   -120,  -104,  -24,   -8,    -56,   -40, 
+    -216,  -200,  -248,  -232,  -152,  -136,  -184,  -168, 
+    -1376, -1312, -1504, -1440, -1120, -1056, -1248, -1184, 
+    -1888, -1824, -2016, -1952, -1632, -1568, -1760, -1696, 
+    -688,  -656,  -752,  -720,  -560,  -528,  -624,  -592, 
+    -944,  -912,  -1008, -976,  -816,  -784,  -880,  -848, 
+    5504,  5248,  6016,  5760,  4480,  4224,  4992,  4736, 
+    7552,  7296,  8064,  7808,  6528,  6272,  7040,  6784, 
+    2752,  2624,  3008,  2880,  2240,  2112,  2496,  2368, 
+    3776,  3648,  4032,  3904,  3264,  3136,  3520,  3392, 
+    22016, 20992, 24064, 23040, 17920, 16896, 19968, 18944, 
+    30208, 29184, 32256, 31232, 26112, 25088, 28160, 27136, 
+    11008, 10496, 12032, 11520, 8960,  8448,  9984,  9472, 
+    15104, 14592, 16128, 15616, 13056, 12544, 14080, 13568, 
+    344,   328,   376,   360,   280,   264,   312,   296, 
+    472,   456,   504,   488,   408,   392,   440,   424, 
+    88,    72,    120,   104,   24,    8,    56,    40, 
+    216,   200,   248,   232,   152,   136,   184,   168, 
+    1376,  1312,  1504,  1440,  1120,  1056,  1248,  1184, 
+    1888,  1824,  2016,  1952,  1632,  1568,  1760,  1696, 
+    688,   656,   752,   720,   560,   528,   624,   592, 
+    944,   912,   1008,  976,   816,   784,   880,   848 
+  };
+
+  switch (format)
+    {
+      case AFMT_U8:
+        for (i = 0; i < l; i++) outbuf[i] = (buf[i] - 128) << 8;
+        break;
+      case AFMT_S8:
+        for (i = 0; i < l; i++) outbuf[i] = buf[i] << 8;
+        break;
+      case AFMT_MU_LAW:
+        for (i = 0; i < l; i++) outbuf[i] = mu_law_table[buf[i]];
+        break;
+      case AFMT_A_LAW:
+        for (i = 0; i < l; i++) outbuf[i] = a_law_table[buf[i]];
+        break;
+    }
 
   return 2*l;
 }
 
 static unsigned int
-decode_cr (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-           void * metadata)
+decode_cr (unsigned char ** obuf, unsigned char * buf,
+           const unsigned int l, void * metadata)
 {
   cradpcm_values_t * val = (cradpcm_values_t *) metadata;
   int i, j, value, pred = val->pred, step = val->step;
@@ -381,8 +514,8 @@ decode_cr (unsigned char ** obuf, unsigned char * buf, unsigned int l,
 }
 
 static unsigned int
-decode_fib (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-            void * metadata)
+decode_fib (unsigned char ** obuf, unsigned char * buf,
+            const unsigned int l, void * metadata)
 {
   fib_values_t * val = (fib_values_t *)metadata;
   int i, x = val->pred;
@@ -404,8 +537,8 @@ decode_fib (unsigned char ** obuf, unsigned char * buf, unsigned int l,
 }
 
 static unsigned int
-decode_msadpcm (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-                void * metadata)
+decode_msadpcm (unsigned char ** obuf, unsigned char * buf,
+                const unsigned int l, void * metadata)
 {
   msadpcm_values_t * val = (msadpcm_values_t *)metadata;
 
@@ -484,16 +617,51 @@ decode_msadpcm (unsigned char ** obuf, unsigned char * buf, unsigned int l,
 }
 
 static unsigned int
-decode_nul (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-            void * metadata)
+decode_nul (unsigned char ** obuf, unsigned char * buf,
+            const unsigned int l, void * metadata)
 {
   *obuf = buf;
   return l;
 }
 
 static unsigned int
-decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
-                void * metadata)
+decode_endian (unsigned char ** obuf, unsigned char * buf,
+               const unsigned int l, void * metadata)
+{
+  int format = (int)(long)metadata, i, len;
+
+  switch (format)
+    {
+      case AFMT_S16_OE:
+        {
+          short * s = (short *)buf;
+
+          len = l/2;
+          for (i = 0; i < len ; i++)
+            s[i] = ((s[i] >> 8) & 0x00FF) |
+                   ((s[i] << 8) & 0xFF00);
+        }
+        break;
+      /* case AFMT_S24_OE: unneeded because of decode_24 */
+      case AFMT_S32_OE:
+        {
+          int * s = (int *)buf;
+
+          len = l/4;
+          for (i = 0; i < len; i++)
+            s[i] = ((s[i] >> 24) & 0x000000FF) |
+                   ((s[i] << 8) & 0x00FF0000) | ((s[i] >> 8) & 0x0000FF00) |
+                   ((s[i] << 24) & 0xFF000000);
+        }
+        break;
+    }
+  *obuf = buf;
+  return l;
+}
+
+static unsigned int
+decode_amplify (unsigned char ** obuf, unsigned char * buf,
+                const unsigned int l, void * metadata)
 {
   int format = (int)(long)metadata, i, len;
 
@@ -512,7 +680,7 @@ decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
           int *s = (int *)buf;
           len = l / 4;
 
-          for (i = 0; i < len; i++) s[i] = s[i] * amplification / 100;
+          for (i = 0; i < len; i++) s[i] = s[i] * (long)amplification / 100;
         }
        break;
    }
@@ -520,3 +688,208 @@ decode_amplify (unsigned char ** obuf, unsigned char * buf, unsigned int l,
   *obuf = buf;
   return l;
 }
+
+static verbose_values_t *
+setup_verbose (int format, int speed, int channels, float ibits,
+               unsigned int * filesize)
+{
+  verbose_values_t * val;
+
+  val = malloc (sizeof(verbose_values_t));
+
+  if (*filesize == UINT_MAX)
+    strcpy (val->tstring, "unknown");
+  else
+    {
+      char * p = totime (*filesize * 8 / (ibits * speed * channels));
+
+      strcpy (val->tstring, p);
+      free (p);
+    }
+
+  val->format = format;
+  val->constant = ibits * speed * channels / 8;
+  val->datamark = filesize;
+
+  return val;
+}
+
+static char *
+totime (double secs)
+{
+  char time[20];
+  unsigned long min = secs / 60;
+
+  snprintf (time, 20, "%.2lu:%.2lu", min, (unsigned long)secs - min * 60);
+
+  return strdup (time);
+}
+
+static unsigned int
+decode_verbose (unsigned char ** obuf, unsigned char * buf,
+                const unsigned int l, void * metadata)
+{
+/*
+ * Display a rough recording level meter, and the elapsed time.
+ */
+  static const unsigned char db_table[256] = {
+  /* Lookup table for log10(ix)*2, ix=0..255 */
+    0, 0, 1, 2, 2, 3, 3, 3, 4, 4,
+    4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
+    5, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+    6, 6, 6, 6, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+    7, 7, 7, 7, 7, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    8, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 11, 11, 11, 11, 11,
+    11, 11, 11, 11, 11, 11
+  };
+
+  verbose_values_t * val = (verbose_values_t *)metadata;
+  int i, lim, v = 0, level;
+  char template[12] = "-------++!!";
+  char * rtime;
+
+  level = 0;
+
+  switch (val->format)
+    {
+      case AFMT_S16_NE:
+        {
+          short *p;
+
+          p = (short *)buf;
+          lim = l/2;
+
+          for (i = 0; i < lim; i++)
+            {
+              v = (*p++) << 16;
+              if (v < 0) v = -v;
+              if (v > level) level = v;
+            }
+        }
+        break;
+
+      case AFMT_S32_NE:
+        {
+         int *p;
+
+         p = (int *)buf;
+         lim = l / 4;
+
+         for (i = 0; i < lim; i++)
+           {
+             v = *p++;
+             if (v < 0) v = -v;
+             if (v > level) level = v;
+           }
+        }
+        break;
+    }
+
+  level >>= 24;
+
+  if (level > 255) level = 255;
+  v = db_table[level];
+
+  if (v > 0) template[v] = '\0';
+  else
+    {
+      template[0] = '0';
+      template[1] = '\0';
+    }
+
+  rtime = totime ((*val->datamark + l) / val->constant);
+  fprintf (stdout, "\rTime: %s of %s VU %-11s", rtime, val->tstring, template);
+  fflush (stdout);
+  free (rtime);
+
+  *obuf = buf;
+  return l;
+}
+
+static float
+format2ibits (int format)
+{
+  switch (format)
+    {
+      case AFMT_CR_ADPCM_2: return 2;
+      case AFMT_CR_ADPCM_3: return 2.66;
+      case AFMT_CR_ADPCM_4:
+      case AFMT_IMA_ADPCM:
+      case AFMT_MS_ADPCM:
+      case AFMT_FIBO_DELTA:
+      case AFMT_EXP_DELTA: return 4;
+      case AFMT_MU_LAW:
+      case AFMT_A_LAW:
+      case AFMT_U8:
+      case AFMT_S8: return 8;
+      case AFMT_VORBIS:
+      case AFMT_MPEG:
+      case AFMT_S16_LE:
+      case AFMT_S16_BE:
+      case AFMT_U16_LE:
+      case AFMT_U16_BE: return 16;
+      case AFMT_S24_LE:
+      case AFMT_S24_BE:
+      case AFMT_S24_PACKED: return 24;
+      case AFMT_SPDIF_RAW:
+      case AFMT_S32_LE:
+      case AFMT_S32_BE: return 32;
+      case AFMT_FLOAT: return sizeof (float);
+      case AFMT_QUERY:
+      default: return 0;
+   }
+}
+
+static int
+format2obits (int format)
+{
+  switch (format)
+    {
+      case AFMT_FIBO_DELTA:
+      case AFMT_EXP_DELTA:
+      case AFMT_CR_ADPCM_2:
+      case AFMT_CR_ADPCM_3:
+      case AFMT_CR_ADPCM_4:
+      case AFMT_MU_LAW:
+      case AFMT_A_LAW:
+      case AFMT_U8:
+      case AFMT_S8: return 8;
+      case AFMT_VORBIS:
+      case AFMT_MPEG:
+      case AFMT_IMA_ADPCM:
+      case AFMT_MS_ADPCM:
+      case AFMT_S16_LE:
+      case AFMT_S16_BE:
+      case AFMT_U16_LE:
+      case AFMT_U16_BE: return 16;
+      case AFMT_S24_LE:
+      case AFMT_S24_BE:
+      case AFMT_S24_PACKED: return 24;
+      case AFMT_SPDIF_RAW:
+      case AFMT_S32_LE:
+      case AFMT_S32_BE: return 32;
+      case AFMT_FLOAT: return sizeof (float);
+      case AFMT_QUERY:
+      default: return 0;
+    }
+}
+

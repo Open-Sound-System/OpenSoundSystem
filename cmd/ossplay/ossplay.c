@@ -17,7 +17,6 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <string.h>
 
 #undef  MPEG_SUPPORT
 
@@ -57,11 +56,11 @@ enum {
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
 int force_speed = -1, force_bits = -1, force_channels = -1, amplification = 100;
-int audiofd = 0, quitflag = 0, quiet = 0;
+int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0;
 char audio_devname[32] = "/dev/dsp";
 
 static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
-static int raw_mode = 0, verbose = 0, exitstatus = 0, loop = 0;
+static int raw_mode = 0, exitstatus = 0, loop = 0;
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
@@ -1375,7 +1374,9 @@ play_file (char *filename)
 done:
   close (fd);
 
+#if 0
   ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
+#endif
   return;
 seekerror:
   exitstatus++;

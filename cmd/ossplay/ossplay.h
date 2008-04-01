@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 
 #include <soundcard.h>
 #include <sys/ioctl.h>

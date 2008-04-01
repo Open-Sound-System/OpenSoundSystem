@@ -53,7 +53,8 @@ main (int argc, char *argv[])
  * Note! It is very important to write some data to all output devices
  * between calling SNDCTL_DSP_SYNCGROUP and SNDCTL_DSP_SYNCSTART. Otherwise
  * playback will not start properly. However do not write more data than
- * there is room in device's DMA buffer.
+ * there is room in device's DMA buffer. Recommended amount of prteload data
+ * is one full fragment.
  *
  * In applications that record audio, process it and then play back it's
  * necessary to write two fragments of silence to the output device(s) before
