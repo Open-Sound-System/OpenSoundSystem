@@ -285,6 +285,7 @@ typedef struct
   hdaudio_endpointinfo_t *endpoint;
   int current_selector;
   int rgbcolor;	/* RGB value of the jack color */
+  int association, sequence;
 } widget_t;
 
 typedef int (*hda_mixer_init_func) (int dev, hdaudio_mixer_t * mixer, int cad,

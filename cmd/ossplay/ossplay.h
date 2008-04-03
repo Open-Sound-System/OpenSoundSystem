@@ -1,17 +1,35 @@
 #ifndef OSSPLAY_H
 #define OSSPLAY_H
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#include <soundcard.h>
 #include <sys/ioctl.h>
 
-#define PLAYBUF_SIZE	1024
+#include <soundcard.h>
+
+#undef  MPEG_SUPPORT
+#define PLAYBUF_SIZE		1024
+#define DEFAULT_CHANNELS	1
+#define DEFAULT_FORMAT		AFMT_U8
+#define DEFAULT_SPEED		11025
+
+enum {
+  ERRORM,
+  HELPM,
+  NORMALM,
+  NOTIFYM,
+  UPDATEM,
+  WARNM,
+  STARTM,
+  CONTM,
+  ENDM
+};
 
 #define AFMT_MS_ADPCM	-(AFMT_S16_LE | 0x1000000)
 #define AFMT_CR_ADPCM_2	-(AFMT_U8 | 0x1000000)
@@ -35,8 +53,12 @@ typedef struct msadpcm_values {
 }
 msadpcm_values_t;
 
+int be_int (const unsigned char *, int);
+int le_int (const unsigned char *, int);
+void * ossplay_malloc (size_t sz);
+void perror_msg (const char * s);
+void print_msg (char type, const char * fmt, ...);
+void print_verbose (int, int, int);
 int setup_device (int, int, int, int);
-int be_int (unsigned char *, int);
-int le_int (unsigned char *, int);
 
 #endif
