@@ -26,10 +26,11 @@ static char current_songname[64] = "";
 static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
 static char *playtgt = NULL;
 
+static void cleanup (void);
 static void describe_error (void);
 static const char * filepart (const char *);
-static void find_devname (char *, char *);
-static void select_playtgt (char *);
+static void find_devname (char *, const char *);
+static void select_playtgt (const char *);
 static void open_device (void);
 static void usage (char *);
 
@@ -151,6 +152,8 @@ open_device (void)
       exit (-1);
     }
 
+  atexit (cleanup);
+
   if (raw_mode)
     {
       /*
@@ -162,7 +165,7 @@ open_device (void)
 }
 
 static void
-find_devname (char *devname, char *num)
+find_devname (char * devname, const char * num)
 {
 /*
  * OSS 4.0 the audio device numbering may be different from the
@@ -185,7 +188,7 @@ find_devname (char *devname, char *num)
     {
       perror_msg ("/dev/mixer");
       print_msg (WARNM, "Warning: Defaulting to /dev/dsp%s\n", num);
-      sprintf (devname, "/dev/dsp%s", num);
+      snprintf (devname, sizeof (devname), "/dev/dsp%s", num);
       return;
     }
 
@@ -195,12 +198,12 @@ find_devname (char *devname, char *num)
     {
       perror_msg ("/dev/mixer SNDCTL_AUDIOINFO");
       print_msg (WARNM, "Warning: Defaulting to /dev/dsp%s\n", num);
-      sprintf (devname, "/dev/dsp%s", num);
+      snprintf (devname, sizeof (devname), "/dev/dsp%s", num);
       close (mixer_fd);
       return;
     }
 
-  strcpy (devname, ai.devnode);
+  strncpy (devname, ai.devnode, sizeof (devname));
 
   close (mixer_fd);
 }
@@ -379,7 +382,7 @@ print_verbose (int format, int channels, int speed)
 }
 
 static void
-select_playtgt (char *playtgt)
+select_playtgt (const char * playtgt)
 {
 /*
  * Handling of the -o command line option (playback target selection).
@@ -453,6 +456,11 @@ static void get_int (int signum)
   quitflag = 1;
 }
 
+static void cleanup (void)
+{
+  close (audiofd);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -483,7 +491,8 @@ main (int argc, char **argv)
 	  if (*optarg >= '0' && *optarg <= '9')	/* Only device number given */
 	    find_devname (audio_devname, optarg);
 	  else
-	    strcpy (audio_devname, optarg);
+	    strncpy (audio_devname, optarg, sizeof (audio_devname));
+          audio_devname [sizeof (audio_devname)-1] = '\0';
 	  break;
 
 	case 'o':
@@ -525,13 +534,13 @@ main (int argc, char **argv)
   argc -= optind - 1;
   argv += optind - 1;
 
-  if (argc < 2)
-    usage (prog);
-
   open_device ();
 
   if (playtgt != NULL)
     select_playtgt (playtgt);
+
+  if (argc < 2)
+    usage (prog);
 
 #ifdef SIGQUIT
   signal (SIGQUIT, get_int);
@@ -546,6 +555,5 @@ main (int argc, char **argv)
     }
   while (loop);
 
-  close (audiofd);
   return exitstatus;
 }
