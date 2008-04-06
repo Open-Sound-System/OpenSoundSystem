@@ -61,7 +61,7 @@ envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
 envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
 envy24ht	pcs153b,1149	Terratec PHASE 28
 envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
-envy24ht	ZZZpcs3031,4553	Ego Systems Juli@ (NOT SUPPORTED YET)
+envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
 envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 fm801	pci1319,801	ForteMedia FM 801
 fm801	pcs1489,7008	Genius Sound Maker Live
@@ -115,6 +115,7 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 maestro	pci125d,1968	ESS Maestro-2 
 maestro	pci125d,1978	ESS Maestro-2E 
 maestro	pci1285,100	ESS Maestro-1 
+midiloop	MIDILOOP	OSS MIDI Loopback driver
 neomagic	pci10c8,8005	Neomagic NM2200AV
 osscore	OSSCORE	OSS Core services
 ossusb	usbif,class1	Generic USB audio/MIDI device (BETA)
@@ -156,6 +157,7 @@ sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
 sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
 sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
 sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
+sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
 sbxfi	pci1102,5	Creative SB X-Fi (NOT SUPPORTED YET)
 softoss	SOFTOSS	OSS Virtual mixer/synth driver
 solo	pci125d,1969	ESS Solo-1 

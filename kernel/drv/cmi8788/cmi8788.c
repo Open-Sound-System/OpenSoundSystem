@@ -416,6 +416,8 @@ cmi8788_audio_set_channels (int dev, short arg)
   if (arg == 1)
     arg = 2;
 
+  if (arg>8)
+     arg=8;
   if ((arg != 2) && (arg != 4) && (arg != 6) && (arg != 8))
     return portc->channels;
   portc->channels = arg;

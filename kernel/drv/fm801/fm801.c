@@ -415,6 +415,8 @@ static short
 fm801_audio_set_channels (int dev, short arg)
 {
   fm801_portc *portc = audio_engines[dev]->portc;
+  if (arg>6)
+     arg=6;
   if ((arg != 1) && (arg != 2) && (arg != 4) && (arg != 6))
     return portc->channels;
   portc->channels = arg;

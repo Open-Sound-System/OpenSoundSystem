@@ -1176,11 +1176,15 @@ cmpci_audio_set_channels (int dev, short arg)
 
   if (devc->model == MDL_CM8768)
     {
+      if (arg>8)
+	 arg=8;
       if ((arg != 1) && (arg != 2) && (arg != 4) && (arg != 6) && (arg != 8))
 	return portc->channels;
     }
   else
     {
+      if (arg>6)
+	 arg=6;
       if ((arg != 1) && (arg != 2) && (arg != 4) && (arg != 6))
 	return portc->channels;
     }
