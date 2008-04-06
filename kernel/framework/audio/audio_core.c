@@ -1772,7 +1772,7 @@ setup_fragments (adev_p adev, dmap_p dmap, int direction)
   int min;
   extern int max_intrate;
 
-  if (adev->max_intrate > max_intrate)
+  if (adev->max_intrate == 0 || adev->max_intrate > max_intrate)
     adev->max_intrate = max_intrate;
 
   if (dmap->flags & DMAP_FRAGFIXED)

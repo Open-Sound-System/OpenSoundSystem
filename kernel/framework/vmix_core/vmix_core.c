@@ -406,18 +406,14 @@ vmix_set_channels (int dev, short arg)
 
   if (portc->open_mode & OPEN_WRITE)
     {
-      if (arg < 1)
-	arg = 1;
-      if (arg > MAX_PLAY_CHANNELS)
-	arg = MAX_PLAY_CHANNELS;
+      if (arg > portc->mixer->play_engine.channels)
+	arg = portc->mixer->play_engine.channels;
     }
 
   if (portc->open_mode & OPEN_READ)
     {
-      if (arg < 1)
-	arg = 1;
-      if (arg > MAX_REC_CHANNELS)
-	arg = MAX_REC_CHANNELS;
+      if (arg > portc->mixer->record_engine.channels)
+	arg = portc->mixer->record_engine.channels;
 
     }
   return portc->channels = arg;

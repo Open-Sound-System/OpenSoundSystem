@@ -484,7 +484,7 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	    {
 	      /* Output source select */
 	      corb_write (mixer, cad, wid, 0, SET_SELECTOR, value);
-	      /* Enable output and HP amp. Set vref=Hi-Z */
+	      /* Enable output and HP amp. Set vref=Ground */
 	      corb_write (mixer, cad, wid, 0, SET_PINCTL, 0xc0);
 	    }
 	  else
@@ -495,7 +495,7 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
 	      if (widget->pin_type == PIN_IN)	/* Line-in */
 		{
-		  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x20);	/*HiZ */
+		  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x20);	/*Ground*/
 		}
 	      else		/* Mic-in */
 		{
@@ -679,11 +679,11 @@ perform_pin_sense (hdaudio_mixer_t * mixer)
 	      if (widget->pin_type == PIN_IN
 		  || widget->pin_type == PIN_UNKNOWN)
 		{		/* Input PIN */
-		  /* TODO: Handle mic amp */
 		  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x20);
 		}
 	      if (widget->pin_type == PIN_MIC)
 		{		/* Input PIN (mic) */
+		  /* TODO: Handle mic amp */
 		  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x24);
 		}
 	      else

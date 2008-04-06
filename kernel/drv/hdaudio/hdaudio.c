@@ -447,10 +447,8 @@ hda_audio_set_channels (int dev, short arg)
       return portc->channels;
     }
 
-#if 1
   if (arg < 2)
     arg = 2;
-#endif
 
   if (arg > adev->max_channels)
   {
@@ -460,7 +458,7 @@ hda_audio_set_channels (int dev, short arg)
   if (arg != 1 && arg != 2 && arg != 4 && arg != 6 && arg != 8)
     {
       cmn_err (CE_NOTE, "Ignored request for odd number (%d) of channels\n", arg);
-      return portc->channels = 2;
+      return portc->channels = arg & ~1;
     }
 
   if (arg < adev->min_channels)
@@ -506,9 +504,7 @@ hda_audio_set_channels (int dev, short arg)
 	}
     }
 
-  portc->channels = arg;
-
-  return portc->channels;
+  return portc->channels = arg;
 }
 
 static unsigned int

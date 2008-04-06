@@ -399,14 +399,18 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
 /*
  * Number of channels
  */
-  mixer->record_engine.channels = MAX_REC_CHANNELS;
+  mixer->record_engine.channels = mixer->max_channels;
+
+  if (mixer->record_engine.channels > MAX_REC_CHANNELS)
+     mixer->record_engine.channels = MAX_REC_CHANNELS;
+
   if (!mixer->multich_enable)
     mixer->record_engine.channels = 2;
 
   /* Force the device to stereo before trying with (possibly) imultiple channels */
   adev->d->adrv_set_channels (mixer->inputdev, 2);
 
-  mixer->record_engine.channels = mixer->record_engine.channels =
+  mixer->record_engine.channels = 
     adev->d->adrv_set_channels (mixer->inputdev,
 				mixer->record_engine.channels);
 

@@ -216,9 +216,17 @@ oss_mixer_ext_info (oss_mixext * ent)
     case MIXT_STEREOPEAK:
     case MIXT_MONOVU:
     case MIXT_STEREOVU:
+      /* Peak meters will need to be polled */
       ent->flags |= MIXF_POLL;
       break;
     }
+
+/*
+ * Read-only controls are likely to change their value spontaneously so
+ * they should be polled.
+ */
+  if (!(ent->flags & MIXF_WRITEABLE))
+     ent->flags |= MIXF_POLL;
 
   ent->ctrl = ctrl;
   return 0;

@@ -534,7 +534,11 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
 /*
  * Number of channels
  */
-  mixer->play_engine.channels = MAX_PLAY_CHANNELS;
+  mixer->play_engine.channels = mixer->max_channels;
+
+  if (mixer->play_engine.channels > MAX_PLAY_CHANNELS)
+     mixer->play_engine.channels = MAX_PLAY_CHANNELS;
+
   if (!mixer->multich_enable)
     mixer->play_engine.channels = 2;
 
@@ -542,7 +546,7 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
   /* Force the device to stereo before trying with (possibly) imultiple channels */
   adev->d->adrv_set_channels (mixer->masterdev, 2);
 
-  mixer->play_engine.channels = mixer->play_engine.channels =
+  mixer->play_engine.channels =
     adev->d->adrv_set_channels (mixer->masterdev,
 				mixer->play_engine.channels);
 
