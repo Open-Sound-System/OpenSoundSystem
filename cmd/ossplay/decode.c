@@ -26,10 +26,12 @@ typedef struct cradpcm_values {
 
 typedef struct verbose_values {
   char tstring[20];
+  double next_sec;
+  double tsecs;
+  double constant;
   unsigned int * datamark;
   int format;
   int ratio;
-  double constant;
 } verbose_values_t;
 
 typedef struct decoders_queue {
@@ -51,7 +53,6 @@ enum {
 extern int force_speed, force_fmt, force_channels, amplification;
 extern int audiofd, quitflag, verbose;
 extern char audio_devname[32];
-static double next_sec;
 
 static unsigned int decode_24 (unsigned char **, unsigned char *,
                                const unsigned int, void *);
@@ -103,6 +104,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
   switch (format)
     {
       case AFMT_MS_ADPCM:
+        if (metadata == NULL) goto exit;
         dec->metadata = metadata;
         dec->decoder = decode_msadpcm;
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
@@ -227,7 +229,6 @@ decode (int fd, unsigned int * datamark, int bsize, decoders_queue_t * dec)
 
   buf = ossplay_malloc (bsize * sizeof(char));
   *datamark = 0;
-  next_sec = 0;
 
   while (*datamark < filesize)
     {
@@ -291,7 +292,7 @@ int silence (unsigned int len, int speed)
 
   if (!(i = setup_device (audiofd, AFMT_U8, 1, speed))) return -1;
 
-  if (i == AFMT_S16_NE) len /= 4;
+  if (i == AFMT_S16_NE) len /= 2;
 
   memset (empty, 0, 1024 * sizeof (unsigned char));
 
@@ -329,10 +330,10 @@ decode_24 (unsigned char ** obuf, unsigned char * buf,
 static fib_values_t *
 setup_fib (int fd, int format)
 {
-  static const char CodeToDelta[16] = {
+  static const signed char CodeToDelta[16] = {
     -34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21
   };
-  static const char CodeToExpDelta[16] = {
+  static const signed char CodeToExpDelta[16] = {
     -128, -64, -32, -16, -8, -4, -2, -1, 0, 1, 2, 4, 8, 16, 32, 64
   };
   unsigned char buf;
@@ -507,7 +508,8 @@ decode_cr (unsigned char ** obuf, unsigned char * buf,
            const unsigned int l, void * metadata)
 {
   cradpcm_values_t * val = (cradpcm_values_t *) metadata;
-  int i, j, value, pred = val->pred, step = val->step;
+  int i, j, pred = val->pred, step = val->step;
+  unsigned char value;
   signed char sign;
 
   for (i=0; i < l; i++)
@@ -713,15 +715,21 @@ setup_verbose (int format, int speed, int channels, float ibits,
   val = ossplay_malloc (sizeof(verbose_values_t));
 
   if (*filesize == UINT_MAX)
-    strcpy (val->tstring, "unknown");
+    {
+      val->tsecs = UINT_MAX;
+      strcpy (val->tstring, "unknown");
+    }
   else
     {
-      char * p = totime (*filesize * 8 / (ibits * speed * channels));
+      char * p;
 
+      val->tsecs = *filesize * 8 / (ibits * speed * channels);
+      p = totime (val->tsecs);
       strcpy (val->tstring, p);
       ossplay_free (p);
     }
 
+  val->next_sec = 0;
   val->format = format;
   val->constant = ibits * speed * channels / 8;
   val->datamark = filesize;
@@ -785,8 +793,9 @@ decode_verbose (unsigned char ** obuf, unsigned char * buf,
 
   *obuf = buf;
   secs = (*val->datamark + l / val->ratio) / val->constant;
-  if (secs < next_sec) return l;
-  next_sec = secs + 0.2;
+  if (secs < val->next_sec) return l;
+  val->next_sec = secs + 0.2;
+  if (val->next_sec > val->tsecs) val->next_sec = val->tsecs;
 
   level = 0;
 

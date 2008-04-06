@@ -19,7 +19,7 @@
 
 int force_speed = -1, force_fmt = 0, force_channels = -1, amplification = 100;
 int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0;
-int raw_mode = 0, exitstatus = 0, loop = 0;
+int raw_file = 0, raw_mode = 0, exitstatus = 0, loop = 0;
 char audio_devname[32] = "/dev/dsp";
 char current_songname[64] = "";
 
@@ -138,6 +138,7 @@ usage (const char * prog)
   print_msg (HELPM, "            -c<channels>   Change number of channels.\n");
   print_msg (HELPM, "            -o<playtgt>|?  Select/Query output target.\n");
   print_msg (HELPM, "            -l             Loop playback indefinitely.\n");
+  print_msg (HELPM, "            -F             Treat all input as raw PCM.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
   exit (-1);
@@ -153,8 +154,8 @@ describe_error (void)
       print_msg (ERRORM, "\nThe device file was found in /dev but\n"
 	         "there is no driver for it currently loaded.\n"
 	         "\n"
-	         "You can start it by executing the /usr/local/bin/soundon\n"
-	         "command as super user (root).\n");
+	         "You can start it by executing the soundon command as\n"
+	         "super user (root).\n");
       break;
 
     case ENOSPC:
@@ -459,9 +460,9 @@ select_format (const char * optstr)
  */
   int i;
 
-  if ((*optstr == '?') || (*optstr == '\0'))
+  if ((!strcmp(optstr, "?")) || (*optstr == '\0'))
     {
-      print_msg (STARTM, "Supported format names are:\n");
+      print_msg (STARTM, "\nSupported format names are:\n\n");
       for (i = 0; format_a[i].name != NULL; i++)
         print_msg (CONTM, "%s ", format_a[i].name);
       print_msg (ENDM, "\n");
@@ -469,7 +470,7 @@ select_format (const char * optstr)
     }
 
   for (i = 0; format_a[i].name != NULL; i++)
-    if (!strcmp(format_a[i].name, optstr))
+    if (!strcasecmp(format_a[i].name, optstr))
       return format_a[i].fmt;
 
   print_msg (ERRORM, "Unsupported format name '%s'!\n", optstr);
@@ -504,7 +505,7 @@ parse_opts (int argc, char ** argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "Rc:d:f:g:hlo:qs:v")) != EOF)
+  while ((c = getopt (argc, argv, "FRc:d:f:g:hlo:qs:v")) != EOF)
     {
       switch (c)
 	{
@@ -558,6 +559,10 @@ parse_opts (int argc, char ** argv)
         case 'l':
           loop = 1;
           break;
+
+	case 'F':
+	  raw_file = 1;
+	  break;
 
 	default:
 	  usage (prog);

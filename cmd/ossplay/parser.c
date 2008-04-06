@@ -42,7 +42,7 @@ enum {
 };
 
 extern int audiofd, quitflag, quiet, verbose;
-extern int raw_mode, exitstatus, force_fmt;
+extern int raw_file, raw_mode, exitstatus, force_fmt;
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
@@ -101,6 +101,15 @@ play_file (const char * filename)
       perror_msg (filename);
       exitstatus++;
       return;
+    }
+
+  if (raw_file)
+    {
+      print_msg (NORMALM, "%s: Playing RAW file.\n", filename);
+
+      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                    DEFAULT_SPEED, NULL);
+      goto done;
     }
 
   if ((l = read (fd, buf, 12)) == -1)
@@ -187,7 +196,6 @@ play_file (const char * filename)
 
   if (strcmp (suffix, ".au") == 0 || strcmp (suffix, ".AU") == 0)
     {				/* Raw mu-Law data */
-
       print_msg (NORMALM, "Playing raw mu-Law file %s\n", filename);
 
       decode_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
@@ -371,7 +379,8 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
       {192, 64},
       {240, 0},
       {460, -208},
-      {392, -232} }
+      {392, -232} },
+    DEFAULT_CHANNELS
   };
 
   if (type == _8SVX_FILE) format = AFMT_S8;
