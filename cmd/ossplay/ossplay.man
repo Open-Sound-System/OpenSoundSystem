@@ -2,7 +2,7 @@ NAME
 ossplay - Open Sound System playback program.
 
 SYNOPSIS
-ossplay [-Rhlvq] [ -b bits ] [ -c channels ] [ -d devname ] [ -g gain ] 
+ossplay [-Rhlvq] [ -c channels ] [ -d devname ] [ -f fmtname ] [ -g gain ] 
         [ -o playtarget | ? ] [ -s rate ] filename | - ...
 
 DESCRIPTION
@@ -18,8 +18,9 @@ OPTIONS
 -l		Loop playback indefinately.
 -d<devname> 	Select <devname> as the device (eg -d/dev/dsp2).
 -s<rate> 	Select the playback rate for raw PCM audio (eg -s48000).
--b<bits> 	Select the number of bits/sample (8/16/24/32) (eg. -b8 or -b16).
 -c<channels 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc.
+-f<fmtname> 	Select the input format (eg -fU8 or -fS16_BE).
+-f?		Prints the list of supported format names.
 -o<playtarget> 	Selects the play target name if the device supports multiple
 		play targets (such as front, rear, side). 
 -o? 		Prints the list of available play targets.

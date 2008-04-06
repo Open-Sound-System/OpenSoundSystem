@@ -17,22 +17,64 @@
 
 #include <signal.h>
 
-int force_speed = -1, force_bits = -1, force_channels = -1, amplification = 100;
+int force_speed = -1, force_fmt = -1, force_channels = -1, amplification = 100;
 int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0;
 int raw_mode = 0, exitstatus = 0, loop = 0;
 char audio_devname[32] = "/dev/dsp";
 static char current_songname[64] = "";
 
-static int prev_speed = 0, prev_bits = 0, prev_channels = 0;
+static int prev_speed = 0, prev_fmt = 0, prev_channels = 0;
 static char *playtgt = NULL;
+
+static const format_t format_a[] = {
+  {"S8",		AFMT_S8,		AFMT_S16_NE},
+  {"U8",		AFMT_U8,		AFMT_S16_NE},
+  {"S16_LE",		AFMT_S16_LE,
+#if AFMT_S16_LE == AFMT_S16_OE
+  AFMT_S16_BE},
+#else
+  0},
+#endif
+  {"S16_BE",		AFMT_S16_BE,
+#if AFMT_S16_BE == AFMT_S16_OE
+  AFMT_S16_LE},
+#else
+  0},
+#endif
+  {"U16_LE",		AFMT_U16_LE,		0},
+  {"U16_BE",		AFMT_U16_BE,		0},
+  {"S24_LE",		AFMT_S24_LE,		0},
+  {"S24_BE",		AFMT_S24_BE,		0},
+  {"S32_LE",		AFMT_S32_LE,
+#if AFMT_S32_LE == AFMT_S32_OE
+  AFMT_S32_BE},
+#else
+  0},
+#endif
+  {"S32_BE",		AFMT_S32_BE,
+#if AFMT_S32_BE == AFMT_S32_OE
+  AFMT_S32_LE},
+#else
+  0},
+#endif
+  {"A_LAW",		AFMT_A_LAW,		AFMT_S16_NE},
+  {"MU_LAW",		AFMT_MU_LAW,		AFMT_S16_NE},
+  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		0},
+  {"MS_ADPCM",		AFMT_MS_ADPCM,		0},
+  {"FLOAT",		AFMT_FLOAT,		0},
+  {"S24_PACKED",	AFMT_S24_PACKED,	0},
+  {"SPDIF_RAW",		AFMT_SPDIF_RAW,		0},
+  {NULL,		0,			0}
+};
 
 static void cleanup (void);
 static void describe_error (void);
 static const char * filepart (const char *);
 static void find_devname (char *, const char *);
+static int select_format (const char *);
 static void select_playtgt (const char *);
 static void open_device (void);
-static void usage (char *);
+static void usage (const char *);
 
 static const char *
 filepart (const char *name)
@@ -80,7 +122,7 @@ be_int (const unsigned char * p, int l)
 }
 
 static void
-usage (char * prog)
+usage (const char * prog)
 {
   print_msg (HELPM, "Usage: %s [options...] filename...\n", prog);
   print_msg (HELPM, "  Options:  -v             Verbose output.\n");
@@ -88,7 +130,7 @@ usage (char * prog)
   print_msg (HELPM, "            -d<devname>    Change output device.\n");
   print_msg (HELPM, "            -g<gain>       Change gain.\n");
   print_msg (HELPM, "            -s<rate>       Change playback rate.\n");
-  print_msg (HELPM, "            -b<bits>       Change number of bits.\n");
+  print_msg (HELPM, "            -f<fmt>|?      Change/Query input format.\n");
   print_msg (HELPM, "            -c<channels>   Change number of channels.\n");
   print_msg (HELPM, "            -o<playtgt>|?  Select/Query output target.\n");
   print_msg (HELPM, "            -l             Loop playback indefinitely.\n");
@@ -229,7 +271,7 @@ setup_device (int fd, int format, int channels, int speed)
 {
   int tmp;
 
-  if (speed != prev_speed || format != prev_bits || channels != prev_channels)
+  if (speed != prev_speed || format != prev_fmt || channels != prev_channels)
     {
 #if 0
       ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
@@ -249,7 +291,7 @@ setup_device (int fd, int format, int channels, int speed)
 
   prev_speed = speed;
   prev_channels = channels;
-  prev_bits = format;
+  prev_fmt = format;
 
   tmp = APF_NORMAL;
   ioctl (audiofd, SNDCTL_DSP_PROFILE, &tmp);
@@ -268,8 +310,18 @@ setup_device (int fd, int format, int channels, int speed)
 
   if (tmp != format)
     {
+      int i;
+
       print_msg (ERRORM, "%s doesn't support this audio format (%x/%x).\n",
-	         audio_devname, format, tmp);
+                 audio_devname, format, tmp);
+      for (i = 0; format_a[i].name != NULL; i++)
+        if (format_a[i].fmt == format)
+          {
+            tmp = format_a[i].may_conv;
+            if (tmp == 0) return 0;
+            print_msg (WARNM, "Converting to format %x\n", tmp);
+            return setup_device (fd, tmp, channels, speed);
+          }
       return 0;
     }
 
@@ -304,7 +356,7 @@ setup_device (int fd, int format, int channels, int speed)
 	         tmp, speed);
     }
 
-  return 1;
+  return format;
 }
 
 void perror_msg (const char * s)
@@ -319,10 +371,10 @@ void print_msg (char type, const char * fmt, ...)
   va_start (ap, fmt);
   switch (type)
     {
-      case WARNM:
-        if (quiet == 2) break;
       case NOTIFYM:
         if (quiet) break;
+      case WARNM:
+        if (quiet == 2) break;
       case ERRORM:
         vfprintf (stderr, fmt, ap);
         break;
@@ -442,6 +494,33 @@ select_playtgt (const char * playtgt)
   exit (-1);
 }
 
+static int
+select_format (const char * optstr)
+{
+/*
+ * Handling of the -f command line option (force input format).
+ *
+ * Empty or "?" shows the supported format names.
+ */
+  int i;
+
+  if ((*optstr == '?') || (*optstr == '\0'))
+    {
+      print_msg (STARTM, "Supported format names are:\n");
+      for (i = 0; format_a[i].name != NULL; i++)
+        print_msg (CONTM, "%s ", format_a[i].name);
+      print_msg (ENDM, "\n");
+      exit (0);
+    }
+
+  for (i = 0; format_a[i].name != NULL; i++)
+    if (!strcmp(format_a[i].name, optstr))
+      return format_a[i].fmt;
+
+  print_msg (ERRORM, "Unsupported format name '%s'!\n", optstr);
+  exit (-1);
+}
+
 static void get_int (int signum)
 {
 #if 0
@@ -470,7 +549,7 @@ main (int argc, char **argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "Rb:c:d:g:hlo:qs:v")) != EOF)
+  while ((c = getopt (argc, argv, "Rc:d:f:g:hlo:qs:v")) != EOF)
     {
       switch (c)
 	{
@@ -505,8 +584,8 @@ main (int argc, char **argv)
 	  break;
 #endif
 
-	case 'b':
-	  sscanf (optarg, "%d", &force_bits);
+	case 'f':
+	  force_fmt = select_format (optarg);
 	  break;
 
 	case 's':

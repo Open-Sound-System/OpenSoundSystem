@@ -48,7 +48,7 @@ enum {
 #define FREE_OBUF (1 << OBUF)
 #define FREE_META (1 << META)
 
-extern int force_speed, force_bits, force_channels, amplification;
+extern int force_speed, force_fmt, force_channels, amplification;
 extern int audiofd, quitflag, quiet, verbose;
 extern char audio_devname[32];
 static double next_sec;
@@ -78,6 +78,7 @@ static cradpcm_values_t * setup_cr (int, int);
 static fib_values_t * setup_fib (int, int);
 static verbose_values_t * setup_verbose (int, int, int, float,
                                          unsigned int *, int);
+static decoders_queue_t * setup_normalize (int *, int *, decoders_queue_t *);
 static char * totime (double);
 
 int
@@ -90,13 +91,14 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
 
   if (force_speed != -1) speed = force_speed;
   if (force_channels != -1) channels = force_channels;
-  if (force_bits != -1) format = force_bits;
+  if (force_fmt != -1) format = force_fmt;
 
   ibits = format2ibits (format);
 
   if (filesize < 2) return 0;
   decoders = dec = ossplay_malloc (sizeof(decoders_queue_t));
   dec->next = NULL;
+  dec->flag = 0;
 
   switch (format)
     {
@@ -167,31 +169,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
     }
 
   if ((amplification != 100) || (verbose))
-    {
-      if ((format == AFMT_S16_OE) || (format == AFMT_S32_OE))
-        {
-          decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
-          decoders = decoders->next;
-          decoders->decoder = decode_endian;
-          decoders->metadata = (void *)(long)format;
-          format = (format == AFMT_S16_OE)?AFMT_S16_NE:AFMT_S32_NE;
-          decoders->next = NULL;
-          decoders->outbuf = NULL;
-          decoders->flag = 0;
-        }
-      else if (format2obits (format) == 8)
-        {
-          decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
-          decoders = decoders->next;
-          decoders->decoder = decode_8_to_s16;
-          decoders->metadata = (void *)(long)format;
-          decoders->next = NULL;
-          obsize *= 2;
-          decoders->outbuf = ossplay_malloc (obsize);
-          decoders->flag = FREE_OBUF;
-          format = AFMT_S16_NE;
-        }
-    }
+    decoders = setup_normalize (&format, &obsize, decoders);
 
   if ((amplification > 0) && (amplification != 100))
     {
@@ -217,7 +195,13 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
       decoders->flag = FREE_META;
     }
 
-  if (!setup_device (fd, format, channels, speed)) return -2;
+  if (!(res = setup_device (fd, format, channels, speed)))
+    {
+      res = -2;
+      goto exit;
+    }
+  if (res != format)
+    decoders = setup_normalize (&format, &obsize, decoders);
   res = decode (fd, &filesize, bsize, dec);
 
 exit:
@@ -925,4 +909,33 @@ format2obits (int format)
       case AFMT_QUERY:
       default: return 0;
     }
+}
+
+static decoders_queue_t *
+setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
+{
+  if ((*format == AFMT_S16_OE) || (*format == AFMT_S32_OE))
+    {
+      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders = decoders->next;
+      decoders->decoder = decode_endian;
+      decoders->metadata = (void *)(long)*format;
+      *format = (*format == AFMT_S16_OE)?AFMT_S16_NE:AFMT_S32_NE;
+      decoders->next = NULL;
+      decoders->outbuf = NULL;
+      decoders->flag = 0;
+    }
+  else if (format2obits (*format) == 8)
+    {
+      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders = decoders->next;
+      decoders->decoder = decode_8_to_s16;
+      decoders->metadata = (void *)(long)*format;
+      decoders->next = NULL;
+      *obsize *= 2;
+      decoders->outbuf = ossplay_malloc (*obsize);
+      decoders->flag = FREE_OBUF;
+      *format = AFMT_S16_NE;
+    }
+  return decoders;
 }

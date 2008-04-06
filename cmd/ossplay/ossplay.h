@@ -38,6 +38,13 @@ enum {
 #define AFMT_FIBO_DELTA	-(AFMT_U8 | 0x10000000)
 #define AFMT_EXP_DELTA	-(AFMT_U8 | 0x20000000)
 
+typedef struct fmt_struct {
+  const char const * name;
+  const int fmt;
+  const int may_conv;
+}
+format_t;
+
 typedef struct {
   int coeff1, coeff2;
 }
