@@ -25,6 +25,7 @@ enum {
   NORMALM,
   NOTIFYM,
   UPDATEM,
+  CLEARUPDATEM,
   WARNM,
   STARTM,
   CONTM,
@@ -61,10 +62,14 @@ typedef struct msadpcm_values {
 msadpcm_values_t;
 
 int be_int (const unsigned char *, int);
+const char * filepart (const char *);
 int le_int (const unsigned char *, int);
-void * ossplay_malloc (size_t sz);
+void * ossplay_malloc (size_t);
+void ossplay_free (void *);
+char * ossplay_strdup (const char *);
+int parse_opts (int, char **);
 void perror_msg (const char * s);
-void print_msg (char type, const char * fmt, ...);
+void print_msg (char, const char *, ...);
 void print_verbose (int, int, int);
 int setup_device (int, int, int, int);
 

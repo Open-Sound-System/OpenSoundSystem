@@ -17,11 +17,11 @@
 
 #include <signal.h>
 
-int force_speed = -1, force_fmt = -1, force_channels = -1, amplification = 100;
+int force_speed = -1, force_fmt = 0, force_channels = -1, amplification = 100;
 int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0;
 int raw_mode = 0, exitstatus = 0, loop = 0;
 char audio_devname[32] = "/dev/dsp";
-static char current_songname[64] = "";
+char current_songname[64] = "";
 
 static int prev_speed = 0, prev_fmt = 0, prev_channels = 0;
 static char *playtgt = NULL;
@@ -61,22 +61,26 @@ static const format_t format_a[] = {
   {"MU_LAW",		AFMT_MU_LAW,		AFMT_S16_NE},
   {"IMA_ADPCM",		AFMT_IMA_ADPCM,		0},
   {"MS_ADPCM",		AFMT_MS_ADPCM,		0},
+  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	0},
+  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	0},
+  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	0},
   {"FLOAT",		AFMT_FLOAT,		0},
   {"S24_PACKED",	AFMT_S24_PACKED,	0},
   {"SPDIF_RAW",		AFMT_SPDIF_RAW,		0},
+  {"FIBO_DELTA",	AFMT_FIBO_DELTA,	0},
+  {"EXP_DELTA",		AFMT_EXP_DELTA,		0},
   {NULL,		0,			0}
 };
 
 static void cleanup (void);
 static void describe_error (void);
-static const char * filepart (const char *);
 static void find_devname (char *, const char *);
 static int select_format (const char *);
 static void select_playtgt (const char *);
 static void open_device (void);
 static void usage (const char *);
 
-static const char *
+const char *
 filepart (const char *name)
 {
   const char * s = name;
@@ -250,21 +254,6 @@ find_devname (char * devname, const char * num)
   close (mixer_fd);
 }
 
-void *
-ossplay_malloc (size_t sz)
-{
-  void *ptr;
-
-  if (sz == 0) return NULL;
-  ptr = malloc (sz);
-  if (ptr == NULL) {
-    /* Not all libcs support using %z for size_t */
-    fprintf (stderr, "Can't allocate %lu bytes\n", (unsigned long)sz);
-    exit (-1);
-  }
-  return ptr;
-}
-
 /*ARGSUSED*/
 int
 setup_device (int fd, int format, int channels, int speed)
@@ -357,40 +346,6 @@ setup_device (int fd, int format, int channels, int speed)
     }
 
   return format;
-}
-
-void perror_msg (const char * s)
-{
-  perror (s);
-}
-
-void print_msg (char type, const char * fmt, ...)
-{
-  va_list ap;
-
-  va_start (ap, fmt);
-  switch (type)
-    {
-      case NOTIFYM:
-        if (quiet) break;
-      case WARNM:
-        if (quiet == 2) break;
-      case ERRORM:
-        vfprintf (stderr, fmt, ap);
-        break;
-      case UPDATEM:
-        fprintf (stdout, "\r");
-        vfprintf (stdout, fmt, ap);
-        fflush (stdout);
-        break;
-      case HELPM:
-        vfprintf (stdout, fmt, ap);
-        break;
-      default: /* case NORMALM, STARTM, CONTM, ENDM: */
-        if (!quiet) vfprintf (stdout, fmt, ap);
-        break;
-    }
-  va_end (ap);
 }
 
 void 
@@ -541,11 +496,11 @@ static void cleanup (void)
 }
 
 int
-main (int argc, char **argv)
+parse_opts (int argc, char ** argv)
 {
-  char *prog;
+  char * prog;
   extern int optind;
-  int i, c;
+  int c;
 
   prog = argv[0];
 
@@ -611,7 +566,6 @@ main (int argc, char **argv)
     }
 
   argc -= optind - 1;
-  argv += optind - 1;
 
   open_device ();
 
@@ -625,14 +579,5 @@ main (int argc, char **argv)
   signal (SIGQUIT, get_int);
 #endif
 
-  do for (i = 1; i < argc; i++)
-    {
-      strncpy (current_songname, filepart (argv[i]), sizeof (current_songname));
-      current_songname[sizeof (current_songname) - 1] = 0;
-      play_file (argv[i]);
-      quitflag = 0;
-    }
-  while (loop);
-
-  return exitstatus;
+  return optind;
 }

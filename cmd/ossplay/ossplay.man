@@ -2,7 +2,7 @@ NAME
 ossplay - Open Sound System playback program.
 
 SYNOPSIS
-ossplay [-Rhlvq] [ -c channels ] [ -d devname ] [ -f fmtname ] [ -g gain ] 
+ossplay [-Rhlvq] [ -c channels ] [ -d devname ] [ -f fmtname | ? ] [ -g gain ] 
         [ -o playtarget | ? ] [ -s rate ] filename | - ...
 
 DESCRIPTION

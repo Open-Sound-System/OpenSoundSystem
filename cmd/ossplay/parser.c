@@ -1,3 +1,8 @@
+/*
+ * Purpose: File format parse routines for ossplay
+ */
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
+
 #include "ossplay.h"
 #include "parser.h"
 #include "decode.h"
@@ -455,7 +460,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                            "%s: error: %c%c%c%c compression is not supported\n",
                            filename, *(buf + 18), *(buf + 19),
                            *(buf + 20), *(buf + 21));
-                  if (force_fmt == -1) return;
+                  if (force_fmt == 0) return;
               }
               break;
           case SSND_HUNK:
@@ -509,7 +514,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 default:
                  print_msg (ERRORM, "%s: Unsupported compression %d\n",
                             filename, buf[15]);
-                if (force_fmt == -1) return;
+                if (force_fmt == 0) return;
               }
             found |= COMM_FOUND;
             break;
@@ -552,7 +557,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 case 6: format = AFMT_IMA_ADPCM; break;
                 default:
                   print_msg (ERRORM, "%s: format not supported", filename);
-                  if (force_fmt == -1) return;
+                  if (force_fmt == 0) return;
               }
             found |= COMM_FOUND;
             break;
@@ -608,7 +613,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 default:
                   print_msg (ERRORM, "%s: Unsupported wave format %#x\n",
                              filename, format);
-                  if (force_fmt == -1) return;
+                  if (force_fmt == 0) return;
               }
             found |= COMM_FOUND;
 
@@ -770,7 +775,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
     case 7:
       print_msg (ERRORM, "%s: Floating point encoded .au files are not supported",
                  filename);
-      if (force_fmt == -1) return;
+      if (force_fmt == 0) return;
 
     case 23:
     case 24:
@@ -778,7 +783,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
     case 26:
       print_msg (ERRORM, "%s: G.72x ADPCM encoded .au files are not supported",
                  filename);
-      if (force_fmt == -1) return;
+      if (force_fmt == 0) return;
 
     case 27:
       format = AFMT_A_LAW;
@@ -786,7 +791,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
 
     default:
       print_msg (ERRORM, "%s: Unknown encoding %d.\n", filename, fmt);
-      if (force_fmt == -1) return;
+      if (force_fmt == 0) return;
     }
 
   if (!quiet)
@@ -921,7 +926,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
                      print_msg (ERRORM,
                                 "%s: encoding %d is not supported\n",
                                 filename, fmt);
-                     if (force_fmt == -1) return;
+                     if (force_fmt == 0) return;
                  }
             }
 
@@ -985,7 +990,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                if (force_fmt == -1) return;
+                if (force_fmt == 0) return;
             }
           plock = 1;
           break;
@@ -1012,7 +1017,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                if (force_fmt == -1) return;
+                if (force_fmt == 0) return;
             }
 
           if (decode_sound (fd, len, format, channels, speed, NULL) < 0)

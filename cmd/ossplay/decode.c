@@ -49,7 +49,7 @@ enum {
 #define FREE_META (1 << META)
 
 extern int force_speed, force_fmt, force_channels, amplification;
-extern int audiofd, quitflag, quiet, verbose;
+extern int audiofd, quitflag, verbose;
 extern char audio_devname[32];
 static double next_sec;
 
@@ -83,7 +83,7 @@ static char * totime (double);
 
 int
 decode_sound (int fd, unsigned int filesize, int format, int channels,
-            int speed, void * metadata)
+              int speed, void * metadata)
 {
   decoders_queue_t * dec, * decoders;
   int bsize, obsize, res = -2;
@@ -91,7 +91,7 @@ decode_sound (int fd, unsigned int filesize, int format, int channels,
 
   if (force_speed != -1) speed = force_speed;
   if (force_channels != -1) channels = force_channels;
-  if (force_fmt != -1) format = force_fmt;
+  if (force_fmt != 0) format = force_fmt;
 
   ibits = format2ibits (format);
 
@@ -208,10 +208,10 @@ exit:
   decoders = dec;
   while (decoders != NULL)
     {
-      if (decoders->flag & FREE_META) free (decoders->metadata);
-      if (decoders->flag & FREE_OBUF) free (decoders->outbuf);
+      if (decoders->flag & FREE_META) ossplay_free (decoders->metadata);
+      if (decoders->flag & FREE_OBUF) ossplay_free (decoders->outbuf);
       decoders = decoders->next;
-      free (dec);
+      ossplay_free (dec);
       dec = decoders;
     }
 
@@ -235,15 +235,15 @@ decode (int fd, unsigned int * datamark, int bsize, decoders_queue_t * dec)
 
       if (quitflag == 1)
         {
-          free (buf);
+          ossplay_free (buf);
           ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
-          if (verbose) print_msg (NORMALM,  "\r\n");
+          if (verbose) print_msg (CLEARUPDATEM, "");
           return -1;
         }
       if ((outl = read (fd, buf, bsize)) <= 0)
         {
-          free (buf);
-          if (verbose) print_msg (NORMALM, "\r\n");
+          ossplay_free (buf);
+          if (verbose) print_msg (CLEARUPDATEM, "");
           if (quitflag == 1)
             {
               ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
@@ -265,11 +265,11 @@ decode (int fd, unsigned int * datamark, int bsize, decoders_queue_t * dec)
 
       if (write (audiofd, obuf, outl) == -1)
         {
-          free (buf);
+          ossplay_free (buf);
           if ((errno == EINTR) && (quitflag == 1))
             {
               ioctl (audiofd, SNDCTL_DSP_HALT_OUTPUT, NULL);
-              if (verbose) print_msg (NORMALM, "\r\n");
+              if (verbose) print_msg (CLEARUPDATEM, "");
               return -1;
             }
            perror_msg (audio_devname);
@@ -279,8 +279,8 @@ decode (int fd, unsigned int * datamark, int bsize, decoders_queue_t * dec)
       *datamark += bsize;
     }
 
-  free (buf);
-  if (verbose) print_msg (NORMALM, "\r\n");
+  ossplay_free (buf);
+  if (verbose) print_msg (CLEARUPDATEM, "");
   return 0;
 }
 
@@ -289,7 +289,9 @@ int silence (unsigned int len, int speed)
   int i;
   unsigned char empty[1024];
 
-  if (!setup_device (audiofd, AFMT_U8, 1, speed)) return -1;
+  if (!(i = setup_device (audiofd, AFMT_U8, 1, speed))) return -1;
+
+  if (i == AFMT_S16_NE) len /= 4;
 
   memset (empty, 0, 1024 * sizeof (unsigned char));
 
@@ -473,7 +475,7 @@ decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
     15104, 14592, 16128, 15616, 13056, 12544, 14080, 13568, 
     344,   328,   376,   360,   280,   264,   312,   296, 
     472,   456,   504,   488,   408,   392,   440,   424, 
-    88,    72,    120,   104,   24,    8,    56,    40, 
+    88,    72,    120,   104,   24,    8,     56,    40, 
     216,   200,   248,   232,   152,   136,   184,   168, 
     1376,  1312,  1504,  1440,  1120,  1056,  1248,  1184, 
     1888,  1824,  2016,  1952,  1632,  1568,  1760,  1696, 
@@ -717,7 +719,7 @@ setup_verbose (int format, int speed, int channels, float ibits,
       char * p = totime (*filesize * 8 / (ibits * speed * channels));
 
       strcpy (val->tstring, p);
-      free (p);
+      ossplay_free (p);
     }
 
   val->format = format;
@@ -736,7 +738,7 @@ totime (double secs)
 
   snprintf (time, 20, "%.2lu:%05.2f", min, secs - min * 60);
 
-  return strdup (time);
+  return ossplay_strdup (time);
 }
 
 static unsigned int
@@ -784,7 +786,6 @@ decode_verbose (unsigned char ** obuf, unsigned char * buf,
   *obuf = buf;
   secs = (*val->datamark + l / val->ratio) / val->constant;
   if (secs < next_sec) return l;
-  if (next_sec == 0) secs = 0;
   next_sec = secs + 0.2;
 
   level = 0;
@@ -838,7 +839,7 @@ decode_verbose (unsigned char ** obuf, unsigned char * buf,
 
   rtime = totime (secs);
   print_msg (UPDATEM, "Time: %s of %s VU %-11s", rtime, val->tstring, template);
-  free (rtime);
+  ossplay_free (rtime);
 
   return l;
 }
