@@ -119,6 +119,13 @@ maestro	pci125d,1978	ESS Maestro-2E
 maestro	pci1285,100	ESS Maestro-1 
 midiloop	MIDILOOP	OSS MIDI Loopback driver
 neomagic	pci10c8,8005	Neomagic NM2200AV
+oss_sblive	pci1102,2	Creative Sound Blaster Live 
+oss_sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
+oss_sblive	pcs1102,8061	Creative Sound Blaster Live 5.1/Platinum IR
+oss_sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
+oss_sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
+oss_sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
+oss_sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
 ossusb	usbif,class1	Generic USB audio/MIDI device (BETA)
 ossusb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)
 ossusb	usbif41e,3010	Creative Sound Blaster MP3+ USB
@@ -150,13 +157,6 @@ ossusb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
 riptide	pci127a,4310	Conexant Riptide 
 riptide	pci127a,4320	Conexant Riptide
 s3vibes	pci5333,ca00	S3 Sonic Vibes
-sblive	pci1102,2	Creative Sound Blaster Live 
-sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
-sblive	pcs1102,8061	Creative Sound Blaster Live 5.1/Platinum IR
-sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
-sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
-sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
-sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
 sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
 sbxfi	pci1102,5	Creative SB X-Fi (NOT SUPPORTED YET)
 softoss	SOFTOSS	OSS Virtual mixer/synth driver

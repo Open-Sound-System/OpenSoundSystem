@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2005. All rights reserved.
 
-#include "sblive_cfg.h"
+#include "oss_sblive_cfg.h"
 #include "midi_core.h"
 #include "oss_pci.h"
 #include "remux.h"

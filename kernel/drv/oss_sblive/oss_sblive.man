@@ -1,5 +1,5 @@
 NAME
- sblive - Creative Labs Sound Blaster Live/Audigy family driver.
+ oss_sblive - Creative Labs Sound Blaster Live/Audigy family driver.
 
 DESCRIPTION
   Open Sound System driver for Creative Labs Sound Blaster Live!, Audigy, 
@@ -223,7 +223,7 @@ o EMU Wavetable MIDI synthesizer is not supported
 o AC3 passthrough only supported on Audigy/Audigy but not on SB Live! devices.
 
 FILES
-CONFIGFILEPATH/sblive.conf Device configuration file
+CONFIGFILEPATH/oss_sblive.conf Device configuration file
 
 AUTHOR
   4Front Technologies
