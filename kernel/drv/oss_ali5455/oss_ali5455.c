@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000. All rights reserved.
 
-#include "ali5455_cfg.h"
+#include "oss_ali5455_cfg.h"
 #include <oss_pci.h>
 #include <ac97.h>
 

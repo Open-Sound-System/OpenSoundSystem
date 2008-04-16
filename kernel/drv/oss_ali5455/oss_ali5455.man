@@ -1,5 +1,5 @@
 NAME
-ali5455 - ALIM5455 audio driver.
+oss_ali5455 - ALIM5455 audio driver.
 
 DESCRIPTION
 Open Sound System driver for onboard audio on ALI M5455 motherboards. This
@@ -14,7 +14,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/ali5455.conf Device configuration file
+CONFIGFILEPATH/oss_ali5455.conf Device configuration file
 
 AUTHOR
 4Front Technologies
