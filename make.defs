@@ -34,7 +34,7 @@ purge:
 	echo "include make.defs" >> Makefile
 
 config:
-	cc setup/srcconf.c -o srcconf
+	$(HOSTCC) setup/srcconf.c -o srcconf
 	./srcconf $(CONFIG_FLAGS)
 	rm -f srcconf
 	#make dirs
@@ -50,7 +50,7 @@ dirs:
 	-mkdir $(MODDIR)
 
 $(TOPDIR)/ossmkdep:	$(TOPDIR)/utils/ossmkdep.c
-	$(CC) -g $(TOPDIR)/utils/ossmkdep.c -o $(TOPDIR)/ossmkdep
+	$(HOSTCC) -g $(TOPDIR)/utils/ossmkdep.c -o $(TOPDIR)/ossmkdep
 
 dep_local: $(TOPDIR)/ossmkdep
 	rm -f .depend

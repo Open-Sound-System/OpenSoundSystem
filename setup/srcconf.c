@@ -83,6 +83,9 @@ static char this_os[64] = "kernel/OS/SunOS";
 static int kernelonly = 0;
 static int useronly = 0;
 
+char *hostcc="cc";
+char *targetcc="cc";
+
 static int nincludes = 0;
 static char *includes[MAX_INCLUDES];
 static int do_cleanup = 0;
@@ -614,6 +617,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   fprintf (f, "# Makefile for %s module %s\n\n", conf.project_name, name);
   fprintf (f, "CC=%s\n", conf.ccomp);
+  fprintf (f, "HOSTCC=%s\n", hostcc);
   fprintf (f, "CPLUSPLUS=%s\n", conf.cplusplus);
 #if defined(__SCO_VERSION__)
   if (*conf.cflags != 0)

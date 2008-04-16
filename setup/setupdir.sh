@@ -143,6 +143,11 @@ then
 	echo '#define OSS_LICENSE "'`cat $SRCDIR/.license`'"' >> kernel/framework/include/buildid.h
 fi
 
+if test "$uOSS " = "1 "
+then
+	echo '#define uOSS' >> kernel/framework/include/buildid.h
+fi
+
 if test "$USE_REGPARM " = "1 "
 then
 	echo "1" > ./regparm

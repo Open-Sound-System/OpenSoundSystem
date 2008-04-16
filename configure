@@ -27,6 +27,11 @@ do
 		export NO_REGPARM=1
 		;;
 
+   	"--target=uclinux-blackfin")
+		export CROSSCOMPILE=uclinux-blackfin
+		export uOSS=1
+		;;
+
 	*)
 
 		echo $0: Unrecognized command line option $1
@@ -37,6 +42,7 @@ do
 			echo
 			echo Permitted command line arguments are:
 			echo
+			echo "   --target=uclinux-blackfin      - Configure for uClinux/Blackfin target (EXPERIMENTAL)"
 			echo "   --regparm      - Configure for CONFIG_REGPARM kernels"
 			echo "   --no-regparm   - Configure for kernels without CONFIG_REGPARM option."
 			echo "NOTE! --regparm/--no-regparm is normally detected"

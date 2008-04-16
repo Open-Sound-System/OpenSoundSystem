@@ -282,6 +282,7 @@ typedef struct
 #define PIN_IN		1
 #define PIN_MIC		2
 #define PIN_OUT		3
+#define PIN_HEADPHONE	4
   hdaudio_endpointinfo_t *endpoint;
   int current_selector;
   int rgbcolor;	/* RGB value of the jack color */
