@@ -1,5 +1,5 @@
 NAME
-atiixp - ATI IXP southbridge audio driver.
+oss_atiaudio - ATI IXP southbridge audio driver.
 
 DESCRIPTION
 Open Sound System driver for ATI IXP 150/200/250 audio controller
@@ -12,7 +12,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/atiixp.conf Device configuration file
+CONFIGFILEPATH/oss_atiaudio.conf Device configuration file
 
 AUTHOR
 4Front Technologies

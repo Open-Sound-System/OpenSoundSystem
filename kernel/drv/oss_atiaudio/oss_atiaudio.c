@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2004-2005. All rights reserved.
 
-#include "atiaudio_cfg.h"
+#include "oss_atiaudio_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 

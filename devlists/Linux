@@ -12,9 +12,6 @@ apci97	pci1274,1371	Creative AudioPCI97 (ES1371/ES1373)
 apci97	pci1274,5880	Creative Sound Blaster PCI128 (5880B)
 apci97	pci1274,8001	Creative Sound Blaster PCI128 (CT5880)
 apci97	pci1274,8002	Creative Sound Blaster PCI128 (5880A)
-atiaudio	pci1002,4341	ATI IXP200
-atiaudio	pci1002,4361	ATI IXP300
-atiaudio	pci1002,4370	ATI IXP400
 audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 audioloop	AUDIOLOOP	OSS loopback audio driver
 audiopci	pci1274,5000	Creative AudioPCI (ES1370)
@@ -119,6 +116,9 @@ maestro	pci125d,1978	ESS Maestro-2E
 maestro	pci1285,100	ESS Maestro-1 
 midiloop	MIDILOOP	OSS MIDI Loopback driver
 neomagic	pci10c8,8005	Neomagic NM2200AV
+oss_atiaudio	pci1002,4341	ATI IXP200
+oss_atiaudio	pci1002,4361	ATI IXP300
+oss_atiaudio	pci1002,4370	ATI IXP400
 oss_sblive	pci1102,2	Creative Sound Blaster Live 
 oss_sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
 oss_sblive	pcs1102,8061	Creative Sound Blaster Live 5.1/Platinum IR
