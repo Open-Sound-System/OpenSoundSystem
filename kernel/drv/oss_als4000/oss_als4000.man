@@ -1,5 +1,5 @@
 NAME
-als4000 - ALS4000 audio driver.
+oss_als4000 - ALS4000 audio driver.
 
 DESCRIPTION
 Open Sound System driver for Avance Logic ALS4000 based soundcards.
@@ -16,7 +16,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/als4000.conf
+CONFIGFILEPATH/oss_als4000.conf
 
 AUTHOR
 4Front Technologies

@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "als4000_cfg.h"
+#include "oss_als4000_cfg.h"
 #include "oss_pci.h"
 
 #define ALS_VENDOR_ID	0x4005
