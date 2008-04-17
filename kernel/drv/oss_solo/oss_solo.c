@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "solo_cfg.h"
+#include "oss_solo_cfg.h"
 #include "oss_pci.h"
 
 #define ESS_VENDOR_ID	0x125d
@@ -1072,7 +1072,7 @@ init_solo (solo_devc * devc)
 }
 
 int
-solo_attach (oss_device_t * osdev)
+oss_solo_attach (oss_device_t * osdev)
 {
 
   unsigned char pci_irq_line, pci_revision;
@@ -1182,7 +1182,7 @@ solo_attach (oss_device_t * osdev)
 
 
 int
-solo_detach (oss_device_t * osdev)
+oss_solo_attach (oss_device_t * osdev)
 {
   solo_devc *devc = (solo_devc *) osdev->devc;
 

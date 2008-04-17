@@ -1,5 +1,5 @@
 NAME
-solo - ESS Solo-1 audio driver
+oss_solo - ESS Solo-1 audio driver
 
 DESCRIPTION
 Open Sound System driver for ESS Solo1/1938/1968 audio controllers.
@@ -12,7 +12,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/solo.conf Device configuration file
+CONFIGFILEPATH/oss_solo.conf Device configuration file
 
 AUTHOR
 4Front Technologies
