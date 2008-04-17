@@ -4,7 +4,7 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1999. All rights reserved.
 
-#include "neomagic_cfg.h"
+#include "oss_neomagic_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "neomagic.h"
@@ -1254,7 +1254,7 @@ static audiodrv_t neomagic_audio_driver = {
 };
 
 int
-neomagic_attach (oss_device_t * osdev)
+oss_neomagic_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1336,7 +1336,7 @@ neomagic_attach (oss_device_t * osdev)
 
 
 int
-neomagic_detach (oss_device_t * osdev)
+oss_neomagic_attach (oss_device_t * osdev)
 {
   struct neomagic_devc *devc = (neomagic_devc *) osdev->devc;
   int i;

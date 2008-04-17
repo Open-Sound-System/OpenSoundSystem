@@ -1,5 +1,5 @@
 NAME
-neomagic - Neomagic audio driver.
+oss_neomagic - Neomagic audio driver.
 
 DESCRIPTION
 Open Sound System driver for Neomagic NM2200/NM2200-ZX audio controllers
@@ -12,7 +12,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/neomagic.conf Device configuration file
+CONFIGFILEPATH/oss_neomagic.conf Device configuration file
 
 AUTHOR
 4Front Technologies
