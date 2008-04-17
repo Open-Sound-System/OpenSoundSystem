@@ -131,7 +131,7 @@ then
  	fi
 
 	# SADA compatibility module
-	if ld -64 -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/$KERNEL64/sadasupport $KERNEL64/target/modules/sadasupport.o
+	if ld -64 -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/$KERNEL64/oss_sadasupport $KERNEL64/target/modules/oss_sadasupport.o
 	then
   		OK=1
 	else
@@ -180,7 +180,7 @@ then
 	fi
 	
 	# SADA Compatibility
-	if ld -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/sadasupport $KERNEL32/target/modules/sadasupport.o
+	if ld -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/oss_sadasupport $KERNEL32/target/modules/oss_sadasupport.o
 	then
 		OK=1
 	else

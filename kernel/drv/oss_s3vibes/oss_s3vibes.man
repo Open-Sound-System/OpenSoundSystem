@@ -1,5 +1,5 @@
 NAME
-s3vibes - S3 Sonic Vibes audio driver
+oss_s3vibes - S3 Sonic Vibes audio driver
 
 DESCRIPTION
 Open Sound System driver for S3 Sonic Vibes audio controller.
@@ -12,7 +12,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/s3vibes.conf Device configuration file
+CONFIGFILEPATH/oss_s3vibes.conf Device configuration file
 
 AUTHOR
 4Front Technologies

@@ -4,7 +4,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997. All rights reserved.
 
-#include "s3vibes_cfg.h"
+#include "oss_s3vibes_cfg.h"
 #include "oss_pci.h"
 
 #ifdef USE_LICENSING
@@ -794,7 +794,7 @@ init_vibes (vibes_devc * devc)
 }
 
 int
-s3vibes_attach (oss_device_t * osdev)
+oss_s3vibes_attach (oss_device_t * osdev)
 {
   unsigned int dmaa_base, dmac_base;
   unsigned char pci_irq_line, pci_revision;
@@ -896,7 +896,7 @@ s3vibes_attach (oss_device_t * osdev)
 }
 
 int
-s3vibes_detach (oss_device_t * osdev)
+oss_s3vibes_attach (oss_device_t * osdev)
 {
   vibes_devc *devc = (vibes_devc *) osdev->devc;
 
