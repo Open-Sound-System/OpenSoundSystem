@@ -1,7 +1,7 @@
 /*
  * Purpose: Firmware download for Midiman MIDISport 1x1
  */
-#define COPYING27 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
+#define COPYING50 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
 const struct setup_request midisport1x1_setupRequest[] = {
   {0x00, 0x05, 0x0002, 0x0000, 0x0000, 0x0000, ""},
   {0x40, 0xA0, 0x7F92, 0x0000, 0x0001, 0x0001, "\x01"},

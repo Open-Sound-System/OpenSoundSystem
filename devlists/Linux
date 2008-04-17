@@ -1,26 +1,9 @@
-ali5455	pci10b9,5455	ALI M5455
-allegro	pci125d,1988	ESS Allegro ES1988
-allegro	pci125d,1990	ESS Canyon 3D ES1990
-allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
-allegro	pci125d,1998	ESS Maestro3 ES1998
-allegro	pci125d,199a	ESS Maestro3 ES199A
-als300	pci4005,300	Avance Logic ALS300
-als300	pci4005,308	Avance Logic ALS300+
-als4000	pci4005,4000	Avance Logic ALS4000
 apci97	pci1102,8938	Creative Ectiva EV1938
 apci97	pci1274,1371	Creative AudioPCI97 (ES1371/ES1373)
 apci97	pci1274,5880	Creative Sound Blaster PCI128 (5880B)
 apci97	pci1274,8001	Creative Sound Blaster PCI128 (CT5880)
 apci97	pci1274,8002	Creative Sound Blaster PCI128 (5880A)
-audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
-audioloop	AUDIOLOOP	OSS loopback audio driver
 audiopci	pci1274,5000	Creative AudioPCI (ES1370)
-cmi8788	pci13f6,8788	CMedia CMI8788
-cmpci	pci13f6,100	C-Media CM8338A
-cmpci	pci13f6,100	MIDIMan DiO 2448
-cmpci	pci13f6,101	CMedia CM8338B
-cmpci	pci13f6,111	CMedia CM8738/CM8768
-cmpci	pci14af,20	Guillemot Maxi Sound MUSE
 cs4280	pci1013,6001	Crystal CS4610
 cs4280	pci1013,6003	Crystal CS4280 
 cs4280	pci1013,6004	Crystal CS4615
@@ -29,13 +12,6 @@ cs4280	pcs1681,50	Hercules Game Theater XP
 cs4280	pcs1681,51	Hercules Game Theater XP+
 cs4280	pcs5053,3357	TurtleBeach SantaCruz / VideoLogic SonicFury
 cs4281	pci1013,6005	Crystal CS4281
-digi32	pciea60,9896	RME Digi32
-digi32	pciea60,9897	RME Digi32 Pro
-digi32	pciea60,9898	RME Digi32/8
-digi96	pci10ee,3fc0	RME Digi96
-digi96	pci10ee,3fc1	RME Digi96/8
-digi96	pci10ee,3fc2	RME Digi96/8 PRO
-digi96	pci10ee,3fc3	RME Digi96/8 PAD
 emu10k1x	pci1102,6	Creative Sound Blaster 5.1 (Dell)
 envy24	pci1412,1712	Generic ENVY24 based device
 envy24	pcs1412,d630	M Audio Delta 1010
@@ -103,7 +79,6 @@ ich	pci8086,25a6	Intel AC97 (ESB)
 ich	pci8086,266e	Intel AC97 (ICH6)
 ich	pci8086,27de	Intel AC97 (ICH7)
 ich	pci8086,7195	Intel 440MX (440MX)
-imux	IMUX	OSS Input Multiplexer 
 lynxone	pci10b5,1142	LynxONE Studio Interface
 lynxtwo	pci1621,20	LynxTWO-A Studio Interface
 lynxtwo	pci1621,21	LynxTWO-B Studio Interface
@@ -114,11 +89,36 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 maestro	pci125d,1968	ESS Maestro-2 
 maestro	pci125d,1978	ESS Maestro-2E 
 maestro	pci1285,100	ESS Maestro-1 
-midiloop	MIDILOOP	OSS MIDI Loopback driver
 neomagic	pci10c8,8005	Neomagic NM2200AV
+oss_ali5455	pci10b9,5455	ALI M5455
+oss_allegro	pci125d,1988	ESS Allegro ES1988
+oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
+oss_allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
+oss_allegro	pci125d,1998	ESS Maestro3 ES1998
+oss_allegro	pci125d,199a	ESS Maestro3 ES199A
+oss_als300	pci4005,300	Avance Logic ALS300
+oss_als300	pci4005,308	Avance Logic ALS300+
+oss_als4000	pci4005,4000	Avance Logic ALS4000
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
+oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
+oss_audioloop	AUDIOLOOP	OSS loopback audio driver
+oss_cmi8788	pci13f6,8788	CMedia CMI8788
+oss_cmpci	pci13f6,100	C-Media CM8338A
+oss_cmpci	pci13f6,100	MIDIMan DiO 2448
+oss_cmpci	pci13f6,101	CMedia CM8338B
+oss_cmpci	pci13f6,111	CMedia CM8738/CM8768
+oss_cmpci	pci14af,20	Guillemot Maxi Sound MUSE
+oss_digi32	pciea60,9896	RME Digi32
+oss_digi32	pciea60,9897	RME Digi32 Pro
+oss_digi32	pciea60,9898	RME Digi32/8
+oss_digi96	pci10ee,3fc0	RME Digi96
+oss_digi96	pci10ee,3fc1	RME Digi96/8
+oss_digi96	pci10ee,3fc2	RME Digi96/8 PRO
+oss_digi96	pci10ee,3fc3	RME Digi96/8 PAD
+oss_imux	IMUX	OSS Input Multiplexer 
+oss_midiloop	MIDILOOP	OSS MIDI Loopback driver
 oss_sblive	pci1102,2	Creative Sound Blaster Live 
 oss_sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
 oss_sblive	pcs1102,8061	Creative Sound Blaster Live 5.1/Platinum IR
@@ -126,6 +126,11 @@ oss_sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
 oss_sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
 oss_sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
 oss_sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
+oss_softoss	SOFTOSS	OSS Virtual mixer/synth driver
+oss_vmix	VMIX	OSS Transparent Virtual Mixing Architecture
+oss_vortex	pci12eb,1	Aureal Vortex (AU8820)
+oss_vortex	pci12eb,2	Aureal Vortex2 (AU8830)
+oss_vortex	AU8810		Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
 ossusb	usbif,class1	Generic USB audio/MIDI device (BETA)
 ossusb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)
 ossusb	usbif41e,3010	Creative Sound Blaster MP3+ USB
@@ -159,7 +164,6 @@ riptide	pci127a,4320	Conexant Riptide
 s3vibes	pci5333,ca00	S3 Sonic Vibes
 sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
 sbxfi	pci1102,5	Creative SB X-Fi (NOT SUPPORTED YET)
-softoss	SOFTOSS	OSS Virtual mixer/synth driver
 solo	pci125d,1969	ESS Solo-1 
 sonorus	pci1057,1801	Sonorus STUDI/O
 trident	pci1023,2000	Trident 4DWave-DX
@@ -173,10 +177,6 @@ via8233	pci1106,7059	VIA VT8233A
 via8233	pcs1462,3800	MSI K7T266
 via8233	pcs1462,4720	MSI KT3 Ultra 
 via97	pci1106,3058	VIA VT82C686 
-vmix	VMIX	OSS Transparent Virtual Mixing Architecture
-vortex	pci12eb,1	Aureal Vortex (AU8820)
-vortex	pci12eb,2	Aureal Vortex2 (AU8830)
-vortex	AU8810		Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
 ymf7xx	pci1073,10	Yamaha DS-XG YMF744 
 ymf7xx	pci1073,12	Yamaha DS-XG YMF754
 ymf7xx	pci1073,4	Yamaha DS-XG YMF724

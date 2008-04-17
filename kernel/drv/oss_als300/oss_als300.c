@@ -771,7 +771,7 @@ init_als300 (als300_devc * devc)
 }
 
 int
-als300_attach (oss_device_t * osdev)
+oss_als300_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -857,7 +857,7 @@ als300_attach (oss_device_t * osdev)
 }
 
 int
-als300_detach (oss_device_t * osdev)
+oss_als300_detach (oss_device_t * osdev)
 {
   als300_devc *devc = (als300_devc *) osdev->devc;
   unsigned int dwTemp;

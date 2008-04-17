@@ -75,7 +75,7 @@ extern void oss_create_vmix (void *devc, int masterdev, int inputdev,
 			     int numoutputs, int numloops, int rate);
 
 int
-vmix_attach (oss_device_t * osdev)
+oss_vmix_attach (oss_device_t * osdev)
 {
   void *devc;
 
@@ -127,7 +127,7 @@ vmix_attach (oss_device_t * osdev)
 
 /*ARGSUSED*/
 int
-vmix_detach (oss_device_t * osdev)
+oss_vmix_detach (oss_device_t * osdev)
 {
 /*
  * The vmix core (that is part of the osscommon module) cannot be stopped

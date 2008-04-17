@@ -955,7 +955,7 @@ init_digi96 (digi96_devc * devc)
 
 
 int
-digi96_attach (oss_device_t * osdev)
+oss_digi96_attach (oss_device_t * osdev)
 {
   digi96_devc *devc;
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
@@ -1066,7 +1066,7 @@ digi96_attach (oss_device_t * osdev)
 }
 
 int
-digi96_detach (oss_device_t * osdev)
+oss_digi96_detach (oss_device_t * osdev)
 {
   digi96_devc *devc = (digi96_devc *) osdev->devc;
 

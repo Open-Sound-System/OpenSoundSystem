@@ -1613,7 +1613,7 @@ init_vortex (vortex_devc * devc)
 }
 
 int
-vortex_attach (oss_device_t * osdev)
+oss_vortex_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -1718,7 +1718,7 @@ vortex_attach (oss_device_t * osdev)
 extern void unload_vortex2 (oss_device_t * osdev);
 
 int
-vortex_detach (oss_device_t * osdev)
+oss_vortex_detach (oss_device_t * osdev)
 {
   vortex_devc *devc = (vortex_devc *) osdev->devc;
 

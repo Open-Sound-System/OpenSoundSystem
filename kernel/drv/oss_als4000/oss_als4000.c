@@ -1044,7 +1044,7 @@ init_als4000 (als4000_devc * devc)
 }
 
 int
-als4000_attach (oss_device_t * osdev)
+oss_als4000_attach (oss_device_t * osdev)
 {
 
   unsigned char pci_irq_line, pci_revision;
@@ -1116,7 +1116,7 @@ als4000_attach (oss_device_t * osdev)
 
 
 int
-als4000_detach (oss_device_t * osdev)
+oss_als4000_detach (oss_device_t * osdev)
 {
   als4000_devc *devc = (als4000_devc *) osdev->devc;
 

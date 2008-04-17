@@ -1005,7 +1005,7 @@ try_to_start (void *dc)
 
 
 int
-imux_attach (oss_device_t * osdev)
+oss_imux_attach (oss_device_t * osdev)
 {
   extern int imux_devices;
   extern int imux_masterdev;
@@ -1048,7 +1048,7 @@ imux_attach (oss_device_t * osdev)
 }
 
 int
-imux_detach (oss_device_t * osdev)
+oss_imux_detach (oss_device_t * osdev)
 {
   imux_devc *devc = osdev->devc;
 
