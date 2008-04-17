@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998-2007. All rights reserved.
 
-#include "cs4280_cfg.h"
+#include "oss_cs4280_cfg.h"
 #include "midi_core.h"
 #include "ac97.h"
 #include "oss_pci.h"
@@ -1758,7 +1758,7 @@ init_cs4280 (cs4280_devc * devc)
 }
 
 int
-cs4280_attach (oss_device_t * osdev)
+oss_cs4280_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision, pci_irq_inta;
   unsigned short pci_command, vendor, device;
@@ -1889,7 +1889,7 @@ cs4280_attach (oss_device_t * osdev)
 
 
 int
-cs4280_detach (oss_device_t * osdev)
+oss_cs4280_attach (oss_device_t * osdev)
 {
   cs4280_devc *devc = (cs4280_devc *) osdev->devc;
 

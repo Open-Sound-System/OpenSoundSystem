@@ -1,5 +1,5 @@
 NAME
-cs4280 - Cirrus Logic CS4280 audio driver.
+oss_cs4280 - Cirrus Logic CS4280 audio driver.
 
 DESCRIPTION
 Open Sound System driver for Crystal Semiconductor (Cirrus Logic) CS4280 and
@@ -17,7 +17,7 @@ the audio device.
 
 
 FILES
-CONFIGFILEPATH/cs4280.conf Device configuration file
+CONFIGFILEPATH/oss_cs4280.conf Device configuration file
 
 AUTHOR
 4Front Technologies
