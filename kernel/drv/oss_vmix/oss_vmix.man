@@ -1,5 +1,5 @@
 NAME
-vmix - Virtual Mixer audio driver.
+oss_vmix - Virtual Mixer (vmix) pseudo driver.
 
 DESCRIPTION
 Open Sound System provides an audio mixer device to mix multiple
@@ -30,7 +30,7 @@ may be used to play AC3 or DTS streams. Due to mixing these encoded formats
 may not always work properly.
 
 FILES
-CONFIGFILEPATH/vmix.conf Device configuration file
+CONFIGFILEPATH/oss_vmix.conf Device configuration file
 
 AUTHOR
 4Front Technologies

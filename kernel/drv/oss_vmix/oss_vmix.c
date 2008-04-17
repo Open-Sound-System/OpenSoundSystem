@@ -14,7 +14,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2007. All rights reserved.
 
 #define VMIX_MAIN
-#include "vmix_cfg.h"
+#include "oss_vmix_cfg.h"
 
 /*
  * Config options
