@@ -1,5 +1,5 @@
 NAME
- ossusb - USB Audio/MIDI/Mixer driver
+ oss_usb - USB Audio/MIDI/Mixer driver
 
 DESCRIPTION
   The Open Sound System driver for USB Audio and MIDI devices.
@@ -50,7 +50,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/ossusb.conf Device configuration file
+CONFIGFILEPATH/oss_ossusb.conf Device configuration file
 
 AUTHOR
 4Front Technologies
