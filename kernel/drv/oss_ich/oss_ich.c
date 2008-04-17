@@ -7,7 +7,7 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
 
-#include "ich_cfg.h"
+#include "oss_ich_cfg.h"
 #include <oss_pci.h>
 
 #include <ac97.h>
@@ -1121,7 +1121,7 @@ ich_init (ich_devc * devc)
 }
 
 int
-ich_attach (oss_device_t * osdev)
+oss_ich_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /* , pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -1144,7 +1144,7 @@ ich_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
   DDB (cmn_err
-       (CE_CONT, "ich_attach(Vendor %x, device %x)\n", vendor, device));
+       (CE_CONT, "oss_ich_attach(Vendor %x, device %x)\n", vendor, device));
 
   if ((vendor != INTEL_VENDOR_ID && vendor != SIS_VENDOR_ID &&
        vendor != NVIDIA_VENDOR_ID && vendor != AMD_VENDOR_ID) ||
@@ -1347,7 +1347,7 @@ ich_attach (oss_device_t * osdev)
 }
 
 int
-ich_detach (oss_device_t * osdev)
+oss_ich_detach (oss_device_t * osdev)
 {
   ich_devc *devc = (ich_devc *) osdev->devc;
 

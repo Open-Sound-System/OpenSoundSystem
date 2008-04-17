@@ -1,5 +1,5 @@
 NAME
-ich - Intel ICH/SiS7012/Nvidia/AMD audio device driver.
+oss_ich - Intel ICH/SiS7012/Nvidia/AMD audio device driver.
 
 DESCRIPTION
 Open Sound System driver for Intel ICH, nVidia Nforce, AMD and SiS 7012 
@@ -23,7 +23,7 @@ o intelpci_force_mmio=<0|1> (default is 0=Disable)
  run in memory mapped mode to free up I/O address space.
 
 FILES
-CONFIGFILEPATH/ich.conf  Device configuration file.
+CONFIGFILEPATH/oss_ich.conf  Device configuration file.
 
 
 AUTHOR
