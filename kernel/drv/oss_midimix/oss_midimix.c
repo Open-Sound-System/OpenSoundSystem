@@ -1,9 +1,15 @@
 /*
  * Purpose: MIDI mixer pseudo driver
+ *
+ * This driver creates a pseudo MIDI port device that can be used for
+ * real-time mixer volume changes. The pseudo MIDI device will return MIDI
+ * control change messages when a mixer setting changes. Application using the
+ * device may also do mixer changes (cross fading, etc) by sending (or
+ * playing back) control messages.
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
-#include "midimix_cfg.h"
+#include "oss_midimix_cfg.h"
 #include "midi_core.h"
 #include "midiparser.h"
 

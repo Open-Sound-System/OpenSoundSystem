@@ -1,5 +1,5 @@
 NAME
-midimix - Driver for controlling OSS mixer devices using MIDI messages
+oss_midimix - Driver for controlling OSS mixer devices using MIDI messages
 
 DESCRIPTION
 The MIDI mixer device can be used by MIDI sequencer programs to control
