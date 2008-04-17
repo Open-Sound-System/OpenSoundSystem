@@ -971,7 +971,7 @@ init_ATI (ATI_devc * devc)
 
 
 int
-atiaudio_attach (oss_device_t * osdev)
+oss_atiaudio_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -1072,7 +1072,7 @@ atiaudio_attach (oss_device_t * osdev)
 
 
 int
-atiaudio_detach (oss_device_t * osdev)
+oss_atiaudio_detach (oss_device_t * osdev)
 {
   ATI_devc *devc = (ATI_devc *) osdev->devc;
 

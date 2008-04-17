@@ -2245,7 +2245,7 @@ init_cmpci (cmpci_devc * devc)
 }
 
 int
-cmpci_attach (oss_device_t * osdev)
+oss_cmpci_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -2338,7 +2338,7 @@ cmpci_attach (oss_device_t * osdev)
 }
 
 int
-cmpci_detach (oss_device_t * osdev)
+oss_cmpci_detach (oss_device_t * osdev)
 {
   cmpci_devc *devc = (cmpci_devc *) osdev->devc;
 

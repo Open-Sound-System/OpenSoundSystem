@@ -844,7 +844,7 @@ install_client (audioloop_devc_t * devc, int num)
 }
 
 int
-audioloop_attach (oss_device_t * osdev)
+oss_audioloop_attach (oss_device_t * osdev)
 {
   audioloop_devc_t *devc;
   int i;
@@ -888,7 +888,7 @@ audioloop_attach (oss_device_t * osdev)
 }
 
 int
-audioloop_detach (oss_device_t * osdev)
+oss_audioloop_detach (oss_device_t * osdev)
 {
   audioloop_devc_t *devc = osdev->devc;
   int i;

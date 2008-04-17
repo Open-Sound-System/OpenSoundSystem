@@ -365,7 +365,7 @@ attach_midiloop_dev (oss_device_t * osdev)
 }
 
 int
-midiloop_attach (oss_device_t * osdev)
+oss_midiloop_attach (oss_device_t * osdev)
 {
   extern int midiloop_instances;
   int i;
@@ -383,7 +383,7 @@ midiloop_attach (oss_device_t * osdev)
 }
 
 int
-midiloop_detach (oss_device_t * osdev)
+oss_midiloop_detach (oss_device_t * osdev)
 {
   int i, err;
 

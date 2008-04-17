@@ -903,7 +903,7 @@ init_allegro (allegro_devc * devc)
 }
 
 int
-allegro_attach (oss_device_t * osdev)
+oss_allegro_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1024,7 +1024,7 @@ allegro_attach (oss_device_t * osdev)
 
 
 int
-allegro_detach (oss_device_t * osdev)
+oss_allegro_detach (oss_device_t * osdev)
 {
   allegro_devc *devc = (allegro_devc *) osdev->devc;
   int ret;

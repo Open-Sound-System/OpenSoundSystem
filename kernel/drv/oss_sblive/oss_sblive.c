@@ -3554,7 +3554,7 @@ unload_mpu (sblive_devc * devc)
 }
 
 int
-sblive_attach (oss_device_t * osdev)
+oss_sblive_attach (oss_device_t * osdev)
 {
   sblive_devc *devc;
   int i, err;
@@ -3912,7 +3912,7 @@ sblive_attach (oss_device_t * osdev)
 }
 
 int
-sblive_detach (oss_device_t * osdev)
+oss_sblive_detach (oss_device_t * osdev)
 {
   sblive_devc *devc;
 

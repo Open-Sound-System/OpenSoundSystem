@@ -864,7 +864,7 @@ init_digi32 (digi32_devc * devc)
 
 
 int
-digi32_attach (oss_device_t * osdev)
+oss_digi32_attach (oss_device_t * osdev)
 {
   digi32_devc *devc;
   unsigned char pci_irq_line, pci_revision;
@@ -970,7 +970,7 @@ digi32_attach (oss_device_t * osdev)
 }
 
 int
-digi32_detach (oss_device_t * osdev)
+oss_digi32_detach (oss_device_t * osdev)
 {
   digi32_devc *devc = (digi32_devc *) osdev->devc;
 

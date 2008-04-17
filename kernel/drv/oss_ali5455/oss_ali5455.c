@@ -864,7 +864,7 @@ init_ALI (ALI_devc * devc)
 
 
 int
-ali5455_attach (oss_device_t * osdev)
+oss_ali5455_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -932,7 +932,7 @@ ali5455_attach (oss_device_t * osdev)
 
 
 int
-ali5455_detach (oss_device_t * osdev)
+oss_ali5455_detach (oss_device_t * osdev)
 {
   ALI_devc *devc = (ALI_devc *) osdev->devc;
 

@@ -2167,7 +2167,7 @@ init_cmi8788 (cmi8788_devc * devc)
 }
 
 int
-cmi8788_attach (oss_device_t * osdev)
+oss_cmi8788_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -2248,7 +2248,7 @@ cmi8788_attach (oss_device_t * osdev)
 }
 
 int
-cmi8788_detach (oss_device_t * osdev)
+oss_cmi8788_detach (oss_device_t * osdev)
 {
   cmi8788_devc *devc = (cmi8788_devc *) osdev->devc;
 

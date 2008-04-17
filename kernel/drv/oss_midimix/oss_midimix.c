@@ -299,7 +299,7 @@ attach_midimix_dev (oss_device_t * osdev)
 }
 
 int
-midimix_attach (oss_device_t * osdev)
+oss_midimix_attach (oss_device_t * osdev)
 {
   int midimix_instances = 1;
   int i;
@@ -317,7 +317,7 @@ midimix_attach (oss_device_t * osdev)
 }
 
 int
-midimix_detach (oss_device_t * osdev)
+oss_midimix_detach (oss_device_t * osdev)
 {
   int i, err;
 

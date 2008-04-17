@@ -1177,7 +1177,7 @@ sadasupport_init_state (sadasupport_devc * devc, dev_info_t * dip)
 }				/* sadasupport_init_state */
 
 int
-sadasupport_attach (oss_device_t * osdev)
+oss_sadasupport_attach (oss_device_t * osdev)
 {
 #ifndef SOL9
   audio_sup_reg_data_t data;
@@ -1261,7 +1261,7 @@ sadasupport_attach (oss_device_t * osdev)
 }
 
 int
-sadasupport_detach (oss_device_t * osdev)
+oss_sadasupport_detach (oss_device_t * osdev)
 {
   /* int instance; */
   sadasupport_devc *devc = osdev->devc;

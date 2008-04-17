@@ -1610,7 +1610,7 @@ static mixer_driver_t audigyls_mixer_driver = {
 };
 
 int
-audigyls_attach (oss_device_t * osdev)
+oss_audigyls_attach (oss_device_t * osdev)
 {
   int tmp, err, i, tries;
   unsigned char pci_irq_line, pci_revision;
@@ -1793,7 +1793,7 @@ audigyls_attach (oss_device_t * osdev)
 }
 
 int
-audigyls_detach (oss_device_t * osdev)
+oss_audigyls_detach (oss_device_t * osdev)
 {
   unsigned int status;
   audigyls_devc *devc = (audigyls_devc *) osdev->devc;
