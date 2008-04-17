@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
 
-#include "maestro_cfg.h"
+#include "oss_maestro_cfg.h"
 #include "oss_pci.h"
 #include "uart401.h"
 #include "ac97.h"
@@ -2218,7 +2218,7 @@ init_maestro (maestro_devc * devc)
 #define NEC_VERSA_SUBID2        0x803c1033
 
 int
-maestro_attach (oss_device_t * osdev)
+oss_maestro_attach (oss_device_t * osdev)
 {
   unsigned short sdata;
   unsigned char pci_irq_line, pci_revision;
@@ -2356,7 +2356,7 @@ maestro_attach (oss_device_t * osdev)
 
 
 int
-maestro_detach (oss_device_t * osdev)
+oss_maestro_attach (oss_device_t * osdev)
 {
   maestro_devc *devc = (maestro_devc *) osdev->devc;
 

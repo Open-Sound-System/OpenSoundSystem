@@ -1,5 +1,5 @@
 NAME
-maestro - ESS Maestro audio driver.
+oss_maestro - ESS Maestro audio driver.
 
 DESCRIPTION
 Open Sound System driver for ESS Maestro1/Maestro2/Maestro2E soundcards
@@ -12,7 +12,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/maestro.conf Device configuration file
+CONFIGFILEPATH/oss_maestro.conf Device configuration file
 
 AUTHOR
 4Front Technologies
