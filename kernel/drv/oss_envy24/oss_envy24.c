@@ -12,7 +12,7 @@
 // TODO: MIDI is disabled because it causes a crash
 #define NO_MIDI
 
-#include "envy24_cfg.h"
+#include "oss_envy24_cfg.h"
 #include <ac97.h>
 #include <oss_pci.h>
 
@@ -3794,7 +3794,7 @@ envy24_init (envy24_devc * devc)
 }
 
 int
-envy24_attach (oss_device_t * osdev)
+oss_envy24_attach (oss_device_t * osdev)
 {
   envy24_devc *devc;
   static int status;
@@ -3965,7 +3965,7 @@ envy24_attach (oss_device_t * osdev)
 
 
 int
-envy24_detach (oss_device_t * osdev)
+oss_envy24_attach (oss_device_t * osdev)
 {
   envy24_devc *devc;
 

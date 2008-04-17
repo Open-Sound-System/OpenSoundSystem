@@ -1,5 +1,5 @@
 NAME
-envy24 - ICE Envy24 audio device driver.
+oss_envy24 - ICE Envy24 audio device driver.
 
 DESCRIPTION
 Open Sound System driver for Envy24 based audio cards such as the
@@ -327,7 +327,7 @@ not be used.
 Values: 1, 0 Default: 0
 
 FILES
-CONFIGFILEPATH/envy24.conf Device configuration file
+CONFIGFILEPATH/oss_envy24.conf Device configuration file
 
 AUTHOR
 4Front Technologies
