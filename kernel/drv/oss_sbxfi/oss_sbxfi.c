@@ -5,7 +5,7 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
 
-#include "sbxfi_cfg.h"
+#include "oss_sbxfi_cfg.h"
 #include <oss_pci.h>
 #include "sbxfi.h"
 #include "20k1reg.h"
@@ -760,7 +760,7 @@ sbxfi_mix_init (int dev)
 }
 
 int
-sbxfi_attach (oss_device_t * osdev)
+oss_sbxfi_attach (oss_device_t * osdev)
 {
   unsigned short pci_command, vendor, device, revision;
   unsigned short subvendor, subdevice;
@@ -786,7 +786,7 @@ sbxfi_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
   DDB (cmn_err
-       (CE_CONT, "sbxfi_attach(Vendor %x, device %x)\n", vendor, device));
+       (CE_CONT, "oss_sbxfi_attach(Vendor %x, device %x)\n", vendor, device));
 
   if (vendor != PCI_VENDOR_CREATIVE || device != CREATIVE_SBXFI)
     {
@@ -942,7 +942,7 @@ sbxfi_attach (oss_device_t * osdev)
 }
 
 int
-sbxfi_detach (oss_device_t * osdev)
+oss_sbxfi_attach (oss_device_t * osdev)
 {
   sbxfi_devc_t *devc = (sbxfi_devc_t *) osdev->devc;
   sbxfi_portc_t *portc = &devc->play_portc[0];
