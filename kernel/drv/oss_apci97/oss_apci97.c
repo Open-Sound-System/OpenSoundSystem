@@ -7,7 +7,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
 
-#include "apci97_cfg.h"
+#include "oss_apci97_cfg.h"
 #include "midi_core.h"
 #include "apci97.h"
 #include "ac97.h"
@@ -1266,7 +1266,7 @@ init_apci97 (apci97_devc * devc, int device_id)
 }
 
 int
-apci97_attach (oss_device_t * osdev)
+oss_apci97_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1364,7 +1364,7 @@ apci97_attach (oss_device_t * osdev)
 }
 
 int
-apci97_detach (oss_device_t * osdev)
+oss_apci97_detach (oss_device_t * osdev)
 {
   apci97_devc *devc = (apci97_devc *) osdev->devc;
   int tmp;
