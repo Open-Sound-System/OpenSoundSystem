@@ -1,5 +1,5 @@
 NAME
-audioloop - Loopback audio driver.
+oss_audioloop - Loopback audio driver.
 
 DESCRIPTION
 The loopback audio driver makes it possible to create special purpose
@@ -73,7 +73,7 @@ may fail to save the recorded data properly because of this. Use some
 other application (such as ossrecord) if this happens.
 
 FILES
-CONFIGFILEPATH/audioloop.conf Device configuration file
+CONFIGFILEPATH/oss_audioloop.conf Device configuration file
 
 AUTHOR
 4Front Technologies

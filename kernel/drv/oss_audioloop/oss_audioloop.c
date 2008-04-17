@@ -21,7 +21,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
-#include "audioloop_cfg.h"
+#include "oss_audioloop_cfg.h"
 
 #define MAX_RATE 	192000
 #define MAX_CHANNELS	64
