@@ -1,12 +1,10 @@
 /*
- * allegro.c
- *
  * Driver for ALLEGRO PCI audio controller.
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000. All rights reserved.
 
 
-#include "allegro_cfg.h"
+#include "oss_allegro_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "uart401.h"

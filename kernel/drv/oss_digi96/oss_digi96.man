@@ -1,5 +1,5 @@
 NAME
-digi96 - RME Digi96 professional audio driver.
+oss_digi96 - RME Digi96 professional audio driver.
 
 DESCRIPTION
 Audio driver for the RME Digi96 family of profressional audio controllers.
@@ -54,7 +54,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/digi96.conf Device configuration file
+CONFIGFILEPATH/oss_digi96.conf Device configuration file
 
 AUTHOR
 4Front Technologies
