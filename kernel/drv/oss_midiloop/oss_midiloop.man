@@ -1,5 +1,5 @@
 NAME
-midiloop - Loopback MIDI driver.
+oss_midiloop - Loopback MIDI driver.
 
 DESCRIPTION
 The loopback midi driver makes it possible to create special purpose
@@ -37,7 +37,7 @@ KNOWN PROBLEMS
 None
 
 FILES
-CONFIGFILEPATH/midiloop.conf Device configuration file
+CONFIGFILEPATH/oss_midiloop.conf Device configuration file
 
 AUTHOR
 4Front Technologies

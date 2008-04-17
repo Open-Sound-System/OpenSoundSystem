@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2004-2005. All rights reserved.
 
-#include "midiloop_cfg.h"
+#include "oss_midiloop_cfg.h"
 #include "midi_core.h"
 
 #define MIDI_SYNTH_NAME	"OSS loopback MIDI"
