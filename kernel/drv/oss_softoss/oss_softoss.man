@@ -1,10 +1,11 @@
 NAME
-softoss - Virtual Mixer audio driver.
+oss_softoss - Virtual Mixer audio driver
 
 DESCRIPTION
 Open Sound System provides an audio mixer device to mix multiple
 audio streams being played to the same audio device.
 
+This driver is obsolete and replaced by the new virtual mixing subsystem (oss_vmix).
 
  INTRODUCTION
 Virtual Mixer is a feature of Open Sound System to overcome the problem of
@@ -210,7 +211,7 @@ o softoss_fragment:       Specifies the DSP_SET_FRAGMENT setting. Some apps
                         require small fragments for better performance.
                                 Values: 1-15    Default: 7
 FILES
-CONFIGFILEPATH/softoss.conf Device configuration file
+CONFIGFILEPATH/oss_softoss.conf Device configuration file
 
 AUTHOR
 4Front Technologies
