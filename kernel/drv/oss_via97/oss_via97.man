@@ -1,5 +1,5 @@
 NAME
-via97 - VIA 82C686 audio driver
+oss_via97 - VIA 82C686 audio driver
 
 DESCRIPTION
 Open Sound System driver for VIA 82C686A and 82C686B audio controllers.
@@ -13,7 +13,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/via97.conf Device configuration file.
+CONFIGFILEPATH/oss_via97.conf Device configuration file.
 
 AUTHOR
 4Front Technologies

@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1999. All rights reserved.
 
-#include "via97_cfg.h"
+#include "oss_via97_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 
@@ -775,7 +775,7 @@ init_via97 (via97_devc * devc)
 }
 
 int
-via97_attach (oss_device_t * osdev)
+oss_via97_attach (oss_device_t * osdev)
 {
   unsigned char tmp, pci_irq_line, pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -891,7 +891,7 @@ via97_attach (oss_device_t * osdev)
 
 
 int
-via97_detach (oss_device_t * osdev)
+oss_via97_attach (oss_device_t * osdev)
 {
   via97_devc *devc = (via97_devc *) osdev->devc;
 
