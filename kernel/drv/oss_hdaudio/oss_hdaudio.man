@@ -1,5 +1,5 @@
 NAME
- hdaudio - Intel High Definition Audio (AZALIA) 
+ oss_hdaudio - Intel High Definition Audio (AZALIA) 
 
 DESCRIPTION
   Open Sound System driver for Intels high definition audio known as 
@@ -50,7 +50,7 @@ start ossxmix(1) and change the controls one at time until you get the desired
 effect.
 
 FILES
-  CONFIGFILEPATH/hdaudio.conf Device configuration file
+  CONFIGFILEPATH/oss_hdaudio.conf Device configuration file
 
 AUTHOR
   4Front Technologies

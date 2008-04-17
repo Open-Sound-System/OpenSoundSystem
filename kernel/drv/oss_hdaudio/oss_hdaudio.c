@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2005. All rights reserved.
 
-#include "hdaudio_cfg.h"
+#include "oss_hdaudio_cfg.h"
 #include "oss_pci.h"
 #include "hdaudio.h"
 #include "hdaudio_codec.h"
@@ -1647,7 +1647,7 @@ init_HDA (hda_devc * devc)
 
 
 int
-hdaudio_attach (oss_device_t * osdev)
+oss_hdaudio_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision, btmp;
   unsigned short pci_command, vendor, device, wtmp;
@@ -1656,11 +1656,11 @@ hdaudio_attach (oss_device_t * osdev)
   static int already_attached = 0;
   int err;
 
-  DDB (cmn_err (CE_CONT, "hdaudio_attach entered\n"));
+  DDB (cmn_err (CE_CONT, "oss_hdaudio_attach entered\n"));
 
   if (already_attached)
     {
-      cmn_err (CE_WARN, "hdaudio_attach: Already attached\n");
+      cmn_err (CE_WARN, "oss_hdaudio_attach: Already attached\n");
       return 0;
     }
   already_attached = 1;
@@ -1801,7 +1801,7 @@ hdaudio_attach (oss_device_t * osdev)
 }
 
 int
-hdaudio_detach (oss_device_t * osdev)
+oss_hdaudio_detach (oss_device_t * osdev)
 {
   hda_devc *devc = (hda_devc *) osdev->devc;
   int j;

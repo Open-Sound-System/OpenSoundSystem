@@ -1,0 +1,17 @@
+oss_hdaudio	pci8086,2668	Intel High Definition Audio (ICH6)
+oss_hdaudio	pci8086,27d8	Intel High Definition Audio (ICH7)
+oss_hdaudio	pci8086,269a	Intel High Definition Audio (ESB2)
+oss_hdaudio	pci8086,284b	Intel High Definition Audio (ICH8)
+oss_hdaudio	pci8086,293e	Intel High Definition Audio (P35)
+oss_hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
+oss_hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
+oss_hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
+oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
+oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
+oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
+oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
+oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
+oss_hdaudio	pci1106,3288	VIA High Definition Audio
+oss_hdaudio	pci1039,7502	SiS High Definition Audio
+oss_hdaudio	pci10b9,5461	ULI High Definition Audio
