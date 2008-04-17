@@ -5,7 +5,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2003. All rights reserved.
 
-#include "audigyls_cfg.h"
+#include "oss_audigyls_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "midi_core.h"

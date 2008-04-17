@@ -1,5 +1,5 @@
 NAME
-audigyls - Creative Labs CA106 (AudigyLS/SBLive 24bit) driver.
+oss_audigyls - Creative Labs CA106 (AudigyLS/SBLive 24bit) driver.
 
 DESCRIPTION
 Open Sound System driver for Creative Labs Audigy2-LS and SBLive 24bit 7.1 
@@ -36,7 +36,7 @@ When set as SPDIF, you can get play PCM/AC3 audio to a Dolby(R) capable
 receiver.
 
 FILES
-CONFIGFILEPATH/audigyls.conf Device configuration file
+CONFIGFILEPATH/oss_audigyls.conf Device configuration file
 
 AUTHOR
 4Front Technologies
