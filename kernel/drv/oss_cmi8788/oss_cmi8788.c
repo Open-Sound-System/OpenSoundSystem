@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
-#include "cmi8788_cfg.h"
+#include "oss_cmi8788_cfg.h"
 #include <oss_pci.h>
 #include <uart401.h>
 #include <ac97.h>

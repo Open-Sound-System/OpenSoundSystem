@@ -1,5 +1,5 @@
 NAME
-cmpci - CMedia CMI8788 audio driver.
+oss_cmi8788 - CMedia CMI8788 audio driver.
 
 DESCRIPTION
 Open Sound System driver for CMedia Electronics CMI8788 audio
@@ -47,7 +47,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/cmi8788.conf Device configuration file
+CONFIGFILEPATH/oss_cmi8788.conf Device configuration file
 
 AUTHOR
 4Front Technologies
