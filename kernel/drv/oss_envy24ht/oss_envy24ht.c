@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2002-2005. All rights reserved.
 
-#include "envy24ht_cfg.h"
+#include "oss_envy24ht_cfg.h"
 #include <oss_pci.h>
 
 #define SUPPORTED_FORMAT AFMT_S32_LE
@@ -2057,7 +2057,7 @@ install_ac97_mixer (envy24ht_devc * devc)
 }
 
 int
-envy24ht_attach (oss_device_t * osdev)
+oss_envy24ht_attach (oss_device_t * osdev)
 {
   envy24ht_devc *devc;
   extern int envy24ht_model;
@@ -2302,7 +2302,7 @@ envy24ht_attach (oss_device_t * osdev)
 }
 
 int
-envy24ht_detach (oss_device_t * osdev)
+oss_envy24ht_attach (oss_device_t * osdev)
 {
   envy24ht_devc *devc = osdev->devc;
 
