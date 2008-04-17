@@ -10,7 +10,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2004-2006. All rights reserved.
 
 
-#include "sadasupport_cfg.h"
+#include "oss_sadasupport_cfg.h"
 #include <oss_pci.h>
 #include <sys/note.h>
 #include <sys/audio.h>
