@@ -40,7 +40,7 @@
 #define EXTERN_C extern "C"
 
 /*
- * Do not export global parameters in options.c since they will be
+ * Do not export global parameters in oss_core_options.c since they will be
  * handled in Space.c for osscore
  */
 #define NO_GLOBAL_OPTIONS

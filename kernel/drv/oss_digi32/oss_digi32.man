@@ -36,7 +36,7 @@ o When the device is opened for input or input/output access the sampling rate
 By default the Digi32 driver will allocate 64k of buffer both for recording and
 playback functions. This should be sufficient in most cases. If necessary
 the buffer sizes can be increased by defining digi32_buffsize in the 
-options.cfg file (in the directory you installed OSS). For example
+oss_digi32.cfg file (in the directory you installed OSS). For example
 digi32_buffsize=128 setw the buffer size to 128k.
 
  MIXER PANEL

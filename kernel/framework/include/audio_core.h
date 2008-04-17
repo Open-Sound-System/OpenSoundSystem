@@ -270,7 +270,7 @@ struct _adev_t
  * conversions will be disabled for all applications and devices unless the
  * application explicitly enables them.
  *
- * cooked_enable is a global variable (int) defined in options.c. The current
+ * cooked_enable is a global variable (int) defined in oss_core_options.c. The current
  * value of this global variable will be copied to adev->cooked_enable when
  * an audio engine is opened.
  */

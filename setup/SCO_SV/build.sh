@@ -69,7 +69,7 @@ fi
 
 ld -r -o prototype/usr/lib/oss/modules/osscore/Driver.o target/objects/*.o $SRCDIR/setup/SCO_SV/*.o $FPSUPPORT
 
-grep '^int' $SRCDIR/kernel/framework/osscore/options.c > prototype/usr/lib/oss/modules/osscore/Space.c
+grep '^int' $SRCDIR/kernel/framework/osscore/oss_core_options.c > prototype/usr/lib/oss/modules/osscore/Space.c
 
 rm -f devlist.txt
 

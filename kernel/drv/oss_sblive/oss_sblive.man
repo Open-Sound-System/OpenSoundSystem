@@ -165,7 +165,7 @@ NOTE: You can increase the number of output devices from the standard 8 devices
 to 32 device. For this, run soundconf, select Set configuration options and 
 look for the entry "sblive_device", now type any number between 1 and 32
 for the number of channels you wish. You can also do this manually by editing 
-/usr/lib/oss/options.cfg and inserting sblive_devices=XX entry, 
+oss_sblive.conf and inserting sblive_devices=XX entry, 
   e.g.: sblive_devices=27 
 
  CDROM CONNNECTIONS

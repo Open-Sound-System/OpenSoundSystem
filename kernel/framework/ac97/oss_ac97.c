@@ -10,8 +10,8 @@
 
 #include "ac97.h"
 
-extern int ac97_amplifier;	/* From options.c */
-extern int ac97_recselect;	/* From options.c */
+extern int ac97_amplifier;	/* From oss_core_options.c */
+extern int ac97_recselect;	/* From oss_core_options.c */
 
 /*
  * LINE1 == AUX
