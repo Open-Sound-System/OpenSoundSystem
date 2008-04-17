@@ -1,5 +1,5 @@
 NAME
-cs4281 - Cirrus Logic CS4281 driver
+oss_cs4281 - Cirrus Logic CS4281 driver
 
 DESCRIPTION
 Open Sound System driver for Cirrus Logic (Crystal Semicoductor) CS4281 audio
@@ -14,7 +14,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/cs4281.conf Device configuration file
+CONFIGFILEPATH/oss_cs4281.conf Device configuration file
 
 AUTHOR
 4Front Technologies

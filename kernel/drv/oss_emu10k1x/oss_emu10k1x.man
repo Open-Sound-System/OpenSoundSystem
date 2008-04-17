@@ -1,5 +1,5 @@
 NAME
-emu10k1x - Creative Labs P16x (EMU10K1X) driver.
+oss_emu10k1x - Creative Labs P16x (EMU10K1X) driver.
 
 DESCRIPTION
 Open Sound System driver for Creative Labs SBLive 5.1 Dell OEM version
@@ -20,7 +20,7 @@ When set as SPDIF, you can get play PCM/AC3 audio to a Dolby(R) capable
 receiver.
 
 FILES
-CONFIGFILEPATH/emu10k1x.conf Device configuration file
+CONFIGFILEPATH/oss_emu10k1x.conf Device configuration file
 
 AUTHOR
 4Front Technologies

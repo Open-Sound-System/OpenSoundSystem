@@ -7,7 +7,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2003. All rights reserved.
 
-#include "emu10k1x_cfg.h"
+#include "oss_emu10k1x_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "midi_core.h"
@@ -1101,7 +1101,7 @@ select_out3_mode (emu10k1x_devc * devc, int mode)
 }
 
 int
-emu10k1x_attach (oss_device_t * osdev)
+oss_emu10k1x_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1205,7 +1205,7 @@ unload_mpu (emu10k1x_devc * devc)
 }
 
 int
-emu10k1x_detach (oss_device_t * osdev)
+oss_emu10k1x_attach (oss_device_t * osdev)
 {
   emu10k1x_devc *devc = (emu10k1x_devc *) osdev->devc;
 
