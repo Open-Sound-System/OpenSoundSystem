@@ -1182,7 +1182,7 @@ oss_solo_attach (oss_device_t * osdev)
 
 
 int
-oss_solo_attach (oss_device_t * osdev)
+oss_solo_detach (oss_device_t * osdev)
 {
   solo_devc *devc = (solo_devc *) osdev->devc;
 

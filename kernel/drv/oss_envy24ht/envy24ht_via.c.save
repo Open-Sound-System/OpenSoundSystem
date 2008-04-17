@@ -9,7 +9,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2002-2004. All rights reserved.
 
-#include "envy24ht_cfg.h"
+#include "oss_envy24ht_cfg.h"
 
 #include "spdif.h"
 #include "envy24ht.h"

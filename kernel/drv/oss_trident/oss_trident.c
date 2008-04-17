@@ -1530,7 +1530,7 @@ oss_trident_attach (oss_device_t * osdev)
 
 
 int
-oss_trident_attach (oss_device_t * osdev)
+oss_trident_detach (oss_device_t * osdev)
 {
   trident_devc *devc = (trident_devc *) osdev->devc;
 

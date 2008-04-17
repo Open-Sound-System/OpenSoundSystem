@@ -896,7 +896,7 @@ oss_s3vibes_attach (oss_device_t * osdev)
 }
 
 int
-oss_s3vibes_attach (oss_device_t * osdev)
+oss_s3vibes_detach (oss_device_t * osdev)
 {
   vibes_devc *devc = (vibes_devc *) osdev->devc;
 

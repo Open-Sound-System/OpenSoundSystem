@@ -942,7 +942,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
 }
 
 int
-oss_sbxfi_attach (oss_device_t * osdev)
+oss_sbxfi_detach (oss_device_t * osdev)
 {
   sbxfi_devc_t *devc = (sbxfi_devc_t *) osdev->devc;
   sbxfi_portc_t *portc = &devc->play_portc[0];

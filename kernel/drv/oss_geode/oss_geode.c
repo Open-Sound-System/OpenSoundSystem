@@ -851,7 +851,7 @@ oss_geode_attach (oss_device_t * osdev)
 
 
 int
-oss_geode_attach (oss_device_t * osdev)
+oss_geode_detach (oss_device_t * osdev)
 {
   geode_devc *devc = (geode_devc *) osdev->devc;
   unsigned char *f3bar_b = (unsigned char *) devc->f3bar;

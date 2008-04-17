@@ -3965,7 +3965,7 @@ oss_envy24_attach (oss_device_t * osdev)
 
 
 int
-oss_envy24_attach (oss_device_t * osdev)
+oss_envy24_detach (oss_device_t * osdev)
 {
   envy24_devc *devc;
 

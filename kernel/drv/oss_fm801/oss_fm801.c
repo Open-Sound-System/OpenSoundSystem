@@ -1032,7 +1032,7 @@ oss_fm801_attach (oss_device_t * osdev)
 }
 
 int
-oss_fm801_attach (oss_device_t * osdev)
+oss_fm801_detach (oss_device_t * osdev)
 {
   fm801_devc *devc = (fm801_devc *) osdev->devc;
 

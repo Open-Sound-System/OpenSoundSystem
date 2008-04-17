@@ -47,7 +47,7 @@
 #ifdef SRC_SUPPORT
 #include <inttypes.h>
 #define __inline__	inline
-#include "../../kernel/framework/audio/grc3.c"
+#include "../../kernel/framework/audio/oss_grc3.c"
 #endif
 
 /*

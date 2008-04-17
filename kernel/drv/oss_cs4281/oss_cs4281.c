@@ -1023,7 +1023,7 @@ oss_cs4281_attach (oss_device_t * osdev)
 
 
 int
-oss_cs4281_attach (oss_device_t * osdev)
+oss_cs4281_detach (oss_device_t * osdev)
 {
   cs4281_devc *devc = (cs4281_devc *) osdev->devc;
 

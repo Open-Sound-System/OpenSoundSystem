@@ -972,7 +972,7 @@ oss_via8233_attach (oss_device_t * osdev)
 }
 
 int
-oss_via8233_attach (oss_device_t * osdev)
+oss_via8233_detach (oss_device_t * osdev)
 {
   via8233_devc *devc = (via8233_devc *) osdev->devc;
   engine_desc *eng;

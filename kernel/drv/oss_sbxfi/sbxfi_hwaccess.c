@@ -10,7 +10,7 @@ Creative Confidential
 Copyright (C) Creative Technology, Ltd., 2007. All rights reserved.
 *******************************************************************************
 **/
-#include "sbxfi_cfg.h"
+#include "oss_sbxfi_cfg.h"
 #include <oss_pci.h>
 #include "sbxfi.h"
 #include "20k1reg.h"

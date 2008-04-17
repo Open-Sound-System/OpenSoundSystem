@@ -891,7 +891,7 @@ oss_via97_attach (oss_device_t * osdev)
 
 
 int
-oss_via97_attach (oss_device_t * osdev)
+oss_via97_detach (oss_device_t * osdev)
 {
   via97_devc *devc = (via97_devc *) osdev->devc;
 

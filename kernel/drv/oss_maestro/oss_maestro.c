@@ -2356,7 +2356,7 @@ oss_maestro_attach (oss_device_t * osdev)
 
 
 int
-oss_maestro_attach (oss_device_t * osdev)
+oss_maestro_detach (oss_device_t * osdev)
 {
   maestro_devc *devc = (maestro_devc *) osdev->devc;
 

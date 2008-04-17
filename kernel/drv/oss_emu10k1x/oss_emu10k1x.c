@@ -1205,7 +1205,7 @@ unload_mpu (emu10k1x_devc * devc)
 }
 
 int
-oss_emu10k1x_attach (oss_device_t * osdev)
+oss_emu10k1x_detach (oss_device_t * osdev)
 {
   emu10k1x_devc *devc = (emu10k1x_devc *) osdev->devc;
 

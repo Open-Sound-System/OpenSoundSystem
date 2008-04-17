@@ -1336,7 +1336,7 @@ oss_neomagic_attach (oss_device_t * osdev)
 
 
 int
-oss_neomagic_attach (oss_device_t * osdev)
+oss_neomagic_detach (oss_device_t * osdev)
 {
   struct neomagic_devc *devc = (neomagic_devc *) osdev->devc;
   int i;

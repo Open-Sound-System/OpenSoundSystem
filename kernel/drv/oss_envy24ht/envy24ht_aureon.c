@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2003-2005. All rights reserved.
 
-#include "envy24ht_cfg.h"
+#include "oss_envy24ht_cfg.h"
 
 #define IN
 #define OUT

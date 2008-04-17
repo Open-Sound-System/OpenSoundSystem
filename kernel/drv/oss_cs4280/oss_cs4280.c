@@ -1889,7 +1889,7 @@ oss_cs4280_attach (oss_device_t * osdev)
 
 
 int
-oss_cs4280_attach (oss_device_t * osdev)
+oss_cs4280_detach (oss_device_t * osdev)
 {
   cs4280_devc *devc = (cs4280_devc *) osdev->devc;
 

@@ -1546,7 +1546,7 @@ oss_ymf7xx_attach (oss_device_t * osdev)
 
 
 int
-oss_ymf7xx_attach (oss_device_t * osdev)
+oss_ymf7xx_detach (oss_device_t * osdev)
 {
   ymf7xx_devc *devc = (ymf7xx_devc *) osdev->devc;
 
