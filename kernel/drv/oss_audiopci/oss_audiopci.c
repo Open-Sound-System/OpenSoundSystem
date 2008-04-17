@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
 
-#include "audiopci_cfg.h"
+#include "oss_audiopci_cfg.h"
 #include "audiopci.h"
 #include "midi_core.h"
 #include "oss_pci.h"
@@ -1426,7 +1426,7 @@ init_apci (apci_devc * devc)
 }
 
 int
-audiopci_attach (oss_device_t * osdev)
+oss_audiopci_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1499,7 +1499,7 @@ audiopci_attach (oss_device_t * osdev)
 
 
 int
-audiopci_detach (oss_device_t * osdev)
+oss_audiopci_detach (oss_device_t * osdev)
 {
   apci_devc *devc = (apci_devc *) osdev->devc;
   int tmp;

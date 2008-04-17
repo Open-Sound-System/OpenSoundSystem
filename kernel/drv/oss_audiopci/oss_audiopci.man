@@ -1,5 +1,5 @@
 NAME
-audiopci - Creative/Ensoniq Audiopci - ES1370 audio driver.
+oss_audiopci - Creative/Ensoniq Audiopci - ES1370 audio driver.
 
 DESCRIPTION
 Open Sound System driver for Creative AudioPCI ES1370 (also sold as SBPCI128)
@@ -14,7 +14,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/audiopci.conf Device configuration file
+CONFIGFILEPATH/oss_audiopci.conf Device configuration file
 
 AUTHOR
 4Front Technologies
