@@ -692,7 +692,7 @@ main (int argc, char *argv[])
   if (*codec_name == 0)
     sprintf (codec_name, "subdevice%08x", subdevice);
 
-  printf ("#include \"hdaudio_cfg.h\"\n");
+  printf ("#include \"oss_hdaudio_cfg.h\"\n");
   printf ("#include \"hdaudio.h\"\n");
   printf ("#include \"hdaudio_codec.h\"\n");
   printf ("#include \"hdaudio_dedicated.h\"\n");

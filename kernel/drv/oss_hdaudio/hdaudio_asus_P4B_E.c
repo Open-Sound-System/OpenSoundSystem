@@ -4,7 +4,7 @@
 /* HD codec revision 1.0 (4.0) (0x00100400) */
 /* Subsystem ID 104381e1 */
 /* Default amplifier caps: in=80000000, out=00052727 */
-#include "hdaudio_cfg.h"
+#include "oss_hdaudio_cfg.h"
 #include "hdaudio.h"
 #include "hdaudio_codec.h"
 #include "hdaudio_dedicated.h"

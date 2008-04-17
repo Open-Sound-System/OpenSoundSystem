@@ -5,7 +5,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
-#include "hdaudio_cfg.h"
+#include "oss_hdaudio_cfg.h"
 #include "hdaudio.h"
 #include "hdaudio_codec.h"
 

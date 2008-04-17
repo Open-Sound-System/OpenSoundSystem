@@ -28,11 +28,11 @@ fi
 
 if ! test -f $OSSLIBDIR/objects/osscore.o
 then
-	echo Error: OSS core module for $REGPARM kernel is not available
+	echo Error: OSS core module for $REGPARM kernel is not available in $OSSLIBDIR/objects
 	exit 1
 fi
 
-if ! test -f $OSSLIBDIR/modules/ich.o
+if ! test -f $OSSLIBDIR/modules/oss_ich.o
 then
 	echo Error: OSS driver modules for $REGPARM kernel are not available
 	exit 1

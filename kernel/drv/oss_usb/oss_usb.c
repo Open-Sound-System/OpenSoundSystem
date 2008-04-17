@@ -2404,7 +2404,7 @@ static udi_usb_driver ossusb_driver = {
 };
 
 int
-ossusb_attach (oss_device_t * osdev)
+oss_usb_attach (oss_device_t * osdev)
 {
   if (usb_trace < 0)
     {
@@ -2419,7 +2419,7 @@ ossusb_attach (oss_device_t * osdev)
 }
 
 int
-ossusb_detach (oss_device_t * osdev)
+oss_usb_detach (oss_device_t * osdev)
 {
   if (oss_disable_device (osdev) < 0)
     return 0;
