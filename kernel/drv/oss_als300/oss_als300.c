@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "als300_cfg.h"
+#include "oss_als300_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "als300.h"
