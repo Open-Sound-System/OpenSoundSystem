@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
 
-#include "digi32_cfg.h"
+#include "oss_digi32_cfg.h"
 #include "oss_pci.h"
 
 #define RME_VENDOR_ID		0xea60

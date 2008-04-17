@@ -1,5 +1,5 @@
 NAME
-digi32 - RME Digi32 professional audio driver.
+oss_digi32 - RME Digi32 professional audio driver.
 
 DESCRIPTION
 RME Digi32 is a family of digital audio cards. The base model Digi32 has 
@@ -75,7 +75,7 @@ and playback functions. This should be sufficient in most cases. If necessary
 the buffer sizes can be increased.
 
 FILES
-CONFIGFILEPATH/digi32.conf Device configuration file
+CONFIGFILEPATH/oss_digi32.conf Device configuration file
 
 AUTHOR
 4Front Technologies
