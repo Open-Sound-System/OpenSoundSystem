@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "ymf7xx_cfg.h"
+#include "oss_ymf7xx_cfg.h"
 #include "ymf7xx.h"
 #include "oss_pci.h"
 #include "ac97.h"
@@ -1339,7 +1339,7 @@ init_ymf7xx (ymf7xx_devc * devc)
 }
 
 int
-ymf7xx_attach (oss_device_t * osdev)
+oss_ymf7xx_attach (oss_device_t * osdev)
 {
 
 
@@ -1546,7 +1546,7 @@ ymf7xx_attach (oss_device_t * osdev)
 
 
 int
-ymf7xx_detach (oss_device_t * osdev)
+oss_ymf7xx_attach (oss_device_t * osdev)
 {
   ymf7xx_devc *devc = (ymf7xx_devc *) osdev->devc;
 

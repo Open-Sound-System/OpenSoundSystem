@@ -1,5 +1,5 @@
 NAME
-ymf7xx - Yamaha DS-XG audio driver.
+oss_ymf7xx - Yamaha DS-XG audio driver.
 
 DESCRIPTION
 Open Sound System driver for Yamaha DS-XG YMF724/740/744/754 audio controllers.
@@ -26,7 +26,7 @@ Yamaha FM SYnthesizer IO address. Refer to driver conf file (see below) for
 possible values.
 
 FILES
-CONFIGFILEPATH/ymf7xx.conf Device configuration file
+CONFIGFILEPATH/oss_ymf7xx.conf Device configuration file
 
 AUTHOR
 4Front Technologies
