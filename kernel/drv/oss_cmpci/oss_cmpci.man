@@ -1,5 +1,5 @@
 NAME
-cmpci - CMedia CMI87x8 audio driver.
+oss_cmpci - CMedia CMI8738/8768 audio driver.
 
 DESCRIPTION
 Open Sound System driver for CMedia Electronics CMI8738/8768 audio
@@ -49,7 +49,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/cmpci.conf Device configuration file
+CONFIGFILEPATH/oss_cmpci.conf Device configuration file
 
 AUTHOR
 4Front Technologies

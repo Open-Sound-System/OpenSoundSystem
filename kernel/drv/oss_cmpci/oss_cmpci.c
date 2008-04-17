@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "cmpci_cfg.h"
+#include "oss_cmpci_cfg.h"
 #include "oss_pci.h"
 #include "uart401.h"
 
