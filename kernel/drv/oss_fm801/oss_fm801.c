@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998-2007. All rights reserved.
 
-#include "fm801_cfg.h"
+#include "oss_fm801_cfg.h"
 #include "ac97.h"
 #include "oss_pci.h"
 #include "uart401.h"
@@ -953,7 +953,7 @@ init_fm801 (fm801_devc * devc)
 }
 
 int
-fm801_attach (oss_device_t * osdev)
+oss_fm801_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1032,7 +1032,7 @@ fm801_attach (oss_device_t * osdev)
 }
 
 int
-fm801_detach (oss_device_t * osdev)
+oss_fm801_attach (oss_device_t * osdev)
 {
   fm801_devc *devc = (fm801_devc *) osdev->devc;
 

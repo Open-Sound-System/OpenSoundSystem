@@ -1,5 +1,5 @@
 NAME
-fm801 - Forte Media FM801 driver.
+oss_fm801 - Forte Media FM801 driver.
 
 DESCRIPTION
 Open Sound System driver for Forte Media FM801/FM801-AU audio controllers.
@@ -16,7 +16,7 @@ Set the IRQ for the UART401 MPU. Refer to device conf file (see below) for
 valid IRQs.
 
 FILES
-CONFIGFILEPATH/fm801.conf Device configuration file
+CONFIGFILEPATH/oss_fm801.conf Device configuration file
 
 AUTHOR
 4Front Technologies
