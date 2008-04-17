@@ -1,5 +1,5 @@
 NAME
-via8233 - Open Sound System driver for VIA 8233/8235/8237 audio controllers.
+oss_via8233 - Open Sound System driver for VIA 8233/8235/8237 audio controllers.
 
 DESCRIPTION
 
@@ -14,7 +14,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/via8233.conf Device configuration 
+CONFIGFILEPATH/oss_via8233.conf Device configuration 
 
 AUTHOR
 4Front Technologies
