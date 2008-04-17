@@ -1,5 +1,5 @@
 NAME
-imux - Input Muplexer audio driver.
+oss_imux - Input Muplexer audio driver.
 
 DESCRIPTION
 IMUX is a virtual recording engine that permits up to 8 audio recording
@@ -101,7 +101,7 @@ Values: 2-48 Default: 5
 
 
 FILES
-CONFIGFILEPATH/imux.conf Device configuration file
+CONFIGFILEPATH/oss_imux.conf Device configuration file
 
 AUTHOR
 4Front Technologies

@@ -7,7 +7,7 @@
 #define MAX_IMUX_DEV	48
 #define SUPPORTED_FORMATS (AFMT_S16_NE|AFMT_S16_OE)
 
-#include "imux_cfg.h"
+#include "oss_imux_cfg.h"
 
 static unsigned long long used_masterdevs = 0LL;
 
