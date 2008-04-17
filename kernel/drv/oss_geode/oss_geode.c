@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2001-2007. All rights reserved.
 
-#include "geode_cfg.h"
+#include "oss_geode_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 
@@ -790,7 +790,7 @@ init_geode (geode_devc * devc)
 }
 
 int
-geode_attach (oss_device_t * osdev)
+oss_geode_attach (oss_device_t * osdev)
 {
   unsigned char pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -851,7 +851,7 @@ geode_attach (oss_device_t * osdev)
 
 
 int
-geode_detach (oss_device_t * osdev)
+oss_geode_attach (oss_device_t * osdev)
 {
   geode_devc *devc = (geode_devc *) osdev->devc;
   unsigned char *f3bar_b = (unsigned char *) devc->f3bar;

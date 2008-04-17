@@ -1,5 +1,5 @@
 NAME
-geode - National Semiconductor Geode audio driver.
+oss_geode - National Semiconductor Geode audio driver.
 
 DESCRIPTION
 Open Sound System driver for National Semiconductor Geode/CX5530 audio 
@@ -26,7 +26,7 @@ you can get dropouts in audio since the system is using polling.
 
 
 FILES
-CONFIGFILEPATH/geode.conf Device configuration file
+CONFIGFILEPATH/oss_geode.conf Device configuration file
 
 AUTHOR
 4Front Technologies
