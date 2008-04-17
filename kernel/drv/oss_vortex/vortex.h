@@ -2,7 +2,7 @@
  * Purpose: Definitions for the Vortex driver
  */
 #define COPYING36 Copyright (C) Hannu Savolainen and Dev Mazumdar 1996-2005. All rights reserved.
-#include "vortex_cfg.h"
+#include "oss_vortex_cfg.h"
 #include "midi_core.h"
 #include <ac97.h>
 #include <oss_pci.h>

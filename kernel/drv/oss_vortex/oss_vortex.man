@@ -1,5 +1,5 @@
 NAME
-vortex - Aureal Vortex audio driver
+oss_vortex - Aureal Vortex audio driver
 
 DESCRIPTION
 Open Sound System driver for old Aureal Semiconductor AU8820 (Vortex1) and
@@ -14,7 +14,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/vortex.conf Device configuration file
+CONFIGFILEPATH/oss_vortex.conf Device configuration file
 
 AUTHOR
 4Front Technologies
