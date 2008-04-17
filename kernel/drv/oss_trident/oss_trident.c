@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "trident_cfg.h"
+#include "oss_trident_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 
@@ -1417,7 +1417,7 @@ init_trident (trident_devc * devc)
 }
 
 int
-trident_attach (oss_device_t * osdev)
+oss_trident_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -1530,7 +1530,7 @@ trident_attach (oss_device_t * osdev)
 
 
 int
-trident_detach (oss_device_t * osdev)
+oss_trident_attach (oss_device_t * osdev)
 {
   trident_devc *devc = (trident_devc *) osdev->devc;
 

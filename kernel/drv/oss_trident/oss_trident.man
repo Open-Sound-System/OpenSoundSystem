@@ -1,5 +1,5 @@
 NAME
-trident - SiS7018, 4Dwave, ALIM5451 audio driver.
+oss_trident - SiS7018, 4Dwave, ALIM5451 audio driver.
 
 DESCRIPTION
 Open Sound System driver for Trident 4DWave DX/NX, SiS7018 and ALI5451 audio
@@ -21,7 +21,7 @@ will not work under Sparc. The only exception is the ALI5451 chip that is
 used on the main boards on many Sparc based systems.
 
 FILES
-CONFIGFILEPATH/trident.conf Device configuration file
+CONFIGFILEPATH/oss_trident.conf Device configuration file
 
 AUTHOR
 4Front Technologies
