@@ -25,6 +25,8 @@
 #undef  MEMDEBUG
 #define VDEV_SUPPORT
 
+if (defined(x86) || defined(x86_64)) && !defined(CONFIG_OSS_FIXDEPOINT)
+#endif
 #define VMIX_USE_FLOAT
 /*
  * Disable support for per-application features such as /dev/dsp device
