@@ -22,7 +22,7 @@ dev_t default_dev = 0;
 #define MAX_PASS	3
 
 static char *osslibdir = "/usr/lib/oss";
-static char *vmix = "SOFTOSS";
+static char *vmix = "VMIX";
 
 static int verbose = 0;
 
@@ -295,9 +295,6 @@ main (int argc, char *argv[])
   struct stat st;
   int i, pass;
   FILE *f;
-
-  if (stat ("/usr/lib/oss/modules/vmix/Driver.o", &st) != -1)
-    vmix = "VMIX";
 
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')

@@ -24,7 +24,7 @@ static char *osslibdir = "/usr/lib/oss";
 
 static int verbose = 0;
 
-static char *vmix = "SOFTOSS";
+static char *vmix = "VMIX";
 
 typedef struct
 {
@@ -261,9 +261,6 @@ main (int argc, char *argv[])
   struct stat st;
   int i, pass;
   FILE *f;
-
-  if (stat ("/usr/lib/oss/modules/vmix.ko", &st) != -1)
-    vmix = "VMIX";
 
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')

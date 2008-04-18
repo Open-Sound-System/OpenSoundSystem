@@ -19,7 +19,7 @@ static int use_force = 0;
 static char arch[32] = "";
 static int install_imux = 0;
 
-static char *vmix = "softoss";
+static char *vmix = "vmix";
 
 /* List of all modules installed in the system (OSS and non-oss) */
 #define MAX_MODS 512
@@ -595,14 +595,6 @@ main (int argc, char *argv[])
   FILE *ptr;
   int pid;
   char *cmd = "/usr/sbin/modinfo | grep osscommon";
-/*
- * Use the new vmix driver if it exists. Otherwise use the older
- * SoftOSS based vmix driver.
- */
-  if (stat ("/kernel/drv/vmix", &st) != -1)
-    vmix = "vmix";
-  if (stat ("/kernel/drv/sparcv9/vmix", &st) != -1)
-    vmix = "vmix";
 
 #if 0
   if (sysinfo (SI_ARCHITECTURE_K, tmp, sizeof (tmp)) == -1)
