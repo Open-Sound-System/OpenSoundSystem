@@ -1855,3 +1855,13 @@ oss_hdaudio_detach (oss_device_t * osdev)
   oss_unregister_device (devc->osdev);
   return 1;
 }
+
+#ifdef OSS_POWER_MANAGE
+int
+oss_hdaudio_power (oss_device_t *osdev, int component, int level)
+{
+cmn_err(CE_CONT, "oss_hdaudio_power(%d, %d)\n", component, level);
+
+	return 0; /* Failed */
+}
+#endif

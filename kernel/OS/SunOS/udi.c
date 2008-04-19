@@ -48,9 +48,15 @@ udi_attach_usbdriver (oss_device_t * osdev, const udi_usb_devinfo * devlist,
   //usb_alt_if_data_t *altif_data;
   usb_client_dev_data_t *dev_data;
 
+  if (dip==NULL)
+     {
+	cmn_err(CE_WARN, "dip==NULL\n");
+	return 0;
+     }
+
   name = ddi_get_name (osdev->dip);
 
-  if (strcmp (name, "ossusb") == 0)
+  if (strcmp (name, "oss_usb") == 0)
     {
       oss_register_device (osdev, "USB audio/MIDI device");
       return 1;

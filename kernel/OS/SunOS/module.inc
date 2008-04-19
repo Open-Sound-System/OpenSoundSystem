@@ -16,6 +16,10 @@ static int ossdrv_getinfo (dev_info_t *, ddi_info_cmd_t, void *, void **);
 static int ossdrv_attach (dev_info_t *, ddi_attach_cmd_t);
 static int ossdrv_detach (dev_info_t *, ddi_detach_cmd_t);
 
+#ifdef OSS_POWER_MANAGE
+static int ossdrv_power (dev_info_t *, int component, int level);
+#endif
+
 /* Entry points structure */
 #if DRIVER_TYPE!=DRV_STREAMS
 
@@ -85,7 +89,11 @@ static struct dev_ops ossdrv_dev_ops = {
   &ossdrv_cb_ops,		/* devi_cb_ops */
 #endif
   NULL,				/* devo_bus_ops */
+#ifdef OSS_POWER_MANAGE
+  ossdrv_power
+#else
   NULL				/* devo_power */
+#endif
 };
 
 static struct modldrv ossdrv_modldrv = {
@@ -296,3 +304,36 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
   DDB (cmn_err (CE_CONT, "Detach done " DRIVER_NICK "\n"));
   return DDI_SUCCESS;
 }
+
+#ifdef OSS_POWER_MANAGE
+static int
+ossdrv_power (dev_info_t *dip, int component, int level)
+{
+  oss_device_t *osdev;
+
+  if (dip == NULL)
+    {
+      cmn_err (CE_WARN, "ossdrv_detach: dip==NULL\n");
+      return DDI_FAILURE;
+    }
+
+  DDB (cmn_err
+       (CE_CONT, "ossdrv_power " DRIVER_NICK "(%s, %d, %d)\n", ddi_get_name (dip), component, level));
+  if ((osdev = (oss_device_t *) ddi_get_driver_private (dip)) == NULL)
+    {
+      cmn_err (CE_WARN, "ddi_get_driver_private() failed\n");
+      return DDI_SUCCESS;
+    }
+
+  if (osdev==NULL)
+    {
+      cmn_err (CE_WARN, "Driver osdev==NULL - cannot detach\n");
+      return DDI_FAILURE;
+    }
+
+	if (!DRIVER_POWER(osdev, component, level))
+	   return DDI_FAILURE;
+
+	return DDI_SUCCESS;
+}
+#endif

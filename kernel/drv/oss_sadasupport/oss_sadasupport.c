@@ -303,7 +303,7 @@ static struct qinit sadasupport_wqueue = {
 };
 
 /* STREAMS entity declaration structure */
-struct streamtab sadasupport_str_info = {
+struct streamtab oss_sadasupport_str_info = {
   &sadasupport_rqueue,		/* read queue */
   &sadasupport_wqueue,		/* write queue */
   NULL,				/* mux lower read queue */

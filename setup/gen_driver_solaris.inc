@@ -149,10 +149,18 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
   fprintf (src, "#define DRIVER_ATTACH\t%s_attach\n", name);
   fprintf (src, "#define DRIVER_DETACH\t%s_detach\n", name);
   fprintf (src, "#define DRIVER_TYPE\tDRV_%s\n", conf->bus);
+
+  if (conf->power_manage)
+     {
+  	fprintf (src, "#define DRIVER_POWER\t%s_power\n", name);
+	fprintf (src, "#define OSS_POWER_MANAGE\n");
+     }
+
   fprintf (src, "\n");
 
   fprintf (src, "extern int DRIVER_ATTACH(oss_device_t *ossdev);\n");
   fprintf (src, "extern int DRIVER_DETACH(oss_device_t *ossdev);\n");
+  fprintf (src, "extern int DRIVER_POWER(oss_device_t *ossdev, int component, int level);\n");
 
   fclose (src);
 }

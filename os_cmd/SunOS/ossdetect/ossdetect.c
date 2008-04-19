@@ -778,8 +778,8 @@ main (int argc, char *argv[])
       add_drv ("OSS Input Multiplexer", "imux", "-m '* 0666 root sys'");
     }
 
-  check_conf ("sadasupport", 1, "");
-  add_drv ("SADA emulation layer", "sadasupport", "-m '* 0666 root sys'");
+  check_conf ("oss_sadasupport", 1, "");
+  add_drv ("SADA emulation layer", "oss_sadasupport", "-m '* 0666 root sys'");
 
   for (i = 0; i < ndrivers; i++)
     if (drivers[i].reload)

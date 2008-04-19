@@ -4,7 +4,7 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
 
-#define KBUILD_MODNAME ossusb
+#define KBUILD_MODNAME oss_usb
 #include "oss_config.h"
 #include "ossusb.h"
 
@@ -2231,7 +2231,7 @@ ossusb_device_disconnect (void *d)
 
   if (devc == NULL)
     {
-      cmn_err (CE_WARN, "ossusb_device_disconnect: devc==NULL\n");
+      cmn_err (CE_WARN, "oss_usb_device_disconnect: devc==NULL\n");
       return;
     }
 

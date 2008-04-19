@@ -1,53 +1,3 @@
-apci97	pci1102,8938	Creative Ectiva EV1938
-apci97	pci1274,1371	Creative AudioPCI97 (ES1371/ES1373)
-apci97	pci1274,5880	Creative Sound Blaster PCI128 (5880B)
-apci97	pci1274,8001	Creative Sound Blaster PCI128 (CT5880)
-apci97	pci1274,8002	Creative Sound Blaster PCI128 (5880A)
-audiopci	pci1274,5000	Creative AudioPCI (ES1370)
-hdaudio	pci8086,2668	Intel High Definition Audio (ICH6)
-hdaudio	pci8086,27d8	Intel High Definition Audio (ICH7)
-hdaudio	pci8086,269a	Intel High Definition Audio (ESB2)
-hdaudio	pci8086,284b	Intel High Definition Audio (ICH8)
-hdaudio	pci8086,293e	Intel High Definition Audio (P35)
-hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
-hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
-hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
-hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
-hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
-hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
-hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
-hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
-hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
-hdaudio	pci1106,3288	VIA High Definition Audio
-hdaudio	pci1039,7502	SiS High Definition Audio
-hdaudio	pci10b9,5461	ULI High Definition Audio
-ich	pci1022,7445	AMD 786
-ich	pci1022,746d	AMD 8111 
-ich	pci1039,7012	SiS 7012 
-ich	pci10de,1b1	Nvidia nForce
-ich	pci10de,3a	Nvidia MCP4
-ich	pci10de,6a	Nvidia nForce2
-ich	pci10de,8a	Nvidia CK8
-ich	pci10de,da	Nvidia nForce3
-ich	pci10de,ea	Nvidia CK8S
-ich	pci10de,59	Nvidia nForce4
-ich	pci10de,26b	Nvidia MCP51
-ich	pci8086,2415	Intel AC97 (ICH)
-ich	pci8086,2425	Intel AC97 (ICH1)
-ich	pci8086,2445	Intel AC97 (ICH2)
-ich	pci8086,2485	Intel AC97 (ICH3)
-ich	pci8086,24c5	Intel AC97 (ICH4)
-ich	pci8086,24d5	Intel AC97 (ICH5)
-ich	pci8086,25a6	Intel AC97 (ESB)
-ich	pci8086,266e	Intel AC97 (ICH6)
-ich	pci8086,27de	Intel AC97 (ICH7)
-ich	pci8086,7195	Intel 440MX (440MX)
-lynxtwo	pci1621,20	LynxTWO-A Studio Interface
-lynxtwo	pci1621,21	LynxTWO-B Studio Interface
-lynxtwo	pci1621,22	LynxTWO-C Studio Interface
-lynxtwo	pci1621,23	Lynx-L22 Studio Interface
-lynxtwo	pci1621,24	Lynx AES16 Studio Interface
-lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 oss_ali5455	pci10b9,5455	ALI M5455
 oss_allegro	pci125d,1988	ESS Allegro ES1988
 oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
@@ -57,11 +7,17 @@ oss_allegro	pci125d,199a	ESS Maestro3 ES199A
 oss_als300	pci4005,300	Avance Logic ALS300
 oss_als300	pci4005,308	Avance Logic ALS300+
 oss_als4000	pci4005,4000	Avance Logic ALS4000
+oss_apci97	pci1102,8938	Creative Ectiva EV1938
+oss_apci97	pci1274,1371	Creative AudioPCI97 (ES1371/ES1373)
+oss_apci97	pci1274,5880	Creative Sound Blaster PCI128 (5880B)
+oss_apci97	pci1274,8001	Creative Sound Blaster PCI128 (CT5880)
+oss_apci97	pci1274,8002	Creative Sound Blaster PCI128 (5880A)
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
 oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
+oss_audiopci	pci1274,5000	Creative AudioPCI (ES1370)
 oss_cmi8788	pci13f6,8788	CMedia CMI8788
 oss_cmpci	pci13f6,100	C-Media CM8338A
 oss_cmpci	pci13f6,100	MIDIMan DiO 2448
@@ -111,6 +67,44 @@ oss_fm801	pci1319,801	ForteMedia FM 801
 oss_fm801	pcs1489,7008	Genius Sound Maker Live
 oss_geode	pci100b,503	National Semiconductor Geode SC1200
 oss_geode	pci1078,103	National Semiconductor Geode CS5530
+oss_hdaudio	pci8086,2668	Intel High Definition Audio (ICH6)
+oss_hdaudio	pci8086,27d8	Intel High Definition Audio (ICH7)
+oss_hdaudio	pci8086,269a	Intel High Definition Audio (ESB2)
+oss_hdaudio	pci8086,284b	Intel High Definition Audio (ICH8)
+oss_hdaudio	pci8086,293e	Intel High Definition Audio (P35)
+oss_hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
+oss_hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
+oss_hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
+oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
+oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
+oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
+oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
+oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
+oss_hdaudio	pci1106,3288	VIA High Definition Audio
+oss_hdaudio	pci1039,7502	SiS High Definition Audio
+oss_hdaudio	pci10b9,5461	ULI High Definition Audio
+oss_ich	pci1022,7445	AMD 786
+oss_ich	pci1022,746d	AMD 8111 
+oss_ich	pci1039,7012	SiS 7012 
+oss_ich	pci10de,1b1	Nvidia nForce
+oss_ich	pci10de,3a	Nvidia MCP4
+oss_ich	pci10de,6a	Nvidia nForce2
+oss_ich	pci10de,8a	Nvidia CK8
+oss_ich	pci10de,da	Nvidia nForce3
+oss_ich	pci10de,ea	Nvidia CK8S
+oss_ich	pci10de,59	Nvidia nForce4
+oss_ich	pci10de,26b	Nvidia MCP51
+oss_ich	pci8086,2415	Intel AC97 (ICH)
+oss_ich	pci8086,2425	Intel AC97 (ICH1)
+oss_ich	pci8086,2445	Intel AC97 (ICH2)
+oss_ich	pci8086,2485	Intel AC97 (ICH3)
+oss_ich	pci8086,24c5	Intel AC97 (ICH4)
+oss_ich	pci8086,24d5	Intel AC97 (ICH5)
+oss_ich	pci8086,25a6	Intel AC97 (ESB)
+oss_ich	pci8086,266e	Intel AC97 (ICH6)
+oss_ich	pci8086,27de	Intel AC97 (ICH7)
+oss_ich	pci8086,7195	Intel 440MX (440MX)
 oss_imux	IMUX	OSS Input Multiplexer 
 oss_maestro	pci125d,1968	ESS Maestro-2 
 oss_maestro	pci125d,1978	ESS Maestro-2E 
@@ -133,6 +127,34 @@ oss_trident	pci1023,2001	Trident 4DWave-NX
 oss_trident	pci1023,2002	Trident 4DWave-CX
 oss_trident	pci1039,7018	SiS 7018 
 oss_trident	pci10b9,5451	ALI M5451
+oss_usb	usbif,class1	Generic USB audio/MIDI device (BETA)
+oss_usb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)
+oss_usb	usbif41e,3010	Creative Sound Blaster MP3+ USB
+oss_usb	usbif41e,3020	Creative Audigy2 NX USB (BETA)
+oss_usb	usbif46d,8b2	Logitec Quickcam Pro 4000 (mic) (BETA)
+oss_usb	usbif46d,a01	Logitec USB Headset
+oss_usb	usbif471,311	Philips ToUcam Pro (mic) (BETA)
+oss_usb	usbif672,1041	Labtec LCS1040 Speaker System (BETA)
+oss_usb	usbifd8c,c	C-Media USB audio adapter - model1
+oss_usb	usbifd8c,103	C-Media USB audio adapter - model2
+oss_usb	usbifd8c,102	C-Media USB 2/4/6/8ch audio adapter
+oss_usb	usbif6f8,c000	Hercules Gamesurround MUSE Pocket (BETA)
+oss_usb	usb763,1010	M Audio USB MIDISPORT 1x1 (BETA)
+oss_usb	usb763,1011	M Audio USB MIDISPORT 1x1 (BETA)
+oss_usb	usb763,1001	M Audio USB MIDISPORT 2x2 (BETA)
+oss_usb	usb763,1002	M Audio USB MIDISPORT 2x2 (BETA)
+oss_usb	usb763,1031	M Audio USB MIDISPORT 8x8 (BETA)
+oss_usb	usbif763,2001	M Audio USB AudioSport Quatro (BETA)
+oss_usb	usbif763,2002	M Audio USB AudioSport Duo (BETA)
+oss_usb	usbif763,classff	Generic M Audio USB MIDI interface (BETA)
+oss_usb	usbif763,2007	M Audio Sonica Theater USB (BETA)
+oss_usb	usbif763,200d	M Audio OmniStudio USB (BETA)
+oss_usb	usbif763,2805	M Audio Sonica USB (BETA)
+oss_usb	usb763,1014	M Audio Oygen8 MIDI keyboard
+oss_usb	usb763,1015	M Audio Oygen8 MIDI keyboard
+oss_usb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
+oss_usb	usb499,1009	Yamaha UX16 USB MIDI interface (BETA)
+oss_usb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
 oss_via8233	pci1106,3059	VIA VT8233/8235/8237 
 oss_via8233	pci1106,4551	VIA VT5432B 
 oss_via8233	pci1106,7059	VIA VT8233A 
@@ -151,34 +173,3 @@ oss_ymf7xx	pci1073,a	Yamaha DS-XG YMF740
 oss_ymf7xx	pci1073,c	Yamaha DS-XG YMF740C
 oss_ymf7xx	pci1073,d	Yamaha DS-XG YMF724F
 osscore	OSSCORE	OSS Core services
-ossusb	usbif,class1	Generic USB audio/MIDI device (BETA)
-ossusb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)
-ossusb	usbif41e,3010	Creative Sound Blaster MP3+ USB
-ossusb	usbif41e,3020	Creative Audigy2 NX USB (BETA)
-ossusb	usbif46d,8b2	Logitec Quickcam Pro 4000 (mic) (BETA)
-ossusb	usbif46d,a01	Logitec USB Headset
-ossusb	usbif471,311	Philips ToUcam Pro (mic) (BETA)
-ossusb	usbif672,1041	Labtec LCS1040 Speaker System (BETA)
-ossusb	usbifd8c,c	C-Media USB audio adapter - model1
-ossusb	usbifd8c,103	C-Media USB audio adapter - model2
-ossusb	usbifd8c,102	C-Media USB 2/4/6/8ch audio adapter
-ossusb	usbif6f8,c000	Hercules Gamesurround MUSE Pocket (BETA)
-ossusb	usb763,1010	M Audio USB MIDISPORT 1x1 (BETA)
-ossusb	usb763,1011	M Audio USB MIDISPORT 1x1 (BETA)
-ossusb	usb763,1001	M Audio USB MIDISPORT 2x2 (BETA)
-ossusb	usb763,1002	M Audio USB MIDISPORT 2x2 (BETA)
-ossusb	usb763,1031	M Audio USB MIDISPORT 8x8 (BETA)
-ossusb	usbif763,2001	M Audio USB AudioSport Quatro (BETA)
-ossusb	usbif763,2002	M Audio USB AudioSport Duo (BETA)
-ossusb	usbif763,classff	Generic M Audio USB MIDI interface (BETA)
-ossusb	usbif763,2007	M Audio Sonica Theater USB (BETA)
-ossusb	usbif763,200d	M Audio OmniStudio USB (BETA)
-ossusb	usbif763,2805	M Audio Sonica USB (BETA)
-ossusb	usb763,1014	M Audio Oygen8 MIDI keyboard
-ossusb	usb763,1015	M Audio Oygen8 MIDI keyboard
-ossusb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
-ossusb	usb499,1009	Yamaha UX16 USB MIDI interface (BETA)
-ossusb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
-riptide	pci127a,4310	Conexant Riptide 
-riptide	pci127a,4320	Conexant Riptide
-sonorus	pci1057,1801	Sonorus STUDI/O

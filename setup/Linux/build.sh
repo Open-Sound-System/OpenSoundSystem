@@ -152,8 +152,8 @@ fi
 
 cp devlist.txt prototype/usr/lib/oss/etc/devices.list
 
-#sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/Linux
-cp devlist.txt $SRCDIR/devlists/Linux
+sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/Linux
+#cp devlist.txt $SRCDIR/devlists/Linux
 
 # Generate Man pages for commands
 for i in target/bin/*

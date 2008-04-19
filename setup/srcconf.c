@@ -63,6 +63,8 @@ typedef struct
 
   int check_os, os_ok, os_bad;
   int check_cpu, cpu_ok, cpu_bad;
+
+  int power_manage;
 } conf_t;
 
 static conf_t conf = {
@@ -285,6 +287,11 @@ parse_config (FILE * f, conf_t * conf)
 	  if (strcmp (conf->platform, parms) == 0)
 	    conf->cpu_ok = 1;
 	  continue;
+	}
+
+      if (strcmp (line, "pm_support") == 0)
+	{
+	    conf->power_manage=1;
 	}
 
       printf ("\t     %s\n", line);
