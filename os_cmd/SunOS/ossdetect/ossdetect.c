@@ -19,7 +19,7 @@ static int use_force = 0;
 static char arch[32] = "";
 static int install_imux = 0;
 
-static char *vmix = "vmix";
+static char *vmix = "oss_vmix";
 
 /* List of all modules installed in the system (OSS and non-oss) */
 #define MAX_MODS 512
