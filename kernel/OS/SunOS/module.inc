@@ -199,6 +199,9 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
   int instance;
   oss_device_t *osdev;
 
+#ifdef OSS_POWER_MANAGE
+  if (cmd != DDI_RESUME) /* Allow resume */
+#endif
   if (cmd != DDI_ATTACH)
     {
       cmn_err (CE_WARN, "bad attach cmd %d\n", cmd);
@@ -210,6 +213,21 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
       cmn_err (CE_WARN, "ossdrv_attach: dip==NULL\n");
       return DDI_FAILURE;
     }
+
+#ifdef OSS_POWER_MANAGE
+  if (cmd == DDI_RESUME)
+     {
+	  if ((osdev = (oss_device_t *) ddi_get_driver_private (dip)) == NULL)
+	    {
+	      cmn_err (CE_WARN, "ddi_get_driver_private() failed\n");
+	      return DDI_SUCCESS;
+	    }
+  	if (!DRIVER_POWER(osdev, -1, 9))
+     	   return DDI_FAILURE;
+
+	return DDI_SUCCESS;
+     }
+#endif
 
   instance = ddi_get_instance (dip);
   DDB (cmn_err
@@ -264,6 +282,9 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
 {
   oss_device_t *osdev;
 
+#ifdef OSS_POWER_MANAGE
+  if (cmd != DDI_SUSPEND) /* Allow suspend */
+#endif
   if (cmd != DDI_DETACH)
     {
       cmn_err (CE_WARN, "bad detach cmd %d\n", cmd);
@@ -290,6 +311,15 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
       cmn_err (CE_WARN, "Driver osdev==NULL - cannot detach\n");
       return DDI_FAILURE;
     }
+
+#ifdef OSS_POWER_MANAGE
+  if (cmd == DDI_SUSPEND)
+  {
+     if (!DRIVER_POWER(osdev, -1, 0))
+        return DDI_FAILURE;
+     return DDI_SUCCESS;
+  }
+#endif
 
   if (DRIVER_DETACH (osdev) <= 0)
     {
