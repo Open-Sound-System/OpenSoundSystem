@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
-extern int quiet, quitflag, exitstatus, loop;
+extern int quiet, quitflag, exitstatus, loop, from_stdin;
 extern char current_songname[64];
 
 #include "ossplay.h"
@@ -71,7 +71,16 @@ ossplay_free (void * ptr)
 char *
 ossplay_strdup (const char * s)
 {
-  return strdup (s);
+  char * p;
+
+  if (s == NULL) return NULL;
+  p = strdup (s);
+  if (p == NULL)
+    {
+      fprintf (stderr, "Can't allocate memory for strdup\n");
+      exit (-1);
+    }
+  return p;
 }
 
 int
@@ -88,6 +97,7 @@ main (int argc, char **argv)
     {
       strncpy (current_songname, filepart (argv[i]), sizeof (current_songname));
       current_songname[sizeof (current_songname) - 1] = 0;
+      from_stdin = !strcmp (argv[i], "-");
       play_file (argv[i]);
       quitflag = 0;
     }

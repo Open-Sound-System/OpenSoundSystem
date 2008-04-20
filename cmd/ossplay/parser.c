@@ -42,40 +42,19 @@ enum {
 };
 
 extern int audiofd, quitflag, quiet, verbose;
-extern int raw_file, raw_mode, exitstatus, force_fmt;
+extern int raw_file, raw_mode, exitstatus, force_fmt, from_stdin;
+extern off_t (*ossplay_lseek) (int, off_t, int);
+
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
 
-static off_t (*ossplay_lseek) (int, off_t, int) = lseek;
-static off_t ossplay_lseek_stdin (int, off_t, int);
 static void play_au (const char *, int, unsigned char *, int);
 static void play_iff (const char *, int, unsigned char *, int);
 #ifdef MPEG_SUPPORT
 extern void play_mpeg (const char *, int, unsigned char *, int);
 #endif
 static void play_voc (const char *, int, unsigned char *, int);
-
-static off_t
-ossplay_lseek_stdin (int fd, off_t off, int w)
-{
-  off_t i;
-  ssize_t bytes_read;
-  char buf[BUFSIZ];
-
-  if (w == SEEK_END) return -1;
-  if (off < 0) return -1;
-  if (off == 0) return 0;
-  i = off;
-  while (i > 0)
-    {
-      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
-      if (bytes_read == -1) return -1;
-      else if (bytes_read == 0) return off;
-      i -= bytes_read;
-    }
-  return off;
-}
 
 void
 play_file (const char * filename)
@@ -84,7 +63,7 @@ play_file (const char * filename)
   unsigned char buf[PLAYBUF_SIZE];
   const char * suffix;
 
-  if (!strcmp(filename, "-"))
+  if (from_stdin)
     {
       FILE *fp;
 
@@ -500,8 +479,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             sound_loc = csize + 16 + offset;
             sound_size = chunk_size - 8;
 
-            if ((!strcmp (filename, "-")) &&
-                (ossplay_lseek == ossplay_lseek_stdin))
+            if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
             ASEEK (fd, chunk_size - 8, SSND);
             break;
@@ -521,9 +499,9 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 case 1: format = AFMT_FIBO_DELTA; break;
                 case 2: format = AFMT_EXP_DELTA; break;
                 default:
-                 print_msg (ERRORM, "%s: Unsupported compression %d\n",
-                            filename, buf[15]);
-                if (force_fmt == 0) return;
+                  print_msg (ERRORM, "%s: Unsupported compression %d\n",
+                             filename, buf[15]);
+                  if (force_fmt == 0) return;
               }
             found |= COMM_FOUND;
             break;
@@ -537,8 +515,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             sound_size = chunk_size;
             if (chunk_id != data_HUNK) sound_loc = csize + 4;
             found |= SSND_FOUND;
-            if ((!strcmp (filename, "-")) &&
-                (ossplay_lseek == ossplay_lseek_stdin))
+            if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
             ASEEK (fd, chunk_size, BODY);
             break;

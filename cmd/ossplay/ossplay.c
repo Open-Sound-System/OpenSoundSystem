@@ -18,10 +18,12 @@
 #include <signal.h>
 
 int force_speed = -1, force_fmt = 0, force_channels = -1, amplification = 100;
-int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0;
-int raw_file = 0, raw_mode = 0, exitstatus = 0, loop = 0;
+int audiofd = 0, quitflag = 0, quiet = 0, verbose = 0, int_conv = 0;
+int raw_file = 0, raw_mode = 0, exitstatus = 0, loop = 0, from_stdin = 0;
 char audio_devname[32] = "/dev/dsp";
 char current_songname[64] = "";
+double seek_time = 0;
+off_t (*ossplay_lseek) (int, off_t, int) = lseek;
 
 static int prev_speed = 0, prev_fmt = 0, prev_channels = 0;
 static char *playtgt = NULL;
@@ -41,8 +43,8 @@ static const format_t format_a[] = {
 #else
   0},
 #endif
-  {"U16_LE",		AFMT_U16_LE,		0},
-  {"U16_BE",		AFMT_U16_BE,		0},
+  {"U16_LE",		AFMT_U16_LE,		AFMT_S16_NE},
+  {"U16_BE",		AFMT_U16_BE,		AFMT_S16_NE},
   {"S24_LE",		AFMT_S24_LE,		0},
   {"S24_BE",		AFMT_S24_BE,		0},
   {"S32_LE",		AFMT_S32_LE,
@@ -139,6 +141,7 @@ usage (const char * prog)
   print_msg (HELPM, "            -o<playtgt>|?  Select/Query output target.\n");
   print_msg (HELPM, "            -l             Loop playback indefinitely.\n");
   print_msg (HELPM, "            -F             Treat all input as raw PCM.\n");
+  print_msg (HELPM, "            -S<secs>       Start playing from offset.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
   exit (-1);
@@ -349,6 +352,27 @@ setup_device (int fd, int format, int channels, int speed)
   return format;
 }
 
+off_t
+ossplay_lseek_stdin (int fd, off_t off, int w)
+{
+  off_t i;
+  ssize_t bytes_read;
+  char buf[BUFSIZ];
+
+  if (w == SEEK_END) return -1;
+  if (off < 0) return -1;
+  if (off == 0) return 0;
+  i = off;
+  while (i > 0)
+    {
+      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
+      if (bytes_read == -1) return -1;
+      else if (bytes_read == 0) return off;
+      i -= bytes_read;
+    }
+  return off;
+}
+
 void 
 print_verbose (int format, int channels, int speed)
 {
@@ -412,7 +436,7 @@ select_playtgt (const char * playtgt)
       exit (-1);
     }
 
-  if (*playtgt == 0 || strcmp (playtgt, "?") == 0)
+  if ((*playtgt == '\0') || (strcmp (playtgt, "?") == 0))
     {
       print_msg (STARTM,
                  "\nPossible playback targets for the selected device:\n\n");
@@ -505,12 +529,14 @@ parse_opts (int argc, char ** argv)
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "FRc:d:f:g:hlo:qs:v")) != EOF)
+  while ((c = getopt (argc, argv, "FRS:c:d:f:g:hlo:qs:v")) != EOF)
     {
       switch (c)
 	{
 	case 'v':
-	  verbose++;
+  	  verbose++;
+	  quiet = 0;
+	  int_conv = 2;
 	  break;
 
 	case 'R':
@@ -520,6 +546,7 @@ parse_opts (int argc, char ** argv)
 	case 'q':
 	  quiet++;
 	  verbose = 0;
+	  if (int_conv == 2) int_conv = 0;
 	  break;
 
 	case 'd':
@@ -527,7 +554,7 @@ parse_opts (int argc, char ** argv)
 	    find_devname (audio_devname, optarg);
 	  else
 	    strncpy (audio_devname, optarg, sizeof (audio_devname));
-          audio_devname [sizeof (audio_devname)-1] = '\0';
+          audio_devname [sizeof (audio_devname) - 1] = '\0';
 	  break;
 
 	case 'o':
@@ -545,15 +572,16 @@ parse_opts (int argc, char ** argv)
 	  break;
 
 	case 's':
-	  sscanf (optarg, "%d", &force_speed);
+	  sscanf (optarg, "%u", &force_speed);
 	  break;
 
 	case 'c':
-	  sscanf (optarg, "%d", &force_channels);
+	  sscanf (optarg, "%u", &force_channels);
 	  break;
 
 	case 'g':
-	  sscanf (optarg, "%d", &amplification);
+	  sscanf (optarg, "%u", &amplification);
+	  int_conv = 1;
 	  break;
 
         case 'l':
@@ -562,6 +590,11 @@ parse_opts (int argc, char ** argv)
 
 	case 'F':
 	  raw_file = 1;
+	  break;
+
+	case 'S':
+	  sscanf (optarg, "%lf", &seek_time);
+	  if (seek_time < 0) seek_time = 0;
 	  break;
 
 	default:

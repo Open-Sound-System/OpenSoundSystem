@@ -66,6 +66,7 @@ const char * filepart (const char *);
 int le_int (const unsigned char *, int);
 void * ossplay_malloc (size_t);
 void ossplay_free (void *);
+off_t ossplay_lseek_stdin (int, off_t, int);
 char * ossplay_strdup (const char *);
 int parse_opts (int, char **);
 void perror_msg (const char * s);
