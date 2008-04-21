@@ -9,9 +9,6 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2005. All rights reserved.
 
-// TODO: MIDI is disabled because it causes a crash
-#define NO_MIDI
-
 #include "oss_envy24_cfg.h"
 #include <ac97.h>
 #include <oss_pci.h>
@@ -674,7 +671,6 @@ envy24intr (oss_device_t * osdev)
   if (status == 0)
     return 0;
 
-#ifndef NO_MIDI
   if (status & 0x80)		/* MIDI UART 1 */
     if (devc->model_data->flags & MF_MIDI1)
       uart401_irq (&devc->uart401devc1);
@@ -682,7 +678,6 @@ envy24intr (oss_device_t * osdev)
   if (status & 0x20)		/* MIDI UART 2 */
     if (devc->model_data->flags & MF_MIDI2)
       uart401_irq (&devc->uart401devc2);
-#endif
 
   if (status & 0x10)
     {
@@ -3597,7 +3592,6 @@ envy24_init (envy24_devc * devc)
   if (envy24_skipdevs != 1)
     envy24_force_mono = 0;
 
-#ifndef NO_MIDI
   if (devc->model_data->flags & MF_MIDI1)
     {
       char name[128];
@@ -3630,7 +3624,6 @@ envy24_init (envy24_devc * devc)
 	    INB (devc->osdev, devc->ccs_base + 0x01) & ~0x20,
 	    devc->ccs_base + 0x01);
     }
-#endif
 
   devc->speedbits = 0;
   devc->speed = 48000;
@@ -3991,12 +3984,10 @@ oss_envy24_detach (oss_device_t * osdev)
   OUTB (devc->osdev, INB (devc->osdev, devc->mt_base + 0x18) & ~0x04,
 	devc->mt_base + 0x18);
 
-#ifndef NO_MIDI
   if (devc->model_data->flags & MF_MIDI1)
     uart401_disable (&devc->uart401devc1);
   if (devc->model_data->flags & MF_MIDI2)
     uart401_disable (&devc->uart401devc2);
-#endif
 
   oss_unregister_interrupts (osdev);
   MUTEX_CLEANUP (devc->mutex);

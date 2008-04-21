@@ -1690,7 +1690,7 @@ oss_install_mididev (int version,
  */
 
   {
-    char name[10];
+    char name[32];
 #ifdef NEW_DEVICE_NAMING
 # ifdef USE_DEVICE_SUBDIRS
     sprintf (name, "oss/%s/mid%d", osdev->nick, osdev->num_mididevs - 1);
