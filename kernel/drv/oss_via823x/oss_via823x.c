@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1999-2004. All rights reserved.
 
-#include "oss_via8233_cfg.h"
+#include "oss_via823x_cfg.h"
 #include <oss_pci.h>
 #include <ac97.h>
 #include "via8233.h"
@@ -860,7 +860,7 @@ via8233_init (via8233_devc * devc)
 }
 
 int
-oss_via8233_attach (oss_device_t * osdev)
+oss_via823x_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision, bTmp /*, pci_latency */ ;
   unsigned short pci_command, vendor, device;
@@ -871,7 +871,7 @@ oss_via8233_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
   DDB (cmn_err
-       (CE_CONT, "oss_via8233_attach(Vendor %x, device %x)\n", vendor, device));
+       (CE_CONT, "oss_via823x_attach(Vendor %x, device %x)\n", vendor, device));
   if ((vendor != VIA_VENDOR_ID)
       || (device != VIA_8233_ID && device != VIA_8233A_ID))
     {
@@ -972,7 +972,7 @@ oss_via8233_attach (oss_device_t * osdev)
 }
 
 int
-oss_via8233_detach (oss_device_t * osdev)
+oss_via823x_detach (oss_device_t * osdev)
 {
   via8233_devc *devc = (via8233_devc *) osdev->devc;
   engine_desc *eng;
