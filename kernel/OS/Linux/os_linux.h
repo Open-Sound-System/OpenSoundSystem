@@ -25,14 +25,16 @@
 #undef  MEMDEBUG
 #define VDEV_SUPPORT
 
-if (defined(x86) || defined(x86_64)) && !defined(CONFIG_OSS_FIXDEPOINT)
-#endif
+#if (defined(i386) || defined(x86_64)) && !defined(CONFIG_OSS_FIXDEPOINT)
 #define VMIX_USE_FLOAT
+#endif
+
 /*
  * Disable support for per-application features such as /dev/dsp device
  * selection based on command name. Requires working GET_PROCESS_NAME
  * macro implementation.
  */
+
 #undef  APPLIST_SUPPORT
 #define USE_DEVICE_SUBDIRS
 #define EXTERN_C

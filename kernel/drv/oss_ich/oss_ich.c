@@ -1384,3 +1384,13 @@ oss_ich_detach (oss_device_t * osdev)
   oss_unregister_device (osdev);
   return 1;
 }
+
+#ifdef OSS_POWER_MANAGE
+int
+oss_ich_power (oss_device_t *osdev, int component, int level)
+{
+cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
+
+	return 0; /* Failed */
+}
+#endif
