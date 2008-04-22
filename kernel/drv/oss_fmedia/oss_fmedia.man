@@ -1,5 +1,5 @@
 NAME
-oss_fm801 - Forte Media FM801 driver.
+oss_fmedia - Forte Media FM801 driver.
 
 DESCRIPTION
 Open Sound System driver for Forte Media FM801/FM801-AU audio controllers.
@@ -11,12 +11,12 @@ FM801 device characteristics:
         o 8KHz to 48Khz sample rate.
 
 OPTIONS
-o fm801_mpu_irq=<xx>
+o fmedia_mpu_irq=<xx>
 Set the IRQ for the UART401 MPU. Refer to device conf file (see below) for
 valid IRQs.
 
 FILES
-CONFIGFILEPATH/oss_fm801.conf Device configuration file
+CONFIGFILEPATH/oss_fmedia.conf Device configuration file
 
 AUTHOR
 4Front Technologies

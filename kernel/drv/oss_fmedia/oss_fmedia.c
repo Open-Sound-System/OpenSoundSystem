@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998-2007. All rights reserved.
 
-#include "oss_fm801_cfg.h"
+#include "oss_fmedia_cfg.h"
 #include "ac97.h"
 #include "oss_pci.h"
 #include "uart401.h"
@@ -87,7 +87,7 @@ typedef struct fm801_devc
   int mixer_dev, mixer2_dev;
 } fm801_devc;
 
-extern int fm801_mpu_irq;
+extern int fmedia_mpu_irq;
 
 static struct
 {
@@ -828,7 +828,7 @@ init_fm801 (fm801_devc * devc)
 #if !defined(__hpux) && !defined(sparc) && !defined(_TRU64)
   /* Enable Legacy FM, MPU and Joystick ports */
   legacy = 0x001E;
-  switch (fm801_mpu_irq)
+  switch (fmedia_mpu_irq)
     {
     case 5:
       legacy |= 0x0000;
@@ -953,7 +953,7 @@ init_fm801 (fm801_devc * devc)
 }
 
 int
-oss_fm801_attach (oss_device_t * osdev)
+oss_fmedia_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -1001,7 +1001,7 @@ oss_fm801_attach (oss_device_t * osdev)
 
   /* Remove I/O space marker in bit 0. */
   devc->base &= ~3;
-  devc->mpu_irq = fm801_mpu_irq;
+  devc->mpu_irq = fmedia_mpu_irq;
   devc->mpu_base = devc->base + 0x30;
   pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
   pci_write_config_word (osdev, PCI_COMMAND, pci_command);
@@ -1032,7 +1032,7 @@ oss_fm801_attach (oss_device_t * osdev)
 }
 
 int
-oss_fm801_detach (oss_device_t * osdev)
+oss_fmedia_detach (oss_device_t * osdev)
 {
   fm801_devc *devc = (fm801_devc *) osdev->devc;
 
