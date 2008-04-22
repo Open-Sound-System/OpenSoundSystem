@@ -156,6 +156,13 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 	fprintf (src, "#define OSS_POWER_MANAGE\n");
      }
 
+  if (conf->suspend_resume)
+     {
+  	fprintf (src, "#define DRIVER_SUSPEND\t%s_suspend\n", name);
+  	fprintf (src, "#define DRIVER_RESUME\t%s_resume\n", name);
+	fprintf (src, "#define OSS_SUSPEND_RESUME\n");
+     }
+
   fprintf (src, "\n");
 
   fprintf (src, "extern int DRIVER_ATTACH(oss_device_t *ossdev);\n");

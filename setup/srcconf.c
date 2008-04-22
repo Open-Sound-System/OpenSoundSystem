@@ -64,7 +64,8 @@ typedef struct
   int check_os, os_ok, os_bad;
   int check_cpu, cpu_ok, cpu_bad;
 
-  int power_manage;
+  int power_manage;	/* Supports device power management (under Solaris) */
+  int suspend_resume;	/* Supports suspend/resume (under Solaris) */
 } conf_t;
 
 static conf_t conf = {
@@ -292,6 +293,11 @@ parse_config (FILE * f, conf_t * conf)
       if (strcmp (line, "pm_support") == 0)
 	{
 	    conf->power_manage=1;
+	}
+
+      if (strcmp (line, "suspend_resume") == 0)
+	{
+	    conf->suspend_resume=1;
 	}
 
       printf ("\t     %s\n", line);

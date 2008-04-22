@@ -1386,11 +1386,26 @@ oss_ich_detach (oss_device_t * osdev)
 }
 
 #ifdef OSS_POWER_MANAGE
+/* Not activated in .config at this moment */
 int
 oss_ich_power (oss_device_t *osdev, int component, int level)
 {
 cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
 
+	return 0; /* Failed */
+}
+#endif
+
+#ifdef OSS_SUSPEND_RESUME
+int
+oss_ich_suspend(oss_device_t *osdev)
+{
+	return 0; /* Failed */
+}
+
+int
+oss_ich_resume(oss_device_t *osdev)
+{
 	return 0; /* Failed */
 }
 #endif

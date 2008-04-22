@@ -199,7 +199,7 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
   int instance;
   oss_device_t *osdev;
 
-#ifdef OSS_POWER_MANAGE
+#ifdef OSS_SUSPEND_RESUME
   if (cmd != DDI_RESUME) /* Allow resume */
 #endif
   if (cmd != DDI_ATTACH)
@@ -214,7 +214,7 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
       return DDI_FAILURE;
     }
 
-#ifdef OSS_POWER_MANAGE
+#ifdef OSS_SUSPEND_RESUME
   if (cmd == DDI_RESUME)
      {
 	  if ((osdev = (oss_device_t *) ddi_get_driver_private (dip)) == NULL)
@@ -222,7 +222,7 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
 	      cmn_err (CE_WARN, "ddi_get_driver_private() failed\n");
 	      return DDI_SUCCESS;
 	    }
-  	if (!DRIVER_POWER(osdev, -1, 9))
+  	if (!DRIVER_RESUME(osdev))
      	   return DDI_FAILURE;
 
 	return DDI_SUCCESS;
@@ -282,7 +282,7 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
 {
   oss_device_t *osdev;
 
-#ifdef OSS_POWER_MANAGE
+#ifdef OSS_SUSPEND_RESUME
   if (cmd != DDI_SUSPEND) /* Allow suspend */
 #endif
   if (cmd != DDI_DETACH)
@@ -312,10 +312,10 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
       return DDI_FAILURE;
     }
 
-#ifdef OSS_POWER_MANAGE
+#ifdef OSS_SUSPEND_RESUME
   if (cmd == DDI_SUSPEND)
   {
-     if (!DRIVER_POWER(osdev, -1, 0))
+     if (!DRIVER_SUSPEND(osdev))
         return DDI_FAILURE;
      return DDI_SUCCESS;
   }
