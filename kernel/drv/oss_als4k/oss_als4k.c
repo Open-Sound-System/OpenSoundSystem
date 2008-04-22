@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "oss_als4000_cfg.h"
+#include "oss_als4k_cfg.h"
 #include "oss_pci.h"
 
 #define ALS_VENDOR_ID	0x4005
@@ -1044,7 +1044,7 @@ init_als4000 (als4000_devc * devc)
 }
 
 int
-oss_als4000_attach (oss_device_t * osdev)
+oss_als4k_attach (oss_device_t * osdev)
 {
 
   unsigned char pci_irq_line, pci_revision;
@@ -1116,7 +1116,7 @@ oss_als4000_attach (oss_device_t * osdev)
 
 
 int
-oss_als4000_detach (oss_device_t * osdev)
+oss_als4k_detach (oss_device_t * osdev)
 {
   als4000_devc *devc = (als4000_devc *) osdev->devc;
 
