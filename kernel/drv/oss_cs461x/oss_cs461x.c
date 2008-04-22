@@ -1,19 +1,19 @@
 /*
- * Purpose: Driver for Crystal cs4280 and cs461x PCI audio controllers
+ * Purpose: Driver for Crystal cs461x and cs461x PCI audio controllers
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998-2007. All rights reserved.
 
-#include "oss_cs4280_cfg.h"
+#include "oss_cs461x_cfg.h"
 #include "midi_core.h"
 #include "ac97.h"
 #include "oss_pci.h"
-#include "cs4280.h"
+#include "cs461x.h"
 
-extern int cs4280_clkrun_fix;
+extern int cs461x_clkrun_fix;
 
 #define CRYSTAL_VENDOR_ID	0x1013
 #define CRYSTAL_CS4610_ID	0x6001
-#define CRYSTAL_CS4280_ID	0x6003
+#define CRYSTAL_CS461x_ID	0x6003
 #define CRYSTAL_CS4615_ID	0x6004
 
 #define USE_SG
@@ -46,7 +46,7 @@ ymf_swap (unsigned int x)
 
 #define MAX_PORTC 2
 
-typedef struct cs4280_portc
+typedef struct cs461x_portc
 {
   int speed, bits, channels;
   int open_mode;
@@ -54,9 +54,9 @@ typedef struct cs4280_portc
   int trigger_bits;
   int audiodev;
 }
-cs4280_portc;
+cs461x_portc;
 
-typedef struct cs4280_devc
+typedef struct cs461x_devc
 {
   oss_device_t *osdev;
   char *chip_name;
@@ -86,27 +86,27 @@ typedef struct cs4280_devc
   int mixer_dev, mixer2_dev;
 
   /* Audio parameters */
-  cs4280_portc portc[MAX_PORTC];
+  cs461x_portc portc[MAX_PORTC];
   int open_mode;
   oss_native_word PCTL;		/*Play Control Register */
   oss_native_word CCTL;		/*Record Control Register */
   int processor_started;
 }
-cs4280_devc;
+cs461x_devc;
 
-#define MAX_CS4280 6
+#define MAX_CS461x 6
 
 static int ac97_write (void *devc, int addr, int data);
 static int ac97_read (void *devc, int addr);
 
 static void
-PokeBA0 (cs4280_devc * devc, unsigned int offset, unsigned int value)
+PokeBA0 (cs461x_devc * devc, unsigned int offset, unsigned int value)
 {
   WRITE0L (offset, value);
 }
 
 static unsigned int
-PeekBA0 (cs4280_devc * devc, unsigned int offset)
+PeekBA0 (cs461x_devc * devc, unsigned int offset)
 {
   unsigned int value;
 
@@ -118,7 +118,7 @@ PeekBA0 (cs4280_devc * devc, unsigned int offset)
 static int
 ac97_read (void *devc_, int offset)
 {
-  cs4280_devc *devc = devc_;
+  cs461x_devc *devc = devc_;
   int count;
   unsigned int status, value;
   oss_native_word flags;
@@ -200,7 +200,7 @@ ac97_read (void *devc_, int offset)
 static int
 ac97_write (void *devc_, int offset, int data)
 {
-  cs4280_devc *devc = devc_;
+  cs461x_devc *devc = devc_;
   int count;
   unsigned int status = 0;
   oss_native_word flags;
@@ -234,7 +234,7 @@ ac97_write (void *devc_, int offset, int data)
 static int
 ac97_read2 (void *devc_, int offset)
 {
-  cs4280_devc *devc = devc_;
+  cs461x_devc *devc = devc_;
   int count;
   unsigned int status, value;
   oss_native_word flags;
@@ -317,7 +317,7 @@ ac97_read2 (void *devc_, int offset)
 static int
 ac97_write2 (void *devc_, int offset, int data)
 {
-  cs4280_devc *devc = devc_;
+  cs461x_devc *devc = devc_;
   int count;
   unsigned int status = 0;
   oss_native_word flags;
@@ -356,7 +356,7 @@ ac97_write2 (void *devc_, int offset, int data)
 #define INKY_BA1_DWORD_SIZE (13 * 1024 + 512)
 /* this is parameter, sample, and code */
 #define INKY_MEMORY_COUNT 3
-struct cs4280_firmware_struct
+struct cs461x_firmware_struct
 {
   struct
   {
@@ -366,10 +366,10 @@ struct cs4280_firmware_struct
   MemoryStat[INKY_MEMORY_COUNT];
   unsigned int BA1Array[INKY_BA1_DWORD_SIZE];
 };
-#include "cs4280_dsp.h"
+#include "cs461x_dsp.h"
 
 static void
-DoTransfer (cs4280_devc * devc, unsigned int *fpulSrc,
+DoTransfer (cs461x_devc * devc, unsigned int *fpulSrc,
 	    unsigned int ulByteDestOffset, unsigned int ulByteLength)
 {
   int dwByteCounter;
@@ -388,7 +388,7 @@ DoTransfer (cs4280_devc * devc, unsigned int *fpulSrc,
 }
 
 static void
-install_ucode (cs4280_devc * devc)
+install_ucode (cs461x_devc * devc)
 {
   unsigned int i, count;
 
@@ -396,15 +396,15 @@ install_ucode (cs4280_devc * devc)
   for (i = 0; i < INKY_MEMORY_COUNT; i++)
     {
 
-      DoTransfer (devc, (unsigned int *) (cs4280_firmware.BA1Array + count),
-		  cs4280_firmware.MemoryStat[i].ulDestAddr,
-		  cs4280_firmware.MemoryStat[i].ulSourceSize);
-      count += cs4280_firmware.MemoryStat[i].ulSourceSize / 4;
+      DoTransfer (devc, (unsigned int *) (cs461x_firmware.BA1Array + count),
+		  cs461x_firmware.MemoryStat[i].ulDestAddr,
+		  cs461x_firmware.MemoryStat[i].ulSourceSize);
+      count += cs461x_firmware.MemoryStat[i].ulSourceSize / 4;
     }
 }
 
 void
-clear_serial_fifo (cs4280_devc * devc)
+clear_serial_fifo (cs461x_devc * devc)
 {
   unsigned int ulIdx, ulLoop;
   unsigned int ulStatus = 0;
@@ -464,7 +464,7 @@ clear_serial_fifo (cs4280_devc * devc)
 }
 
 static int
-cs4280_reset_processor (cs4280_devc * devc)
+cs461x_reset_processor (cs461x_devc * devc)
 {
   unsigned int ulIdx;
 
@@ -485,14 +485,14 @@ cs4280_reset_processor (cs4280_devc * devc)
 }
 
 static int
-cs4280_start_processor (cs4280_devc * devc)
+cs461x_start_processor (cs461x_devc * devc)
 {
 
   unsigned int ulCount;
   int ulTemp = 0;
 
   /* reset the processor first */
-  cs4280_reset_processor (devc);
+  cs461x_reset_processor (devc);
 
   /* reload the ucode */
   install_ucode (devc);
@@ -532,10 +532,10 @@ cs4280_start_processor (cs4280_devc * devc)
 }
 
 static int
-cs4280intr (oss_device_t * osdev)
+cs461xintr (oss_device_t * osdev)
 {
-  cs4280_devc *devc = (cs4280_devc *) osdev->devc;
-  cs4280_portc *portc;
+  cs461x_devc *devc = (cs461x_devc *) osdev->devc;
+  cs461x_portc *portc;
   unsigned int status;
   int i;
   unsigned int uart_stat;
@@ -621,9 +621,9 @@ cs4280intr (oss_device_t * osdev)
 }
 
 static int
-cs4280_audio_set_rate (int dev, int arg)
+cs461x_audio_set_rate (int dev, int arg)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   if (arg == 0)
     return portc->speed;
@@ -645,9 +645,9 @@ cs4280_audio_set_rate (int dev, int arg)
 }
 
 static short
-cs4280_audio_set_channels (int dev, short arg)
+cs461x_audio_set_channels (int dev, short arg)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   if (audio_engines[dev]->flags & ADEV_STEREOONLY)
     arg = 2;
@@ -660,9 +660,9 @@ cs4280_audio_set_channels (int dev, short arg)
 }
 
 static unsigned int
-cs4280_audio_set_format (int dev, unsigned int arg)
+cs461x_audio_set_format (int dev, unsigned int arg)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   if (arg == 0)
     return portc->bits;
@@ -679,39 +679,39 @@ cs4280_audio_set_format (int dev, unsigned int arg)
 
 /*ARGSUSED*/
 static int
-cs4280_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
+cs461x_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   return -EINVAL;
 }
 
-static void cs4280_audio_trigger (int dev, int state);
+static void cs461x_audio_trigger (int dev, int state);
 
 static void
-cs4280_audio_reset (int dev)
+cs461x_audio_reset (int dev)
 {
-  cs4280_audio_trigger (dev, 0);
+  cs461x_audio_trigger (dev, 0);
 }
 
 static void
-cs4280_audio_reset_input (int dev)
+cs461x_audio_reset_input (int dev)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
-  cs4280_audio_trigger (dev, portc->trigger_bits & ~PCM_ENABLE_INPUT);
+  cs461x_portc *portc = audio_engines[dev]->portc;
+  cs461x_audio_trigger (dev, portc->trigger_bits & ~PCM_ENABLE_INPUT);
 }
 
 static void
-cs4280_audio_reset_output (int dev)
+cs461x_audio_reset_output (int dev)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
-  cs4280_audio_trigger (dev, portc->trigger_bits & ~PCM_ENABLE_OUTPUT);
+  cs461x_portc *portc = audio_engines[dev]->portc;
+  cs461x_audio_trigger (dev, portc->trigger_bits & ~PCM_ENABLE_OUTPUT);
 }
 
 /*ARGSUSED*/
 static int
-cs4280_audio_open (int dev, int mode, int open_flags)
+cs461x_audio_open (int dev, int mode, int open_flags)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
-  cs4280_devc *devc = audio_engines[dev]->devc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
   dmap_t *dmapin = audio_engines[dev]->dmap_in;
   oss_native_word flags;
 
@@ -756,12 +756,12 @@ cs4280_audio_open (int dev, int mode, int open_flags)
 }
 
 static void
-cs4280_audio_close (int dev, int mode)
+cs461x_audio_close (int dev, int mode)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
-  cs4280_devc *devc = audio_engines[dev]->devc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
 
-  cs4280_audio_reset (dev);
+  cs461x_audio_reset (dev);
   portc->audio_enabled &= ~mode;
   devc->open_mode &= ~mode;
   portc->open_mode = 0;
@@ -769,10 +769,10 @@ cs4280_audio_close (int dev, int mode)
 
 /*ARGSUSED*/
 static void
-cs4280_audio_output_block (int dev, oss_native_word buf, int count,
+cs461x_audio_output_block (int dev, oss_native_word buf, int count,
 			   int fragsize, int intrflag)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   portc->audio_enabled |= PCM_ENABLE_OUTPUT;
   portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
@@ -780,21 +780,21 @@ cs4280_audio_output_block (int dev, oss_native_word buf, int count,
 
 /*ARGSUSED*/
 static void
-cs4280_audio_start_input (int dev, oss_native_word buf, int count,
+cs461x_audio_start_input (int dev, oss_native_word buf, int count,
 			  int fragsize, int intrflag)
 {
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   portc->audio_enabled |= PCM_ENABLE_INPUT;
   portc->trigger_bits &= ~PCM_ENABLE_INPUT;
 }
 
 static void
-cs4280_audio_trigger (int dev, int state)
+cs461x_audio_trigger (int dev, int state)
 {
   oss_native_word flags, tmp;
-  cs4280_devc *devc = audio_engines[dev]->devc;
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (portc->open_mode & OPEN_WRITE)
@@ -856,7 +856,7 @@ cs4280_audio_trigger (int dev, int state)
 }
 
 static int
-cs4280_play_rate (cs4280_devc * devc, unsigned int ulInRate)
+cs461x_play_rate (cs461x_devc * devc, unsigned int ulInRate)
 {
 /*define GOF_PER_SEC 200*/
   unsigned int ulTemp1, ulTemp2;
@@ -884,7 +884,7 @@ cs4280_play_rate (cs4280_devc * devc, unsigned int ulInRate)
 }
 
 static int
-cs4280_record_rate (cs4280_devc * devc, int ulOutRate)
+cs461x_record_rate (cs461x_devc * devc, int ulOutRate)
 {
   unsigned int ulPhiIncr, ulCoeffIncr, ulTemp1, ulTemp2;
   unsigned int ulCorrectionPerGOF, ulCorrectionPerSec, ulInitialDelay;
@@ -1002,7 +1002,7 @@ InitArray[] =
  *      capture startup.
  */
 void
-SetCaptureSPValues (cs4280_devc * devc)
+SetCaptureSPValues (cs461x_devc * devc)
 {
   unsigned i, offset;
   for (i = 0; i < sizeof (InitArray) / sizeof (struct InitStruct); i++)
@@ -1014,10 +1014,10 @@ SetCaptureSPValues (cs4280_devc * devc)
 
 /*ARGSUSED*/
 static int
-cs4280_audio_prepare_for_input (int dev, int bsize, int bcount)
+cs461x_audio_prepare_for_input (int dev, int bsize, int bcount)
 {
-  cs4280_devc *devc = audio_engines[dev]->devc;
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_in;
   oss_native_word flags;
 
@@ -1025,12 +1025,12 @@ cs4280_audio_prepare_for_input (int dev, int bsize, int bcount)
 
   /* Start the processor */
   if (!devc->processor_started)
-    cs4280_start_processor (devc);
+    cs461x_start_processor (devc);
 
   /* Set Capture S/P values */
   SetCaptureSPValues (devc);
   /* set the record rate */
-  cs4280_record_rate (devc, portc->speed);
+  cs461x_record_rate (devc, portc->speed);
 
   /* write the buffer address */
   WRITE1L (BA1_CBA, dmap->dmabuf_phys);
@@ -1043,17 +1043,17 @@ cs4280_audio_prepare_for_input (int dev, int bsize, int bcount)
 
 /*ARGSUSED*/
 static int
-cs4280_audio_prepare_for_output (int dev, int bsize, int bcount)
+cs461x_audio_prepare_for_output (int dev, int bsize, int bcount)
 {
-  cs4280_devc *devc = audio_engines[dev]->devc;
-  cs4280_portc *portc = audio_engines[dev]->portc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
+  cs461x_portc *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_out;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   /* Start the processor */
   if (!devc->processor_started)
-    cs4280_start_processor (devc);
+    cs461x_start_processor (devc);
 
 #ifdef USE_SG
   {
@@ -1091,7 +1091,7 @@ cs4280_audio_prepare_for_output (int dev, int bsize, int bcount)
 
     WRITE1L (BA1_PBA, dmap->dmabuf_phys);
 
-    cs4280_play_rate (devc, (unsigned int) portc->speed);
+    cs461x_play_rate (devc, (unsigned int) portc->speed);
 
     Count = 4;
     playFormat = READ1L (BA1_PFIE);
@@ -1124,7 +1124,7 @@ cs4280_audio_prepare_for_output (int dev, int bsize, int bcount)
   {
     unsigned int pdtc_value, pfie_value;
     /* Set the sample rate converter */
-    cs4280_play_rate (devc, (unsigned int) portc->speed);
+    cs461x_play_rate (devc, (unsigned int) portc->speed);
 
     pfie_value = READ1L (BA1_PFIE);
     pfie_value &= ~0x0000f03f;
@@ -1167,14 +1167,14 @@ cs4280_audio_prepare_for_output (int dev, int bsize, int bcount)
 }
 
 static int
-cs4280_alloc_buffer (int dev, dmap_t * dmap, int direction)
+cs461x_alloc_buffer (int dev, dmap_t * dmap, int direction)
 {
 
 #ifdef USE_SG
   int err;
 #else
   oss_native_word phaddr;
-  cs4280_devc *devc = audio_engines[dev]->devc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
 #endif
 
   if (dmap->dmabuf != NULL)
@@ -1200,10 +1200,10 @@ cs4280_alloc_buffer (int dev, dmap_t * dmap, int direction)
 
 /*ARGSUSED*/
 static int
-cs4280_free_buffer (int dev, dmap_t * dmap, int direction)
+cs461x_free_buffer (int dev, dmap_t * dmap, int direction)
 {
 #ifndef USE_SG
-  cs4280_devc *devc = audio_engines[dev]->devc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
 #endif
 #ifdef USE_SG
   oss_free_dmabuf (dev, dmap);
@@ -1222,9 +1222,9 @@ cs4280_free_buffer (int dev, dmap_t * dmap, int direction)
 }
 
 static int
-cs4280_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
+cs461x_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
-  cs4280_devc *devc = audio_engines[dev]->devc;
+  cs461x_devc *devc = audio_engines[dev]->devc;
   unsigned int ptr = 0;
   oss_native_word flags;
 
@@ -1241,43 +1241,43 @@ cs4280_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   return ptr;
 }
 
-static audiodrv_t cs4280_audio_driver = {
-  cs4280_audio_open,
-  cs4280_audio_close,
-  cs4280_audio_output_block,
-  cs4280_audio_start_input,
-  cs4280_audio_ioctl,
-  cs4280_audio_prepare_for_input,
-  cs4280_audio_prepare_for_output,
-  cs4280_audio_reset,
+static audiodrv_t cs461x_audio_driver = {
+  cs461x_audio_open,
+  cs461x_audio_close,
+  cs461x_audio_output_block,
+  cs461x_audio_start_input,
+  cs461x_audio_ioctl,
+  cs461x_audio_prepare_for_input,
+  cs461x_audio_prepare_for_output,
+  cs461x_audio_reset,
   NULL,
   NULL,
-  cs4280_audio_reset_input,
-  cs4280_audio_reset_output,
-  cs4280_audio_trigger,
-  cs4280_audio_set_rate,
-  cs4280_audio_set_format,
-  cs4280_audio_set_channels,
+  cs461x_audio_reset_input,
+  cs461x_audio_reset_output,
+  cs461x_audio_trigger,
+  cs461x_audio_set_rate,
+  cs461x_audio_set_format,
+  cs461x_audio_set_channels,
   NULL,
   NULL,
   NULL,
   NULL,
-  cs4280_alloc_buffer,
-  cs4280_free_buffer,
+  cs461x_alloc_buffer,
+  cs461x_free_buffer,
   NULL,
   NULL,
-  cs4280_get_buffer_pointer
+  cs461x_get_buffer_pointer
 };
 
 /***********************MIDI PORT ROUTINES ****************/
 
 /*ARGSUSED*/
 static int
-cs4280_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
+cs461x_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 		  oss_midi_inputbuf_t inputbuf,
 		  oss_midi_outputintr_t outputintr)
 {
-  cs4280_devc *devc = (cs4280_devc *) midi_devs[dev]->devc;
+  cs461x_devc *devc = (cs461x_devc *) midi_devs[dev]->devc;
   oss_native_word flags;
 
   if (devc->midi_opened)
@@ -1311,9 +1311,9 @@ cs4280_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
 /*ARGSUSED*/
 static void
-cs4280_midi_close (int dev, int mode)
+cs461x_midi_close (int dev, int mode)
 {
-  cs4280_devc *devc = (cs4280_devc *) midi_devs[dev]->devc;
+  cs461x_devc *devc = (cs461x_devc *) midi_devs[dev]->devc;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -1325,9 +1325,9 @@ cs4280_midi_close (int dev, int mode)
 }
 
 static int
-cs4280_midi_out (int dev, unsigned char midi_byte)
+cs461x_midi_out (int dev, unsigned char midi_byte)
 {
-  cs4280_devc *devc = (cs4280_devc *) midi_devs[dev]->devc;
+  cs461x_devc *devc = (cs461x_devc *) midi_devs[dev]->devc;
   unsigned char uart_stat;
   oss_native_word flags;
 
@@ -1348,20 +1348,20 @@ cs4280_midi_out (int dev, unsigned char midi_byte)
 
 /*ARGSUSED*/
 static int
-cs4280_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
+cs461x_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
   return -EINVAL;
 }
 
-static midi_driver_t cs4280_midi_driver = {
-  cs4280_midi_open,
-  cs4280_midi_close,
-  cs4280_midi_ioctl,
-  cs4280_midi_out
+static midi_driver_t cs461x_midi_driver = {
+  cs461x_midi_open,
+  cs461x_midi_close,
+  cs461x_midi_ioctl,
+  cs461x_midi_out
 };
 
 static int
-init_cs4280 (cs4280_devc * devc)
+init_cs461x (cs461x_devc * devc)
 {
 
   int my_mixer, my_mixer2, i;
@@ -1553,7 +1553,7 @@ init_cs4280 (cs4280_devc * devc)
   PokeBA0 (devc, BA0_ACOSV, ACOSV_SLV3 | ACOSV_SLV4);
 
   /* Reset the Processor */
-  cs4280_reset_processor (devc);
+  cs461x_reset_processor (devc);
   /* Now download the image */
   install_ucode (devc);
 
@@ -1582,7 +1582,7 @@ init_cs4280 (cs4280_devc * devc)
 /****** END OF HARDWARE INIT *****/
 
   my_mixer =
-    ac97_install (&devc->ac97devc, "CS4280 AC97 Mixer", ac97_read, ac97_write,
+    ac97_install (&devc->ac97devc, "CS461x AC97 Mixer", ac97_read, ac97_write,
 		  devc, devc->osdev);
 
   if (my_mixer >= 0)
@@ -1689,7 +1689,7 @@ init_cs4280 (cs4280_devc * devc)
   if (devc->play_sgbuf == NULL)
     {
       cmn_err (CE_WARN,
-	       "cs4280: Failed to allocate play scatter/gather buffer.\n");
+	       "cs461x: Failed to allocate play scatter/gather buffer.\n");
       return 0;
     }
   devc->play_sgbuf_phys = phaddr;
@@ -1698,7 +1698,7 @@ init_cs4280 (cs4280_devc * devc)
   for (i = 0; i < MAX_PORTC; i++)
     {
       char tmp_name[100];
-      cs4280_portc *portc = &devc->portc[i];
+      cs461x_portc *portc = &devc->portc[i];
       int caps = ADEV_AUTOMODE;
 
       if (i == 0)
@@ -1716,7 +1716,7 @@ init_cs4280 (cs4280_devc * devc)
 					devc->osdev,
 					devc->osdev,
 					tmp_name,
-					&cs4280_audio_driver,
+					&cs461x_audio_driver,
 					sizeof (audiodrv_t),
 					caps,
 					AFMT_S16_LE | AFMT_U8, NULL, -1)) < 0)
@@ -1747,8 +1747,8 @@ init_cs4280 (cs4280_devc * devc)
 
 #ifndef sparc
   devc->midi_dev =
-    oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "CS4280",
-			 "CS4280 MIDI Port", &cs4280_midi_driver,
+    oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "CS461x",
+			 "CS461x MIDI Port", &cs461x_midi_driver,
 			 sizeof (midi_driver_t), NULL,
 			 /*&std_midi_synth, */
 			 0, devc, devc->osdev);
@@ -1758,17 +1758,17 @@ init_cs4280 (cs4280_devc * devc)
 }
 
 int
-oss_cs4280_attach (oss_device_t * osdev)
+oss_cs461x_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision, pci_irq_inta;
   unsigned short pci_command, vendor, device;
   unsigned int ioaddr;
   int err;
-  cs4280_devc *devc;
+  cs461x_devc *devc;
 
-  DDB (cmn_err (CE_WARN, "Entered CS4280 probe routine\n"));
+  DDB (cmn_err (CE_WARN, "Entered CS461x probe routine\n"));
 #if 0
-  if (cs4280_clkrun_fix)
+  if (cs461x_clkrun_fix)
     while ((osdev = (pci_find_class (0x680 << 8, osdev))))
 
       {
@@ -1794,7 +1794,7 @@ oss_cs4280_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
-  if (vendor != CRYSTAL_VENDOR_ID || device != CRYSTAL_CS4280_ID)
+  if (vendor != CRYSTAL_VENDOR_ID || device != CRYSTAL_CS461x_ID)
     return 0;
 
   if ((devc = PMALLOC (osdev, sizeof (*devc))) == NULL)
@@ -1821,8 +1821,8 @@ oss_cs4280_attach (oss_device_t * osdev)
 
   switch (device)
     {
-    case CRYSTAL_CS4280_ID:
-      devc->chip_name = "Crystal CS4280";
+    case CRYSTAL_CS461x_ID:
+      devc->chip_name = "Crystal CS461x";
       break;
 
     case CRYSTAL_CS4610_ID:
@@ -1878,27 +1878,27 @@ oss_cs4280_attach (oss_device_t * osdev)
 
   oss_register_device (osdev, devc->chip_name);
 
-  if ((err = oss_register_interrupts (devc->osdev, 0, cs4280intr, NULL)) < 0)
+  if ((err = oss_register_interrupts (devc->osdev, 0, cs461xintr, NULL)) < 0)
     {
       cmn_err (CE_WARN, "Can't register interrupt handler, err=%d\n", err);
       return 0;
     }
 
-  return init_cs4280 (devc);	/*Detected */
+  return init_cs461x (devc);	/*Detected */
 }
 
 
 int
-oss_cs4280_detach (oss_device_t * osdev)
+oss_cs461x_detach (oss_device_t * osdev)
 {
-  cs4280_devc *devc = (cs4280_devc *) osdev->devc;
+  cs461x_devc *devc = (cs461x_devc *) osdev->devc;
 
 
   if (oss_disable_device (osdev) < 0)
     return 0;
 
   PokeBA0 (devc, BA0_HICR, 0x02);	/*enable intena */
-  cs4280_reset_processor (devc);
+  cs461x_reset_processor (devc);
 #ifdef USE_SG
   CONTIG_FREE (devc->osdev, devc->play_sgbuf, 4096);
 #endif

@@ -1,8 +1,8 @@
 /*
- * Purpose: Firmware for cs4280/cs461x cards.
+ * Purpose: Firmware for cs461x/cs461x cards.
  */
 #define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2006. All rights reserved.
-struct cs4280_firmware_struct cs4280_firmware = {
+struct cs461x_firmware_struct cs461x_firmware = {
   {{0x00000000, 0x00003000}, {0x00010000, 0x00003800},
    {0x00020000, 0x00007000}},
   {0x00000000, 0x00000000, 0x00000000, 0x00000000,

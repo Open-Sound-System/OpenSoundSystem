@@ -1,5 +1,5 @@
 /*
- * Purpose: Definitions for the cs4280 driver
+ * Purpose: Definitions for the cs461x driver
  */
 #define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2006. All rights reserved.
 
