@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
-#include "oss_cmi8788_cfg.h"
+#include "oss_cmi878x_cfg.h"
 #include <oss_pci.h>
 #include <uart401.h>
 #include <ac97.h>
@@ -2167,7 +2167,7 @@ init_cmi8788 (cmi8788_devc * devc)
 }
 
 int
-oss_cmi8788_attach (oss_device_t * osdev)
+oss_cmi878x_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -2248,7 +2248,7 @@ oss_cmi8788_attach (oss_device_t * osdev)
 }
 
 int
-oss_cmi8788_detach (oss_device_t * osdev)
+oss_cmi878x_detach (oss_device_t * osdev)
 {
   cmi8788_devc *devc = (cmi8788_devc *) osdev->devc;
 
