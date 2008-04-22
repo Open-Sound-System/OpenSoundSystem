@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1998. All rights reserved.
 
-#include "oss_als300_cfg.h"
+#include "oss_als3xx_cfg.h"
 #include "oss_pci.h"
 #include "ac97.h"
 #include "als300.h"
@@ -771,7 +771,7 @@ init_als300 (als300_devc * devc)
 }
 
 int
-oss_als300_attach (oss_device_t * osdev)
+oss_als3xx_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
@@ -857,7 +857,7 @@ oss_als300_attach (oss_device_t * osdev)
 }
 
 int
-oss_als300_detach (oss_device_t * osdev)
+oss_als3xx_detach (oss_device_t * osdev)
 {
   als300_devc *devc = (als300_devc *) osdev->devc;
   unsigned int dwTemp;
