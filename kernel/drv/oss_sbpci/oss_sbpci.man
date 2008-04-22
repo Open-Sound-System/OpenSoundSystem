@@ -1,5 +1,5 @@
 NAME
-oss_apci97 - Creative Labs ES1371 audio driver.
+oss_sbpci - Creative Labs ES1371 audio driver.
 
 DESCRIPTION
 Open Sound System driver for Creative Labs ES1371/ES1373/5880, Ectiva 1938 
@@ -32,7 +32,7 @@ Certain models like the SB 4.1D/SB PCI128D have SPDIF output jacks and
 this setting enables the output device.
 
 FILES
-CONFIGFILEPATH/oss_apci97.conf Device configuration file
+CONFIGFILEPATH/oss_sbpci.conf Device configuration file
 
 AUTHOR
 4Front Technologies
