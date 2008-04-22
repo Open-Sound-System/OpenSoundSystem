@@ -1,8 +1,7 @@
 /*
  * Purpose: This header file contains some coefficients for the 4 band equalizer
  *
- * This equalizer code is used by the SB Live/Audigy firmware and the old
- * softoss driver.
+ * This equalizer code is used by the SB Live/Audigy firmware.
  */
 #define COPYING31 Copyright (C) George Young, Hannu Savolainen and Dev Mazumdar 1996-2006. All rights reserved.
 static const unsigned int eq_band1_data[][6] = {

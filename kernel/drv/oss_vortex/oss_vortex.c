@@ -850,28 +850,6 @@ vortex_set_format (int dev, unsigned int arg)
 static int
 vortex_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-#if 0
-  vortex_portc *portc = audio_engines[dev]->portc;
-  int val;
-
-  switch (cmd)
-    {
-    case SNDCTL_DSP_SETOUTVOL:
-      IOCTL_GET (arg, val);
-      return IOCTL_OUT (arg, softoss_avol (audio_engines[dev]->mixer_dev,
-					   portc->voice_chn,
-					   SNDCTL_MIX_WRITE, val));
-      break;
-
-    case SNDCTL_DSP_GETOUTVOL:
-      return IOCTL_OUT (arg, softoss_avol (audio_engines[dev]->mixer_dev,
-					   portc->voice_chn,
-					   SNDCTL_MIX_READ, 0));
-      break;
-
-    }
-
-#endif
   return -EINVAL;
 }
 

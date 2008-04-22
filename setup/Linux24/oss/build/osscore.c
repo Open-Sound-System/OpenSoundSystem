@@ -1986,7 +1986,6 @@ EXPORT_FUNC (oss_audio_release);
 EXPORT_FUNC (oss_audio_set_rate);
 EXPORT_SYMBOL (oss_uiomove);
 EXPORT_FUNC (sequencer_timer);
-EXPORT_FUNC (softoss_is_duplex);
 EXPORT_DATA (synth_devs);
 EXPORT_DATA (softsynthp);
 EXPORT_SYMBOL (oss_get_pid);

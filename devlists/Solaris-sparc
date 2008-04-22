@@ -50,7 +50,6 @@ sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
 sblive	pci1102,8	Creative Sound Blaster Audigy2 Value/Audigy4
 sblive	pcs1102,51	Creative Sound Blaster Audigy Platinum
 sbxfi	pci1102,5	4Front internal testing
-softoss	SOFTOSS	OSS Virtual mixer/synth driver
 trident	pci1023,2000	Trident 4DWave-DX
 trident	pci1023,2001	Trident 4DWave-NX
 trident	pci1023,2002	Trident 4DWave-CX

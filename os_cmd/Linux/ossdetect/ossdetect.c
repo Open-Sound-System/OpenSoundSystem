@@ -485,7 +485,7 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  /* add softoss as the last driver */
+  /* Add vmix as the last driver */
   if (install_vmix)
     add_drv (vmix, PSEUDO_PASS);
 

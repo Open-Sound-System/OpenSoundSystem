@@ -141,7 +141,6 @@ get_open_flags (int mode, int open_flags, struct fileinfo *file)
 
 int always_cooked = 0;
 static unsigned long sync_seed = 0;
-extern int softoss_redirect;
 
 #define COOKED_BLOCK_SIZE 4096
 
