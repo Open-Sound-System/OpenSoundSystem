@@ -1477,6 +1477,16 @@ install_outputdevs (hda_devc * devc)
 
 	    devc->spdifout_endpoint = portc->endpoint;
 
+/*
+ * To be precise the right place for the spdc field might be portc instead of
+ * devc. In this way it's possible to have multiple S/PDIF output DACs connected
+ * to the same HDA controller. OTOH having it in devc saves space. Multiple 
+ * oss_spdif_install() calls on the same spdc structure doesn't cause any 
+ * problems.
+ *
+ * If spdc is moved to portc then care must be taken that oss_spdif_uninstall()
+ * is called for all all output_portc instances.
+ */
 	    if ((err = oss_spdif_install (&devc->spdc, devc->osdev,
 					  &hdaudio_spdif_driver,
 					  sizeof (spdif_driver_t), devc, NULL,
@@ -1851,6 +1861,8 @@ oss_hdaudio_detach (oss_device_t * osdev)
 		     16 * 1024);
       devc->membar_addr = 0;
     }
+
+  oss_spdif_uninstall (&devc->spdc);
 
   oss_unregister_device (devc->osdev);
   return 1;

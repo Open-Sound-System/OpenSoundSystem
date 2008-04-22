@@ -44,6 +44,8 @@ oss_spdif_install (spdif_devc * devc, oss_device_t * osdev,
 		   void *host_portc, int mixer_dev, int flags,
 		   unsigned int caps)
 {
+  int i, pos;
+
   if (devc->is_ok)
     {
       /* cmn_err (CE_WARN, "spdif: Bad usage - double init\n"); */
@@ -70,11 +72,41 @@ oss_spdif_install (spdif_devc * devc, oss_device_t * osdev,
   devc->caps = caps;
   devc->is_ok = 1;
 
-  devc_list[ndevs++] = devc;
+  pos=-1;
+
+  for (i=0;pos==-1 && i<ndevs;i++)
+  if (devc_list[i]==NULL)
+  {
+	  pos = i;
+  }
+
+  if (pos==-1)
+  {
+     if (ndevs >= MAX_DEV)
+     {
+	     cmn_err(CE_WARN, "Too many S/PDIF devices\n");
+	     return -1;
+     }
+
+     pos=ndevs++;
+  }
+
+  devc_list[pos] = devc;
 
   init_ctl (devc, &devc->hot_ctl);
   init_ctl (devc, &devc->cold_ctl);
+
   return 0;
+}
+
+void
+oss_spdif_uninstall (spdif_devc * devc)
+{
+	int i;
+
+	for (i=0;i<ndevs;i++)
+	    if (devc_list[i]==devc)
+	       devc_list[i]=NULL;
 }
 
 int

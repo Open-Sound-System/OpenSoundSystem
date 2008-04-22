@@ -1974,6 +1974,7 @@ EXPORT_DATA (oss_hz);
 EXPORT_FUNC (oss_spdif_open);
 EXPORT_FUNC (oss_spdif_ioctl);
 EXPORT_FUNC (oss_spdif_install);
+EXPORT_FUNC (oss_spdif_uninstall);
 EXPORT_FUNC (oss_spdif_close);
 EXPORT_FUNC (oss_spdif_mix_init);
 EXPORT_FUNC (oss_spdif_setrate);

@@ -69,6 +69,7 @@ extern int oss_spdif_install (spdif_devc * devc, oss_device_t * osdev,
 			      spdif_driver_t * d, int driver_size,
 			      void *host_devc, void *host_portc,
 			      int mixer_dev, int flags, unsigned int caps);
+extern void oss_spdif_uninstall (spdif_devc * devc);
 extern int oss_spdif_open (spdif_devc * devc, int open_mode);
 extern void oss_spdif_close (spdif_devc * devc, int open_mode);
 extern void oss_spdif_setrate (spdif_devc * devc, int rate);

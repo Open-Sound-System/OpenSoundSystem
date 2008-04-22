@@ -2335,6 +2335,11 @@ oss_envy24ht_detach (oss_device_t * osdev)
 
   oss_unregister_interrupts (devc->osdev);
 
+  if (devc->model_data->flags & (MF_SPDIFOUT | MF_SPDIFIN))
+    {
+      oss_spdif_uninstall (&devc->spdc);
+    }
+
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
 
