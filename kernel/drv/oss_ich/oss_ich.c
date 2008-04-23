@@ -1080,7 +1080,7 @@ ich_init (ich_devc * devc)
 					tmp_name,
 					&ich_audio_driver,
 					sizeof (audiodrv_t),
-					opts, formats, NULL, -1)) < 0)
+					opts, formats, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;
