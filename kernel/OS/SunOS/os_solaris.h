@@ -430,7 +430,12 @@ extern caddr_t oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io);
 #define UNMAP_PCI_MEM(osdev, ix, ph, virt, size)	{}
 
 #define GET_PROCESS_PID(x)  ddi_get_pid()
-#define GET_PROCESS_UID()   ddi_get_cred()->cr_uid
+
+/*
+ * Instead of returning UID check if the process has PRIV_SYS_DEVICES privilege.
+ * Report such users as UID=0 (root) and others as UID=1.
+ */
+#define GET_PROCESS_UID()   ((drv_priv(ddi_get_cred())==0) ? 0 : 1)
 
 #if 1
 /* TODO: This works OK but may cause crashes with different kernel versions/builds */
