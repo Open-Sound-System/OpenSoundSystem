@@ -16,7 +16,7 @@ rm -f /etc/rc3.d/S80ossinstall # Remove temporary installer
 rem_drv oss > /dev/null 2>&1 		# OSS 3.99.x and earlier
 rem_drv ossaudios > /dev/null 2>&1	# Old name for sadasupport
 
-for n in audioens audiots audio1575 audiovia823x audiohd audio810 audioixp usb_ac usb_as
+for n in audiocs audioens audiots audio1575 audiovia823x audiohd audio810 audioixp usb_ac usb_as
 do
 	# Copy the /etc/driver_aliases entries for the SADA drivers to a backup
 	# file so that the drivers could be restored later.

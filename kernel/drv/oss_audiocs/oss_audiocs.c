@@ -6,6 +6,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2008. All rights reserved.
 
 #include "oss_audiocs_cfg.h"
+#include <oss_pci.h>
 
 #include "cs4231_mixer.h"
 
@@ -51,7 +52,7 @@ typedef struct
   mixer_ents *mix_devices;
   int mixer_output_port;
 }
-cs4231_devc;
+cs4231_devc_t;
 
 typedef struct cs4231_port_info
 {
@@ -84,9 +85,9 @@ static int ad_format_mask[9 /*devc->model */ ] =
 static int cs4231_open (int dev, int mode, int open_flags);
 static void cs4231_close (int dev, int mode);
 static int cs4231_ioctl (int dev, unsigned int cmd, ioctl_arg arg);
-static void cs4231_output_block (int dev, unsigned long buf, int count,
+static void cs4231_output_block (int dev, oss_native_word buf, int count,
 				 int fragsize, int intrflag);
-static void cs4231_start_input (int dev, unsigned long buf, int count,
+static void cs4231_start_input (int dev, oss_native_word buf, int count,
 				int fragsize, int intrflag);
 static int cs4231_prepare_for_output (int dev, int bsize, int bcount);
 static int cs4231_prepare_for_input (int dev, int bsize, int bcount);
@@ -96,7 +97,7 @@ static void cs4231_halt_output (int dev);
 static void cs4231_trigger (int dev, int bits);
 
 static int
-ad_read (cs4231_devc * devc, int reg)
+ad_read (cs4231_devc_t * devc, int reg)
 {
   oss_native_word flags;
   int x;
@@ -104,32 +105,32 @@ ad_read (cs4231_devc * devc, int reg)
   while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
-  MUTEX_ENTER_IRQDISABLE(devc->low_mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   OUTB (devc->osdev, (unsigned char) (reg & 0xff) | devc->MCE_bit,
 	io_Index_Addr (devc));
   x = INB (devc->osdev, io_Indexed_Data (devc));
-  MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 
   return x;
 }
 
 static void
-ad_write (cs4231_devc * devc, int reg, int data)
+ad_write (cs4231_devc_t * devc, int reg, int data)
 {
   oss_native_word flags;
   int timeout = 1000;
   while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
-  MUTEX_ENTER_IRQDISABLE(devc->low_mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   OUTB (devc->osdev, (unsigned char) (reg & 0xff) | devc->MCE_bit,
 	io_Index_Addr (devc));
   OUTB (devc->osdev, (unsigned char) (data & 0xff), io_Indexed_Data (devc));
-  MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
 static void
-ad_mute (cs4231_devc * devc)
+ad_mute (cs4231_devc_t * devc)
 {
   int i;
   unsigned char prev;
@@ -147,7 +148,7 @@ ad_mute (cs4231_devc * devc)
 }
 
 static void
-ad_unmute (cs4231_devc * devc)
+ad_unmute (cs4231_devc_t * devc)
 {
   int i, dummy;
 
@@ -162,7 +163,7 @@ ad_unmute (cs4231_devc * devc)
 }
 
 static void
-ad_enter_MCE (cs4231_devc * devc)
+ad_enter_MCE (cs4231_devc_t * devc)
 {
   oss_native_word flags;
   unsigned short prev;
@@ -171,22 +172,22 @@ ad_enter_MCE (cs4231_devc * devc)
   while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
-  MUTEX_ENTER_IRQDISABLE(devc->low_mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
   devc->MCE_bit = 0x40;
   prev = INB (devc->osdev, io_Index_Addr (devc));
   if (prev & 0x40)
     {
-      MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+      MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
       return;
     }
 
   OUTB (devc->osdev, devc->MCE_bit, io_Index_Addr (devc));
-  MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
 static void
-ad_leave_MCE (cs4231_devc * devc)
+ad_leave_MCE (cs4231_devc_t * devc)
 {
   oss_native_word flags;
   unsigned char prev, acal;
@@ -195,7 +196,7 @@ ad_leave_MCE (cs4231_devc * devc)
   while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
-  MUTEX_ENTER_IRQDISABLE(devc->low_mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
   acal = ad_read (devc, 9);
 
@@ -205,16 +206,16 @@ ad_leave_MCE (cs4231_devc * devc)
 
   if ((prev & 0x40) == 0)	/* Not in MCE mode */
     {
-      MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+      MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
       return;
     }
 
   OUTB (devc->osdev, 0x00, io_Index_Addr (devc));	/* Clear the MCE bit */
-  MUTEX_EXIT_IRQRESTORE(devc->low_mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
 static int
-cmi8330_set_recmask (cs4231_devc * devc, int mask)
+cmi8330_set_recmask (cs4231_devc_t * devc, int mask)
 {
   unsigned char bits = 0;
 
@@ -235,7 +236,7 @@ cmi8330_set_recmask (cs4231_devc * devc, int mask)
 }
 
 static int
-cs4231_set_recmask (cs4231_devc * devc, int mask)
+cs4231_set_recmask (cs4231_devc_t * devc, int mask)
 {
   unsigned char recdev;
   int i, n;
@@ -314,7 +315,7 @@ cs4231_set_recmask (cs4231_devc * devc, int mask)
 }
 
 static void
-change_bits (cs4231_devc * devc, unsigned char *regval, int dev, int chn,
+change_bits (cs4231_devc_t * devc, unsigned char *regval, int dev, int chn,
 	     int newval, int regoffs)
 {
   unsigned char mask;
@@ -356,7 +357,7 @@ change_bits (cs4231_devc * devc, unsigned char *regval, int dev, int chn,
 }
 
 static int
-cs4231_mixer_get (cs4231_devc * devc, int dev)
+cs4231_mixer_get (cs4231_devc_t * devc, int dev)
 {
   if (!((1 << dev) & devc->supported_devices))
     return -EINVAL;
@@ -367,7 +368,7 @@ cs4231_mixer_get (cs4231_devc * devc, int dev)
 }
 
 static int
-cs4231_mixer_set (cs4231_devc * devc, int dev, int value)
+cs4231_mixer_set (cs4231_devc_t * devc, int dev, int value)
 {
   int left = value & 0x000000ff;
   int right = (value & 0x0000ff00) >> 8;
@@ -443,7 +444,7 @@ cs4231_mixer_set (cs4231_devc * devc, int dev, int value)
 }
 
 static void
-cs4231_mixer_reset (cs4231_devc * devc)
+cs4231_mixer_reset (cs4231_devc_t * devc)
 {
   int i;
 
@@ -478,16 +479,16 @@ cs4231_mixer_reset (cs4231_devc * devc)
 static int
 cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
-  cs4231_devc *devc = mixer_devs[dev]->devc;
+  cs4231_devc_t *devc = mixer_devs[dev]->devc;
 
   if (cmd == SOUND_MIXER_PRIVATE1)
     {
       int val;
 
-      val=*arg;
+      val = *arg;
 
       if (val == 0xffff)
-	return *arg=devc->mixer_output_port;
+	return *arg = devc->mixer_output_port;
 
       val &= (AUDIO_SPEAKER | AUDIO_HEADPHONE | AUDIO_LINE_OUT);
 
@@ -498,7 +499,7 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
       else
 	ad_write (devc, 26, ad_read (devc, 26) | 0x40);	/* Mute mono out */
 
-      return *arg=devc->mixer_output_port;
+      return *arg = devc->mixer_output_port;
     }
 
   if (((cmd >> 8) & 0xff) == 'M')
@@ -509,13 +510,13 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	switch (cmd & 0xff)
 	  {
 	  case SOUND_MIXER_RECSRC:
-	    val=*arg;
-	    return *arg=cs4231_set_recmask (devc, val);
+	    val = *arg;
+	    return *arg = cs4231_set_recmask (devc, val);
 	    break;
 
 	  default:
-	    val=*arg;
-	    return *arg=cs4231_mixer_set (devc, cmd & 0xff, val);
+	    val = *arg;
+	    return *arg = cs4231_mixer_set (devc, cmd & 0xff, val);
 	  }
       else
 	switch (cmd & 0xff)	/*
@@ -524,28 +525,28 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  {
 
 	  case SOUND_MIXER_RECSRC:
-	    return *arg=devc->recmask;
+	    return *arg = devc->recmask;
 	    break;
 
 	  case SOUND_MIXER_DEVMASK:
-	    return *arg=devc->supported_devices;
+	    return *arg = devc->supported_devices;
 	    break;
 
 	  case SOUND_MIXER_STEREODEVS:
-	    return *arg=devc->supported_devices &
-			      ~(SOUND_MASK_SPEAKER | SOUND_MASK_IMIX);
+	    return *arg = devc->supported_devices &
+	      ~(SOUND_MASK_SPEAKER | SOUND_MASK_IMIX);
 	    break;
 
 	  case SOUND_MIXER_RECMASK:
-	    return *arg=devc->supported_rec_devices;
+	    return *arg = devc->supported_rec_devices;
 	    break;
 
 	  case SOUND_MIXER_CAPS:
-	    return *arg=SOUND_CAP_EXCL_INPUT;
+	    return *arg = SOUND_CAP_EXCL_INPUT;
 	    break;
 
 	  default:
-	    return *arg=cs4231_mixer_get (devc, cmd & 0xff);
+	    return *arg = cs4231_mixer_get (devc, cmd & 0xff);
 	  }
     }
   else
@@ -555,7 +556,7 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 static int
 cs4231_set_rate (int dev, int arg)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   /*
    * The sampling speed is encoded in the least significant nibble of I8. The
@@ -637,7 +638,7 @@ cs4231_set_rate (int dev, int arg)
 static short
 cs4231_set_channels (int dev, short arg)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   if (arg != 1 && arg != 2)
     {
@@ -658,7 +659,7 @@ cs4231_set_channels (int dev, short arg)
 static unsigned int
 cs4231_set_bits (int dev, unsigned int arg)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   static struct format_tbl
   {
@@ -752,20 +753,20 @@ static mixer_driver_t cs4231_mixer_driver = {
 static int
 cs4231_open (int dev, int mode, int open_flags)
 {
-  cs4231_devc *devc = NULL;
+  cs4231_devc_t *devc = NULL;
   cs4231_port_info *portc;
   oss_native_word flags;
 
   if (dev < 0 || dev >= num_audio_engines)
     return -ENXIO;
 
-  devc = (cs4231_devc *) audio_engines[dev]->devc;
+  devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   portc = (cs4231_port_info *) audio_engines[dev]->portc;
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (portc->open_mode || (devc->open_mode & mode))
     {
-      MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+      MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
       return -EBUSY;
     }
 
@@ -786,7 +787,7 @@ cs4231_open (int dev, int mode, int open_flags)
  * Mute output until the playback really starts. This decreases clicking (hope so).
  */
   ad_mute (devc);
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
   return 0;
 }
@@ -795,12 +796,12 @@ static void
 cs4231_close (int dev, int mode)
 {
   oss_native_word flags;
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   cs4231_port_info *portc = (cs4231_port_info *) audio_engines[dev]->portc;
 
   DDB (cmn_err (CE_CONT, "cs4231_close(void)\n"));
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   cs4231_halt (dev);
 
@@ -809,7 +810,7 @@ cs4231_close (int dev, int mode)
   portc->open_mode = 0;
 
   ad_mute (devc);
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static int
@@ -819,17 +820,17 @@ cs4231_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 }
 
 static void
-cs4231_output_block (int dev, unsigned long buf, int count, int fragsize,
+cs4231_output_block (int dev, oss_native_word buf, int count, int fragsize,
 		     int intrflag)
 {
   oss_native_word flags;
   unsigned int cnt;
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   cnt = fragsize;
   /* cnt = count; */
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (devc->audio_format == AFMT_IMA_ADPCM)
     {
       cnt /= 4;
@@ -848,7 +849,7 @@ cs4231_output_block (int dev, unsigned long buf, int count, int fragsize,
       && cnt == devc->xfer_count)
     {
       devc->audio_mode |= PCM_ENABLE_OUTPUT;
-      MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+      MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
       return;
     }
 
@@ -857,18 +858,18 @@ cs4231_output_block (int dev, unsigned long buf, int count, int fragsize,
 
   devc->xfer_count = cnt;
   devc->audio_mode |= PCM_ENABLE_OUTPUT;
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
-cs4231_start_input (int dev, unsigned long buf, int count, int fragsize,
+cs4231_start_input (int dev, oss_native_word buf, int count, int fragsize,
 		    int intrflag)
 {
   oss_native_word flags;
   unsigned int cnt;
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   cnt = fragsize;
   /* cnt = count; */
 
@@ -890,7 +891,7 @@ cs4231_start_input (int dev, unsigned long buf, int count, int fragsize,
       && cnt == devc->xfer_count)
     {
       devc->audio_mode |= PCM_ENABLE_INPUT;
-      MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+      MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
       return;			/*
 				 * Auto DMA mode on. No need to react
 				 */
@@ -903,7 +904,7 @@ cs4231_start_input (int dev, unsigned long buf, int count, int fragsize,
 
   devc->xfer_count = cnt;
   devc->audio_mode |= PCM_ENABLE_INPUT;
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
@@ -912,12 +913,12 @@ set_output_format (int dev)
   int timeout;
   unsigned char fs, old_fs, tmp = 0;
   oss_native_word flags;
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   if (ad_read (devc, 9) & 0x03)
     return;
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   fs = devc->speed_bits | (devc->format_bits << 5);
 
   if (devc->channels > 1)
@@ -941,7 +942,7 @@ set_output_format (int dev)
   ad_leave_MCE (devc);
 
   devc->xfer_count = 0;
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
@@ -950,9 +951,9 @@ set_input_format (int dev)
   int timeout;
   unsigned char fs, old_fs, tmp = 0;
   oss_native_word flags;
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   fs = devc->speed_bits | (devc->format_bits << 5);
 
   if (devc->channels > 1)
@@ -1018,14 +1019,14 @@ set_input_format (int dev)
 
   ad_leave_MCE (devc);
   devc->xfer_count = 0;
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
 }
 
 static void
 set_sample_format (int dev)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   if (ad_read (devc, 9) & 0x03)	/* Playback or recording active */
     return;
@@ -1037,7 +1038,7 @@ set_sample_format (int dev)
 static int
 cs4231_prepare_for_output (int dev, int bsize, int bcount)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   ad_mute (devc);
 
@@ -1051,7 +1052,7 @@ cs4231_prepare_for_output (int dev, int bsize, int bcount)
 static int
 cs4231_prepare_for_input (int dev, int bsize, int bcount)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
 
   if (devc->audio_mode)
     return 0;
@@ -1065,7 +1066,7 @@ cs4231_prepare_for_input (int dev, int bsize, int bcount)
 static void
 cs4231_halt (int dev)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   cs4231_port_info *portc = (cs4231_port_info *) audio_engines[dev]->portc;
 
   unsigned char bits = ad_read (devc, 9);
@@ -1080,7 +1081,7 @@ cs4231_halt (int dev)
 static void
 cs4231_halt_input (int dev)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   cs4231_port_info *portc = (cs4231_port_info *) audio_engines[dev]->portc;
   oss_native_word flags;
 
@@ -1089,7 +1090,7 @@ cs4231_halt_input (int dev)
   if (!(ad_read (devc, 9) & 0x02))
     return;			/* Capture not enabled */
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   ad_write (devc, 9, ad_read (devc, 9) & ~0x02);	/* Stop capture */
   // TODO: Stop DMA
@@ -1099,13 +1100,13 @@ cs4231_halt_input (int dev)
 
   devc->audio_mode &= ~PCM_ENABLE_INPUT;
 
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
 cs4231_halt_output (int dev)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   cs4231_port_info *portc = (cs4231_port_info *) audio_engines[dev]->portc;
   oss_native_word flags;
 
@@ -1114,10 +1115,10 @@ cs4231_halt_output (int dev)
   if (!(ad_read (devc, 9) & 0x01))
     return;			/* Playback not enabled */
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   ad_mute (devc);
-  oss_udelay(10);
+  oss_udelay (10);
 
   ad_write (devc, 9, ad_read (devc, 9) & ~0x01);	/* Stop playback */
   //TODO: Disable DMA
@@ -1127,18 +1128,18 @@ cs4231_halt_output (int dev)
 
   devc->audio_mode &= ~PCM_ENABLE_OUTPUT;
 
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
 cs4231_trigger (int dev, int state)
 {
-  cs4231_devc *devc = (cs4231_devc *) audio_engines[dev]->devc;
+  cs4231_devc_t *devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   cs4231_port_info *portc = (cs4231_port_info *) audio_engines[dev]->portc;
   oss_native_word flags;
   unsigned char tmp, old, oldstate;
 
-  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   oldstate = state;
   state &= devc->audio_mode;
 
@@ -1166,18 +1167,18 @@ cs4231_trigger (int dev, int state)
       ad_write (devc, 9, tmp);
       if (state & PCM_ENABLE_OUTPUT)
 	{
-	  oss_udelay(10);
-	  oss_udelay(10);
-	  oss_udelay(10);
+	  oss_udelay (10);
+	  oss_udelay (10);
+	  oss_udelay (10);
 	  ad_unmute (devc);
 	}
     }
 
-  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
 static void
-cs4231_init_hw (cs4231_devc * devc)
+cs4231_init_hw (cs4231_devc_t * devc)
 {
   int i;
   /*
@@ -1255,7 +1256,7 @@ cs4231_init_hw (cs4231_devc * devc)
 }
 
 int
-cs4231_detect (cs4231_devc *devc, int io_base)
+cs4231_detect (cs4231_devc_t * devc, int io_base)
 {
 
   unsigned char tmp;
@@ -1329,43 +1330,41 @@ cs4231_detect (cs4231_devc *devc, int io_base)
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step B\n"));
   ad_write (devc, 0, 0xaa);
   ad_write (devc, 1, 0x45);	/* 0x55 with bit 0x10 clear */
-  oss_udelay(10);
+  oss_udelay (10);
 
   if ((tmp1 = ad_read (devc, 0)) != 0xaa
       || (tmp2 = ad_read (devc, 1)) != 0x45)
     {
-	  DDB (cmn_err
-	       (CE_WARN, "cs4231 detect error - step B (%x/%x)\n", tmp1,
-		tmp2));
+      DDB (cmn_err
+	   (CE_WARN, "cs4231 detect error - step B (%x/%x)\n", tmp1, tmp2));
 #if 1
-	  if (tmp1 == 0x8a && tmp2 == 0xff)	/* AZT2320 ????? */
-	    {
-	      DDB (cmn_err (CE_CONT, "Ignoring error\n"));
-	    }
-	  else
+      if (tmp1 == 0x8a && tmp2 == 0xff)	/* AZT2320 ????? */
+	{
+	  DDB (cmn_err (CE_CONT, "Ignoring error\n"));
+	}
+      else
 #endif
-	    return 0;
+	return 0;
     }
 
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step C\n"));
   ad_write (devc, 0, 0x45);
   ad_write (devc, 1, 0xaa);
-  oss_udelay(10);
+  oss_udelay (10);
 
   if ((tmp1 = ad_read (devc, 0)) != 0x45
       || (tmp2 = ad_read (devc, 1)) != 0xaa)
     {
-	  DDB (cmn_err
-	       (CE_WARN, "cs4231 detect error - step C (%x/%x)\n", tmp1,
-		tmp2));
+      DDB (cmn_err
+	   (CE_WARN, "cs4231 detect error - step C (%x/%x)\n", tmp1, tmp2));
 #if 1
-	  if (tmp1 == 0x65 && tmp2 == 0xff)	/* AZT2320 ????? */
-	    {
-	      DDB (cmn_err (CE_CONT, "Ignoring error\n"));
-	    }
-	  else
+      if (tmp1 == 0x65 && tmp2 == 0xff)	/* AZT2320 ????? */
+	{
+	  DDB (cmn_err (CE_CONT, "Ignoring error\n"));
+	}
+      else
 #endif
-	    return 0;
+	return 0;
     }
 
   /*
@@ -1514,7 +1513,7 @@ cs4231_detect (cs4231_devc *devc, int io_base)
 }
 
 void
-cs4231_init (cs4231_devc *devc, char *name, int io_base)
+cs4231_init (cs4231_devc_t * devc, char *name, int io_base)
 {
   int my_dev, my_mixer;
   char dev_name[100];
@@ -1534,11 +1533,11 @@ cs4231_init (cs4231_devc *devc, char *name, int io_base)
     sprintf (dev_name, "Generic audio codec (%s)", devc->chip_name);
 
   if ((my_mixer = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
-				       devc->osdev,
-				       devc->osdev,
-				       dev_name,
-				       &cs4231_mixer_driver,
-				       sizeof (mixer_driver_t), devc)) >= 0)
+				     devc->osdev,
+				     devc->osdev,
+				     dev_name,
+				     &cs4231_mixer_driver,
+				     sizeof (mixer_driver_t), devc)) >= 0)
     {
       audio_engines[my_dev]->mixer_dev = my_mixer;
       cs4231_mixer_reset (devc);
@@ -1546,23 +1545,23 @@ cs4231_init (cs4231_devc *devc, char *name, int io_base)
 
   if (devc->model > MD_1848)
     {
-	devc->audio_flags |= ADEV_DUPLEX;
+      devc->audio_flags |= ADEV_DUPLEX;
     }
 
   if ((my_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
-					devc->osdev,
-					devc->osdev,
-					dev_name,
-					&cs4231_audio_driver,
-					sizeof (audiodrv_t),
-					devc->audio_flags,
-					ad_format_mask[devc->model],
-					devc, -1)) < 0)
+				      devc->osdev,
+				      devc->osdev,
+				      dev_name,
+				      &cs4231_audio_driver,
+				      sizeof (audiodrv_t),
+				      devc->audio_flags,
+				      ad_format_mask[devc->model],
+				      devc, -1)) < 0)
     {
       return;
     }
 
-  portc=PMALLOC(devc->osdev, sizeof(*portc));
+  portc = PMALLOC (devc->osdev, sizeof (*portc));
   audio_engines[my_dev]->portc = portc;
   audio_engines[my_dev]->min_block = 512;
   memset ((char *) portc, 0, sizeof (*portc));
@@ -1575,7 +1574,7 @@ cs4231_init (cs4231_devc *devc, char *name, int io_base)
 }
 
 void
-cs4231_unload (cs4231_devc *devc)
+cs4231_unload (cs4231_devc_t * devc)
 {
 #if 0
   int i, dev = 0;
@@ -1611,13 +1610,13 @@ int
 cs4231intr (oss_device_t * osdev)
 {
   unsigned char status;
-  cs4231_devc *devc = osdev->devc;
+  cs4231_devc_t *devc = osdev->devc;
   int alt_stat = 0xff;
   unsigned char c930_stat = 0;
   int cnt = 0;
   int serviced = 0;
 
-  devc->irq_ok=1;
+  devc->irq_ok = 1;
 
 interrupt_again:		/* Jump back here if int status doesn't reset */
 
@@ -1677,13 +1676,70 @@ interrupt_again:		/* Jump back here if int status doesn't reset */
 int
 oss_audiocs_attach (oss_device_t * osdev)
 {
-	// TODO: Not implemented yet
-	return 0;
+  unsigned short pci_command, vendor, device;
+  unsigned int pci_ioaddr0;
+  unsigned int dw;
+
+  cs4231_devc_t *devc = osdev->devc;
+
+  if ((devc = PMALLOC (osdev, sizeof (*devc))) == NULL)
+    {
+      cmn_err (CE_WARN, "Out of memory\n");
+      return 0;
+    }
+
+  devc->osdev = osdev;
+  osdev->devc = devc;
+  devc->open_mode = 0;
+
+  devc->chip_name = "Generic CS4231";
+
+  pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
+  pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
+
+  DDB (cmn_err
+       (CE_CONT, "oss_audiocs_attach(Vendor %x, device %x)\n", vendor,
+	device));
+  cmn_err (CE_CONT, "oss_audiocs_attach(Vendor %x, device %x)\n", vendor,
+	   device);
+
+  if (vendor != 0x4040 && device != 0x4040)
+    {
+      cmn_err (CE_WARN, "Unrecognized PCI device %x, %x\n", vendor, device);
+      return 0;
+    }
+
+  pci_read_config_dword (osdev, PCI_BASE_ADDRESS_0, &pci_ioaddr0);
+  pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
+
+  // TODO: Call cs4231_detect/init */
+
+  devc->base = MAP_PCI_IOADDR (devc->osdev, 0, pci_ioaddr0);
+  cmn_err (CE_CONT, "I/O base=%x, %x\n", pci_ioaddr0, devc->base);
+
+  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
+  pci_write_config_word (osdev, PCI_COMMAND, pci_command);
+
+  MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
+  MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
+
+  oss_register_device (osdev, devc->chip_name);
+
+  return 1;
 }
 
 int
 oss_audiocs_detach (oss_device_t * osdev)
 {
-	// TODO: Not implemented yet
-	return 0;
+  cs4231_devc_t *devc = (cs4231_devc_t *) osdev->devc;
+
+  if (oss_disable_device (osdev) < 0)
+    return 0;
+
+  MUTEX_CLEANUP (devc->mutex);
+  MUTEX_CLEANUP (devc->low_mutex);
+
+  oss_unregister_device (osdev);
+
+  return 1;
 }

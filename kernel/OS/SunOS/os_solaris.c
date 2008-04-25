@@ -281,7 +281,7 @@ forceload_drivers (dev_t dev, cred_t * credp)
 	err = ldi_close (lh, FWRITE, credp);
     }
 
-  for (i = 0; i < MAX_PCM_DEV; i++)
+  for (i = 0; i < MAX_AUDIO_DEVFILES; i++)
     {
       sprintf (path, "/dev/dsp%d", i);
 

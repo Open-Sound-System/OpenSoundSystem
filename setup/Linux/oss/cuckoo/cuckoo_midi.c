@@ -271,6 +271,106 @@ static snd_rawmidi_ops_t cuckoo_uart_input = {
   .trigger = cuckoo_uart_input_trigger,
 };
 
+#warning We should really find a way to include midi_core.h here instead of copying its structures...
+
+struct midi_input_info
+{				/* MIDI input scanner variables */
+#define MI_MAX	32
+  int m_busy;
+  unsigned char m_buf[MI_MAX];
+  unsigned char m_prev_status;	/* For running status */
+  int m_ptr;
+#define MST_INIT			0
+#define MST_DATA			1
+#define MST_SYSEX			2
+  int m_state;
+  int m_left;
+  int m_f1_flag;		/* MTC Quarter frame message flag */
+};
+
+typedef struct _midi_operations
+{
+  int dev;			/* MIDI device number */
+  char name[64];
+  void *d;
+  int caps;
+  int open_mode;		/* OPEN_READ | OPEN_WRITE */
+
+  int working_mode;		/* See SNDCTL_MIDI_SETMODE */
+  int timebase;
+  int tempo;
+  struct synth_operations *converter;
+  struct midi_input_info in_info;
+  struct coproc_operations *coproc;
+  void *devc;
+  void *os_id;			/* The device ID (dip) given by the system. */
+  int enabled;
+  int unloaded;
+  int is_killed;
+  oss_device_t *osdev;
+  oss_device_t *master_osdev;	/* osdev struct of the master device (for virtual drivers) */
+  int card_number;
+  int port_number;
+  oss_devnode_t devnode;
+  int real_dev;
+  char handle[32];
+  unsigned long flags;
+#define MFLAG_NOSEQUENCER		0x00000001	/* Device not to be opened by the sequencer driver */
+#define MFLAG_VIRTUAL			0x00000002
+#define MFLAG_SELFTIMING		0x00000004	/* Generates MTC timing itself */
+#define MFLAG_CLIENT			0x00000008	/* Client side virtual device */
+#define MFLAG_SERVER			0x00000010	/* Client side virtual device */
+#define MFLAG_INTERNAL			0x00000020	/* Internal device */
+#define MFLAG_EXTERNAL			0x00000040	/* External device */
+
+#define MFLAG_INPUT			0x00000080
+#define MFLAG_OUTPUT			0x00000100
+
+#define MFLAG_OUTINTR			0x00000200	/* Supports output interrupts - no polling needed */
+#define MFLAG_MTC			0x00000400	/* Device is MTC/SMPTE capable */
+#define MFLAG_QUIET			0x00000800	/* No automatic messages */
+
+  void (*input_callback) (int dev, unsigned char midich);
+  void (*event_input) (int dev, unsigned char *data, int len);
+
+#ifndef CONFIGURE_C
+  oss_mutex_t mutex;
+  oss_wait_queue_t *in_wq, *out_wq;
+  timeout_id_t out_timeout;
+#endif
+  pid_t pid;
+  int magic;
+  char cmd[16];
+
+  int prech_timeout;		/* Wait time for the first input byte */
+
+/*
+ * MTC generator
+ */
+
+  int mtc_timebase;
+  int mtc_phase;		/* Which part should be sent next */
+  long long mtc_t0;
+  int mtc_prev_t, mtc_codetype, mtc_current;
+  timeout_id_t mtc_timeout_id;
+
+/*
+ * Event queues
+ */
+
+  struct midi_queue_t *in_queue, *out_queue;
+
+/*
+ * Timer
+ */
+  int timer_driver;
+  int timer_dev;
+  int latency;			/* In usecs, -1=unknown */
+  int is_timing_master;
+} mididev_t, *mididev_p;
+extern int num_mididevs;
+extern mididev_p *midi_devs;
+
 int
 install_midiport_instances (cuckoo_t * chip, int cardno)
 {
@@ -285,7 +385,7 @@ install_midiport_instances (cuckoo_t * chip, int cardno)
 
 //printk("Midi device %s\n", mididev->info.name);
 
-	if ((err = snd_rawmidi_new (chip->card, mididev->info.name, devix,
+	if ((err = snd_rawmidi_new (chip->card, mididev->name, devix,
 				    1, 1, &rmidi)) < 0)
 	  {
 	    printk ("cuckoo: Failed to register rawmidi device, err=%d\n",
@@ -294,7 +394,7 @@ install_midiport_instances (cuckoo_t * chip, int cardno)
 	  }
 
 	rmidi->private_data = (void *) dev;
-	strcpy (rmidi->name, mididev->info.name);
+	strcpy (rmidi->name, mididev->name);
 	rmidi->info_flags |= SNDRV_RAWMIDI_INFO_OUTPUT |
 	  SNDRV_RAWMIDI_INFO_INPUT | SNDRV_RAWMIDI_INFO_DUPLEX;
 	snd_rawmidi_set_ops (rmidi, SNDRV_RAWMIDI_STREAM_OUTPUT,

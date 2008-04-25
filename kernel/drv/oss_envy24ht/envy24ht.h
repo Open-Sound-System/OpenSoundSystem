@@ -153,7 +153,7 @@ typedef struct
 
   spdif_devc spdc;
   int gains[6];
-  int monitor[4];
+  int monitor[5];
   int recsrc;
 
 /*

@@ -122,6 +122,24 @@ typedef struct
 
 #define MAX_OSSPCM 24		// Max # of PCM devices/card instance
 
+// Older ALSA versions used to define these...
+typedef struct snd_card snd_card_t;
+typedef struct snd_pcm snd_pcm_t;
+typedef struct snd_rawmidi snd_rawmidi_t;
+typedef struct snd_rawmidi_substream snd_rawmidi_substream_t;
+typedef struct snd_rawmidi_ops snd_rawmidi_ops_t;
+typedef struct snd_kcontrol snd_kcontrol_t;
+typedef struct snd_kcontrol_new snd_kcontrol_new_t;
+typedef struct snd_ctl_elem_info snd_ctl_elem_info_t;
+typedef struct snd_ctl_elem_value snd_ctl_elem_value_t;
+typedef struct snd_pcm_substream snd_pcm_substream_t;
+typedef struct snd_pcm_hardware snd_pcm_hardware_t;
+typedef struct snd_pcm_runtime snd_pcm_runtime_t;
+typedef struct snd_pcm_hw_params snd_pcm_hw_params_t;
+typedef struct snd_pcm_ops snd_pcm_ops_t;
+typedef struct snd_device snd_device_t;
+typedef struct snd_device_ops snd_device_ops_t;
+
 struct _snd_cuckoo
 {
   snd_card_t *card;

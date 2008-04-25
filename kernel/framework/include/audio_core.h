@@ -327,7 +327,7 @@ extern int num_audio_devfiles;
 typedef struct
 {
   int ndevs;
-  unsigned char devices[MAX_PCM_DEV];
+  unsigned short devices[MAX_AUDIO_DEVFILES];
 }
 oss_devlist_t;
 

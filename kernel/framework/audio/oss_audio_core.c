@@ -2545,13 +2545,13 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
 
   if (group->id == 0)
     {
-      if (adev->engine_num > 0xff)
+      if (adev->engine_num > SYNC_DEVICE_MASK)
 	{
 	  cmn_err (CE_WARN, "Bad device number %d\n", adev->engine_num);
 	  return -EIO;
 	}
 
-      id = xrand (sync_seed) & ~0xff;
+      id = xrand (sync_seed) & ~SYNC_DEVICE_MASK; /* Clear the engine number field */
       id |= adev->engine_num;
 
       group->id = id;
@@ -2561,7 +2561,7 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
   else
     {
       id = group->id;
-      sync_dev = id & 0xff;
+      sync_dev = id & SYNC_DEVICE_MASK;
     }
 
   if (sync_dev < 0 || sync_dev >= num_audio_engines)
@@ -2615,16 +2615,25 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
 }
 
 static int
-handle_syncstart (int group)
+handle_syncstart (int orig_dev, int group)
 {
   int master_dev, arg;
   adev_p adev, next;
 
-  master_dev = group & 0xff;
+  master_dev = group & SYNC_DEVICE_MASK;
   if (master_dev < 0 || master_dev >= num_audio_engines)
     return -EINVAL;
 
   adev = audio_engines[master_dev];
+
+  if (!(adev->sync_flags & SYNC_MASTER) ||
+     master_dev != orig_dev)
+     {
+	/*
+	 * Potential attack. SYNCSTART was called on wrong file descriptor.
+	 */
+	return -EPERM;
+     }
 
   if (adev->sync_group != group)
     return -EINVAL;
@@ -3363,7 +3372,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 
     case SNDCTL_DSP_SYNCSTART:
       val = *arg;
-      return handle_syncstart (val);
+      return handle_syncstart (adev->engine_num, val);
       break;
 
     case SNDCTL_DSP_GETERROR:
@@ -5679,10 +5688,10 @@ void
 oss_audio_start_syncgroup (unsigned int syncgroup)
 {
 /*
- * This routine is called by the /dev/sequencer driver to start a sync group
- * at the right moment.
+ * This routine is to be called by the /dev/midi driver to start a sync group
+ * at the right time.
  */
-  handle_syncstart (syncgroup);
+  handle_syncstart (syncgroup & SYNC_DEVICE_MASK, syncgroup);
 }
 
 #ifdef ALLOW_SELECT
@@ -6078,16 +6087,21 @@ oss_install_audiodev (int vers,
 
   if (audio_engines == NULL)
     {
-      audio_engines = PMALLOC (NULL, sizeof (adev_t *) * MAX_PCM_DEV);
-      memset (audio_engines, 0, sizeof (adev_t *) * MAX_PCM_DEV);
+      audio_engines = PMALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_ENGINES);
+      memset (audio_engines, 0, sizeof (adev_t *) * MAX_AUDIO_ENGINES);
     }
 
   if (audio_devfiles == NULL)
     {
-      audio_devfiles = PMALLOC (NULL, sizeof (adev_t *) * MAX_PCM_DEV);
-      memset (audio_devfiles, 0, sizeof (adev_t *) * MAX_PCM_DEV);
+      audio_devfiles = PMALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
+      memset (audio_devfiles, 0, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
     }
+#ifdef linux
+  /*
+   * For teh Cuckoo module
+   */
   oss_adev_pointer = audio_engines;
+#endif
 
   if (vers != OSS_AUDIO_DRIVER_VERSION)
     {
@@ -6123,7 +6137,7 @@ oss_install_audiodev (int vers,
   if (num == -1)
     {
 
-      if (num_audio_engines >= MAX_PCM_DEV)
+      if (num_audio_engines >= MAX_AUDIO_ENGINES)
 	{
 	  cmn_err (CE_NOTE, "Too many audio engines\n");
 	  return -EIO;

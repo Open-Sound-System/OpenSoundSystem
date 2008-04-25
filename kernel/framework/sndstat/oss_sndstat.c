@@ -123,7 +123,7 @@ init_status (void)
   missing_devs = 0;
 
   if (audio_devfiles != NULL)
-    for (i = 0; i < MAX_PCM_DEV * 2 && missing_devs < 40; i++)
+    for (i = 0; i < MAX_AUDIO_DEVFILES * 2 && missing_devs < 40; i++)
       {
 	int j, d;
 #if 0

@@ -1302,7 +1302,7 @@ check_list (oss_devlist_t * oldlist, oss_devlist_t * newlist)
  * Check that the same devices are present in both lists. Any difference
  * indicates that the device configuration has changed (invalidates the list).
  */
-#if MAX_PCM_DEV > 64
+#if MAX_AUDIO_DEVFILES > 64
 #error Too many audio devices - fix this algorithm
 #endif
   unsigned long long mask1, mask2;

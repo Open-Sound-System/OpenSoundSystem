@@ -51,7 +51,7 @@ reorder_dspdevs (void)
 	  if (*p)
 	    *p++ = 0;
 
-	  if (m > MAX_PCM_DEV || sscanf (s, "%d", &v) != 1)
+	  if (m > MAX_AUDIO_DEVFILES || sscanf (s, "%d", &v) != 1)
 	    {
 	      fprintf (stderr, "Bad info in dspdevs.map\n");
 	      fclose (f);

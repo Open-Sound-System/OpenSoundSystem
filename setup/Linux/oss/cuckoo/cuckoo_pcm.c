@@ -95,7 +95,7 @@ cuckoo_outputintr (int dev, int notify_only)
 }
 
 static void
-cuckoo_inputintr (int dev)
+cuckoo_inputintr (int dev, int intr_flags)
 {
   snd_pcm_substream_t *substream;
   adev_t *adev;
@@ -238,7 +238,7 @@ snd_cuckoo_playback_open (snd_pcm_substream_t * substream)
       return -EBUSY;
     }
 
-  if ((err = adev->d->open (adev->engine_num, OPEN_WRITE, 0)) < 0)
+  if ((err = adev->d->adrv_open (adev->engine_num, OPEN_WRITE, 0)) < 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return err;
@@ -290,7 +290,7 @@ snd_cuckoo_capture_open (snd_pcm_substream_t * substream)
       return -EBUSY;
     }
 
-  if ((err = adev->d->open (adev->engine_num, OPEN_READ, 0)) < 0)
+  if ((err = adev->d->adrv_open (adev->engine_num, OPEN_READ, 0)) < 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return err;
@@ -324,7 +324,7 @@ snd_cuckoo_playback_close (snd_pcm_substream_t * substream)
   udi_spin_lock_irqsave (&adev->mutex, &flags);
   adev->pid = -1;
   *adev->cmd = 0;
-  adev->d->close (adev->engine_num, OPEN_WRITE);
+  adev->d->adrv_close (adev->engine_num, OPEN_WRITE);
   adev->open_mode &= ~OPEN_WRITE;
   cuckoo_playsubstream[adev->engine_num] = NULL;
   udi_spin_unlock_irqrestore (&adev->mutex, flags);
@@ -345,7 +345,7 @@ snd_cuckoo_capture_close (snd_pcm_substream_t * substream)
   adev = chip->capture_adev[snum];
 
   udi_spin_lock_irqsave (&adev->mutex, &flags);
-  adev->d->close (adev->engine_num, OPEN_READ);
+  adev->d->adrv_close (adev->engine_num, OPEN_READ);
   adev->pid = -1;
   *adev->cmd = 0;
   adev->open_mode &= ~OPEN_READ;
@@ -438,11 +438,11 @@ snd_cuckoo_playback_prepare (snd_pcm_substream_t * substream)
 
   udi_spin_lock_irqsave (&adev->mutex, &flags);
 
-  adev->d->set_format (adev->engine_num,
+  adev->d->adrv_set_format (adev->engine_num,
 		       snd_pcm_format_width (runtime->format));
   runtime->channels =
-    adev->d->set_channels (adev->engine_num, runtime->channels);
-  runtime->rate = adev->d->set_rate (adev->engine_num, runtime->rate);
+    adev->d->adrv_set_channels (adev->engine_num, runtime->channels);
+  runtime->rate = adev->d->adrv_set_rate (adev->engine_num, runtime->rate);
   adev->user_parms.rate = adev->user_parms.rate = runtime->rate;
 
   dmap->bytes_in_use = snd_pcm_lib_buffer_bytes (substream);
@@ -475,7 +475,7 @@ snd_cuckoo_playback_prepare (snd_pcm_substream_t * substream)
   dmap->nfrags = dmap->bytes_in_use / dmap->fragment_size;
 
   err =
-    adev->d->prepare_for_output (adev->engine_num, dmap->fragment_size,
+    adev->d->adrv_prepare_for_output (adev->engine_num, dmap->fragment_size,
 				 dmap->nfrags);
   cuckoo_playsubstream[adev->engine_num] = substream;
   udi_spin_unlock_irqrestore (&adev->mutex, flags);
@@ -500,10 +500,10 @@ snd_cuckoo_capture_prepare (snd_pcm_substream_t * substream)
 
   udi_spin_lock_irqsave (&adev->mutex, &flags);
 
-  adev->d->set_format (adev->engine_num,
+  adev->d->adrv_set_format (adev->engine_num,
 		       snd_pcm_format_width (runtime->format));
-  adev->d->set_channels (adev->engine_num, runtime->channels);
-  adev->d->set_rate (adev->engine_num, runtime->rate);
+  adev->d->adrv_set_channels (adev->engine_num, runtime->channels);
+  adev->d->adrv_set_rate (adev->engine_num, runtime->rate);
 
   dmap->bytes_in_use = snd_pcm_lib_buffer_bytes (substream);
   dmap->fragment_size = snd_pcm_lib_period_bytes (substream);
@@ -535,7 +535,7 @@ snd_cuckoo_capture_prepare (snd_pcm_substream_t * substream)
   dmap->nfrags = dmap->bytes_in_use / dmap->fragment_size;
 
   err =
-    adev->d->prepare_for_input (adev->engine_num, dmap->fragment_size,
+    adev->d->adrv_prepare_for_input (adev->engine_num, dmap->fragment_size,
 				dmap->nfrags);
   cuckoo_capturesubstream[adev->engine_num] = substream;
   udi_spin_unlock_irqrestore (&adev->mutex, flags);
@@ -564,13 +564,13 @@ snd_cuckoo_playback_trigger (snd_pcm_substream_t * substream, int cmd)
   switch (cmd)
     {
     case SNDRV_PCM_TRIGGER_START:
-      adev->d->output_block (adev->engine_num, dmap->dmabuf_phys,
+      adev->d->adrv_output_block (adev->engine_num, dmap->dmabuf_phys,
 			     dmap->bytes_in_use, dmap->fragment_size, 0);
-      adev->d->trigger (adev->engine_num, PCM_ENABLE_OUTPUT);
+      adev->d->adrv_trigger (adev->engine_num, PCM_ENABLE_OUTPUT);
       break;
 
     case SNDRV_PCM_TRIGGER_STOP:
-      adev->d->trigger (adev->engine_num, 0);
+      adev->d->adrv_trigger (adev->engine_num, 0);
       break;
 
     default:
@@ -606,13 +606,13 @@ snd_cuckoo_capture_trigger (snd_pcm_substream_t * substream, int cmd)
   switch (cmd)
     {
     case SNDRV_PCM_TRIGGER_START:
-      adev->d->start_input (adev->engine_num, dmap->dmabuf_phys,
+      adev->d->adrv_start_input (adev->engine_num, dmap->dmabuf_phys,
 			    dmap->bytes_in_use, dmap->fragment_size, 0);
-      adev->d->trigger (adev->engine_num, PCM_ENABLE_INPUT);
+      adev->d->adrv_trigger (adev->engine_num, PCM_ENABLE_INPUT);
       break;
 
     case SNDRV_PCM_TRIGGER_STOP:
-      adev->d->trigger (adev->engine_num, 0);
+      adev->d->adrv_trigger (adev->engine_num, 0);
       break;
 
     default:
@@ -642,9 +642,9 @@ snd_cuckoo_playback_pointer (snd_pcm_substream_t * substream)
   adev = chip->play_adev[snum];
   dmap = adev->dmap_out;
 
-  if (adev->d->get_output_pointer != NULL)
+  if (adev->d->adrv_get_output_pointer != NULL)
     pos =
-      adev->d->get_output_pointer (adev->engine_num, dmap, PCM_ENABLE_OUTPUT);
+      adev->d->adrv_get_output_pointer (adev->engine_num, dmap, PCM_ENABLE_OUTPUT);
   else
     {
       pos = dmap->fragment_counter * dmap->fragment_size;
@@ -670,9 +670,9 @@ snd_cuckoo_capture_pointer (snd_pcm_substream_t * substream)
   adev = chip->capture_adev[snum];
   dmap = adev->dmap_in;
 
-  if (adev->d->get_input_pointer != NULL)
+  if (adev->d->adrv_get_input_pointer != NULL)
     pos =
-      adev->d->get_input_pointer (adev->engine_num, dmap, PCM_ENABLE_INPUT);
+      adev->d->adrv_get_input_pointer (adev->engine_num, dmap, PCM_ENABLE_INPUT);
   else
     {
       pos = dmap->fragment_counter * dmap->fragment_size;
