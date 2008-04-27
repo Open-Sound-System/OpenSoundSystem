@@ -2518,6 +2518,7 @@ create_output_mixer (int dev, envy24_devc * devc, int root)
 					   MIXT_STEREOSLIDER16,
 					   tmp, 1440,
 					   MIXF_READABLE |
+					   MIXF_MONVOL |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return err;
@@ -2566,6 +2567,7 @@ create_input_mixer (int dev, envy24_devc * devc, int root)
 					   MIXT_STEREOSLIDER16,
 					   tmp, 1440,
 					   MIXF_READABLE |
+					   MIXF_MONVOL |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return err;
@@ -2633,6 +2635,7 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       tmp, 1440,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
+					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2650,6 +2653,7 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       tmp, 1440,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
+					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2679,6 +2683,7 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       tmp, 1440,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
+					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2697,6 +2702,7 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       tmp, 1440,
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
+					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}

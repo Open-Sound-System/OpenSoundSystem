@@ -3294,7 +3294,7 @@ create_soft_mixer (int dev)
 #endif
 					   tmp,
 					   100,
-					   MIXF_READABLE | MIXF_WRITEABLE)) <
+					   MIXF_PCMVOL | MIXF_READABLE | MIXF_WRITEABLE)) <
 	  0)
 	return err;
       if ((err = mixer_ext_create_control (dev, group,

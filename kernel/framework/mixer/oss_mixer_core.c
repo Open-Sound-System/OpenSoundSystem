@@ -1210,7 +1210,7 @@ touch_mixer (int dev)
 		  cnum =
 		    mixer_ext_create_control (dev, grp, i, mixer_ext_recrw,
 					      MIXT_ONOFF, "REC", 1,
-					      MIXF_READABLE | MIXF_WRITEABLE);
+					      MIXF_READABLE | MIXF_WRITEABLE | MIXF_RECVOL);
 		  if ((ent = mixer_find_ext (dev, cnum)) != NULL)
 		    {
 		      ent->desc &= MIXEXT_SCOPE_RECSWITCH;

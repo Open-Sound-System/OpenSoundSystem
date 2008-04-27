@@ -18,7 +18,6 @@ typedef struct
   oss_native_word base;
   unsigned char MCE_bit;
   unsigned char saved_regs[32];
-  int debug_flag;
 
   int audio_flags;
   int record_dev, playback_dev;
@@ -39,7 +38,6 @@ typedef struct
 
   /* Mixer parameters */
   int is_muted;
-  int spdif_present;
   int recmask;
   int supported_devices, orig_devices;
   int supported_rec_devices, orig_rec_devices;
@@ -1193,8 +1191,6 @@ cs4231_init_hw (cs4231_devc_t * devc)
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
   };
 
-  devc->debug_flag = 1;
-
   for (i = 0; i < 16; i++)
     ad_write (devc, i, init_values[i]);
 
@@ -1256,7 +1252,7 @@ cs4231_init_hw (cs4231_devc_t * devc)
 }
 
 int
-cs4231_detect (cs4231_devc_t * devc, int io_base)
+cs4231_detect (cs4231_devc_t * devc)
 {
 
   unsigned char tmp;
@@ -1264,18 +1260,10 @@ cs4231_detect (cs4231_devc_t * devc, int io_base)
 
   int i;
 
-  DDB (cmn_err (CE_CONT, "cs4231_detect(%x)\n", io_base));
-
-  devc->base = io_base;
-  devc->irq_ok = 0;
-  devc->timer_running = 0;
   devc->MCE_bit = 0x40;
-  devc->open_mode = 0;
   devc->chip_name = devc->name = "CS4231";
   devc->model = MD_4231;	/* CS4231 or CS4248 */
   devc->levels = NULL;
-  devc->spdif_present = 0;
-  devc->debug_flag = 0;
 
   /*
    * Check that the I/O address is in use.
@@ -1513,7 +1501,7 @@ cs4231_detect (cs4231_devc_t * devc, int io_base)
 }
 
 void
-cs4231_init (cs4231_devc_t * devc, char *name, int io_base)
+cs4231_init (cs4231_devc_t * devc, char *name)
 {
   int my_dev, my_mixer;
   char dev_name[100];
@@ -1700,8 +1688,6 @@ oss_audiocs_attach (oss_device_t * osdev)
   DDB (cmn_err
        (CE_CONT, "oss_audiocs_attach(Vendor %x, device %x)\n", vendor,
 	device));
-  cmn_err (CE_CONT, "oss_audiocs_attach(Vendor %x, device %x)\n", vendor,
-	   device);
 
   if (vendor != 0x4040 && device != 0x4040)
     {
@@ -1715,13 +1701,17 @@ oss_audiocs_attach (oss_device_t * osdev)
   // TODO: Call cs4231_detect/init */
 
   devc->base = MAP_PCI_IOADDR (devc->osdev, 0, pci_ioaddr0);
-  cmn_err (CE_CONT, "I/O base=%x, %x\n", pci_ioaddr0, devc->base);
 
   pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
   pci_write_config_word (osdev, PCI_COMMAND, pci_command);
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
   MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
+
+detect_trace=1; // TODO: Remove this line
+  if (!cs4231_detect(devc))
+     return 0;
+detect_trace=0; // TODO: Remove this line
 
   oss_register_device (osdev, devc->chip_name);
 

@@ -1530,6 +1530,7 @@ create_akm_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_akm,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1549,6 +1550,7 @@ create_akm_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_akm,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1575,6 +1577,7 @@ create_akm_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_akm,
 					       typ,
 					       tmp, range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1594,6 +1597,7 @@ create_akm_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_akm,
 					       typ,
 					       tmp, range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1648,6 +1652,7 @@ create_ap_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_ap,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1667,6 +1672,7 @@ create_ap_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports, envy24_set_ap,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1723,6 +1729,7 @@ create_d410_mixer (int dev, envy24_devc * devc, int root)
 					       i, envy24_set_d410,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1740,6 +1747,7 @@ create_d410_mixer (int dev, envy24_devc * devc, int root)
 					       i, envy24_set_d410,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1795,6 +1803,7 @@ create_ewx2496_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ewx2496, typ, tmp,
 					       range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1814,6 +1823,7 @@ create_ewx2496_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ewx2496, typ, tmp,
 					       range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1868,6 +1878,7 @@ create_ews88_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ews88, typ, tmp,
 					       range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1887,6 +1898,7 @@ create_ews88_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ews88, typ, tmp,
 					       range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1913,6 +1925,7 @@ create_ews88_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ews88, typ, tmp,
 					       range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -1932,6 +1945,7 @@ create_ews88_mixer (int dev, envy24_devc * devc, int root)
 					       codec | ports,
 					       envy24_set_ews88, typ, tmp,
 					       range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;

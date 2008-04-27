@@ -731,7 +731,7 @@ sbxfi_mix_init (int dev)
 					   0, sbxfi_set_playvol,
 					   MIXT_STEREOSLIDER16,
 					   "play", MIXER_VOLSTEPS,
-					   MIXF_READABLE |
+					   MIXF_PCMVOL | MIXF_READABLE |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return ctl;
@@ -740,7 +740,7 @@ sbxfi_mix_init (int dev)
 					   0, sbxfi_set_recvol,
 					   MIXT_STEREOSLIDER16,
 					   "rec", MIXER_VOLSTEPS,
-					   MIXF_READABLE |
+					   MIXF_RECVOL | MIXF_READABLE |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return ctl;

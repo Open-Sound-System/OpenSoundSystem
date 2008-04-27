@@ -716,6 +716,7 @@ dmx6fire_mix_init (envy24_devc * devc, int dev, int group)
 					       codec | ports, envy24_set_tdif,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -735,6 +736,7 @@ dmx6fire_mix_init (envy24_devc * devc, int dev, int group)
 					       codec | ports, envy24_set_tdif,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;

@@ -256,6 +256,7 @@ d1010lt_mix_init (envy24_devc * devc, int dev, int group)
 					       i | CH_STEREO,
 					       envy24_set_d1010lt, typ, tmp,
 					       range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -273,6 +274,7 @@ d1010lt_mix_init (envy24_devc * devc, int dev, int group)
 					       i, envy24_set_d1010lt,
 					       typ,
 					       tmp, range,
+					       MIXF_MAINVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -297,6 +299,7 @@ d1010lt_mix_init (envy24_devc * devc, int dev, int group)
 					       (8 + i) | CH_STEREO,
 					       envy24_set_d1010lt, typ, tmp,
 					       range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;
@@ -314,6 +317,7 @@ d1010lt_mix_init (envy24_devc * devc, int dev, int group)
 					       8 + i, envy24_set_d1010lt,
 					       typ,
 					       tmp, range,
+					       MIXF_RECVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE)) < 0)
 	    return err;

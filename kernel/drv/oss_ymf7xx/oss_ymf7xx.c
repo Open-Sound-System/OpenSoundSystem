@@ -1136,7 +1136,7 @@ ymf7xx_mix_init (int dev)
 
   if ((err = mixer_ext_create_control (dev, group, 6, ymf7xx_spdif_control,
 				       MIXT_STEREOSLIDER, "OUTVOL", 100,
-				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+				       MIXF_MAINVOL | MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return err;
   if ((err = mixer_ext_create_control (dev, group, 7, ymf7xx_spdif_control,
 				       MIXT_STEREOSLIDER, "LOOPVOL", 100,

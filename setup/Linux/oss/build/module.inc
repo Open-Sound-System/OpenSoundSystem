@@ -100,7 +100,7 @@ virtualdrv_init (void)
     return -EIO;
   oss_register_module (THIS_MODULE);
   oss_audio_delayed_attach ();
-  return 1;
+  return 0;
 }
 
 static void
@@ -157,10 +157,9 @@ usbdrv_init (void)
     {
       printk ("oss: usb_register failed, err=%d\n", res);
       drv = NULL;
-      return 0;
+      return -ENXIO;
     }
-  return 1;
-  return 1;
+  return 0;
 }
 
 static void
