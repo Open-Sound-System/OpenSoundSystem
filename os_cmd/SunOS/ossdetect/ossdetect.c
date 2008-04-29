@@ -18,6 +18,7 @@
 static int use_force = 0;
 static char arch[32] = "";
 static int install_imux = 0;
+static char *safe_mode="";
 
 static char *vmix = "oss_vmix";
 
@@ -536,9 +537,8 @@ add_drv (char *name, char *drv, char *parms)
   char tmp[512];
   int ret;
 
-  printf ("add_drv %s %s\n", parms, drv);
-
-  sprintf (tmp, "add_drv %s %s", parms, drv);
+  printf ("add_drv %s%s %s\n", safe_mode, parms, drv);
+  sprintf (tmp, "add_drv %s%s %s", safe_mode, parms, drv);
 
   ret = system (tmp);
 
@@ -620,7 +620,7 @@ main (int argc, char *argv[])
     sprintf (arch, "%s/", tmp);
 #endif
 
-  while ((c = getopt (argc, argv, "vfidlV")) != EOF)
+  while ((c = getopt (argc, argv, "vfidlVS")) != EOF)
       switch (c)
 	{
 	case 'v':
@@ -628,6 +628,9 @@ main (int argc, char *argv[])
 	  break;
 	case 'f':
 	  use_force = 1;
+	  break;
+	case 'S': /* Safe mode */
+	  safe_mode="-n ";
 	  break;
 	case 'i':
 	  install_imux = 1;

@@ -10,12 +10,17 @@
 
 #include "cs4231_mixer.h"
 
+// TODO: Remove this private definition of DDB()
+#undef DDB
+#define DDB(x) x
+
 typedef struct
 {
   oss_device_t *osdev;
   oss_mutex_t mutex;
   oss_mutex_t low_mutex;
   oss_native_word base;
+  oss_native_word auxio_base;
   unsigned char MCE_bit;
   unsigned char saved_regs[32];
 
@@ -75,10 +80,23 @@ static int ad_format_mask[9 /*devc->model */ ] =
   AFMT_U8 | AFMT_S16_LE		/* CMI8330 */
 };
 
+#define CS_INB(osdev, addr)		(INL(osdev, addr) & 0xff)
+#define CS_OUTB(osdev, data, addr)	OUTL(osdev, data & 0xff, addr)
+
+/*
+ * CS4231 codec I/O registers
+ */
 #define io_Index_Addr(d)	((d)->base)
 #define io_Indexed_Data(d)	((d)->base+4)
 #define io_Status(d)		((d)->base+8)
 #define io_Polled_IO(d)		((d)->base+12)
+#define CS4231_IO_RETRIES	10
+
+/*
+ * EB2 audio registers
+ */
+#define io_EB2_AUXIO(d)		((d)->auxio_base)
+#define		EB2_AUXIO_COD_PDWN	0x00000001u	/* power down Codec */
 
 static int cs4231_open (int dev, int mode, int open_flags);
 static void cs4231_close (int dev, int mode);
@@ -94,19 +112,55 @@ static void cs4231_halt_input (int dev);
 static void cs4231_halt_output (int dev);
 static void cs4231_trigger (int dev, int bits);
 
+static void
+eb2_power(cs4231_devc_t * devc, int level)
+{
+	unsigned int tmp;
+	oss_native_word flags;
+
+  	MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
+	tmp = INL(devc->osdev, io_EB2_AUXIO(devc));
+cmn_err(CE_CONT, "AUXIO=%08x\n", tmp);
+
+	tmp &= ~EB2_AUXIO_COD_PDWN;
+
+	if (!level)
+	   tmp |= EB2_AUXIO_COD_PDWN;
+	OUTL(devc->osdev, tmp, io_EB2_AUXIO(devc));
+
+	oss_udelay(10000);
+cmn_err(CE_CONT, "AUXIO set to %08x, %08x (level=%d)\n", tmp, INL(devc->osdev, io_EB2_AUXIO(devc)), level);
+
+  	MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
+}
+
 static int
 ad_read (cs4231_devc_t * devc, int reg)
 {
   oss_native_word flags;
   int x;
-  int timeout = 1000;
-  while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
-    timeout--;
+
+  reg = reg & 0xff;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
-  OUTB (devc->osdev, (unsigned char) (reg & 0xff) | devc->MCE_bit,
+
+  for (x=0;x<CS4231_IO_RETRIES;x++)
+  {
+     CS_OUTB (devc->osdev, (unsigned char) reg | devc->MCE_bit,
 	io_Index_Addr (devc));
-  x = INB (devc->osdev, io_Indexed_Data (devc));
+     oss_udelay(1000);
+
+     if (CS_INB (devc->osdev, io_Index_Addr (devc)) == (reg | devc->MCE_bit))
+	break;
+  }
+
+  if (x==CS4231_IO_RETRIES)
+  {
+     cmn_err(CE_NOTE, "Indirect register selection failed (read %d)\n", reg);
+     cmn_err(CE_CONT, "Reg=%02x (%02x)\n", CS_INB (devc->osdev, io_Index_Addr (devc)), reg | devc->MCE_bit);
+  }
+
+  x = CS_INB (devc->osdev, io_Indexed_Data (devc));
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 
   return x;
@@ -116,14 +170,32 @@ static void
 ad_write (cs4231_devc_t * devc, int reg, int data)
 {
   oss_native_word flags;
-  int timeout = 1000;
-  while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
-    timeout--;
+  int x;
+
+  reg &= 0xff;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
-  OUTB (devc->osdev, (unsigned char) (reg & 0xff) | devc->MCE_bit,
+
+  for (x=0;x<CS4231_IO_RETRIES;x++)
+  {
+     CS_OUTB (devc->osdev, (unsigned char) reg | devc->MCE_bit,
 	io_Index_Addr (devc));
-  OUTB (devc->osdev, (unsigned char) (data & 0xff), io_Indexed_Data (devc));
+
+     oss_udelay(1000);
+
+     if (CS_INB (devc->osdev, io_Index_Addr (devc)) == (reg | devc->MCE_bit))
+	break;
+  }
+
+  if (x==CS4231_IO_RETRIES)
+  {
+     cmn_err(CE_NOTE, "Indirect register selection failed (write %d)\n", reg);
+     cmn_err(CE_CONT, "Reg=%02x (%02x)\n", CS_INB (devc->osdev, io_Index_Addr (devc)), reg | devc->MCE_bit);
+  }
+
+  CS_OUTB (devc->osdev, (unsigned char) (data & 0xff), io_Indexed_Data (devc));
+  oss_udelay(1000);
+
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
@@ -167,20 +239,20 @@ ad_enter_MCE (cs4231_devc_t * devc)
   unsigned short prev;
 
   int timeout = 1000;
-  while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
+  while (timeout > 0 && CS_INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
   devc->MCE_bit = 0x40;
-  prev = INB (devc->osdev, io_Index_Addr (devc));
+  prev = CS_INB (devc->osdev, io_Index_Addr (devc));
   if (prev & 0x40)
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
       return;
     }
 
-  OUTB (devc->osdev, devc->MCE_bit, io_Index_Addr (devc));
+  CS_OUTB (devc->osdev, devc->MCE_bit, io_Index_Addr (devc));
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
@@ -191,7 +263,7 @@ ad_leave_MCE (cs4231_devc_t * devc)
   unsigned char prev, acal;
   int timeout = 1000;
 
-  while (timeout > 0 && INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
+  while (timeout > 0 && CS_INB (devc->osdev, devc->base) == 0x80)	/*Are we initializing */
     timeout--;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
@@ -199,8 +271,8 @@ ad_leave_MCE (cs4231_devc_t * devc)
   acal = ad_read (devc, 9);
 
   devc->MCE_bit = 0x00;
-  prev = INB (devc->osdev, io_Index_Addr (devc));
-  OUTB (devc->osdev, 0x00, io_Index_Addr (devc));	/* Clear the MCE bit */
+  prev = CS_INB (devc->osdev, io_Index_Addr (devc));
+  CS_OUTB (devc->osdev, 0x00, io_Index_Addr (devc));	/* Clear the MCE bit */
 
   if ((prev & 0x40) == 0)	/* Not in MCE mode */
     {
@@ -208,7 +280,7 @@ ad_leave_MCE (cs4231_devc_t * devc)
       return;
     }
 
-  OUTB (devc->osdev, 0x00, io_Index_Addr (devc));	/* Clear the MCE bit */
+  CS_OUTB (devc->osdev, 0x00, io_Index_Addr (devc));	/* Clear the MCE bit */
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
 }
 
@@ -931,10 +1003,10 @@ set_output_format (int dev)
    * Write to I8 starts resynchronization. Wait until it completes.
    */
   timeout = 0;
-  while (timeout < 100 && INB (devc->osdev, devc->base) != 0x80)
+  while (timeout < 100 && CS_INB (devc->osdev, devc->base) != 0x80)
     timeout++;
   timeout = 0;
-  while (timeout < 10000 && INB (devc->osdev, devc->base) == 0x80)
+  while (timeout < 10000 && CS_INB (devc->osdev, devc->base) == 0x80)
     timeout++;
 
   ad_leave_MCE (devc);
@@ -971,11 +1043,11 @@ set_input_format (int dev)
        * Write to I28 starts resynchronization. Wait until it completes.
        */
       timeout = 0;
-      while (timeout < 100 && INB (devc->osdev, devc->base) != 0x80)
+      while (timeout < 100 && CS_INB (devc->osdev, devc->base) != 0x80)
 	timeout++;
 
       timeout = 0;
-      while (timeout < 10000 && INB (devc->osdev, devc->base) == 0x80)
+      while (timeout < 10000 && CS_INB (devc->osdev, devc->base) == 0x80)
 	timeout++;
 
       if (devc->model != MD_1848)
@@ -991,11 +1063,11 @@ set_input_format (int dev)
 	   * Write to I8 starts resynchronization. Wait until it completes.
 	   */
 	  timeout = 0;
-	  while (timeout < 100 && INB (devc->osdev, devc->base) != 0x80)
+	  while (timeout < 100 && CS_INB (devc->osdev, devc->base) != 0x80)
 	    timeout++;
 
 	  timeout = 0;
-	  while (timeout < 10000 && INB (devc->osdev, devc->base) == 0x80)
+	  while (timeout < 10000 && CS_INB (devc->osdev, devc->base) == 0x80)
 	    timeout++;
 	}
     }
@@ -1008,10 +1080,10 @@ set_input_format (int dev)
        * Write to I8 starts resynchronization. Wait until it completes.
        */
       timeout = 0;
-      while (timeout < 100 && INB (devc->osdev, devc->base) != 0x80)
+      while (timeout < 100 && CS_INB (devc->osdev, devc->base) != 0x80)
 	timeout++;
       timeout = 0;
-      while (timeout < 10000 && INB (devc->osdev, devc->base) == 0x80)
+      while (timeout < 10000 && CS_INB (devc->osdev, devc->base) == 0x80)
 	timeout++;
     }
 
@@ -1093,8 +1165,8 @@ cs4231_halt_input (int dev)
   ad_write (devc, 9, ad_read (devc, 9) & ~0x02);	/* Stop capture */
   // TODO: Stop DMA
 
-  OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
-  OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
+  CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
+  CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
 
   devc->audio_mode &= ~PCM_ENABLE_INPUT;
 
@@ -1121,8 +1193,8 @@ cs4231_halt_output (int dev)
   ad_write (devc, 9, ad_read (devc, 9) & ~0x01);	/* Stop playback */
   //TODO: Disable DMA
 
-  OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
-  OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
+  CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
+  CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
 
   devc->audio_mode &= ~PCM_ENABLE_OUTPUT;
 
@@ -1229,7 +1301,7 @@ cs4231_init_hw (cs4231_devc_t * devc)
       ad_write (devc, 9, ad_read (devc, 9) | 0x04);	/* Single DMA mode */
     }
 
-  OUTB (devc->osdev, 0, io_Status (devc));	/* Clear pending interrupts */
+  CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear pending interrupts */
 
   /*
    * Toggle the MCE bit. It completes the initialization phase.
@@ -1260,6 +1332,7 @@ cs4231_detect (cs4231_devc_t * devc)
 
   int i;
 
+cmn_err(CE_CONT, "a\n");
   devc->MCE_bit = 0x40;
   devc->chip_name = devc->name = "CS4231";
   devc->model = MD_4231;	/* CS4231 or CS4248 */
@@ -1275,12 +1348,14 @@ cs4231_detect (cs4231_devc_t * devc)
    * If the I/O address is unused, it typically returns 0xff.
    */
 
-  if (INB (devc->osdev, devc->base) == 0xff)
+cmn_err(CE_CONT, "b (%x)\n", devc->base);
+  if (CS_INB (devc->osdev, devc->base) == 0xff)
     {
       DDB (cmn_err
 	   (CE_CONT,
 	    "cs4231_detect: The base I/O address appears to be dead\n"));
     }
+cmn_err(CE_CONT, "c\n");
 
 #if 1
 /*
@@ -1290,24 +1365,27 @@ cs4231_detect (cs4231_devc_t * devc)
 
   for (i = 0; i < 10000000; i++)
     {
-      unsigned char x = INB (devc->osdev, devc->base);
+      unsigned char x = CS_INB (devc->osdev, devc->base);
       if (x == 0xff || !(x & 0x80))
 	break;
     }
 
 #endif
+cmn_err(CE_CONT, "d\n");
 
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step A\n"));
 
-  if (INB (devc->osdev, devc->base) == 0x80)	/* Not ready. Let's wait */
+  if (CS_INB (devc->osdev, devc->base) == 0x80)	/* Not ready. Let's wait */
     ad_leave_MCE (devc);
+cmn_err(CE_CONT, "e\n");
 
-  if ((INB (devc->osdev, devc->base) & 0x80) != 0x00)	/* Not a CS4231 */
+  if ((CS_INB (devc->osdev, devc->base) & 0x80) != 0x00)	/* Not a CS4231 */
     {
       DDB (cmn_err (CE_WARN, "cs4231 detect error - step A (%02x)\n",
-		    (int) INB (devc->osdev, devc->base)));
+		    (int) CS_INB (devc->osdev, devc->base)));
       return 0;
     }
+cmn_err(CE_CONT, "f\n");
 
   /*
    * Test if it's possible to change contents of the indirect registers.
@@ -1319,9 +1397,10 @@ cs4231_detect (cs4231_devc_t * devc)
   ad_write (devc, 0, 0xaa);
   ad_write (devc, 1, 0x45);	/* 0x55 with bit 0x10 clear */
   oss_udelay (10);
+cmn_err(CE_CONT, "g\n");
 
-  if ((tmp1 = ad_read (devc, 0)) != 0xaa
-      || (tmp2 = ad_read (devc, 1)) != 0x45)
+  if ((tmp1 = ad_read (devc, 0)) != 0xaa ||
+      (tmp2 = ad_read (devc, 1)) != 0x45)
     {
       DDB (cmn_err
 	   (CE_WARN, "cs4231 detect error - step B (%x/%x)\n", tmp1, tmp2));
@@ -1335,11 +1414,13 @@ cs4231_detect (cs4231_devc_t * devc)
 	return 0;
     }
 
+cmn_err(CE_CONT, "h\n");
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step C\n"));
   ad_write (devc, 0, 0x45);
   ad_write (devc, 1, 0xaa);
   oss_udelay (10);
 
+cmn_err(CE_CONT, "i\n");
   if ((tmp1 = ad_read (devc, 0)) != 0x45
       || (tmp2 = ad_read (devc, 1)) != 0xaa)
     {
@@ -1355,6 +1436,7 @@ cs4231_detect (cs4231_devc_t * devc)
 	return 0;
     }
 
+cmn_err(CE_CONT, "j\n");
   /*
    * The indirect register I12 has some read only bits. Lets
    * try to change them.
@@ -1362,6 +1444,7 @@ cs4231_detect (cs4231_devc_t * devc)
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step D\n"));
   tmp = ad_read (devc, 12);
   ad_write (devc, 12, (~tmp) & 0x0f);
+cmn_err(CE_CONT, "k\n");
 
   if ((tmp & 0x0f) != ((tmp1 = ad_read (devc, 12)) & 0x0f))
     {
@@ -1369,6 +1452,7 @@ cs4231_detect (cs4231_devc_t * devc)
       return 0;
     }
 
+cmn_err(CE_CONT, "l\n");
   /*
    * NOTE! Last 4 bits of the reg I12 tell the chip revision.
    *   0x01=RevB and 0x0A=RevC.
@@ -1391,6 +1475,7 @@ cs4231_detect (cs4231_devc_t * devc)
 
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step F\n"));
   ad_write (devc, 12, 0);	/* Mode2=disabled */
+cmn_err(CE_CONT, "m\n");
 
   for (i = 0; i < 16; i++)
     if ((tmp1 = ad_read (devc, i)) != (tmp2 = ad_read (devc, i + 16)))
@@ -1401,6 +1486,7 @@ cs4231_detect (cs4231_devc_t * devc)
 	break;
       }
 #endif
+cmn_err(CE_CONT, "n\n");
 
   /*
    * Try to switch the chip to mode2 (CS4231) by setting the MODE2 bit (0x40).
@@ -1409,6 +1495,7 @@ cs4231_detect (cs4231_devc_t * devc)
 
   DDB (cmn_err (CE_CONT, "cs4231_detect() - step G\n"));
 
+cmn_err(CE_CONT, "o\n");
   ad_write (devc, 12, 0x40);	/* Set mode2, clear 0x80 */
 
   tmp1 = ad_read (devc, 12);
@@ -1417,6 +1504,7 @@ cs4231_detect (cs4231_devc_t * devc)
       devc->chip_name = "CS4248";	/* Our best knowledge just now */
     }
 
+cmn_err(CE_CONT, "p\n");
   if ((tmp1 & 0xc0) == (0x80 | 0x40))
     {
       /*
@@ -1425,11 +1513,14 @@ cs4231_detect (cs4231_devc_t * devc)
        *      Verify that setting I0 doesn't change I16.
        */
       DDB (cmn_err (CE_CONT, "cs4231_detect() - step H\n"));
+cmn_err(CE_CONT, "q\n");
       ad_write (devc, 16, 0);	/* Set I16 to known value */
 
       ad_write (devc, 0, 0x45);
+cmn_err(CE_CONT, "r\n");
       if ((tmp1 = ad_read (devc, 16)) != 0x45)	/* No change -> CS4231? */
 	{
+cmn_err(CE_CONT, "s\n");
 
 	  ad_write (devc, 0, 0xaa);
 	  if ((tmp1 = ad_read (devc, 16)) == 0xaa)	/* Rotten bits? */
@@ -1443,9 +1534,11 @@ cs4231_detect (cs4231_devc_t * devc)
 	   * Verify that some bits of I25 are read only.
 	   */
 
+cmn_err(CE_CONT, "t\n");
 	  DDB (cmn_err (CE_CONT, "cs4231_detect() - step I\n"));
 	  tmp1 = ad_read (devc, 25);	/* Original bits */
 	  ad_write (devc, 25, ~tmp1);	/* Invert all bits */
+cmn_err(CE_CONT, "u\n");
 	  if ((ad_read (devc, 25) & 0xe7) == (tmp1 & 0xe7))
 	    {
 	      int id, full_id;
@@ -1463,6 +1556,7 @@ cs4231_detect (cs4231_devc_t * devc)
 	       * while the CS4231A reports different.
 	       */
 
+cmn_err(CE_CONT, "v\n");
 	      id = ad_read (devc, 25) & 0xe7;
 	      full_id = ad_read (devc, 25);
 	      if (id == 0x80)	/* Device busy??? */
@@ -1472,6 +1566,7 @@ cs4231_detect (cs4231_devc_t * devc)
 	      DDB (cmn_err
 		   (CE_CONT, "cs4231_detect() - step J (%02x/%02x)\n", id,
 		    ad_read (devc, 25)));
+cmn_err(CE_CONT, "w\n");
 
 	      switch (id)
 		{
@@ -1489,6 +1584,7 @@ cs4231_detect (cs4231_devc_t * devc)
 
 		}
 	    }
+cmn_err(CE_CONT, "x\n");
 	  ad_write (devc, 25, tmp1);	/* Restore bits */
 
 	  DDB (cmn_err (CE_CONT, "cs4231_detect() - step K\n"));
@@ -1496,6 +1592,7 @@ cs4231_detect (cs4231_devc_t * devc)
     }
 
   DDB (cmn_err (CE_CONT, "cs4231_detect() - Detected OK\n"));
+cmn_err(CE_CONT, "OK\n");
 
   return 1;
 }
@@ -1608,14 +1705,14 @@ cs4231intr (oss_device_t * osdev)
 
 interrupt_again:		/* Jump back here if int status doesn't reset */
 
-  status = INB (devc->osdev, io_Status (devc));
+  status = CS_INB (devc->osdev, io_Status (devc));
 
   if (status == 0x80)
     cmn_err (CE_CONT, "cs4231intr: Why?\n");
   else
     serviced = 1;
   if (devc->model == MD_1848)
-    OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
+    CS_OUTB (devc->osdev, 0, io_Status (devc));	/* Clear interrupt status */
 
   if (status & 0x01)
     {
@@ -1653,7 +1750,7 @@ interrupt_again:		/* Jump back here if int status doesn't reset */
  * handle it now. Check if an interrupt is still pending and restart
  * the handler in this case.
  */
-  if (INB (devc->osdev, io_Status (devc)) & 0x01 && cnt++ < 4)
+  if (CS_INB (devc->osdev, io_Status (devc)) & 0x01 && cnt++ < 4)
     {
       goto interrupt_again;
     }
@@ -1664,11 +1761,11 @@ interrupt_again:		/* Jump back here if int status doesn't reset */
 int
 oss_audiocs_attach (oss_device_t * osdev)
 {
-  unsigned short pci_command, vendor, device;
-  unsigned int pci_ioaddr0;
   unsigned int dw;
 
   cs4231_devc_t *devc = osdev->devc;
+
+  DDB(cmn_err(CE_CONT, "Entered oss_audiocs_attach()\n"));
 
   if ((devc = PMALLOC (osdev, sizeof (*devc))) == NULL)
     {
@@ -1682,36 +1779,27 @@ oss_audiocs_attach (oss_device_t * osdev)
 
   devc->chip_name = "Generic CS4231";
 
-  pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
-  pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
-
-  DDB (cmn_err
-       (CE_CONT, "oss_audiocs_attach(Vendor %x, device %x)\n", vendor,
-	device));
-
-  if (vendor != 0x4040 && device != 0x4040)
-    {
-      cmn_err (CE_WARN, "Unrecognized PCI device %x, %x\n", vendor, device);
-      return 0;
-    }
-
-  pci_read_config_dword (osdev, PCI_BASE_ADDRESS_0, &pci_ioaddr0);
-  pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
-
-  // TODO: Call cs4231_detect/init */
-
-  devc->base = MAP_PCI_IOADDR (devc->osdev, 0, pci_ioaddr0);
-
-  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
-  pci_write_config_word (osdev, PCI_COMMAND, pci_command);
+/*
+ * Map I/O registers.
+ *
+ * Note that MAP_PCI_IOADDR uses different region numbering than 
+ *      ddi_regs_map_setup.
+ *
+ * TODO: Replace MAP_PCI_IOADDR() with something that is not PCI specific.
+ */
+  devc->base = MAP_PCI_IOADDR (devc->osdev, -1, 0);
+  //devc->play_base = MAP_PCI_IOADDR (devc->osdev, 0, 0);
+  //devc->record_base = MAP_PCI_IOADDR (devc->osdev, 1, 0);
+  devc->auxio_base = MAP_PCI_IOADDR (devc->osdev, 2, 0);
+cmn_err(CE_CONT, "Base address = %x, auxio=%x\n", devc->base, devc->auxio_base);
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
   MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
 
-detect_trace=1; // TODO: Remove this line
+  eb2_power(devc, 1);
+
   if (!cs4231_detect(devc))
      return 0;
-detect_trace=0; // TODO: Remove this line
 
   oss_register_device (osdev, devc->chip_name);
 
@@ -1725,6 +1813,8 @@ oss_audiocs_detach (oss_device_t * osdev)
 
   if (oss_disable_device (osdev) < 0)
     return 0;
+
+  eb2_power(devc, 0);
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);

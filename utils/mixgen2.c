@@ -1127,6 +1127,26 @@ printf("*** Codec %d\n", i);
   for (i=0;i<npaths;i++)
       dump_path(paths[i]);
 
+  printf("\n\nOther widgets:\n");
+
+  for (i = 0; i < 16; i++)
+  if (mixer->codecmask & (1 << i))
+  {
+	int wid;
+
+	for (wid=0;wid<mixer->codecs[i]->nwidgets;wid++)
+	{
+		widget_t *widget = &mixer->codecs[i]->widgets[wid];
+
+		if (widget->wid != wid)
+		   continue;
+
+		if (widget->used)
+		   continue;
+	    printf("Codec %d, Widget %02x %s/%s/%d\n", widget->cad, widget->wid, widget_id[widget->wid_type], widget->name, widget->nconn);
+	}
+  }
+
   return mixer;
 }
 

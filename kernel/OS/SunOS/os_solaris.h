@@ -424,6 +424,14 @@ extern int detect_trace;
 #define DDB(x) {}
 #endif
 
+/*
+ * PCI I/O and memory address mapping.
+ *
+ * Note that for compatibility with the other operating systems supported by
+ *      OSS the region numbering is different. So 0 means BAR0 while under
+ *      Solaris (ddi_regs_map_setup) BAR0 is 1. oss_map_pci_ioaddr() will
+ *      add 1 to the region number.
+ */
 extern caddr_t oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io);
 #define MAP_PCI_IOADDR(osdev, nr, io) (oss_native_word)oss_map_pci_ioaddr(osdev, nr, io)
 #define MAP_PCI_MEM(osdev, ix, phaddr, size) 	oss_map_pci_ioaddr(osdev, ix, phaddr)
