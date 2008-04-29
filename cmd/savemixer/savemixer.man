@@ -1,26 +1,33 @@
 NAME
-savemixer - Open Sound System applet for saving mixer levels and settings.
+savemixer - Open Sound System program for saving and restoring mixer settings.
+
+SYNOPSIS
+savemixer [-LVv] [-f <fname>]
 
 DESCRIPTION
-The savemixer applet saves mixer settings. It will also load 
-o saved mixer settings 
+The savemixer program saves mixer settings. It can also load saved mixer
+settings back into the mixer.
 
 Running this program without any parameters will save the current mixer
-settings into /usr/lib/oss/etc/mixer.save file.
+settings into $OSSLIBDIR/etc/mixer.save file. OSSLIBDIR is decided by reading
+/etc/oss.conf, and defaults to /usr/lib/oss.
 
 AUTOMATIC SAVE
-
 By default the soundoff command will automatically run savemixer to save
 the active mixer settings. See the manual page for soundoff(1) if you
 like to turn this feature off.
 
 OPTIONS
--v 	Verbose output
--V 	Version information
--L 	Loads saved mixer and device map information from /usr/lib/oss/etc
--D 	Create legacy device file links
+-f<fname>	Use <fname> as setting file.
+-L 		Loads saved mixer and device map information from mixer.save.
+-V 		Version information.
+-v 		Verbose output.
+
+SEE ALSO
+soundoff(1), soundon(1), ossdetect(1), ossdevlinks(1), ossmix(1), ossxmix(1)
 
 FILES
+/etc/oss.conf
 /usr/bin/savemixer
 /usr/lib/oss/etc/mixer.save
 /usr/lib/oss/etc/dspdevs.map

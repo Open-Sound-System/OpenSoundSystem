@@ -8,5 +8,3 @@
 
 extern int hdaudio_generic_mixer_init (int dev, hdaudio_mixer_t * mixer,
 				       int cad, int group);
-extern int hdaudio_stac922x_mixer_init (int dev, hdaudio_mixer_t * mixer,
-					int cad, int group);

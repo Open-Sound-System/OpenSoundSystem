@@ -1,4 +1,4 @@
-#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 
 #include <stdio.h>
 #include <unistd.h>
@@ -10,12 +10,29 @@
 #include <oss_config.h>
 #include <sys/ioctl.h>
 
-char ossetcdir[512] = "/usr/lib/oss/etc";	/* This is the usual place */
-oss_sysinfo sysinfo;
-oss_mixerinfo mixerinfo;
-oss_mixext *mixerdefs = NULL;
-int fd;
-int verbose = 0;
+static void change_mixer (char *);
+static void close_device (void);
+static int find_mixerdev (char *);
+static char * get_mapname (void);
+#ifdef APPLIST_SUPPORT
+static void load_applist (void);
+#endif
+static void load_config (char *);
+static void open_device (char *, int);
+#ifdef MANAGE_DEV_DSP
+static void reorder_dspdevs (void);
+#endif
+
+#define ETCDIRLEN 512
+#define ETCNAMELEN ETCDIRLEN+11	/* Adding '/mixer.save' */
+#define SLINELEN 256
+
+static char ossetcdir[ETCDIRLEN] = "/usr/lib/oss/etc";
+	/* This is the usual place */
+static oss_sysinfo sysinfo;
+static oss_mixerinfo mixerinfo;
+static oss_mixext *mixerdefs = NULL;
+static int fd, load_settings = 0, verbose = 0;
 
 #ifdef MANAGE_DEV_DSP
 static void
@@ -26,17 +43,17 @@ reorder_dspdevs (void)
   int i, j, n, m;
   FILE *f;
 
-  sprintf (line, "%s/dspdevs.map", ossetcdir);
+  snprintf (line, sizeof (line), "%s/dspdevs.map", ossetcdir);
 
   if ((f = fopen (line, "r")) == NULL)
     return;
 
   n = 0;
-  while (n < 3 && fgets (line, sizeof (line) - 1, f))
+  while (n < 3 && (fgets (line, sizeof (line), f) != NULL))
     {
       for (i = 0; i < strlen (line); i++)
 	if (line[i] == '\n')
-	  line[i] = 0;
+	  line[i] = '\0';
       m = 0;
 
       s = line;
@@ -49,7 +66,7 @@ reorder_dspdevs (void)
 	  while (*p && *p != ' ')
 	    p++;
 	  if (*p)
-	    *p++ = 0;
+	    *p++ = '\0';
 
 	  if (m > MAX_AUDIO_DEVFILES || sscanf (s, "%d", &v) != 1)
 	    {
@@ -78,7 +95,8 @@ reorder_dspdevs (void)
 	  if (errno == EINVAL)
 	    {
 	      fprintf (stderr,
-		       "Device configuration changed - use ossctl to update device lists\n");
+		       "Device configuration changed - use ossdevlinks "
+		       "to update device lists\n");
 	      return;
 	    }
 
@@ -91,19 +109,19 @@ reorder_dspdevs (void)
 	  switch (i + 1)
 	    {
 	    case OPEN_READ:
-	      fprintf (stderr, "/dev/dsp input assignment: ");
+	      fprintf (stdout, "/dev/dsp input assignment: ");
 	      break;
 	    case OPEN_WRITE:
-	      fprintf (stderr, "/dev/dsp output assignment: ");
+	      fprintf (stdout, "/dev/dsp output assignment: ");
 	      break;
 	    case OPEN_READ | OPEN_WRITE:
-	      fprintf (stderr, "/dev/dsp output assignment: ");
+	      fprintf (stdout, "/dev/dsp output assignment: ");
 	      break;
 	    }
 
 	  for (j = 0; j < reroute[i].devlist.ndevs; j++)
-	    fprintf (stderr, "%d ", reroute[i].devlist.devices[j]);
-	  fprintf (stderr, "\n");
+	    fprintf (stdout, "%d ", reroute[i].devlist.devices[j]);
+	  fprintf (stdout, "\n");
 	}
     }
 
@@ -118,7 +136,7 @@ load_applist (void)
 
   FILE *f;
 
-  sprintf (line, "%s/applist.conf", ossetcdir);
+  snprintf (line, sizeof (line), "%s/applist.conf", ossetcdir);
 
   if ((f = fopen (line, "r")) == NULL)
     return;
@@ -130,20 +148,24 @@ load_applist (void)
       return;
     }
 
-  while (fgets (line, sizeof (line) - 1, f))
+  while (fgets (line, sizeof (line), f) != NULL)
     {
-      int i;
+      int i, j;
       char *s, *name, *mode, *dev, *flag;
       app_routing_t rout;
 
-      if (*line == '#')
+      if ((*line == '#') || (*line == '\0'))
 	continue;
 
       memset (&rout, 0, sizeof (rout));
 
-      for (i = 0; i < strlen (line); i++)
+      j = strlen (line);
+      for (i = 0; i < j; i++)
 	if (line[i] == '\n' || line[i] == '#')
-	  line[i] = 0;
+	  {
+  	    line[i] = '\0';
+	    break;
+	  }
 
       s = name = line;
 
@@ -151,10 +173,10 @@ load_applist (void)
       while (*s && (*s != ' ' && *s != '\t'))
 	s++;
       while (*s == ' ' || *s == '\t')
-	*s++ = 0;
+	*s++ = '\0';
 
       strncpy (rout.name, name, 32);
-      rout.name[32] = 0;
+      rout.name[32] = '\0';
 
       mode = s;
 
@@ -162,9 +184,10 @@ load_applist (void)
       while (*s && (*s != ' ' && *s != '\t'))
 	s++;
       while (*s == ' ' || *s == '\t')
-	*s++ = 0;
+	*s++ = '\0';
 
-      for (i = 0; i < strlen (mode); i++)
+      j = strlen (mode);
+      for (i = 0; i < j; i++)
 	switch (mode[i])
 	  {
 	  case 'r':
@@ -185,7 +208,7 @@ load_applist (void)
       while (*s && (*s != ' ' && *s != '\t'))
 	s++;
       while (*s == ' ' || *s == '\t')
-	*s++ = 0;
+	*s++ = '\0';
 
       if (sscanf (dev, "%d", &rout.dev) != 1)
 	{
@@ -201,7 +224,7 @@ load_applist (void)
 	  while (*s && *s != '|')
 	    s++;
 	  while (*s == '|')
-	    *s++ = 0;
+	    *s++ = '\0';
 
 	  if (strcmp (flag, "MMAP") == 0)
 	    {
@@ -235,12 +258,12 @@ load_applist (void)
 }
 #endif
 
-char *
+static char *
 get_mapname (void)
 {
   FILE *f;
-  char tmp[256];
-  static char name[256];
+  char tmp[ETCNAMELEN];
+  static char name[ETCNAMELEN];
   struct stat st;
 
   if (stat ("/etc/oss", &st) != -1)	/* Use /etc/oss/mixer.save */
@@ -253,29 +276,44 @@ get_mapname (void)
   if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
     {
       perror ("/etc/oss.conf");
-      exit (-1);
+      goto dexit;
     }
 
-  while (fgets (tmp, 255, f) != NULL)
+  while (fgets (tmp, sizeof (tmp), f) != NULL)
     {
       int l = strlen (tmp);
       if (l > 0 && tmp[l - 1] == '\n')
-	tmp[l - 1] = 0;
+	tmp[l - 1] = '\0';
 
       if (strncmp (tmp, "OSSLIBDIR=", 10) == 0)
 	{
-	  sprintf (name, "%s/etc/mixer.save", &tmp[10]);
-	  sprintf (ossetcdir, "%s/etc", &tmp[10]);
+	  l = snprintf (name, sizeof (name), "%s/etc/mixer.save", &tmp[10]);
+	  if ((l > ETCNAMELEN) || (l < 0))
+	    {
+	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
+	      goto oexit;
+	    }
+	  snprintf (ossetcdir, sizeof (ossetcdir), "%s/etc", &tmp[10]);
+	  if ((l > ETCDIRLEN) || (l < 0))
+	    {
+	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
+	      goto oexit;
+	    }
 	  fclose (f);
 	  return name;
 	}
     }
 
   fclose (f);
-
   fprintf (stderr, "Error: OSSLIBDIR not set in /etc/oss.conf\n");
+
+dexit:
+  snprintf (name, sizeof (name), "%s/mixer.save", ossetcdir);
+  return name;
+
+oexit:
+  fclose (f);
   exit (-1);
-  return NULL;
 }
 
 static int
@@ -337,7 +375,7 @@ static void
 change_mixer (char *line)
 {
   int value, i;
-  char name[256];
+  char name[SLINELEN];
 
   if (sscanf (line, "%s %x", name, &value) != 2)
     {
@@ -383,9 +421,10 @@ static void
 load_config (char *name)
 {
   FILE *f;
-  char line[256], *s;
+  char line[SLINELEN], *s;
   int dev = -1;
 
+  if (verbose) fprintf (stdout, "Loading mixer settings from %s\n", name);
 #ifdef MANAGE_DEV_DSP
   reorder_dspdevs ();
 #endif
@@ -400,17 +439,14 @@ load_config (char *name)
     }
 
   /* Remove the EOL character */
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
-      s = line + strlen (line) - 1;
-      if (*s == '\n')
-	*s = 0;
 
-      if (*line == '#')
+      if ((*line == '\0') || (*line == '#'))
 	continue;
 
-      if (*line == 0)
-	continue;
+      if ((s = strchr (line, '\n')) != NULL)
+	*s = '\0';
 
       if (*line == '$')
 	{
@@ -441,18 +477,13 @@ load_config (char *name)
   fclose (f);
 }
 
-int
-main (int argc, char *argv[])
+static void
+open_device (char * dev_name, int mode)
 {
-  int dev, i;
-  char *name;
-
-  FILE *f;
-
-  if ((fd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((fd = open (dev_name, mode, 0)) == -1)
     {
       if (errno != ENODEV)
-	perror ("/dev/mixer");
+	perror (dev_name);
       exit (-1);
     }
 
@@ -463,50 +494,81 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  name = get_mapname ();
-
-  for (i = 1; i < argc; i++)
-    {
-      if (argv[i][0] != '-')
-	{
-	  fprintf (stderr, "%s: Bad usage\n", argv[0]);
-	  exit (-1);
-	}
-
-      switch (argv[i][1])
-	{
-	case 'v':
-	  verbose++;
-	  break;
-
-	case 'L':
-	  load_config (name);
-	  exit (0);
-	  break;
-
-	case 'V':
-	  fprintf (stderr, "OSS " OSS_VERSION_STRING " savemixer utility\n");
-	  exit (0);
-	  break;
-
-	default:
-	  fprintf (stderr, "%s: Bad usage\n", argv[0]);
-	  exit (-1);
-	}
-    }
-
   if (sysinfo.nummixers < 1)
     {
       fprintf (stderr, "No mixers in the system\n");
       exit (0);
     }
 
-  if ((f = fopen (name, "w")) == NULL)
+  atexit (close_device);
+}
+
+static void
+close_device (void)
+{
+  close (fd);
+}
+
+int
+main (int argc, char *argv[])
+{
+  int dev, i;
+  char * mapname = NULL;
+  extern char * optarg;
+
+  FILE *f;
+
+  while ((i = getopt (argc, argv, "LVf:v")) != EOF)
     {
-      perror (name);
+      switch (i)
+	{
+	case 'v':
+	  verbose++;
+	  break;
+
+	case 'L':
+	  load_settings = 1;
+	  break;
+
+	case 'V':
+	  fprintf (stdout, "OSS " OSS_VERSION_STRING " savemixer utility\n");
+	  exit (0);
+	  break;
+
+	case 'f':
+	  mapname = optarg;
+	  break;
+
+	default:
+	  fprintf (stdout, "Usage: %s [option(s)]\n", argv[0]);
+	  fprintf (stdout, "  Options:  -L           Restore mixer settings\n");
+	  fprintf (stdout, "            -V           Display version\n");
+	  fprintf (stdout, "            -f<fname>    Use fname as settings "
+		   "file\n");
+	  fprintf (stdout, "            -v           Verbose output\n");
+	  exit (-1);
+	}
+    }
+
+  if (mapname == NULL) mapname = get_mapname ();
+
+  if (load_settings)
+    {
+      open_device ("/dev/mixer", O_WRONLY);
+      load_config (mapname);
+      exit (0);
+    }
+
+  open_device ("/dev/mixer", O_RDONLY);
+
+  if ((f = fopen (mapname, "w")) == NULL)
+    {
+      perror (mapname);
       exit (-1);
     }
   fprintf (f, "# Automatically generated by OSS savemixer - do not edit\n");
+
+  if (verbose) fprintf (stdout, "Saving mixer settings to %s\n", mapname);
 
   for (dev = 0; dev < sysinfo.nummixers; dev++)
     {
