@@ -2342,6 +2342,8 @@ oss_envy24ht_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
+  UNMAP_PCI_IOADDR (devc->osdev, 1);
 
   oss_unregister_device (osdev);
   return 1;

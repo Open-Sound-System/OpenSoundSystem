@@ -242,6 +242,7 @@ extern caddr_t oss_map_pci_mem (oss_device_t * osdev, int nr, int phaddr,
 #define MAP_PCI_IOADDR(osdev, nr, io) (oss_native_word)(io)
 #define MAP_PCI_MEM(osdev, ix, phaddr, size) 	oss_map_pci_mem(osdev, ix, phaddr, size)
 #define UNMAP_PCI_MEM(osdev, ix, ph, virt, size)	{}
+#define UNMAP_PCI_IOADDR(osdev, ix)	{}
 
 #define GET_PROCESS_PID(f)  f->pid
 #define GET_PROCESS_NAME(f) f->cmd

@@ -46,6 +46,7 @@ typedef struct
 {
 	int association, sequence;
 	int nwidgets;
+	int jack_count;
 
 #define PATH_MAXWID	8
 	widget_t *widgets[PATH_MAXWID];
@@ -933,7 +934,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 }
 
 static void
-follow_path(hdaudio_mixer_t *mixer, codec_t *codec, widget_t *widget, path_t *path)
+follow_path(hdaudio_mixer_t *mixer, codec_t *codec, widget_t *widget, path_t *path, int use_force)
 {
   int i;
 
@@ -944,37 +945,68 @@ follow_path(hdaudio_mixer_t *mixer, codec_t *codec, widget_t *widget, path_t *pa
   path->widgets[path->nwidgets++] = widget;
   if (widget->wid_type == NT_PIN)
   {
+	path->jack_count++;
 	path->association=widget->association;
 	path->sequence=widget->sequence;
+
+	/*
+	 * Stop at a pin widget that is not the first widget of the path.
+	 * In this way we don't walk back the input chain from the pin.
+	 */
+
+	if (path->nwidgets > 1)
+           return;
   }
 
-  if (widget->nconn > 0)
+  if (use_force || path->nwidgets == 1 || widget->nconn == 1 || (widget->nconn>0 && widget->wid_type == NT_SELECT))
   {
      for (i=0;i<widget->nconn;i++)
      if (!codec->widgets[widget->connections[i]].used)
+     //if (codec->widgets[widget->connections[i]].refcount < 2)
      {
-     	follow_path(mixer, codec, &codec->widgets[widget->connections[i]], path);
+     	follow_path(mixer, codec, &codec->widgets[widget->connections[i]], path, use_force);
 	return;
      }
   }
 }
 
 static void
-dump_path(path_t *path)
+dump_path(hdaudio_mixer_t *mixer, path_t *path)
 {
-	int i;
+	int i, j;
 
 	if (path->nwidgets == 0)
 	   return;
 
-	printf("Path (a=%x, s=%x): ", path->association, path->sequence);
+	printf("Path (a=%x, s=%x, jc=%d):\n ", path->association, path->sequence, path->jack_count);
 
 	for (i=0;i<path->nwidgets;i++)
 	{
 	    widget_t *widget = path->widgets[i];
 
-	    printf("%02x(%s/%s/%d", widget->wid, widget_id[widget->wid_type], widget->name, widget->nconn);
-	    printf(") ");
+	    printf("\t%02x(%s/%s/nc=%d/rc=%d", widget->wid, widget_id[widget->wid_type], widget->name, widget->nconn, widget->refcount);
+	    printf(")\n");
+
+	    if (widget->widget_caps & WCAP_OUTPUT_AMP_PRESENT)
+	       {
+		       printf("\t\tOutput amp\n");
+	       }
+
+	    if (widget->widget_caps & WCAP_INPUT_AMP_PRESENT)
+	       {
+		       printf("\t\t%d input amp(s)\n", widget->nconn);
+
+		       for (j=0;j<widget->nconn;j++)
+		       {
+	    		  widget_t *in_widget;
+
+			  in_widget = &mixer->codecs[widget->cad]->
+				        widgets[widget->connections[j]];
+	    printf("\t\t\t%02x(%s/%s/nc=%d/rc=%d)\n", in_widget->wid, widget_id[in_widget->wid_type], in_widget->name, in_widget->nconn, in_widget->refcount);
+
+	    		  in_widget->used=1;
+		       }
+	       }
 	}
 	printf("\n");
 }
@@ -992,7 +1024,7 @@ store_path(hdaudio_mixer_t *mixer, path_t *path)
 }
 
 static void
-create_path_list(hdaudio_mixer_t *mixer, int cad, int node_type)
+create_path_list(hdaudio_mixer_t *mixer, int cad, int node_type, int use_force)
 {
   codec_t *codec;
   int wid;
@@ -1009,7 +1041,7 @@ cmn_err(CE_CONT, "Create path list %d (%s)\n", node_type, widget_id[node_type]);
   {
 	  path=malloc(sizeof(*path));
 
-	  follow_path(mixer, codec, &codec->widgets[wid], path);
+	  follow_path(mixer, codec, &codec->widgets[wid], path, use_force);
 
 	  if (path->nwidgets>1)
 	     store_path(mixer, path);
@@ -1041,7 +1073,7 @@ create_path_list_for_pin(hdaudio_mixer_t *mixer, int cad, int association, int s
   {
 	  path=malloc(sizeof(*path));
 
-	  follow_path(mixer, codec, &codec->widgets[wid], path);
+	  follow_path(mixer, codec, &codec->widgets[wid], path, 0);
 
 	  if (path->nwidgets>1)
 	     store_path(mixer, path);
@@ -1119,14 +1151,15 @@ printf("*** Codec %d\n", i);
      for (sequence=0;sequence<16;sequence++)
          create_path_list_for_pin(mixer, i, association, sequence);
 
-     create_path_list(mixer, i, NT_ADC);
-     create_path_list(mixer, i, NT_MIXER);
-     create_path_list(mixer, i, NT_SELECT);
+     create_path_list(mixer, i, NT_ADC, 0);
+     create_path_list(mixer, i, NT_MIXER, 1);
+     create_path_list(mixer, i, NT_SELECT, 1);
   }
 
   for (i=0;i<npaths;i++)
-      dump_path(paths[i]);
+      dump_path(mixer, paths[i]);
 
+#if 1
   printf("\n\nOther widgets:\n");
 
   for (i = 0; i < 16; i++)
@@ -1141,11 +1174,12 @@ printf("*** Codec %d\n", i);
 		if (widget->wid != wid)
 		   continue;
 
-		if (widget->used)
+		if (widget->used || widget->skip)
 		   continue;
 	    printf("Codec %d, Widget %02x %s/%s/%d\n", widget->cad, widget->wid, widget_id[widget->wid_type], widget->name, widget->nconn);
 	}
   }
+#endif
 
   return mixer;
 }

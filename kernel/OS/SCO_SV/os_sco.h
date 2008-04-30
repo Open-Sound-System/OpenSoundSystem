@@ -374,6 +374,7 @@ extern int detect_trace;
 #define MAP_PCI_IOADDR(osdev, nr, io) 		io
 #define MAP_PCI_MEM(osdev, ix, phaddr, size) 	devmem_mapin(osdev->key, ix, 0, size)
 #define UNMAP_PCI_MEM(osdev, ix, ph, virt, size)	devmem_mapout(virt, size)
+#define UNMAP_PCI_IOADDR(osdev, ix)	{}
 #define GET_PROCESS_PID(x)  -1
 #define GET_PROCESS_NAME(x) NULL
 

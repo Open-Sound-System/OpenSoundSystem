@@ -2376,6 +2376,7 @@ oss_maestro_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->lock);
   MUTEX_CLEANUP (devc->low_lock);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
 
   oss_unregister_device (osdev);
   return 1;

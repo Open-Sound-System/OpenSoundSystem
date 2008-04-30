@@ -954,6 +954,9 @@ oss_ali5455_detach (oss_device_t * osdev)
       CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32);
       devc->bdlBuffer = NULL;
     }
+  MUTEX_CLEANUP (devc->mutex);
+  MUTEX_CLEANUP (devc->low_mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
 
   oss_unregister_device (osdev);
   return 1;

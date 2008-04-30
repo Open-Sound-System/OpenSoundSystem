@@ -1057,6 +1057,7 @@ oss_fmedia_detach (oss_device_t * osdev)
   oss_unregister_interrupts (devc->osdev);
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
   oss_unregister_device (devc->osdev);
   return 1;
 }

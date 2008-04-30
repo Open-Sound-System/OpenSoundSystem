@@ -249,6 +249,7 @@ extern int detect_trace;
 #define MAP_PCI_IOADDR(osdev, nr, io) (oss_native_word)io
 #define MAP_PCI_MEM(osdev, ix, phaddr, size) 	oss_map_pci_mem(osdev, size, phaddr)
 #define UNMAP_PCI_MEM(osdev, ph, virt, size)	oss_unmap_pci_mem(virt)
+#define UNMAP_PCI_IOADDR(osdev, ix)	{}
 
 #define GET_PROCESS_PID(x)  oss_get_pid()
 

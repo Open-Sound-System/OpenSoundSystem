@@ -141,7 +141,8 @@ struct _oss_device_t
 #ifdef _KERNEL
 /* PCI related fields */
   ddi_acc_handle_t pci_config_handle;
-  ddi_acc_handle_t acc_handle;
+#define OSS_MAX_ACC_HANDLE	10
+  ddi_acc_handle_t acc_handle[OSS_MAX_ACC_HANDLE];
   int swap_mode;		/* 0=DDI_STRUCTURE_NEVERSWAP_ACC, 1=DDI_STRUCTURE_LE_ACC */
 
 /* USB fields */
@@ -260,12 +261,12 @@ extern unsigned short oss_get16 (ddi_acc_handle_t handle,
 				 unsigned short *addr);
 extern unsigned int oss_get32 (ddi_acc_handle_t handle, unsigned int *addr);
 
-#define INB(osdev,port) ddi_get8((osdev)->acc_handle, (uint8_t*)(port))
-#define OUTB(osdev, d, port) ddi_put8((osdev)->acc_handle, (uint8_t*)(port), (d))
-#define INW(osdev,port) oss_get16((osdev)->acc_handle, (uint16_t*)(port))
-#define OUTW(osdev, d, port) oss_put16((osdev)->acc_handle, (uint16_t*)(port), (d))
-#define INL(osdev,port) oss_get32((osdev)->acc_handle, (uint32_t*)(port))
-#define OUTL(osdev,d, port) oss_put32((osdev)->acc_handle, (uint32_t*)(port), (d))
+#define INB(osdev,port) ddi_get8((osdev)->acc_handle[0], (uint8_t*)(port))
+#define OUTB(osdev, d, port) ddi_put8((osdev)->acc_handle[0], (uint8_t*)(port), (d))
+#define INW(osdev,port) oss_get16((osdev)->acc_handle[0], (uint16_t*)(port))
+#define OUTW(osdev, d, port) oss_put16((osdev)->acc_handle[0], (uint16_t*)(port), (d))
+#define INL(osdev,port) oss_get32((osdev)->acc_handle[0], (uint32_t*)(port))
+#define OUTL(osdev,d, port) oss_put32((osdev)->acc_handle[0], (uint32_t*)(port), (d))
 
 /* Memory Mapped devices */
 extern uint16_t oss_mem_get16 (ddi_acc_handle_t handle, uint16_t * addr);
@@ -274,10 +275,10 @@ extern void oss_mem_put16 (ddi_acc_handle_t handle, uint16_t * add,
 			   uint16_t v);
 extern void oss_mem_put32 (ddi_acc_handle_t handle, uint32_t * add,
 			   uint32_t v);
-#define PCI_READW(osdev, addr)		oss_mem_get16((osdev)->acc_handle, (uint16_t*)(addr))
-#define PCI_READL(osdev, addr)		oss_mem_get32((osdev)->acc_handle, (uint32_t*)(addr))
-#define PCI_WRITEW(osdev, addr, data)	oss_mem_put16((osdev)->acc_handle, (uint16_t*)(addr), data)
-#define PCI_WRITEL(osdev, addr, data)	oss_mem_put32((osdev)->acc_handle, (uint32_t*)(addr), data)
+#define PCI_READW(osdev, addr)		oss_mem_get16((osdev)->acc_handle[0], (uint16_t*)(addr))
+#define PCI_READL(osdev, addr)		oss_mem_get32((osdev)->acc_handle[0], (uint32_t*)(addr))
+#define PCI_WRITEW(osdev, addr, data)	oss_mem_put16((osdev)->acc_handle[0], (uint16_t*)(addr), data)
+#define PCI_WRITEL(osdev, addr, data)	oss_mem_put32((osdev)->acc_handle[0], (uint32_t*)(addr), data)
 #endif
 #else /* x86/AMD64 */
 /* I/O Mapped devices */
@@ -290,14 +291,14 @@ extern void oss_mem_put32 (ddi_acc_handle_t handle, uint32_t * add,
 #define OUTL(o, v, p)	outl(p,v)
 
 /* Memory Mapped devices */
-#define PCI_READW(osdev, addr)		ddi_mem_get16((osdev)->acc_handle, (uint16_t*)(addr))
-#define PCI_READL(osdev, addr)		ddi_mem_get32((osdev)->acc_handle, (uint32_t*)(addr))
-#define PCI_WRITEW(osdev, addr, data)	ddi_mem_put16((osdev)->acc_handle, (uint16_t*)(addr), data)
-#define PCI_WRITEL(osdev, addr, data)	ddi_mem_put32((osdev)->acc_handle, (uint32_t*)(addr), data)
+#define PCI_READW(osdev, addr)		ddi_mem_get16((osdev)->acc_handle[0], (uint16_t*)(addr))
+#define PCI_READL(osdev, addr)		ddi_mem_get32((osdev)->acc_handle[0], (uint32_t*)(addr))
+#define PCI_WRITEW(osdev, addr, data)	ddi_mem_put16((osdev)->acc_handle[0], (uint16_t*)(addr), data)
+#define PCI_WRITEL(osdev, addr, data)	ddi_mem_put32((osdev)->acc_handle[0], (uint32_t*)(addr), data)
 #endif
 
-#define PCI_READB(osdev, addr)		ddi_mem_get8((osdev)->acc_handle, addr)
-#define PCI_WRITEB(osdev, addr, data)	ddi_mem_put8((osdev)->acc_handle, addr, data)
+#define PCI_READB(osdev, addr)		ddi_mem_get8((osdev)->acc_handle[0], addr)
+#define PCI_WRITEB(osdev, addr, data)	ddi_mem_put8((osdev)->acc_handle[0], addr, data)
 
 /*
  * When a error (such as EINVAL) is returned by a function,
@@ -433,9 +434,11 @@ extern int detect_trace;
  *      add 1 to the region number.
  */
 extern caddr_t oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io);
+extern void oss_unmap_pci_ioaddr(oss_device_t * osdev, int nr);
 #define MAP_PCI_IOADDR(osdev, nr, io) (oss_native_word)oss_map_pci_ioaddr(osdev, nr, io)
 #define MAP_PCI_MEM(osdev, ix, phaddr, size) 	oss_map_pci_ioaddr(osdev, ix, phaddr)
-#define UNMAP_PCI_MEM(osdev, ix, ph, virt, size)	{}
+#define UNMAP_PCI_MEM(osdev, ix, ph, virt, size)	oss_unmap_pci_ioaddr(osdev, ix)
+#define UNMAP_PCI_IOADDR(osdev, ix)	oss_unmap_pci_ioaddr(osdev, ix)
 
 #define GET_PROCESS_PID(x)  ddi_get_pid()
 

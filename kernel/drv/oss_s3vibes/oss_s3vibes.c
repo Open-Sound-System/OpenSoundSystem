@@ -907,6 +907,11 @@ oss_s3vibes_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
+  UNMAP_PCI_IOADDR (devc->osdev, 1);
+  UNMAP_PCI_IOADDR (devc->osdev, 2);
+  UNMAP_PCI_IOADDR (devc->osdev, 3);
+  UNMAP_PCI_IOADDR (devc->osdev, 4);
 
   oss_unregister_device (devc->osdev);
   return 1;

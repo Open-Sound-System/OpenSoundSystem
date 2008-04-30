@@ -78,7 +78,7 @@ cc -o dirsetup $SRCDIR/setup/dirsetup.c
 #rm /usr/include/sys/soundcard.h
 #cp $SRCDIR/include/soundcard.h /usr/include/sys/soundcard.h
 
-if ./dirsetup "$SRCDIR" "$BLDDIR" $*
+if ./dirsetup "$SRCDIR" "$BLDDIR" $* $COPY_OPTIONS
 then
 	echo Build tree created OK
 else

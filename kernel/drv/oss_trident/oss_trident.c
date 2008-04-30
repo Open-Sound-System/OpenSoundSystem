@@ -1553,6 +1553,7 @@ oss_trident_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
 
   oss_unregister_device (devc->osdev);
   return 1;

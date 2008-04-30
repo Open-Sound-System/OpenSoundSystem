@@ -959,6 +959,7 @@ unsigned int
 oss_get32 (ddi_acc_handle_t handle, unsigned int *addr)
 {
   unsigned int val;
+cmn_err(CE_CONT, "oss_get32(%x, %p)\n", handle, addr);
 
   val = ddi_get32 (handle, addr);
 #ifdef OSS_BIG_ENDIAN
@@ -1033,6 +1034,13 @@ oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io)
   int err;
   ddi_device_acc_attr_t *acc_attr;
 
+  if (nr >= OSS_MAX_ACC_HANDLE)
+  {
+	  cmn_err(CE_WARN, "Too large I/O region number %d\n", nr);
+
+	  return 0;
+  }
+
   acc_attr = get_acc_attr (osdev);
 
   if ((err =
@@ -1042,16 +1050,27 @@ oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io)
       return 0;
     }
 
-
   if ((err = ddi_regs_map_setup
        (osdev->dip, nr + 1, &addr, 0, region_size, acc_attr,
-	&osdev->acc_handle)) != DDI_SUCCESS)
+	&osdev->acc_handle[nr])) != DDI_SUCCESS)
     {
       cmn_err (CE_WARN, "Register setup failed (%d)\n", err);
       return 0;
     }
 
   return addr;
+}
+
+void
+oss_unmap_pci_ioaddr(oss_device_t * osdev, int nr)
+{
+  if (nr >= OSS_MAX_ACC_HANDLE)
+  {
+	  cmn_err(CE_WARN, "Too large I/O region number %d\n", nr);
+	  return;
+  }
+
+  ddi_regs_map_free(&osdev->acc_handle[nr]);
 }
 
 int

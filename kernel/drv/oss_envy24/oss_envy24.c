@@ -3997,6 +3997,8 @@ oss_envy24_detach (oss_device_t * osdev)
 
   oss_unregister_interrupts (osdev);
   MUTEX_CLEANUP (devc->mutex);
+  UNMAP_PCI_IOADDR (devc->osdev, 0);
+  UNMAP_PCI_IOADDR (devc->osdev, 3);
 
   if (devc->playbuf != NULL)
     CONTIG_FREE (devc->osdev, devc->playbuf, HW_ALLOCSIZE);

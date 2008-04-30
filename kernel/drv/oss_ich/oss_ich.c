@@ -1381,6 +1381,11 @@ oss_ich_detach (oss_device_t * osdev)
       devc->membar_addr = 0;
       devc->ac97_membar_addr = 0;
     }
+  else
+    {
+  	UNMAP_PCI_IOADDR (devc->osdev, 0);
+  	UNMAP_PCI_IOADDR (devc->osdev, 1);
+    }
   oss_unregister_device (osdev);
   return 1;
 }

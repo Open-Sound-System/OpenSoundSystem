@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -11,12 +12,15 @@
 
 char *srcdir = NULL, *blddir = NULL;
 
-int verbose = 0, do_copy = 0;
+int verbose = 0, copy_files = 0;
 
 static void
 copy_file (char *sname, char *tname, char *pname, int native_make)
 {
   char *p;
+  int in_fd, out_fd, l;
+
+  unsigned char buf[4096];
 
   if (strcmp (pname, ".depend") == 0)
     return;
@@ -34,7 +38,41 @@ copy_file (char *sname, char *tname, char *pname, int native_make)
 	return;
     }
 
-  symlink (sname, tname);
+  if (!copy_files)
+  {
+     symlink (sname, tname);
+     return;
+  }
+
+  if ((in_fd=open(sname, O_RDONLY, 0))==-1)
+     {
+	     perror(sname);
+	     exit(-1);
+     }
+
+  if ((out_fd=creat(tname, 0644))==-1)
+     {
+	     perror(tname);
+	     exit(-1);
+     }
+
+  while ((l=read(in_fd, buf, sizeof(buf)))>0)
+  {
+	  if (write(out_fd, buf, l)!=l)
+	     {
+		     perror(tname);
+		     exit(-1);
+	     }
+  }
+
+  if (l==-1)
+     {
+	     perror(sname);
+	     exit(-1);
+     }
+
+  close(in_fd);
+  close(out_fd);
 }
 
 static int
@@ -123,7 +161,7 @@ main (int argc, char *argv[])
 
       if (strcmp (argv[i], "-c") == 0)
 	{
-	  do_copy = 1;
+	  copy_files = 1;
 	  continue;
 	}
     }
