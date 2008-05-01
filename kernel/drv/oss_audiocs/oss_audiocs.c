@@ -3,6 +3,11 @@
  *
  * This driver is for Solaris/Sparc only. It uses Solaris specific kernel 
  * services which are not portable to other operating systems.
+ *
+ * Originally this driver supported various AD1848 based ISA codecs. For
+ * this reason devc->model is used to find out which features the codec
+ * supports. The latest version of the driver supports only models 2 (CS4231)
+ * and 3 (CS4231A).
  */
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2008. All rights reserved.
@@ -83,16 +88,12 @@ static int ad_format_mask[9 /*devc->model */ ] =
 {
   0,
   AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW,
-  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE |
-    AFMT_IMA_ADPCM,
-  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE |
-    AFMT_IMA_ADPCM,
+  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE,
+  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE,
   AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW,	/* AD1845 */
-  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE |
-    AFMT_IMA_ADPCM,
-  AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_IMA_ADPCM,
-  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE |
-    AFMT_IMA_ADPCM,
+  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE,
+  AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE,
+  AFMT_U8 | AFMT_S16_LE | AFMT_MU_LAW | AFMT_A_LAW | AFMT_S16_BE,
   AFMT_U8 | AFMT_S16_LE		/* CMI8330 */
 };
 
@@ -286,27 +287,6 @@ ad_leave_MCE (cs4231_devc_t * devc)
 }
 
 static int
-cmi8330_set_recmask (cs4231_devc_t * devc, int mask)
-{
-  unsigned char bits = 0;
-
-  mask &= SOUND_MASK_MIC | SOUND_MASK_LINE | SOUND_MASK_CD;
-
-  if (mask & SOUND_MASK_MIC)
-    bits |= 0x01;
-
-  if (mask & SOUND_MASK_LINE)
-    bits |= 0x06;
-
-  if (mask & SOUND_MASK_LINE1)
-    bits |= 0x18;
-
-  ad_write (devc, 0x10, bits);
-
-  return devc->recmask = mask;
-}
-
-static int
 cs4231_set_recmask (cs4231_devc_t * devc, int mask)
 {
   unsigned char recdev;
@@ -350,7 +330,6 @@ cs4231_set_recmask (cs4231_devc_t * devc, int mask)
       break;
 
     case SOUND_MASK_LINE:
-    case SOUND_MASK_LINE3:
       recdev = 0;
       break;
 
@@ -520,21 +499,11 @@ cs4231_mixer_reset (cs4231_devc_t * devc)
   int i;
 
   devc->mix_devices = &(cs4231_mix_devices[0]);
-  devc->supported_rec_devices = MODE1_REC_DEVICES;
+  devc->supported_devices = MODE2_MIXER_DEVICES;
+  devc->supported_rec_devices = MODE2_REC_DEVICES;
 
   for (i = 0; i < 32; i++)
     devc->mixer_reroute[i] = i;
-
-  switch (devc->model)
-    {
-    case MD_4231:
-    case MD_4231A:
-      devc->supported_devices = MODE2_MIXER_DEVICES;
-      break;
-
-    default:
-      devc->supported_devices = MODE1_MIXER_DEVICES;
-    }
 
   devc->orig_devices = devc->supported_devices;
   devc->orig_rec_devices = devc->supported_rec_devices;
@@ -552,7 +521,7 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
   cs4231_devc_t *devc = mixer_devs[dev]->devc;
 
-  if (cmd == SOUND_MIXER_PRIVATE1)
+  if (cmd == SOUND_MIXER_PRIVATE1) /* SADA compatible play target selection */
     {
       int val;
 
@@ -739,35 +708,15 @@ cs4231_set_bits (int dev, unsigned int arg)
   }
   format2bits[] =
   {
-    {
-    0, 0}
-    ,
-    {
-    AFMT_MU_LAW, 1}
-    ,
-    {
-    AFMT_A_LAW, 3}
-    ,
-    {
-    AFMT_IMA_ADPCM, 5}
-    ,
-    {
-    AFMT_U8, 0}
-    ,
-    {
-    AFMT_S16_LE, 2}
-    ,
-    {
-    AFMT_S16_BE, 6}
-    ,
-    {
-    AFMT_S8, 0}
-    ,
-    {
-    AFMT_U16_LE, 0}
-    ,
-    {
-    AFMT_U16_BE, 0}
+    {0, 0},
+    {AFMT_MU_LAW, 1},
+    {AFMT_A_LAW, 3},
+    {AFMT_U8, 0},
+    {AFMT_S16_LE, 2},
+    {AFMT_S16_BE, 6},
+    {AFMT_S8, 0},
+    {AFMT_U16_LE, 0},
+    {AFMT_U16_BE, 0}
   };
   int i, n = sizeof (format2bits) / sizeof (struct format_tbl);
 
@@ -841,11 +790,6 @@ cs4231_open (int dev, int mode, int open_flags)
       return -EBUSY;
     }
 
-  if (devc->open_mode == 0)
-    {
-      cs4231_trigger (dev, 0);
-    }
-
   devc->open_mode |= mode;
   portc->open_mode = mode;
   devc->audio_mode &= ~mode;
@@ -902,17 +846,10 @@ cs4231_output_block (int dev, oss_native_word buf, int count, int fragsize,
   /* cnt = count; */
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
-  if (devc->audio_format == AFMT_IMA_ADPCM)
-    {
-      cnt /= 4;
-    }
-  else
-    {
-      if (devc->audio_format & (AFMT_S16_LE | AFMT_S16_BE))	/* 16 bit data */
-	cnt >>= 1;
-    }
+  if (devc->audio_format & (AFMT_S16_LE | AFMT_S16_BE))	/* 16 bit data */
+     cnt >>= 1;
   if (devc->channels > 1)
-    cnt >>= 1;
+     cnt >>= 1;
   cnt--;
 
   if (devc->audio_mode & PCM_ENABLE_OUTPUT
@@ -944,15 +881,9 @@ cs4231_start_input (int dev, oss_native_word buf, int count, int fragsize,
   cnt = fragsize;
   /* cnt = count; */
 
-  if (devc->audio_format == AFMT_IMA_ADPCM)
-    {
-      cnt /= 4;
-    }
-  else
-    {
-      if (devc->audio_format & (AFMT_S16_LE | AFMT_S16_BE))	/* 16 bit data */
-	cnt >>= 1;
-    }
+  if (devc->audio_format & (AFMT_S16_LE | AFMT_S16_BE))	/* 16 bit data */
+     cnt >>= 1;
+
   if (devc->channels > 1)
     cnt >>= 1;
   cnt--;
@@ -1570,7 +1501,7 @@ cs4231_init (cs4231_devc_t * devc)
   devc->audio_flags = ADEV_AUTOMODE;
   devc->playback_dev = devc->record_dev = 0;
 
-  sprintf (dev_name, "UltraSparc builtin audio (%s)", devc->chip_name);
+  sprintf (dev_name, "Sparc builtin audio (%s)", devc->chip_name);
 
   if ((my_mixer = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
 				     devc->osdev,

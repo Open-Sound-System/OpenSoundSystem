@@ -414,7 +414,6 @@ vmix_set_channels (int dev, short arg)
     {
       if (arg > portc->mixer->record_engine.channels)
 	arg = portc->mixer->record_engine.channels;
-
     }
   return portc->channels = arg;
 }

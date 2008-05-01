@@ -381,13 +381,13 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
 
   // Find out the "best" sample format supported by the device
 
-  if (adev->iformat_mask & AFMT_S16_NE)
+  if (adev->iformat_mask & AFMT_S16_OE)
     fmt = AFMT_S16_OE;
   if (adev->iformat_mask & AFMT_S16_NE)
     fmt = AFMT_S16_NE;
   if (mixer->multich_enable)
     {
-      if (adev->iformat_mask & AFMT_S32_NE)
+      if (adev->iformat_mask & AFMT_S32_OE)
 	fmt = AFMT_S32_OE;
       if (adev->iformat_mask & AFMT_S32_NE)
 	fmt = AFMT_S32_NE;

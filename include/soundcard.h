@@ -1469,7 +1469,7 @@ typedef unsigned short oss_peaks_t[MAX_PEAK_CHANNELS];
  */
 #define SOUND_MIXER_LINE1	14	/* Input source 1  (aux1) */
 #define SOUND_MIXER_LINE2	15	/* Input source 2  (aux2) */
-#define SOUND_MIXER_LINE3	16	/* Input source 3  (line) */
+#define SOUND_MIXER_LINE3	16	/* Input source 3  (aux3) */
 #define SOUND_MIXER_DIGITAL1	17	/* Digital I/O 1 */
 #define SOUND_MIXER_DIGITAL2	18	/* Digital I/O 2 */
 #define SOUND_MIXER_DIGITAL3	19	/* Digital I/O 3 */
