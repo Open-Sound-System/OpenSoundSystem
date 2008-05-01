@@ -300,6 +300,24 @@ parse_config (FILE * f, conf_t * conf)
 	    conf->suspend_resume=1;
 	}
 
+      if (strcmp (line, "force_endian") == 0)
+	 {
+	      if (strcmp (parms, "BIG") == 0)
+	         {
+	      	    strcpy (conf->endianess, "BIG");
+		 }
+	      else
+	      if (strcmp (parms, "LITTLE") == 0)
+	         {
+	      	    strcpy (conf->endianess, "LITTLE");
+		 }
+	      else
+	      if (strcmp (parms, "UNKNOWN") == 0)
+	         {
+	      	    strcpy (conf->endianess, "UNKNOWN");
+		 }
+	 }
+
       printf ("\t     %s\n", line);
       printf ("\t     ^\n");
       printf ("\t*** Unknown parameter ***\n");
@@ -402,6 +420,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #define MAX_FILENAME 128
   char *filenames[MAX_FILENAME];
   int n_filenames = 0;
+
+  char tmp_endian[100]="";
 
   memcpy (&conf, cfg, sizeof (conf));
 
@@ -638,7 +658,11 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #endif
   if (*conf.ldflags != 0)
     fprintf (f, "LDFLAGS=%s\n", conf.ldflags);
-  fprintf (f, "OSFLAGS=%s\n", conf.OSflags);
+
+  if (strcmp(conf.endianess, "UNKNOWN") != 0)
+     sprintf (tmp_endian, " -DOSS_%s_ENDIAN", conf.endianess);
+
+  fprintf (f, "OSFLAGS=%s%s\n", conf.OSflags, tmp_endian);
 
   fprintf (f, "OS=%s\n", conf.system);
   fprintf (f, "ARCH=%s\n", conf.arch);
@@ -948,12 +972,10 @@ check_endianess (conf_t * conf)
 
   if ((*(unsigned int *) &probe) == 0x01020304)
     {
-      strcat (conf->OSflags, " -DOSS_BIG_ENDIAN");
       strcpy (conf->endianess, "BIG");
     }
   else
     {
-      strcat (conf->OSflags, " -DOSS_LITTLE_ENDIAN");
       strcpy (conf->endianess, "LITTLE");
     }
 }
@@ -1007,6 +1029,7 @@ int
 main (int argc, char *argv[])
 {
   int i;
+  char tmp[256], *env;
 
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')
@@ -1035,6 +1058,29 @@ main (int argc, char *argv[])
     system ("touch kernel/drv/ossusb/.nomake");
 
   check_system (&conf);
+
+/*
+ * Check if setup/$CROSSCOMPILE.conf exists and load the settings in it.
+ */
+  if ((env=getenv("CROSSCOMPILE"))!=NULL)
+     {
+	     char *p = env;
+	     FILE *cf;
+
+	     while (*p && *p != '=') p++;
+
+	     if (*p=='=')
+		p++;
+	     else
+		p=env;
+
+	     sprintf (tmp, "setup/%s.conf", p);
+  	     if ((cf = fopen (tmp, "r")) != NULL)
+    		{
+      	     		parse_config (tmp, &conf);
+			fclose (cf);
+     		}
+     }
 
   produce_output (&conf);
   exit (0);

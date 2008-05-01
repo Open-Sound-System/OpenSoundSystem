@@ -29,6 +29,26 @@ struct cs4231_pioregs
 	uint8_t pad4[3];
 };
 
+/*
+ * These are the registers for the EBUS2 DMA channel interface to the
+ * 4231. One struct per channel for playback and record, therefore there
+ * individual handles for the CODEC and the two DMA engines.
+ */
+
+struct cs4231_eb2regs {
+	uint32_t 	eb2csr;		/* Ebus 2 csr */
+	uint32_t 	eb2acr;		/* ebus 2 Addrs */
+	uint32_t 	eb2bcr;		/* ebus 2 counts */
+};
+typedef struct cs4231_eb2regs cs4231_eb2regs_t;
+
+#define	PLAY_CSR	devc->play_regs->eb2csr
+#define	PLAY_ACR	devc->play_regs->eb2acr
+#define	PLAY_BCR	devc->play_regs->eb2bcr
+#define	REC_CSR		devc->rec_regs->eb2csr
+#define	REC_ACR		devc->rec_regs->eb2acr
+#define	REC_BCR		devc->rec_regs->eb2bcr
+
 typedef struct
 {
   oss_device_t *osdev;
@@ -37,9 +57,16 @@ typedef struct
   struct cs4231_pioregs *codec_base;
   uint_t *auxio_base;
 
+  cs4231_eb2regs_t *play_regs;
+  cs4231_eb2regs_t *rec_regs;
+
   ddi_acc_handle_t codec_acc_handle;
   ddi_acc_handle_t auxio_acc_handle;
+  ddi_acc_handle_t play_acc_handle;
+  ddi_acc_handle_t rec_acc_handle;
 #define CODEC_HNDL devc->codec_acc_handle
+#define PLAY_HNDL  devc->play_acc_handle
+#define REC_HNDL   devc->rec_acc_handle
 #define AUXIO_HNDL devc->auxio_acc_handle
 
   unsigned char MCE_bit;
@@ -1047,7 +1074,10 @@ cs4231_prepare_for_output (int dev, int bsize, int bcount)
   cs4231_halt_output (dev);
   set_sample_format (dev);
 
-  //TODO: Prepare the DMA engine
+/*
+ * Setup the EB2 DMA engine
+ */
+
   return 0;
 }
 
@@ -1674,20 +1704,12 @@ static ddi_device_acc_attr_t acc_attr = {
 
   devc->chip_name = "Generic CS4231";
 
-#if 0
 /*
- * Map I/O registers.
- *
- * Note that MAP_PCI_IOADDR uses different region numbering than 
- *      ddi_regs_map_setup.
- *
- * TODO: Replace MAP_PCI_IOADDR() with something that is not PCI specific.
+ * Map I/O registers. This is done in Solaris specific way so the code
+ * is not portable.
  */
-  devc->codec_base = MAP_PCI_IOADDR (devc->osdev, -1, 0);
-  //devc->play_base = MAP_PCI_IOADDR (devc->osdev, 0, 0);
-  //devc->record_base = MAP_PCI_IOADDR (devc->osdev, 1, 0);
-  devc->auxio_base = MAP_PCI_IOADDR (devc->osdev, 2, 0);
-#else
+
+  // Codec registers
   if ((err = ddi_regs_map_setup
        (osdev->dip, 0, &addr, 0, 16, &acc_attr,
 	&CODEC_HNDL)) != DDI_SUCCESS)
@@ -1697,6 +1719,25 @@ static ddi_device_acc_attr_t acc_attr = {
      }
   devc->codec_base = (struct cs4231_pioregs*)addr;
 
+  // Play registers
+  if ((err = ddi_regs_map_setup
+       (osdev->dip, 1, (caddr_t *)&devc->play_regs, 0, sizeof(cs4231_eb2regs_t), &acc_attr,
+	&PLAY_HNDL)) != DDI_SUCCESS)
+     {
+	     cmn_err(CE_WARN, "Cannot map codec registers, error=%d\n", err);
+	     return 0;
+     }
+
+  // Capture registers
+  if ((err = ddi_regs_map_setup
+       (osdev->dip, 2, (caddr_t *)&devc->rec_regs, 0, sizeof(cs4231_eb2regs_t), &acc_attr,
+	&REC_HNDL)) != DDI_SUCCESS)
+     {
+	     cmn_err(CE_WARN, "Cannot map codec registers, error=%d\n", err);
+	     return 0;
+     }
+
+  // Auxio register
   if ((err = ddi_regs_map_setup
        (osdev->dip, 3, &addr, 0, 4, &acc_attr,
 	&AUXIO_HNDL)) != DDI_SUCCESS)
@@ -1705,13 +1746,17 @@ static ddi_device_acc_attr_t acc_attr = {
 	     return 0;
      }
   devc->auxio_base = (uint_t *)addr;
-     
-#endif
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
   MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
 
   eb2_power(devc, 1);
+
+  if (oss_register_interrupts (devc->osdev, 0, cs4231intr, NULL) < 0)
+    {
+      cmn_err (CE_WARN, "Unable to install interrupt handler\n");
+      return 0;
+    }
 
   if (!cs4231_detect(devc))
      return 0;
@@ -1731,11 +1776,13 @@ oss_audiocs_detach (oss_device_t * osdev)
   if (oss_disable_device (osdev) < 0)
     return 0;
 
+  oss_unregister_interrupts (devc->osdev);
+
   eb2_power(devc, 0);
 
   ddi_regs_map_free(&CODEC_HNDL);
-  //ddi_regs_map_free(&PLAY_HNDL);
-  //ddi_regs_map_free(&REC_HNDL);
+  ddi_regs_map_free(&PLAY_HNDL);
+  ddi_regs_map_free(&REC_HNDL);
   ddi_regs_map_free(&AUXIO_HNDL);
 
   MUTEX_CLEANUP (devc->mutex);
