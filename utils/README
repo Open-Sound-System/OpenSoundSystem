@@ -35,7 +35,7 @@ You need to edit hdaudio.conf and set the hdaudio_snoopy option to 1. The
 program tries to open /dev/oss/hdaudio0/pcm0 and to obtain the codec information
 from the driver. If the codec has some other codec number than 0 then you will
 need to edit the source and to change the "int cad=0;" line to match the
-codec number.
+codec number. This utility must be run as root.
 
 vif
 vib

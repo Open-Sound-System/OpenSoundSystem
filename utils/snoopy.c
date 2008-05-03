@@ -848,9 +848,9 @@ main (int argc, char *argv[])
   int first_node, num_nodes;
   int i;
 
-  if ((fd = open ("/dev/oss/hdaudio0/pcm0", O_RDWR | O_EXCL, 0)) == -1)
+  if ((fd = open ("/dev/oss/oss_hdaudio0/pcm0", O_RDWR | O_EXCL, 0)) == -1)
     {
-      perror ("/dev/oss/hdaudio0/pcm0");
+      perror ("/dev/oss/oss_hdaudio0/pcm0");
       exit (-1);
     }
 

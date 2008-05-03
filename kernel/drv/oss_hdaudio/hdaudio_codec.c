@@ -880,7 +880,7 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
-	  if (n >= HDA_MAX_OUTSTREAMS)
+	  if (n >= HDA_MAX_INSTREAMS)
 	     {
 		  cmn_err (CE_WARN,
 			   "Too many input endpoints (%d)\n",
@@ -2910,7 +2910,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, num, maxval, val, ctl = 0;
+  int typ, maxval, val, ctl = 0;
   oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
@@ -3030,7 +3030,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   widget_t *widget;
   codec_t *codec;
   oss_mixext *ent;
-  int typ, num, maxval, val, ctl = 0;
+  int typ, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3043,6 +3043,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 
   if (codec->widgets[widget->connections[ix]].skip)
     {
+      int num = MIXNUM (widget, CT_INMUTE, ix);
       hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE, 1);
       return 0;
     }
@@ -3072,7 +3073,7 @@ hda_codec_set_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, num, maxval, val, ctl = 0;
+  int typ, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3096,7 +3097,7 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   widget_t *widget;
   codec_t *codec;
   oss_mixext *ent;
-  int typ, num, maxval, val, ctl = 0;
+  int typ, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3109,6 +3110,8 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 
   if (codec->widgets[widget->connections[ix]].skip)
     {
+      int num = MIXNUM (widget, CT_INMUTE, ix);
+
       hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE, 1);
       return 0;
     }
@@ -3139,7 +3142,7 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int i, typ, num, maxval, val;
+  int i, typ, maxval, val;
   oss_mixext *ext;
 
   *ctl = 0;
@@ -3207,7 +3210,7 @@ hda_codec_add_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, num, maxval, val;
+  int typ, maxval, val;
   oss_mixext *ext;
   int i;
 
@@ -3282,7 +3285,7 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, num, maxval, val;
+  int typ, maxval, val;
   unsigned int conf, b;
   oss_mixext *ext;
   int i;
