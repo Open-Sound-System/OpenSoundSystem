@@ -340,14 +340,6 @@ extern void oss_contig_free (oss_device_t * osdev, void *p, int sz);
 #endif
 
 /*
- * PMALLOC() allocates "permanent" memory that will be freed automatically
- * when the osscore module is unloaded.
- */
-extern void *oss_pmalloc (size_t sz);
-
-#define PMALLOC(osdev, sz) oss_pmalloc(sz)
-
-/*
  * Timer macros
  *
  * These macros are obsolete and should not be used in any new code.
