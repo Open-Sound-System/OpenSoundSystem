@@ -5406,6 +5406,14 @@ audio_uninit_device (int dev)
 }
 
 void
+oss_audio_uninit (void)
+{
+/*
+ * Release all memory/resources allocated by the audio core.
+ */
+}
+
+void
 oss_audio_inc_byte_counter (dmap_t * dmap, int increment)
 {
   oss_uint64_t p1, p2;
@@ -6256,7 +6264,13 @@ oss_install_audiodev (int vers,
     {
       if (!hidden_device)
 	{
-	  devfile_num = num_audio_devfiles++;
+	  if (num_audio_devfiles >= MAX_AUDIO_DEVFILES)
+	     {
+               cmn_err(CE_WARN, "Too many audio device files\n"); // TODO: Fix this
+	       return num;
+	     }
+	  else
+	     devfile_num = num_audio_devfiles++;
 	}
     }
 
