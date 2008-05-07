@@ -62,13 +62,6 @@ int oss_num_cards = 0;
 
 int oss_detach_enabled = 0;
 
-/*
- * Table for permanently allocated memory (to be freed by _fini)
- */
-#define OSS_MAX_MEM 	1024
-void *oss_mem_blocks[OSS_MAX_MEM];
-int oss_nblocks = 0;
-
 #ifdef MUTEX_CHECKS
 static volatile int inside_intr = 0;	/* For mutex debugging only */
 #endif
@@ -847,17 +840,15 @@ int
 _fini (void)
 {
   int status;
+
+#ifdef MEMDEBUG
   int i;
+#endif
 
   if ((status = mod_remove (&modlinkage)) != 0)
     return (status);
 
   free_all_contig_memory ();
-
-  if (oss_nblocks >= OSS_MAX_MEM)
-    cmn_err (CE_WARN, "All memory cannod be freed\n");
-  for (i = 0; i < oss_nblocks; i++)
-    KERNEL_FREE (oss_mem_blocks[i]);
 
 #ifdef MEMDEBUG
   if (num_memblocks >= MAX_MEMBLOCKS)
@@ -959,7 +950,6 @@ unsigned int
 oss_get32 (ddi_acc_handle_t handle, unsigned int *addr)
 {
   unsigned int val;
-cmn_err(CE_CONT, "oss_get32(%x, %p)\n", handle, addr);
 
   val = ddi_get32 (handle, addr);
 #ifdef OSS_BIG_ENDIAN
@@ -1155,17 +1145,6 @@ memcpy (void *t, const void *s, size_t l)
 {
   bcopy (s, t, l);
   return t;
-}
-
-void *
-oss_pmalloc (size_t size)
-{
-  void *mem_ptr;
-  mem_ptr = (oss_mem_blocks[oss_nblocks] = KERNEL_MALLOC (size));
-
-  if (oss_nblocks <= OSS_MAX_MEM)
-    oss_nblocks++;
-  return mem_ptr;
 }
 
 #ifdef MEMDEBUG

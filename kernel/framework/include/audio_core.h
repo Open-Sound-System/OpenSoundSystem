@@ -324,6 +324,7 @@ extern int num_audio_engines;
 extern adev_t **audio_devfiles;
 extern int num_audio_devfiles;
 
+#if 0
 typedef struct
 {
   int ndevs;
@@ -332,6 +333,7 @@ typedef struct
 oss_devlist_t;
 
 extern oss_devlist_t dspoutlist, dspoutlist2, dspinlist, dspinoutlist;
+#endif
 
 extern void oss_audio_set_devname (char *name);
 int oss_install_audiodev (int vers,

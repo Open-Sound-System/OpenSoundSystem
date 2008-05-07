@@ -37,3 +37,9 @@ extern void install_dev_mixer (oss_device_t * osdev);
  */
 
 extern void vmix_uninit (void);
+
+/*
+ * oss_audio_core.c
+ */
+
+extern void oss_audio_uninit (void);

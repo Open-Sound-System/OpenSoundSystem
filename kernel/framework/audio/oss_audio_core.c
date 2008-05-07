@@ -18,6 +18,17 @@
 extern int src_quality;
 
 /*
+ * Resizeable audio device tables
+ */
+static oss_memblk_t *audio_global_memblk=NULL;
+int oss_max_audio_devfiles=4;
+int oss_max_audio_engines=8;
+#define AUDIO_MALLOC(osdev, size) oss_memblk_malloc(&audio_global_memblk, size)
+#define AUDIO_FREE(osdev, addr) oss_memblk_free(&audio_global_memblk, addr)
+#define AUDIO_ENGINE_INCREMENT	(oss_max_audio_engines/2)
+#define AUDIO_DEVFILE_INCREMENT	(oss_max_audio_devfiles/2)
+
+/*
  * List of audio devices in the system
  */
 adev_t **audio_engines = NULL;
@@ -28,6 +39,7 @@ adev_t **audio_devfiles = NULL;
 int num_audio_devfiles = 0;
 extern int flat_device_model;
 
+#if 0
 /*
  * Device lists (input, output, duplex) for /dev/dsp.
  */
@@ -36,6 +48,7 @@ oss_devlist_t dspinlist = { 0 };
 oss_devlist_t dspoutlist = { 0 };
 oss_devlist_t dspinoutlist = { 0 };
 oss_devlist_t dspoutlist2 = { 0 };	/* 2nd priority output devices */
+#endif
 
 /*
  * Applications known to require special handling (mmap, etc.). These 
@@ -107,6 +120,28 @@ app_lookup (int mode, const char *appname, int *open_flags)
   return -2;
 }
 #endif
+
+static int
+resize_array(oss_device_t *osdev, adev_t ***arr, int *size, int increment)
+{
+	adev_t **old=*arr, **new = *arr;
+	int old_size = *size;
+	int new_size = *size;
+		
+	new_size += increment;
+
+	if ((new=AUDIO_MALLOC(osdev, new_size * sizeof(adev_t *)))==NULL)
+	   return 0;
+
+	memset(new, 0, new_size * sizeof(adev_t *));
+	memcpy(new, old, old_size * sizeof(adev_t *));
+
+	*size = new_size;
+	*arr = new;
+	AUDIO_FREE(osdev, old);
+
+	return 1;
+}
 
 /*ARGSUSED*/
 static int
@@ -4943,7 +4978,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 
 	      if (dmap->tmpbuf1 == NULL)
 		{
-		  dmap->tmpbuf1 = PMALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE);
+		  dmap->tmpbuf1 = AUDIO_MALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE);
 		}
 
 /*
@@ -5290,7 +5325,7 @@ audio_init_device (int dev)
     {
       dmap_p dmap;
 
-      dmap = PMALLOC (adev->osdev, sizeof (dmap_t));
+      dmap = AUDIO_MALLOC (adev->osdev, sizeof (dmap_t));
       if (dmap == NULL)
 	{
 	  cmn_err (CE_WARN, "Failed to allocate dmap, dev=%d\n", dev);
@@ -5329,7 +5364,7 @@ audio_init_device (int dev)
       if (adev->flags & ADEV_DUPLEX)
 	{
 
-	  dmap = PMALLOC (adev->osdev, sizeof (dmap_t));
+	  dmap = AUDIO_MALLOC (adev->osdev, sizeof (dmap_t));
 	  if (dmap == NULL)
 	    {
 	      cmn_err (CE_WARN, "Failed to allocate dmap, dev=%d\n", dev);
@@ -5403,6 +5438,15 @@ audio_uninit_device (int dev)
       MUTEX_CLEANUP (adev->dmap_in->mutex);
     }
   adev->unloaded = 1;
+}
+
+void
+oss_audio_uninit (void)
+{
+/*
+ * Release all memory/resources allocated by the audio core.
+ */
+  oss_memblk_unalloc(&audio_global_memblk);
 }
 
 void
@@ -5934,6 +5978,10 @@ oss_audio_register_client (oss_audio_startup_func func, void *devc,
 void
 oss_add_audio_devlist (int list_id, int devfile)
 {
+#if 0
+/*
+ * Device list support is not in use at this moment
+ */
   oss_devlist_t *list;
   int i;
 
@@ -5964,8 +6012,10 @@ oss_add_audio_devlist (int list_id, int devfile)
    * Add the device to the list
    */
   list->devices[list->ndevs++] = devfile;
+#endif
 }
 
+#if 0
 static void
 add_to_devlists (adev_p adev)
 {
@@ -6039,6 +6089,7 @@ add_to_devlists (adev_p adev)
 	}
     }
 }
+#endif
 
 void
 oss_audio_set_devname (char *name)
@@ -6087,13 +6138,13 @@ oss_install_audiodev (int vers,
 
   if (audio_engines == NULL)
     {
-      audio_engines = PMALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_ENGINES);
+      audio_engines = AUDIO_MALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_ENGINES);
       memset (audio_engines, 0, sizeof (adev_t *) * MAX_AUDIO_ENGINES);
     }
 
   if (audio_devfiles == NULL)
     {
-      audio_devfiles = PMALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
+      audio_devfiles = AUDIO_MALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
       memset (audio_devfiles, 0, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
     }
 #ifdef linux
@@ -6139,11 +6190,16 @@ oss_install_audiodev (int vers,
 
       if (num_audio_engines >= MAX_AUDIO_ENGINES)
 	{
-	  cmn_err (CE_NOTE, "Too many audio engines\n");
-	  return -EIO;
+cmn_err(CE_CONT, "Attempt to resize audio_engines %d -> %d\n", oss_max_audio_engines, oss_max_audio_engines+AUDIO_ENGINE_INCREMENT);
+		if (!resize_array(osdev, &audio_engines, &oss_max_audio_engines, AUDIO_ENGINE_INCREMENT))
+		   {
+		   	cmn_err (CE_CONT, "Cannot grow audio_engines[]\n");
+			return -EIO;
+		   }
 	}
-      d = PMALLOC (osdev, sizeof (audiodrv_t));
-      op = PMALLOC (osdev, sizeof (adev_t));
+
+      d = AUDIO_MALLOC (osdev, sizeof (audiodrv_t));
+      op = AUDIO_MALLOC (osdev, sizeof (adev_t));
       memset ((char *) op, 0, sizeof (adev_t));
       if (driver_size < sizeof (audiodrv_t))
 	memset ((char *) d, 0, sizeof (audiodrv_t));
@@ -6256,7 +6312,17 @@ oss_install_audiodev (int vers,
     {
       if (!hidden_device)
 	{
-	  devfile_num = num_audio_devfiles++;
+	  if (num_audio_devfiles >= MAX_AUDIO_DEVFILES)
+	     {
+cmn_err(CE_CONT, "Attempt to resize audio_devfiles %d -> %d\n", oss_max_audio_devfiles, oss_max_audio_devfiles+AUDIO_DEVFILE_INCREMENT);
+		if (!resize_array(osdev, &audio_devfiles, &oss_max_audio_devfiles, AUDIO_DEVFILE_INCREMENT))
+		   {
+		   	cmn_err (CE_CONT, "Cannot grow audio_engines[]\n");
+			return num;
+		   }
+	     }
+	  else
+	     devfile_num = num_audio_devfiles++;
 	}
     }
 
@@ -6322,8 +6388,10 @@ oss_install_audiodev (int vers,
   op->enabled = 1;
   op->unloaded = 0;
 
+#if 0
   if (!reinsterted_device && update_devlists && !hidden_device)
     add_to_devlists (op);
+#endif
   audio_next_devname[0] = 0;
 
   {

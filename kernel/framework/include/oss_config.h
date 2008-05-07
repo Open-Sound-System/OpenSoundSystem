@@ -34,6 +34,18 @@ typedef void (*oss_bottomhalf_handler_t) (struct _oss_device_t * osdev);
 #endif
 
 /*
+ * Memory block allocation (oss_memblk.h/c)
+ */
+#include <oss_memblk.h>
+
+/*
+ * Memory allocation/free routines for structures to be freed automatically
+ * when OSS is unloaded.
+ */
+#define PMALLOC(osdev, size) oss_memblk_malloc(&oss_global_memblk, size)
+#define PMFREE(osdev, addr) oss_memblk_free(&oss_global_memblk, addr)
+
+/*
  * Currently /dev/dsp is managed in user land by ossdevlinks instead of
  * using the previous kernel level device lists feature (earlier maintained by
  * the ossctl utility). Define MANAGE_DEV_DSP to return back this functionality

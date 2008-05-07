@@ -183,15 +183,6 @@ do { \
 #define CONTIG_FREE(osdev, p, sz)	oss_contig_free(p, sz)
 
 /*
- * PMALLOC is used to allocate memory that will get automatically freed when
- * OSS unloads. Usable for per-instance structures allocated when OSS modules
- * are being loaded.
- */
-extern void *oss_pmalloc (size_t sz);
-
-#define PMALLOC(osdev, sz) oss_pmalloc(sz)
-
-/*
  * Timer macros
  *
  * These macros are obsolete and should not be used in any new code.

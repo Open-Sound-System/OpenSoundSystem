@@ -30,10 +30,17 @@ oss_unload_drivers (void)
   drivers_loaded = 0;
   vmix_uninit ();
 
+  oss_audio_uninit ();
+
   /* oss_midi_uninit(); *//* TODO: This causes crashes */
 #ifdef DO_TIMINGS
   MUTEX_CLEANUP (oss_timing_mutex);
 #endif
+
+  /*
+   * Release all global memory
+   */
+  oss_memblk_unalloc(&oss_global_memblk);
 }
 
 /*ARGSUSED*/
