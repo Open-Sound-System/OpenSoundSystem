@@ -195,15 +195,6 @@ extern oss_native_word oss_virt_to_bus (void *addr);
 #endif
 
 /*
- * PMALLOC is used to allocate memory that will get automatically freed when
- * OSS unloads. Usable for per-instance structures allocated when OSS modules
- * are being loaded.
- */
-
-extern void *oss_pmalloc (size_t sz);
-#define PMALLOC(osdev, sz) oss_pmalloc(sz)
-
-/*
  * Timer macros
  *
  * These macros are obsolete and should not be used in any new code.

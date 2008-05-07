@@ -299,18 +299,6 @@ extern oss_native_word oss_virt_to_bus (void *addr);
 #define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz)
 
 /*
- * PMALLOC() allocates "permanent" memory that will be freed automatically
- * when the osscore module is unloaded.
- */
-#ifdef MEMDEBUG
-extern void *oss_pmalloc (size_t sz, char *file, int lin);
-# define PMALLOC(osdev, sz) oss_pmalloc(sz, __FILE__, __LINE__)
-#else
-extern void *oss_pmalloc (size_t sz);
-# define PMALLOC(osdev, sz) oss_pmalloc(sz)
-#endif
-
-/*
  * Timer macros
  *
  * These macros are obsolete and should not be used in any new code.

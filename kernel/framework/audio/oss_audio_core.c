@@ -25,8 +25,8 @@ int oss_max_audio_devfiles=4;
 int oss_max_audio_engines=8;
 #define AUDIO_MALLOC(osdev, size) oss_memblk_malloc(&audio_global_memblk, size)
 #define AUDIO_FREE(osdev, addr) oss_memblk_free(&audio_global_memblk, addr)
-#define AUDIO_ENGINE_INCREMENT	16
-#define AUDIO_DEVFILE_INCREMENT	4
+#define AUDIO_ENGINE_INCREMENT	(oss_max_audio_engines/2)
+#define AUDIO_DEVFILE_INCREMENT	(oss_max_audio_devfiles/2)
 
 /*
  * List of audio devices in the system
