@@ -207,7 +207,8 @@ echo "+++ /proc/opensound/devfiles +++" >> $LOG
 cat /proc/opensound/devfiles >> $LOG 2>&1
 ls -l /dev/dsp* /dev/mixer* /dev/midi* /dev/oss/*/* >> $LOG 2>&1
 
-/usr/sbin/savemixer -L >> $LOG 2>&1
+echo >> $LOG
+/usr/sbin/savemixer -L -v >> $LOG 2>&1
 
 # Setup ALSA emulation
 
@@ -226,7 +227,8 @@ then
   head -10 /proc/asound/version >> $LOG 2>&1
   lsmod|grep snd >> $LOG
   echo "**************************************" >> $LOG
-else
+elif test -f $OSSLIBDIR/.libsalsa_installed
+then
 # Use library based ALSA compatibility
 
   if test -f $OSSLIBDIR/lib/libsalsa.so.2.0.0
