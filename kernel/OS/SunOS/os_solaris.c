@@ -950,7 +950,6 @@ unsigned int
 oss_get32 (ddi_acc_handle_t handle, unsigned int *addr)
 {
   unsigned int val;
-cmn_err(CE_CONT, "oss_get32(%x, %p)\n", handle, addr);
 
   val = ddi_get32 (handle, addr);
 #ifdef OSS_BIG_ENDIAN

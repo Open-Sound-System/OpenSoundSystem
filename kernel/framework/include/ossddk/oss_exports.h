@@ -30,12 +30,15 @@
  * Ideally OSS will use devfs to expose the available devices.
  */
 
+extern int oss_max_audio_devfiles;
+extern int oss_max_audio_engines;
+
 #define MAX_SYNTH_DEV	6
 #define MAX_MIXER_DEV	16
 #define	MAX_MIDI_DEV	32
 #define MAX_TIMER_DEV	(MAX_MIDI_DEV+4)
-#define MAX_AUDIO_DEVFILES 	32
-#define MAX_AUDIO_ENGINES 	(MAX_AUDIO_DEVFILES*4)
+#define MAX_AUDIO_DEVFILES 	oss_max_audio_devfiles
+#define MAX_AUDIO_ENGINES 	oss_max_audio_engines
 #define SYNC_DEVICE_MASK	0xff
 
 #if ((MAX_AUDIO_ENGINES & SYNC_DEVICE_MASK) != MAX_AUDIO_ENGINES)

@@ -27,12 +27,14 @@ oss_error_info;
 
 extern oss_error_info oss_booterrors;
 
+#if 0
 typedef struct
 {
   int mode;			/* OPEN_READ and/or OPEN_WRITE */
   oss_devlist_t devlist;
 }
 oss_reroute_t;
+#endif
 
 typedef struct
 {
@@ -45,8 +47,10 @@ typedef struct
 /*
  * Some internal use only ioctl calls ('X', 200-255)
  */
+#if 0
 #define OSSCTL_GET_REROUTE	__SIOWR('X', 200, oss_reroute_t)
 #define OSSCTL_SET_REROUTE	__SIOW ('X', 200, oss_reroute_t)
+#endif
 
 #ifdef APPLIST_SUPPORT
 /*

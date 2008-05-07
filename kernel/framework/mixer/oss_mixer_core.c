@@ -1295,6 +1295,10 @@ ainfo_combine_caps (oss_audioinfo * ainfo, adev_p adev)
 #endif
 }
 
+#if 0
+/*
+ * Device list support is currently not used
+ */
 static int
 check_list (oss_devlist_t * oldlist, oss_devlist_t * newlist)
 {
@@ -1324,6 +1328,7 @@ check_list (oss_devlist_t * oldlist, oss_devlist_t * newlist)
 
   return 1;
 }
+#endif
 
 static int
 get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
@@ -1941,6 +1946,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       return 0;
       break;
 
+#if 0
     case OSSCTL_SET_REROUTE:
       {
 	oss_reroute_t *r = (oss_reroute_t *) arg;
@@ -1998,6 +2004,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       }
       return 0;
       break;
+#endif
 
 #ifdef APPLIST_SUPPORT
     case OSSCTL_RESET_APPLIST:

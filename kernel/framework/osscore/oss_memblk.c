@@ -18,9 +18,7 @@ void
 {
 	oss_memblk_t *newblk;
 
-cmn_err(CE_CONT, "oss_memblk_malloc(%x, %d)\n", blk, size);
 	newblk = KERNEL_MALLOC (sizeof(oss_memblk_t) + size);
-cmn_err(CE_CONT, "oss_memblk_malloc(%x, %d) = %x\n", blk, size, newblk);
 
 	newblk->addr = newblk +1;
 	newblk->next = NULL;
@@ -48,7 +46,6 @@ oss_memblk_free(oss_memblk_t **blk, void *addr)
 {
 	oss_memblk_t *this_one = *blk, *prev = NULL;
 
-cmn_err(CE_CONT, "oss_memblk_free(%p)\n", addr);
 	while (this_one != NULL)
 	{
 		if (this_one->addr == addr)
@@ -79,15 +76,11 @@ oss_memblk_unalloc(oss_memblk_t **blk)
  */
 	oss_memblk_t *this_one = *blk;
 
-cmn_err(CE_CONT, "oss_memblk_unalloc(%x) called\n", blk);
-
    while (this_one != NULL)
    {
    	   oss_memblk_t *next_one;
 
 	   next_one = this_one->next;
-
-cmn_err(CE_CONT, "Free %p\n", this_one);
 
 	   KERNEL_FREE(this_one);
 	   this_one = next_one;
