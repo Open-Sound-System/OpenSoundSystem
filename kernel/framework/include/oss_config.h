@@ -192,7 +192,7 @@ typedef struct
   int open_count;
 } oss_cdev_t;
 
-extern oss_cdev_t *oss_cdevs[OSS_MAX_CDEVS];
+extern oss_cdev_t **oss_cdevs;
 extern int oss_num_cdevs;
 
 /*

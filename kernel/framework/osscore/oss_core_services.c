@@ -17,7 +17,8 @@ oss_history_t oss_history[OSS_HISTORY_SIZE] = { {0} };
 int oss_history_p = 0;
 
 int oss_num_cdevs = 0;
-oss_cdev_t *oss_cdevs[OSS_MAX_CDEVS] = { NULL };
+oss_cdev_t **oss_cdevs = NULL;
+int oss_max_cdevs = 0;
 
 static int drivers_loaded = 0;
 

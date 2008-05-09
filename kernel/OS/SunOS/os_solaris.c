@@ -1612,6 +1612,31 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
   return 0;
 }
 
+static int
+resize_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
+{
+	oss_cdev_t **old=*arr, **new = *arr;
+	int old_size = *size;
+	int new_size = *size;
+		
+	new_size += increment;
+
+	if ((new=PMMALLOC(osdev, new_size * sizeof (oss_cdev_t *)))==NULL)
+	   return 0;
+
+	memset(new, 0, new_size * sizeof(oss_cdev_t *));
+	if (old != NULL)
+	   memcpy(new, old, old_size * sizeof(oss_cdev_t *));
+
+	*size = new_size;
+	*arr = new;
+
+	if (old != NULL)
+	   PMFREE(osdev, old);
+
+	return 1;
+}
+
 /*ARGSUSED*/
 void
 oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
@@ -1648,8 +1673,11 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
     {
       if (oss_num_cdevs >= OSS_MAX_CDEVS)
 	{
-	  cmn_err (CE_WARN, "Out of minor numbers.\n");
-	  return;
+	   if (!resize_array(osdev, &oss_cdevs, &oss_max_cdevs, 100))
+	   {
+	  	cmn_err (CE_WARN, "Cannot allocate new minor numbers.\n");
+	  	return;
+	   }
 	}
       num = oss_num_cdevs++;
 

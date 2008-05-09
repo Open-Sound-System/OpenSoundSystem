@@ -121,28 +121,6 @@ app_lookup (int mode, const char *appname, int *open_flags)
 }
 #endif
 
-static int
-resize_array(oss_device_t *osdev, adev_t ***arr, int *size, int increment)
-{
-	adev_t **old=*arr, **new = *arr;
-	int old_size = *size;
-	int new_size = *size;
-		
-	new_size += increment;
-
-	if ((new=AUDIO_MALLOC(osdev, new_size * sizeof(adev_t *)))==NULL)
-	   return 0;
-
-	memset(new, 0, new_size * sizeof(adev_t *));
-	memcpy(new, old, old_size * sizeof(adev_t *));
-
-	*size = new_size;
-	*arr = new;
-	AUDIO_FREE(osdev, old);
-
-	return 1;
-}
-
 /*ARGSUSED*/
 static int
 get_open_flags (int mode, int open_flags, struct fileinfo *file)
@@ -6103,6 +6081,36 @@ oss_audio_set_devname (char *name)
    */
   strncpy (audio_next_devname, name, sizeof (audio_next_devname) - 1);
   audio_next_devname[sizeof (audio_next_devname) - 1] = 0;
+}
+
+static int
+resize_array(oss_device_t *osdev, adev_t ***arr, int *size, int increment)
+{
+	adev_t **old=*arr, **new = *arr;
+	int old_size = *size;
+	int new_size = *size;
+		
+	if (new_size >= HARD_MAX_AUDIO_DEVFILES) /* Too many device files */
+	   return 0;
+
+	new_size += increment;
+	if (new_size > HARD_MAX_AUDIO_DEVFILES)
+           new_size = HARD_MAX_AUDIO_DEVFILES;
+
+	if ((new=AUDIO_MALLOC(osdev, new_size * sizeof (adev_t *)))==NULL)
+	   return 0;
+
+	memset(new, 0, new_size * sizeof(adev_t *));
+	if (old != NULL)
+	   memcpy(new, old, old_size * sizeof(adev_t *));
+
+	*size = new_size;
+	*arr = new;
+
+	if (old != NULL)
+	   AUDIO_FREE(osdev, old);
+
+	return 1;
 }
 
 int

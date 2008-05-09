@@ -28,7 +28,7 @@
 #include <sys/ioctl.h>
 #include "oss_config.h"
 
-#define MAXDEV	OSS_MAX_CDEVS
+#define MAXDEV	HARD_MAX_AUDIO_DEVFILES
 
 oss_sysinfo si;
 int mixerfd = -1;

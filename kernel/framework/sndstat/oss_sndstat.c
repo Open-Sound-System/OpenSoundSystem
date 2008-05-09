@@ -127,6 +127,7 @@ init_status (void)
       {
 	int j, d;
 #if 0
+	if (i < num_audio_devfiles)
 	if (audio_devfiles[i]->card_number != cardno)
 	  {
 	    put_status (" \n");

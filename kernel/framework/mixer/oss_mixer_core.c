@@ -1841,7 +1841,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	  {
 	    adev_p adev = audio_devfiles[i];
 
-	    if (r->map[i] >= OSS_MAX_CDEVS)	/* May be unnecessary check */
+	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
 	      return -EINVAL;
 
 	    if (r->map[i] < -1)
@@ -1870,7 +1870,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	  {
 	    mixdev_p mdev = mixer_devs[i];
 
-	    if (r->map[i] >= OSS_MAX_CDEVS)	/* May be unnecessary check */
+	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
 	      return -EINVAL;
 
 	    mdev->real_dev = r->map[i];
@@ -1896,7 +1896,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	  {
 	    mididev_p mdev = midi_devs[i];
 
-	    if (r->map[i] >= OSS_MAX_CDEVS)	/* May be unnecessary check */
+	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
 	      return -EINVAL;
 
 	    mdev->real_dev = r->map[i];

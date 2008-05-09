@@ -38,6 +38,7 @@ extern int oss_max_audio_engines;
 #define	MAX_MIDI_DEV	32
 #define MAX_TIMER_DEV	(MAX_MIDI_DEV+4)
 #define MAX_AUDIO_DEVFILES 	oss_max_audio_devfiles
+#define HARD_MAX_AUDIO_DEVFILES 256
 #define MAX_AUDIO_ENGINES 	oss_max_audio_engines
 #define SYNC_DEVICE_MASK	0xff
 
@@ -67,7 +68,8 @@ extern int oss_max_audio_engines;
 #define OSS_DEV_MISC		13	/* Special purpose device files */
 #define OSS_DEV_DSP_ENGINE	14	/* Hidden DSP engines */
 
-#define OSS_MAX_CDEVS	256
+extern int oss_max_cdevs;
+#define OSS_MAX_CDEVS	oss_max_cdevs
 
 /*
  * Misc definitions 

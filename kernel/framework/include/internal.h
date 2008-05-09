@@ -42,7 +42,7 @@ typedef struct
  * Private structure for renumbering legacy dsp, mixer and MIDI devices
  */
   int n;
-  short map[OSS_MAX_CDEVS];
+  short map[HARD_MAX_AUDIO_DEVFILES];
 } oss_renumber_t;
 /*
  * Some internal use only ioctl calls ('X', 200-255)
