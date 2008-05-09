@@ -910,7 +910,7 @@ revo51_card_init (envy24ht_devc * devc)
     devc->gains[i] = 0x7f7f;
   for (i = 0; i < 3; i++)
     devc->monitor[i] = 79 | (79 << 8);
-  devc->monitor[4] = 0;		/* Unmuted */
+  devc->monitor[3] = 0;		/* Unmuted */
 
   set_reclevel (devc, 0x7f7f);	/* +0 dB */
 

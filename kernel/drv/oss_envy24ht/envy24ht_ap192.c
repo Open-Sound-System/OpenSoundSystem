@@ -586,9 +586,6 @@ ap192_card_init (envy24ht_devc * devc)
 
   for (i = 0; i < 5; i++)
     devc->gains[i] = 0x7f7f;
-  for (i = 0; i < 3; i++)
-    devc->monitor[i] = 79 | (79 << 8);
-  devc->monitor[4] = 0;		/* Unmuted */
 
   ap192_Mute (devc, 0);
 

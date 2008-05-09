@@ -746,7 +746,7 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       devc->spdifout_support = CS_SPDIFOUT;
       break;
 
-    case 0x4145303:		/* ADS3 */
+    case 0x4144303:		/* ADS3 */
       strcpy (devc->name, "AD1819B");
       break;
 
