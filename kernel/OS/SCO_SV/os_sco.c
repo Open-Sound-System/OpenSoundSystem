@@ -19,7 +19,6 @@ static oss_device_t *cards[MAX_CARDS];
 int oss_num_cards = 0;
 static int oss_expired = 0;
 
-static struct fileinfo files[OSS_MAX_CDEVS];
 static volatile int open_count[OSS_MAX_CDEVS] = { 0 };
 volatile int oss_open_devices = 0;
 
@@ -403,6 +402,31 @@ oss_get_osid (oss_device_t * osdev)
   return osdev->osid;
 }
 
+static int
+grow_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int element_size, int increment)
+{
+	oss_cdev_t **old=*arr, **new = *arr;
+	int old_size = *size;
+	int new_size = *size;
+		
+	new_size += increment;
+
+	if ((new=PMALLOC(osdev, new_size * element_size))==NULL)
+	   return 0;
+
+	memset(new, 0, new_size * element_size);
+	if (old != NULL)
+	   memcpy(new, old, old_size * element_size);
+
+	*size = new_size;
+	*arr = new;
+
+	if (old != NULL)
+	   PMFREE(osdev, old);
+
+	return 1;
+}
+
 void
 oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 		    int instance, oss_cdev_drv_t * drv, int flags)
@@ -435,11 +459,13 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 
   if (cdev == NULL)
     {
-      num = oss_num_cdevs++;
       if (oss_num_cdevs >= OSS_MAX_CDEVS)
 	{
-	  cmn_err (CE_WARN, "Out of minor numbers.\n");
-	  return;
+	   if (!grow_array(osdev, &oss_cdevs, &oss_max_cdevs, sizeof(oss_cdev_t*), 100))
+	   {
+	  	cmn_err (CE_WARN, "Cannot allocate new minor numbers.\n");
+	  	return;
+	   }
 	}
 
       if ((cdev = PMALLOC (NULL, sizeof (*cdev))) == NULL)
@@ -447,6 +473,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 	  cmn_err (CE_WARN, "Cannot allocate character device desc.\n");
 	  return;
 	}
+      num = oss_num_cdevs++;
     }
 
   memset (cdev, 0, sizeof (*cdev));
@@ -1339,7 +1366,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
       return;
     }
 
-  files[dev].acc_flags = 0;
+  cdef->file.acc_flags = 0;
 
   if (bp->b_flags & B_READ)
     {
@@ -1351,7 +1378,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
 	  return;
 	}
       retval =
-	cdev->d->read (cdev->instance, &files[dev], bp->b_un.b_uio, count);
+	cdev->d->read (cdev->instance, &cdef->file, bp->b_un.b_uio, count);
       if (retval < 0)
 	bioerror (bp, -retval);
       else if (retval < count)
@@ -1369,7 +1396,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
       return;
     }
   retval =
-    cdev->d->write (cdev->instance, &files[dev], bp->b_un.b_uio, count);
+    cdev->d->write (cdev->instance, &cdef->file, bp->b_un.b_uio, count);
   if (retval < 0)
     bioerror (bp, -retval);
   else if (retval < count)
@@ -1385,7 +1412,6 @@ oss_open (void *idata, channel_t * channelp,
   oss_device_t *osdev;
   int dev = *channelp, tmpdev;
   oss_cdev_t *cdev;
-  struct fileinfo tmp_file;
   int retval;
 
   osdev = idata;
@@ -1406,20 +1432,20 @@ oss_open (void *idata, channel_t * channelp,
       return ENODEV;
     }
 
-  memset (&tmp_file, 0, sizeof (tmp_file));
-  tmp_file.mode = 0;
-  tmp_file.acc_flags = open_flags;
+  memset (&cdef->file, 0, sizeof (cdef->file));
+  cdef->file.mode = 0;
+  cdef->file.acc_flags = open_flags;
 
   if (open_flags & FREAD && open_flags & FWRITE)
-    tmp_file.mode = OPEN_READWRITE;
+    cdef->file.mode = OPEN_READWRITE;
   else if (open_flags & FREAD)
-    tmp_file.mode = OPEN_READ;
+    cdef->file.mode = OPEN_READ;
   else if (open_flags & FWRITE)
-    tmp_file.mode = OPEN_WRITE;
+    cdef->file.mode = OPEN_WRITE;
 
   tmpdev = dev;
   retval =
-    cdev->d->open (cdev->instance, cdev->dev_class, &tmp_file, 0, 0, &tmpdev);
+    cdev->d->open (cdev->instance, cdev->dev_class, &cdef->file, 0, 0, &tmpdev);
   *channelp = tmpdev;
   dev = tmpdev;
 
@@ -1428,7 +1454,6 @@ oss_open (void *idata, channel_t * channelp,
       return -retval;
     }
 
-  memcpy ((char *) &files[dev], (char *) &tmp_file, sizeof (tmp_file));
   oss_open_devices++;
   open_count[dev]++;
 
@@ -1453,7 +1478,7 @@ oss_close (void *idata, channel_t channel,
   if ((cdev = oss_cdevs[dev]) == NULL)
     return ENXIO;
 
-  cdev->d->close (cdev->instance, &files[dev]);
+  cdev->d->close (cdev->instance, &cdef->file);
 
   oss_open_devices--;
   open_count[dev]--;
@@ -1513,7 +1538,7 @@ oss_ioctl (void *idata, channel_t channel, int cmd, void *arg,
 
     }
 
-  retval = cdev->d->ioctl (cdev->instance, &files[dev], cmd, (ioctl_arg) buf);
+  retval = cdev->d->ioctl (cdev->instance, &cdef->file, cmd, (ioctl_arg) buf);
 
   if ((cmd & SIOC_OUT) && len > 0)
     {

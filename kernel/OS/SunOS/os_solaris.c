@@ -1675,13 +1675,13 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 	  	return;
 	   }
 	}
-      num = oss_num_cdevs++;
 
       if ((cdev = PMALLOC (NULL, sizeof (*cdev))) == NULL)
 	{
 	  cmn_err (CE_WARN, "Cannot allocate character device desc.\n");
 	  return;
 	}
+      num = oss_num_cdevs++;
     }
 
   memset (cdev, 0, sizeof (*cdev));

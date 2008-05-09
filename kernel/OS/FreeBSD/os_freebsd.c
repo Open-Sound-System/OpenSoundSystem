@@ -305,6 +305,31 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
   return 0;
 }
 
+static int
+grow_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int element_size, int increment)
+{
+	oss_cdev_t **old=*arr, **new = *arr;
+	int old_size = *size;
+	int new_size = *size;
+		
+	new_size += increment;
+
+	if ((new=PMALLOC(osdev, new_size * element_size))==NULL)
+	   return 0;
+
+	memset(new, 0, new_size * element_size);
+	if (old != NULL)
+	   memcpy(new, old, old_size * element_size);
+
+	*size = new_size;
+	*arr = new;
+
+	if (old != NULL)
+	   PMFREE(osdev, old);
+
+	return 1;
+}
+
 void
 oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 		    int instance, oss_cdev_drv_t * drv, int flags)
@@ -334,16 +359,19 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
     {
       if (oss_num_cdevs >= OSS_MAX_CDEVS)
 	{
-	  cmn_err (CE_WARN, "Out of minor numbers.\n");
-	  return;
+	   if (!grow_array(osdev, &oss_cdevs, &oss_max_cdevs, sizeof(oss_cdev_t*), 100))
+	   {
+	  	cmn_err (CE_WARN, "Cannot allocate new minor numbers.\n");
+	  	return;
+	   }
 	}
-      num = oss_num_cdevs++;
 
       if ((cdev = PMALLOC (NULL, sizeof (*cdev))) == NULL)
 	{
 	  cmn_err (CE_WARN, "Cannot allocate character device desc.\n");
 	  return;
 	}
+      num = oss_num_cdevs++;
     }
 
   memset (cdev, 0, sizeof (*cdev));
