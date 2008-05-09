@@ -72,7 +72,7 @@ struct _vmix_engine_t
 
   converter_t converter;
   vmix_sample_t *chbufs[MAX_PLAY_CHANNELS];
-  int limiter_statevar;
+  unsigned int limiter_statevar;
 
 /*
  * Mixer volumes, etc.

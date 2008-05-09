@@ -190,6 +190,7 @@ typedef struct
   void *info;
   int active;
   int open_count;
+  struct fileinfo file;
 } oss_cdev_t;
 
 extern oss_cdev_t **oss_cdevs;

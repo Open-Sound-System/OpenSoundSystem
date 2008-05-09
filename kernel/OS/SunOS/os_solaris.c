@@ -46,7 +46,6 @@ static oss_mutex_t osscore_mutex;
 
 #define FIX_RET_VALUE(ret) (((ret)<0) ? -(ret) : 0)
 
-static struct fileinfo files[OSS_MAX_CDEVS];
 static volatile int open_devices = 0;
 static volatile int do_forceload = 0;
 static volatile int forceload_in_progress = 0;
@@ -315,7 +314,6 @@ oss_open (dev_t * dev_p, int open_flags, int otyp, cred_t * cred_p)
   int tmpdev, maj;
   oss_native_word flags;
 
-  struct fileinfo tmp_file;
 #ifdef DO_TIMINGS
   char tmp[100];
   sprintf (tmp, "**** oss_open(%x) ****", getminor (dev));
@@ -353,20 +351,20 @@ oss_open (dev_t * dev_p, int open_flags, int otyp, cred_t * cred_p)
       return ENODEV;
     }
 
-  memset (&tmp_file, 0, sizeof (tmp_file));
-  tmp_file.mode = 0;
-  tmp_file.acc_flags = open_flags;
+  memset (&cdev->file, 0, sizeof (cdev->file));
+  cdev->file.mode = 0;
+  cdev->file.acc_flags = open_flags;
 
   if (open_flags & FREAD && open_flags & FWRITE)
-    tmp_file.mode = OPEN_READWRITE;
+    cdev->file.mode = OPEN_READWRITE;
   else if (open_flags & FREAD)
-    tmp_file.mode = OPEN_READ;
+    cdev->file.mode = OPEN_READ;
   else if (open_flags & FWRITE)
-    tmp_file.mode = OPEN_WRITE;
+    cdev->file.mode = OPEN_WRITE;
 
   tmpdev = dev;
   retval =
-    cdev->d->open (cdev->instance, cdev->dev_class, &tmp_file, 0, 0, &tmpdev);
+    cdev->d->open (cdev->instance, cdev->dev_class, &cdev->file, 0, 0, &tmpdev);
   *dev_p = makedevice (maj, tmpdev);
   dev = tmpdev;
 
@@ -374,8 +372,6 @@ oss_open (dev_t * dev_p, int open_flags, int otyp, cred_t * cred_p)
     {
       return -retval;
     }
-
-  memcpy ((char *) &files[dev], (char *) &tmp_file, sizeof (tmp_file));
 
   MUTEX_ENTER_IRQDISABLE (osscore_mutex, flags);
   open_devices++;
@@ -423,7 +419,7 @@ oss_close (dev_t dev, int flag, int otyp, cred_t * cred_p)
       return 0;
     }
 
-  cdev->d->close (cdev->instance, &files[dev]);
+  cdev->d->close (cdev->instance, &cdev->file);
 
   MUTEX_ENTER_IRQDISABLE (osscore_mutex, flags);
   open_devices -= cdev->open_count;
@@ -486,7 +482,7 @@ oss_ioctl (dev_t dev, int cmd, intptr_t arg, int mode, cred_t * cred_p,
 
     }
 
-  retval = cdev->d->ioctl (cdev->instance, &files[dev], cmd, (ioctl_arg) buf);
+  retval = cdev->d->ioctl (cdev->instance, &cdev->file, cmd, (ioctl_arg) buf);
 
   if (!(mode & FKIOCTL))	/* Not called from kernel space */
     if ((cmd & SIOC_OUT) && len > 0)
@@ -516,9 +512,9 @@ oss_read (dev_t dev, struct uio *uiop, cred_t * credp)
       return ENXIO;
     }
 
-  files[dev].acc_flags = uiop->uio_fmode;
+  cdev->file.acc_flags = uiop->uio_fmode;
 
-  retval = cdev->d->read (cdev->instance, &files[dev], uiop, count);
+  retval = cdev->d->read (cdev->instance, &cdev->file, uiop, count);
 
   return FIX_RET_VALUE (retval);
 }
@@ -540,9 +536,9 @@ oss_write (dev_t dev, struct uio *uiop, cred_t * cred_p)
       cmn_err (CE_NOTE, "Call to write on minor %d that is not open\n", dev);
       return ENXIO;
     }
-  files[dev].acc_flags = uiop->uio_fmode;
+  cdev->file.acc_flags = uiop->uio_fmode;
 
-  retval = cdev->d->write (cdev->instance, &files[dev], uiop, count);
+  retval = cdev->d->write (cdev->instance, &cdev->file, uiop, count);
   return FIX_RET_VALUE (retval);
 }
 
@@ -579,7 +575,7 @@ oss_chpoll (dev_t dev, short events, int anyyet, short *reventsp,
   ev.revents = 0;
   ev.php = NULL;
 
-  ret = cdev->d->chpoll (cdev->instance, &files[dev], &ev);
+  ret = cdev->d->chpoll (cdev->instance, &cdev->file, &ev);
   if (ret < 0)
     {
       return -ret;
@@ -1613,7 +1609,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
 }
 
 static int
-resize_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
+grow_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int element_size, int increment)
 {
 	oss_cdev_t **old=*arr, **new = *arr;
 	int old_size = *size;
@@ -1621,12 +1617,12 @@ resize_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
 		
 	new_size += increment;
 
-	if ((new=PMMALLOC(osdev, new_size * sizeof (oss_cdev_t *)))==NULL)
+	if ((new=PMALLOC(osdev, new_size * element_size))==NULL)
 	   return 0;
 
-	memset(new, 0, new_size * sizeof(oss_cdev_t *));
+	memset(new, 0, new_size * element_size);
 	if (old != NULL)
-	   memcpy(new, old, old_size * sizeof(oss_cdev_t *));
+	   memcpy(new, old, old_size * element_size);
 
 	*size = new_size;
 	*arr = new;
@@ -1673,7 +1669,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
     {
       if (oss_num_cdevs >= OSS_MAX_CDEVS)
 	{
-	   if (!resize_array(osdev, &oss_cdevs, &oss_max_cdevs, 100))
+	   if (!grow_array(osdev, &oss_cdevs, &oss_max_cdevs, sizeof(oss_cdev_t*), 100))
 	   {
 	  	cmn_err (CE_WARN, "Cannot allocate new minor numbers.\n");
 	  	return;

@@ -1,9 +1,3 @@
-lynxtwo	pci1621,20	LynxTWO-A Studio Interface
-lynxtwo	pci1621,21	LynxTWO-B Studio Interface
-lynxtwo	pci1621,22	LynxTWO-C Studio Interface
-lynxtwo	pci1621,23	Lynx-L22 Studio Interface
-lynxtwo	pci1621,24	Lynx AES16 Studio Interface
-lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 oss_ali5455	pci10b9,5455	ALI M5455
 oss_allegro	pci125d,1988	ESS Allegro ES1988
 oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
@@ -179,6 +173,3 @@ oss_ymf7xx	pci1073,a	Yamaha DS-XG YMF740
 oss_ymf7xx	pci1073,c	Yamaha DS-XG YMF740C
 oss_ymf7xx	pci1073,d	Yamaha DS-XG YMF724F
 osscore	OSSCORE	OSS Core services
-riptide	pci127a,4310	Conexant Riptide 
-riptide	pci127a,4320	Conexant Riptide
-sonorus	pci1057,1801	Sonorus STUDI/O
