@@ -1357,7 +1357,7 @@ oss_neomagic_detach (oss_device_t * osdev)
 
   for (i = 0; i < MAX_PORTC; i++)
     {
-      UNMAP_PCI_MEM (devc->osdev, ?,
+      UNMAP_PCI_MEM (devc->osdev, 0,
 		     devc->portc[i].physaddr + devc->portc[i].start_offset,
 		     devc->portc[i].ptr,
 		     devc->portc[i].end_offset - devc->portc[i].start_offset);
