@@ -1541,6 +1541,10 @@ osdev_delete (oss_device_t * osdev)
 
   if (osdev == NULL)
     return;
+
+  if (!osdev->available) /* Already deleted */
+     return;
+
   osdev->available = 0;
 
   switch (osdev->dev_type)
