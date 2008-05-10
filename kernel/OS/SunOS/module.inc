@@ -233,6 +233,7 @@ ossdrv_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
   DDB (cmn_err
        (CE_CONT, "Attach started " DRIVER_NICK "%d (%s)\n", instance,
 	ddi_get_name (dip)));
+cmn_err (CE_CONT, "Attach started " DRIVER_NICK "%d (%s)\n", instance,	ddi_get_name (dip));
 
   if ((osdev =
        osdev_create (dip, DRIVER_TYPE, instance, DRIVER_NICK, NULL)) == NULL)
@@ -300,6 +301,7 @@ ossdrv_detach (dev_info_t * dip, ddi_detach_cmd_t cmd)
 
   DDB (cmn_err
        (CE_CONT, "Detach started " DRIVER_NICK "(%s)\n", ddi_get_name (dip)));
+cmn_err (CE_CONT, "Detach started " DRIVER_NICK "(%s)\n", ddi_get_name (dip));
   if ((osdev = (oss_device_t *) ddi_get_driver_private (dip)) == NULL)
     {
       cmn_err (CE_WARN, "ddi_get_driver_private() failed\n");

@@ -6198,7 +6198,6 @@ oss_install_audiodev (int vers,
 
       if (num_audio_engines >= MAX_AUDIO_ENGINES)
 	{
-cmn_err(CE_CONT, "Attempt to resize audio_engines %d -> %d\n", oss_max_audio_engines, oss_max_audio_engines+AUDIO_ENGINE_INCREMENT);
 		if (!resize_array(osdev, &audio_engines, &oss_max_audio_engines, AUDIO_ENGINE_INCREMENT))
 		   {
 		   	cmn_err (CE_CONT, "Cannot grow audio_engines[]\n");
@@ -6322,14 +6321,13 @@ cmn_err(CE_CONT, "Attempt to resize audio_engines %d -> %d\n", oss_max_audio_eng
 	{
 	  if (num_audio_devfiles >= MAX_AUDIO_DEVFILES)
 	     {
-cmn_err(CE_CONT, "Attempt to resize audio_devfiles %d -> %d\n", oss_max_audio_devfiles, oss_max_audio_devfiles+AUDIO_DEVFILE_INCREMENT);
 		if (!resize_array(osdev, &audio_devfiles, &oss_max_audio_devfiles, AUDIO_DEVFILE_INCREMENT))
 		   {
-		   	cmn_err (CE_CONT, "Cannot grow audio_engines[]\n");
+		   	cmn_err (CE_CONT, "Cannot grow audio_devfiles[]\n");
 			return num;
 		   }
 	     }
-	  else
+
 	     devfile_num = num_audio_devfiles++;
 	}
     }

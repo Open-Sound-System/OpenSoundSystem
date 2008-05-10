@@ -751,6 +751,7 @@ oss_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
       oss_expired = 1;
     }
 #endif
+cmn_err(CE_CONT, "************************ oss_attach() **********************\n");
 
   if (cmd != DDI_ATTACH)
     {

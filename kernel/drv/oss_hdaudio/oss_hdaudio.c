@@ -1427,7 +1427,7 @@ install_outputdevs (hda_devc * devc)
 	  }
 
 	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
-	sprintf (tmp_name, "HD Audio %s", endpoints[i].name);
+	sprintf (tmp_name, "HD Audio play %s", endpoints[i].name);
 
 	if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 					       devc->osdev,
@@ -1547,7 +1547,7 @@ install_inputdevs (hda_devc * devc)
 	}
 
       //sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
-      sprintf (tmp_name, "High Definition Audio %s", endpoints[i].name);
+      sprintf (tmp_name, "HD Audio rec %s", endpoints[i].name);
 
       if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 					     devc->osdev,
