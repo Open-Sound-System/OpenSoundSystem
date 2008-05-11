@@ -1,5 +1,8 @@
 NAME
-ossxmix - Open Sound System GTK based GUI mixer applet.
+ossxmix - Open Sound System GTK based GUI mixer program.
+
+SYNOPSIS
+ossxmix [-Sbhx] [-d <dev#>] [-w <value>] [-n <value>]
 
 DESCRIPTION
 ossxmix is a GTK+ based mixer applet that is used to display the
@@ -11,7 +14,6 @@ characteristics.
 
 
 OPTIONS
-
 -h          Display usage instructions.
 -d<dev#>    Display only mixer device dev#. If this option is not given then
             ossxmix will display all the mixers available on the system.
@@ -27,12 +29,11 @@ OPTIONS
 -S          Do not try to place an icon in the system tray.
 
 NOTES
-
-o ossxmix -d0 displays the default audio device's mixer panel.
-o ossxmix without the -d parameter shows the "default" mixer which is usually
-  the mixer/control panel of the motherboard device. In many cases the default
-  mixer is not the first mixer device (-d0).
+o ossxmix without the -d parameter shows all the currently enabled mixers.
 o Standard gtk toolkit options like --display are available as well.
+
+SEE ALSO
+ossdevlinks(1), ossmix(1), savemixer(1)
 
 FILES
 /usr/bin/ossxmix

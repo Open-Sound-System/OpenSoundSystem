@@ -781,9 +781,10 @@ load_multiple_devs (void)
   notebook = gtk_notebook_new ();
   for (i = 0; i < si.nummixers; i++)
     {
+      mixer_page = load_devinfo (i);
+      if (mixer_page == NULL) continue;
       vbox = gtk_vbox_new (FALSE, 0);
       hbox = gtk_hbox_new (FALSE, 0);
-      mixer_page = load_devinfo (i);
       gtk_box_pack_start (GTK_BOX (vbox), mixer_page, FALSE, TRUE, 0);
       gtk_box_pack_end (GTK_BOX (vbox), hbox, TRUE, TRUE, 0);
       gtk_widget_show (hbox);
@@ -849,6 +850,9 @@ load_devinfo (int dev)
       perror ("SNDCTL_MIXERINFO");
       exit (-1);
     }
+
+  if (!mi.enabled) return NULL;
+  /* e.g. disconnected USB device */
 
   if (mi.caps & MIXER_CAP_LAYOUT_B)
     use_layout_b = TRUE;
@@ -1860,7 +1864,7 @@ find_default_mixer (void)
 {
   oss_sysinfo si;
   oss_mixerinfo mi;
-  int i, best = 0, bestpri = 0;
+  int i, best = -1, bestpri = 0;
 
   if (ioctl (mixer_fd, SNDCTL_SYSINFO, &si) == -1)
     {
@@ -1883,11 +1887,22 @@ find_default_mixer (void)
       if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &mi) == -1)
 	continue;		/* Ignore errors */
 
-      if (mi.priority > bestpri)
-	{
-	  best = i;
-	  bestpri = mi.priority;
-	}
+      if (mi.enabled)
+        {
+          if (best == -1) best = i;
+
+          if (mi.priority > bestpri)
+            {
+              best = i;
+              bestpri = mi.priority;
+            }
+        }
+    }
+
+  if (best == -1)
+    {
+      fprintf (stderr, "No mixers are available\n");
+      exit (-1);
     }
 
   return best;
