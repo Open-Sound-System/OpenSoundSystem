@@ -86,7 +86,13 @@ oss_vmix_attach (oss_device_t * osdev)
     return 1;
 
   if (!vmix_core_attach (osdev))
-    return 0;
+  {
+    /*
+     * Return 1 instead of 0 because vmix is probably already running. Returning false would just make the 
+     * framework to delete resources that should stay allocated.
+     */
+    return 1;
+  }
 
   devc = osdev->devc;
 
