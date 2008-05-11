@@ -1,8 +1,0 @@
-070712 vmix.h, vmix.c, playmix.inc, playmix_src.inc by hannu
-Changed the vmix channel volume controls to support stereo. Previously they
-were mono only.
-
-070828 vmix, vy hannu
-Changed vmix so that fixed point computations can be used instead of floating
-point. By default fixed point will be used unless VMIX_USE_FLOAT is defined in
-os.h. Currently FP is used under Linux.

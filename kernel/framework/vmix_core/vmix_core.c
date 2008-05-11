@@ -368,7 +368,7 @@ vmix_set_rate (int dev, int arg)
   if (arg == 0)
     return portc->rate;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   if (portc->do_src)
     {
       /*
@@ -869,7 +869,7 @@ vmix_open (int dev, int mode, int open_flags)
   portc->play_choffs = 0;	/* Left align */
   portc->rec_choffs = 0;	/* Left align */
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   /*
    * For the time being always enable local linear interpolation to make
    * vmix devices to work faster.
@@ -890,7 +890,7 @@ vmix_open (int dev, int mode, int open_flags)
 	    adev->src_quality = 5;
 	}
     }
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Enable local src (linear interpolation) for mmap applications and SADA
  * support (sadasupport.c).
@@ -1026,7 +1026,7 @@ vmix_prepare_for_input (int dev, int bsize, int bcount)
       /* bytes = 4; */
       break;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
     case AFMT_FLOAT:
       portc->rec_mixing_func = vmix_rec_export_float;
       /* bytes = 4; */
@@ -1044,7 +1044,7 @@ vmix_prepare_for_output (int dev, int bsize, int bcount)
 {
   vmix_portc_t *portc = audio_engines[dev]->portc;
   /* int bytes; */
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   vmix_mixer_t *mixer = audio_engines[dev]->devc;
 
   memset (&portc->play_dma_pointer_src, 0, sizeof (portc->play_dma_pointer_src));	/* 0.0 */
@@ -1104,7 +1104,7 @@ vmix_prepare_for_output (int dev, int bsize, int bcount)
 	  /* bytes = 4; */
 	  break;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 	case AFMT_FLOAT:
 	  portc->play_mixing_func = vmix_outmix_float;
 	  /* bytes = 4; */
@@ -1874,7 +1874,7 @@ create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
    * Mixer default levels
    */
   mixer->play_engine.outvol = DB_SIZE * 5;
-#ifndef VMIX_USE_FLOAT
+#ifndef CONFIG_OSS_VMIX_FLOAT
   mixer->play_engine.outvol -= 3;	/* For overflow protection */
 #endif
 
@@ -1929,6 +1929,8 @@ create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
   oss_audio_register_client (find_masterdev, mixer, devc->osdev);
 }
 
+#if 0
+// TODO: Rewrite this old interface
 void
 oss_create_vmix (void *devc, int masterdev, int inputdev, int numoutputs,
 		 int numloops, int rate)
@@ -1942,7 +1944,7 @@ vmix_core_attach (oss_device_t * osdev)
   vmix_devc_t *devc;
   static int vmix_loaded = 0;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   int check;
 /*
  * Check that the processor is compatible with vmix (has proper FP support).
@@ -2059,3 +2061,4 @@ vmix_uninit (void)
 
   return;
 }
+#endif

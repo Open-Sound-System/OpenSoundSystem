@@ -25,8 +25,9 @@
 #undef  MEMDEBUG
 #define VDEV_SUPPORT
 
-#if (defined(i386) || defined(x86_64)) && !defined(CONFIG_OSS_FIXDEPOINT)
-#define VMIX_USE_FLOAT
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
 #endif
 
 /*

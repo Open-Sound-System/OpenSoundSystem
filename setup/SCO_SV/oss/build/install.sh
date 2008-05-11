@@ -11,21 +11,21 @@ fi
 /etc/conf/bin/idinstall -R $CONFDIR -d ich > /dev/null 2>&1
 
 # Unload previous modules
-for n in `ls $OSSLIBDIR/modules|egrep -v "osscore|oss_vmix|oss_imux"`
+for n in `ls $OSSLIBDIR/modules|egrep -v "osscore|oss_imux"`
 do
   modadmin -U $n > /dev/null 2>&1
 done
 
-for MOD in osscore oss_vmix oss_imux
+for MOD in osscore oss_imux
 do
   modadmin -U $MOD > /dev/null 2>&1
 done
 
-# (re)install osscore and oss_vmix
+# (re)install osscore and oss_imux
 
 rm -f $OSSLIBDIR/modules/*/install.log
 
-for MOD in osscore oss_vmix oss_imux
+for MOD in osscore oss_imux
 do
   cd $OSSLIBDIR/modules/$MOD
 

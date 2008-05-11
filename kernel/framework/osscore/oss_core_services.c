@@ -29,7 +29,10 @@ oss_unload_drivers (void)
   if (!drivers_loaded)
     return;
   drivers_loaded = 0;
+
+#ifdef CONFIG_OSS_VMIX
   vmix_uninit ();
+#endif
 
   oss_audio_uninit ();
 

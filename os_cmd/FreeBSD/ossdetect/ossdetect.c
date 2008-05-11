@@ -24,8 +24,6 @@ static char *osslibdir = "/usr/lib/oss";
 
 static int verbose = 0;
 
-static char *vmix = "VMIX";
-
 typedef struct
 {
   char *key, *driver, *name;
@@ -295,8 +293,6 @@ main (int argc, char *argv[])
     load_devlist ("/etc/oss_3rdparty", 1);
 
   pci_detect ();
-
-  add_drv (vmix, PSEUDO_PASS);
 
   if ((f = fopen ("/usr/lib/oss/etc/installed_drivers", "w")) == NULL)
     {

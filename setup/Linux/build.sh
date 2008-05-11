@@ -75,7 +75,7 @@ cp -a $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
 cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/usr/lib/oss/include/
 cp -f $SRCDIR/kernel/OS/Linux/wrapper/wrap.h prototype/usr/lib/oss/build/
 cp -f $SRCDIR/kernel/framework/include/udi.h prototype/usr/lib/oss/build/
-cp -a $SRCDIR/kernel/framework/include/*_core.h prototype/usr/lib/oss/include/internals
+cp -a $SRCDIR/kernel/framework/include/*_core.h kernel/framework/include/local_config.h prototype/usr/lib/oss/include/internals
 cp -a $SRCDIR/kernel/framework/include/ossddk prototype/usr/lib/oss/include/sys
 cp kernel/framework/include/timestamp.h prototype/usr/lib/oss/include/internals
 

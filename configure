@@ -29,8 +29,24 @@ do
 		;;
 
    	"--target=uclinux-blackfin")
-		export CROSSCOMPILE=uclinux-blackfin
-		export uOSS=1
+		CROSSCOMPILE=uclinux-blackfin
+		uOSS=1
+		export CROSSCOMPILE uOSS
+		;;
+
+	"--config-vmix=NO")
+		VMIX_MODE=DISABLED
+		export VMIX_MODE
+		;;
+
+	"--config-vmix=FLOAT")
+		VMIX_MODE=FLOAT
+		export VMIX_MODE
+		;;
+
+	"--config-vmix=FIXDEPOINT")
+		VMIX_MODE=FIXEDPOINT
+		export VMIX_MODE
 		;;
 
 	"--copy-files")
@@ -40,13 +56,14 @@ do
 	*)
 
 		echo $0: Unrecognized command line option $1
+
+		echo
+		echo Permitted command line arguments are:
+		echo
 		
 		case `uname -s` in
 
 		Linux)
-			echo
-			echo Permitted command line arguments are:
-			echo
 			echo "   --target=uclinux-blackfin      - Configure for uClinux/Blackfin target (EXPERIMENTAL)"
 			echo "   --regparm      - Configure for CONFIG_REGPARM kernels"
 			echo "   --no-regparm   - Configure for kernels without CONFIG_REGPARM option."
@@ -56,7 +73,8 @@ do
 			;;
 
 		*)
-		   echo No command line arguments permitted under this operating system.
+		echo "   --config-vmix=NO|FLOAT|FIXEDPOINT	- Configure vmix to use float/int arithmetic or disable it."
+		echo "     (Check possible limitations caused by the OS or the CPU/arch)."
 		esac
 		exit 1
 	esac

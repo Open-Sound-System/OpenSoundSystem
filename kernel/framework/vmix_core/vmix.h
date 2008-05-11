@@ -41,7 +41,7 @@ struct _vmix_portc_t		/* Audio device specific data */
   int play_dma_pointer;
   int play_choffs;		/* Index of the first channel on multich play engines */
   int rec_choffs;		/* Index of the first channel on multich rec engines */
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   float play_dma_pointer_src;
 #endif
   int rec_dma_pointer;
@@ -53,7 +53,7 @@ struct _vmix_portc_t		/* Audio device specific data */
   int do_src;
 };
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
    typedef float vmix_sample_t;
 #else
    typedef int vmix_sample_t;
@@ -155,11 +155,11 @@ extern void vmix_outmix_16ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_16oe (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_32ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_32oe (vmix_portc_t * portc, int nsamples);
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 extern void vmix_outmix_float (vmix_portc_t * portc, int nsamples);
 #endif
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * For the time being these routines will only work in floating point.
  */
@@ -174,14 +174,14 @@ extern void vmix_rec_export_16ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_16oe (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_32ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_32oe (vmix_portc_t * portc, int nsamples);
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 extern void vmix_rec_export_float (vmix_portc_t * portc, int nsamples);
 #endif
 
 #define DB_SIZE	50
 #define VMIX_VOL_SCALE	100
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
    extern const float vmix_db_table[DB_SIZE + 1];
 #else
    extern const int vmix_db_table[DB_SIZE + 1];

@@ -6,6 +6,8 @@ check_sysdep (conf_t * conf, struct utsname *un)
 
   char cmd[512];
 
+  vmix_mode = "FLOAT";
+
   if ((p=getenv("CROSSCOMPILE"))!=NULL)
      {
 	if (strcmp(p, "uclinux-blackfin")==0)

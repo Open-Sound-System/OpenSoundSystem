@@ -1,4 +1,4 @@
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Purpose: Local input buffer to application export routine for vmix (FP version)
  */

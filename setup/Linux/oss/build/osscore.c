@@ -17,6 +17,7 @@ typedef int *ioctl_arg;
 #include <stdarg.h>
 #include <linux/vmalloc.h>
 #include "../include/internals/timestamp.h"
+#include "../include/internals/local_config.h"
 #include "ossddk/oss_exports.h"
 #include "wrap.h"
 #include "ossdip.h"
@@ -2122,8 +2123,6 @@ EXPORT_FUNC (oss_do_timing);
 EXPORT_FUNC (oss_do_timing2);
 EXPORT_FUNC (oss_timing_enter);
 EXPORT_FUNC (oss_timing_leave);
-EXPORT_FUNC (vmix_core_attach);
-EXPORT_FUNC (oss_create_vmix);
 EXPORT_SYMBOL (__udivdi3);
 EXPORT_SYMBOL (__umoddi3);
 EXPORT_SYMBOL (__divdi3);
