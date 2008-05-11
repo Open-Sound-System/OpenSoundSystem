@@ -1319,7 +1319,7 @@ envy24ht_set_rate (int dev, int arg)
   devc->pending_speed_sel = ix;
   /*cmn_err(CE_CONT, "Requested sampling rate %d, got %d\n", arg, devc->pending_speed); */
 
-  setup_sample_rate (devc);
+  //setup_sample_rate (devc);
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
   return devc->pending_speed;
 }
@@ -1499,7 +1499,8 @@ envy24ht_open_input (int dev, int mode, int open_flags)
       return -EBUSY;
     }
   portc->open_mode = mode;
-  if (devc->open_count++ == 1)
+  devc->open_count++;
+  if (devc->open_count == 1)
     {
       devc->pending_speed_sel = devc->configured_rate_sel;
     }
@@ -1546,7 +1547,8 @@ envy24ht_open_output (int dev, int mode, int open_flags)
   devc->busy_play_channels |= portc->chmask;
   audio_engines[dev]->dmap_out->device_write = NULL;
 
-  if (devc->open_count++ == 1)
+  devc->open_count++;
+  if (devc->open_count == 1)
     {
       devc->pending_speed_sel = devc->configured_rate_sel;
     }
@@ -1670,6 +1672,7 @@ envy24ht_prepare_for_input (int dev, int bsize, int bcount)
     return -EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
+  setup_sample_rate (devc);
   buffsize = dmap->bytes_in_use / 4 - 1;
   fragsize = dmap->fragment_size / 4 - 1;
 
@@ -1694,6 +1697,7 @@ envy24ht_prepare_for_output (int dev, int bsize, int bcount)
     return -EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
+  setup_sample_rate (devc);
   buffsize = dmap->bytes_in_use / 4 - 1;
   fragsize = dmap->fragment_size / 4 - 1;
 
