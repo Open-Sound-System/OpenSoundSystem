@@ -1757,6 +1757,8 @@ oss_unregister_module (struct module *mod)
 module_init (osscore_init);
 module_exit (osscore_exit);
 
+#ifdef CONFIG_OSS_VMIX_FLOAT
+
 #define FP_SAVE(envbuf)		asm ("fnsave %0":"=m" (*envbuf));
 #define FP_RESTORE(envbuf)		asm ("frstor %0":"=m" (*envbuf));
 
@@ -1889,6 +1891,7 @@ oss_fp_restore (short *envbuf, unsigned int flags[])
     }
   write_cr0 (flags[0]);		/* Restore cr0 */
 }
+#endif
 
 #if 0
 void
@@ -1906,9 +1909,13 @@ __stack_chk_fail (void)
 #define EXPORT_DATA(name) extern int name;EXPORT_SYMBOL(name);
 
 /* EXPORT_SYMBOL (__stack_chk_fail); */
+
+#ifdef CONFIG_OSS_VMIX_FLOAT
 EXPORT_SYMBOL (oss_fp_check);
 EXPORT_SYMBOL (oss_fp_save);
 EXPORT_SYMBOL (oss_fp_restore);
+#endif
+
 EXPORT_SYMBOL (oss_register_chrdev);
 EXPORT_SYMBOL (oss_unregister_chrdev);
 EXPORT_SYMBOL (oss_reserve_pages);

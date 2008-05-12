@@ -581,6 +581,7 @@ create_mixerlinks (void)
     }
 }
 
+#ifdef CONFIG_OSS_MIDI
 /*
  * MIDI devices (/dev/midiNN)
  */
@@ -776,6 +777,7 @@ create_midilinks (void)
       perror ("midi_renum");
     }
 }
+#endif
 
 static void
 save_link (FILE * f, char *devname)
@@ -835,6 +837,7 @@ save_links (void)
       save_link (f, devfile);
     }
 
+#ifdef CONFIG_OSS_MIDI
 /*
  * /dev/midi##
  */
@@ -844,6 +847,7 @@ save_links (void)
       sprintf (devfile, "/dev/midi%02d", i);
       save_link (f, devfile);
     }
+#endif
 
   fclose (f);
 }
@@ -894,7 +898,9 @@ main (int argc, char *argv[])
 
   create_dsplinks ();
   create_mixerlinks ();
+#ifdef CONFIG_OSS_MIDI
   create_midilinks ();
+#endif
 
   close (mixerfd);
 

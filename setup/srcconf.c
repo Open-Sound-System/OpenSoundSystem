@@ -33,6 +33,7 @@
 #define MAXOPTS		64
 
 static char *vmix_mode="FIXEDPOINT";
+static char *config_midi="ENABLED"; // Actually this depends on the configure script
 
 typedef struct
 {
@@ -253,8 +254,31 @@ parse_config (FILE * f, conf_t * conf)
 	      if (strcmp(vmix_mode, "DISABLED")==0)
 	         {
 		      printf
-			("Directory depends on the VMIX subsystem which is not enabled\n",
-			 parms);
+			("Directory depends on the VMIX subsystem which is not enabled\n");
+	
+		      return 0;
+	         }
+	      continue;
+	    }
+
+	  if (strcmp (parms, "MIDI") == 0) // Skip if MIDI is disabled 
+	    {
+	      if (strcmp(config_midi, "DISABLED")==0)
+	         {
+		      printf
+			("Directory depends on the MIDI subsystem which is not enabled\n");
+	
+		      return 0;
+	         }
+	      continue;
+	    }
+
+	  if (strcmp (parms, "NO_MIDI") == 0) // Skip if MIDI is enabled
+	    {
+	      if (strcmp(config_midi, "DISABLED")!=0)
+	         {
+		      printf
+			("Directory not compatible with MIDI subsystem (which is enabled)\n");
 	
 		      return 0;
 	         }
@@ -1037,6 +1061,15 @@ produce_local_config_h (conf_t * conf)
 		      fprintf (f, "#undef  CONFIG_OSS_VMIX_FLOAT\n");
 	   }
 
+/*
+ * Generate MIDI configuration
+ */
+
+	if (strcmp (config_midi, "DISABLED") == 0)
+	   fprintf (f, "#undef  CONFIG_OSS_MIDI\n");
+	else
+	   fprintf (f, "#define CONFIG_OSS_MIDI\n");
+
 	fclose (f);
 }
 
@@ -1092,6 +1125,15 @@ check_system (conf_t * conf)
   if ((p=getenv("VMIX_MODE"))!=NULL)
      {
 	     vmix_mode = strdup(p);
+     }
+
+/*
+ * Check MIDI enabled/disabled status
+ */
+
+  if ((p=getenv("CONFIG_MIDI"))!=NULL)
+     {
+	     config_midi = strdup(p);
      }
 
   produce_local_config_h (conf);

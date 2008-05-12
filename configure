@@ -2,7 +2,11 @@
 
 CONFIGURE=YES
 COPY_OPTIONS=
-export CONFIGURE
+
+# MIDI support is disabled by default. Use --config-midi=YES to enable
+CONFIG_MIDI=DISABLED
+
+export CONFIGURE CONFIG_MIDI
 
 while test  "$# " != "0 "
 do
@@ -44,9 +48,19 @@ do
 		export VMIX_MODE
 		;;
 
-	"--config-vmix=FIXDEPOINT")
+	"--config-vmix=FIXEDPOINT")
 		VMIX_MODE=FIXEDPOINT
 		export VMIX_MODE
+		;;
+
+	"--config-midi=NO")
+		CONFIG_MIDI=DISABLED
+		export CONFIG_MIDI
+		;;
+
+	"--config-midi=YES")
+		CONFIG_MIDI=ENABLED
+		export CONFIG_MIDI
 		;;
 
 	"--copy-files")
@@ -73,9 +87,12 @@ do
 			;;
 
 		*)
+			echo
+		esac
+
 		echo "   --config-vmix=NO|FLOAT|FIXEDPOINT	- Configure vmix to use float/int arithmetic or disable it."
 		echo "     (Check possible limitations caused by the OS or the CPU/arch)."
-		esac
+		echo "   --config-midi=NO|YES		- Enable/disable MIDI support."
 		exit 1
 	esac
 

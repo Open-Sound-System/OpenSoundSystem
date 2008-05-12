@@ -1520,7 +1520,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    info->openedmidi[i / 32] |= 1 << (i % 32);
 
 	info->numsynths = 0;
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 	info->nummidis = num_mididevs;
 #endif
 	info->numtimers = oss_num_timers;
@@ -1659,7 +1659,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       }
       break;
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
     case SNDCTL_MIDIINFO:
       {
 	int dev;

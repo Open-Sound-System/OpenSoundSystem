@@ -1490,7 +1490,7 @@ oss_vmidi_open (int dev, int dev_type, struct fileinfo *file, int recursive,
       memset (client, 0, sizeof (*client));
       oss_midi_clients[dev = oss_num_midi_clients++] = client;
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
       MDB (cmn_err (CE_CONT, "Installing /dev/midi%02d\n", dev));
       oss_install_chrdev (osscore_osdev, NULL, OSS_DEV_MIDI, dev,
 			  &midi_cdev_drv, 0);
@@ -1559,7 +1559,7 @@ oss_midi_uninit (void)
 void
 install_vmidi (oss_device_t * osdev)
 {
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 #ifdef VDEV_SUPPORT
   oss_install_chrdev (osdev, "midi", OSS_DEV_VMIDI, 0, &vmidi_cdev_drv,
 		      CHDEV_VIRTUAL);
@@ -1684,7 +1684,7 @@ oss_install_mididev (int version,
     }
 
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 /*
  * Create the device node.
  */

@@ -2062,3 +2062,9 @@ vmix_uninit (void)
   return;
 }
 #endif
+
+void
+vmix_uninit (void)
+{
+	// TODO: Is there any need for this?
+}
