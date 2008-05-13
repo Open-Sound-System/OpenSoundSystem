@@ -1395,6 +1395,8 @@ install_outputdevs (hda_devc * devc)
 	hda_portc *portc = &devc->output_portc[i];
 	unsigned int formats = AFMT_S16_LE;
 	int opts = ADEV_AUTOMODE | ADEV_NOINPUT;
+	char *devfile_name = "";
+	char devname[16];
 
 /* Skip endpoints that are not physically connected on the motherboard. */
 	if (endpoints[i].skip)
@@ -1420,22 +1422,22 @@ install_outputdevs (hda_devc * devc)
 
 	if (endpoints[i].is_digital)
 	  {
-	    char devname[16];
 	    opts |= ADEV_SPECIAL;
 	    sprintf (devname, "spdout%d", devc->num_spdout++);
-	    oss_audio_set_devname (devname);
+	    devfile_name = devname;
 	  }
 
 	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
 	sprintf (tmp_name, "HD Audio play %s", endpoints[i].name);
 
-	if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+	if ((audio_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 					       devc->osdev,
 					       devc->osdev,
 					       tmp_name,
 					       &hda_audio_driver,
 					       sizeof (audiodrv_t),
-					       opts, formats, NULL, -1)) < 0)
+					       opts, formats, NULL, -1,
+					       devfile_name)) < 0)
 	  {
 	    return;
 	  }
@@ -1513,6 +1515,7 @@ install_inputdevs (hda_devc * devc)
   int i, n, audio_dev;
   char tmp_name[64];
   hdaudio_endpointinfo_t *endpoints;
+  char devname[16], *devfile_name = "";
 
   if ((n =
        hdaudio_mixer_get_inendpoints (devc->mixer, &endpoints,
@@ -1540,22 +1543,22 @@ install_inputdevs (hda_devc * devc)
 
       if (endpoints[i].is_digital)
 	{
-	  char devname[16];
 	  opts |= ADEV_SPECIAL;
 	  sprintf (devname, "spdin%d", devc->num_spdin++);
-	  oss_audio_set_devname (devname);
+	  devfile_name = devname;
 	}
 
       //sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
       sprintf (tmp_name, "HD Audio rec %s", endpoints[i].name);
 
-      if ((audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+      if ((audio_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 					     devc->osdev,
 					     devc->osdev,
 					     tmp_name,
 					     &hda_audio_driver,
 					     sizeof (audiodrv_t),
-					     opts, formats, NULL, -1)) < 0)
+					     opts, formats, NULL, -1,
+					     devfile_name)) < 0)
 	{
 	  return;
 	}

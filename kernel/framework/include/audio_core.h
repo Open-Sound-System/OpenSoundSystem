@@ -335,7 +335,6 @@ oss_devlist_t;
 extern oss_devlist_t dspoutlist, dspoutlist2, dspinlist, dspinoutlist;
 #endif
 
-extern void oss_audio_set_devname (char *name);
 int oss_install_audiodev (int vers,
 			  oss_device_t * osdev,
 			  oss_device_t * master_osdev,

@@ -908,6 +908,7 @@ init_ATI (ATI_devc * devc)
       ATI_portc *portc = &devc->portc[i];
       char tmp_name[100];
       int formats = AFMT_S16_LE | AFMT_AC3;
+      char *devfile_name = "";
       strcpy (tmp_name, devc->chip_name);
       opts = ADEV_AUTOMODE | ADEV_STEREOONLY | ADEV_FIXEDRATE;
       portc->port_type = DF_ANALOG;
@@ -927,16 +928,17 @@ init_ATI (ATI_devc * devc)
 	  sprintf (tmp_name, "%s (SPDIF out)", devc->chip_name);
 	  opts |= ADEV_NOINPUT | ADEV_SPECIAL;
 	  portc->port_type = DF_SPDIF;
-	  oss_audio_set_devname ("spdout");
+	  devfile_name = "spdout";
 	}
 
-      if ((my_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+      if ((my_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 					  devc->osdev,
 					  devc->osdev,
 					  tmp_name,
 					  &ATI_audio_driver,
 					  sizeof (audiodrv_t),
-					  opts, formats, NULL, -1)) < 0)
+					  opts, formats, NULL, -1,
+					  devfile_name)) < 0)
 	{
 	  my_dev = -1;
 	  return 0;

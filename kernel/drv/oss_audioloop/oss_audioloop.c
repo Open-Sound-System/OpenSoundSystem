@@ -758,17 +758,17 @@ install_server (audioloop_devc_t * devc, int num)
   devc->server_portc[num] = portc;
 
   sprintf (tmp, "server%d", num);
-  oss_audio_set_devname (tmp);
 
   sprintf (tmp, "Audio loopback %d server side", num);
 
-  if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
 				    devc->osdev,
 				    tmp,
 				    &audioloop_server_driver,
 				    sizeof (audiodrv_t),
-				    opts, SUPPORTED_FORMATS, devc, -1)) < 0)
+				    opts, SUPPORTED_FORMATS, devc, -1,
+				    tmp)) < 0)
     {
       return adev;
     }

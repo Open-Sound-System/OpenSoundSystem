@@ -1817,7 +1817,7 @@ static const int bindings[MAX_ODEV] = {
 static void
 init_play_device (envy24ht_devc * devc, int chmask, int offset,
 		  unsigned char mask, char *name, int dev_flags,
-		  char *port_id)
+		  char *port_id, char *devfile_name)
 {
   int opts, dev, formats;
   char tmp[80];
@@ -1847,13 +1847,14 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
   else
     opts |= ADEV_SPECIAL;
 
-  if ((dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				   devc->osdev,
 				   devc->osdev,
 				   tmp,
 				   &envy24ht_output_driver,
 				   sizeof (audiodrv_t),
-				   opts, formats, devc, -1)) < 0)
+				   opts, formats, devc, -1,
+				   devfile_name)) < 0)
     {
       return;
     }
@@ -1912,7 +1913,7 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
 
 static void
 init_rec_device (envy24ht_devc * devc, int chmask, int offset,
-		 unsigned char mask, char *name, int dev_flags)
+		 unsigned char mask, char *name, int dev_flags, char *devfile_name)
 {
   int opts, dev, formats;
   adev_p adev;
@@ -1936,13 +1937,14 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
   if (dev_flags & DF_AC3)
     formats |= AFMT_AC3;
 
-  if ((dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				   devc->osdev,
 				   devc->osdev,
 				   tmp,
 				   &envy24ht_input_driver,
 				   sizeof (audiodrv_t),
-				   opts, formats, devc, -1)) < 0)
+				   opts, formats, devc, -1,
+				   devfile_name)) < 0)
     {
       return;
     }
@@ -1988,32 +1990,30 @@ init_devices (envy24ht_devc * devc)
   devc->first_dev = -1;
 
   init_play_device (devc, 0x003, 0x10, 0x01, devc->channel_names[0],
-		    DF_MULTICH, "front");
+		    DF_MULTICH, "front", "");
 
   if (devc->model_data->nr_outs > 2)
     init_play_device (devc, 0x00c, 0x70, 0x10, devc->channel_names[1], 0,
-		      "C/LFE");
+		      "C/LFE", "");
 
   if (devc->model_data->nr_outs > 4)
     init_play_device (devc, 0x030, 0x60, 0x20, devc->channel_names[2], 0,
-		      "surround");
+		      "side", "");
 
   if (devc->model_data->nr_outs > 6)
     init_play_device (devc, 0x0c0, 0x50, 0x40, devc->channel_names[3], 0,
-		      "rear");
+		      "rear", "");
 
   if (devc->model_data->flags & MF_SPDIFOUT)
     {
-      oss_audio_set_devname ("spdout");
       init_play_device (devc, 0x300, 0x40, 0x80, "digital",
-			DF_SPDIF | DF_AC3, "spdif");
+			DF_SPDIF | DF_AC3, "spdif", "spdout");
     }
 
-  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0);
+  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0, "");
   if (devc->model_data->flags & MF_SPDIFIN)
     {
-      oss_audio_set_devname ("spdin");
-      init_rec_device (devc, 0x00c, 0x30, 0x04, "digital", DF_SPDIF);
+      init_rec_device (devc, 0x00c, 0x30, 0x04, "digital", DF_SPDIF, "spdin");
     }
 }
 

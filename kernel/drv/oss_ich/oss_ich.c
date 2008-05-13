@@ -1052,6 +1052,7 @@ ich_init (ich_devc * devc)
       int formats = AFMT_S16_LE | AFMT_AC3;
       strcpy (tmp_name, devc->chip_name);
       opts = ADEV_AUTOMODE | ADEV_16BITONLY | ADEV_STEREOONLY | ADEV_COLD;
+      char *devfile_name = "";
 
       if (!ac97_varrate (&devc->ac97devc))
 	{
@@ -1072,15 +1073,16 @@ ich_init (ich_devc * devc)
 	  sprintf (tmp_name, "%s S/PDIF out", devc->chip_name);
 	  opts |= ADEV_NOINPUT | ADEV_SPECIAL | ADEV_FIXEDRATE;
 	  port_fmt = DF_SPDIF;
-	  oss_audio_set_devname ("spdout");
+	  devfile_name = "spdout";
 	}
-      if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+      if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 					devc->osdev,
 					devc->osdev,
 					tmp_name,
 					&ich_audio_driver,
 					sizeof (audiodrv_t),
-					opts, formats, devc, -1)) < 0)
+					opts, formats, devc, -1,
+					devfile_name)) < 0)
 	{
 	  adev = -1;
 	  return 0;

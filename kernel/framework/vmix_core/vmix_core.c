@@ -1452,9 +1452,8 @@ create_loopdev (vmix_mixer_t * mixer)
   sprintf (tmp, "%s (VMIX%d) loopback record", adev->name,
 	   mixer->instance_num);
   sprintf (nick, "loop%d", n);
-  oss_audio_set_devname (nick);
 
-  if ((portc->audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((portc->audio_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 						mixer->osdev,
 						mixer->master_osdev,
 						tmp,
@@ -1462,7 +1461,8 @@ create_loopdev (vmix_mixer_t * mixer)
 						sizeof (audiodrv_t),
 						opts,
 						mixer->play_engine.fmt,
-						mixer, -1)) < 0)
+						mixer, -1,
+						nick)) < 0)
     {
       return;
     }

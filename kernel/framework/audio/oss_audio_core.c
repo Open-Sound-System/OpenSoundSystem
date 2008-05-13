@@ -84,8 +84,6 @@ oss_specialapp_t special_apps[] = {
   {NULL, 0}
 };
 
-static char audio_next_devname[16] = "";
-
 #ifdef APPLIST_SUPPORT
 /*
  * Lookup tables for applications. Use these lists to assign
@@ -6069,20 +6067,6 @@ add_to_devlists (adev_p adev)
 }
 #endif
 
-void
-oss_audio_set_devname (char *name)
-{
-  /*
-   * Suggest a device name to be used for the next audio device
-   * to be created.
-   *
-   * Few characters (a-z) and digits. No special characters
-   * are permitted.
-   */
-  strncpy (audio_next_devname, name, sizeof (audio_next_devname) - 1);
-  audio_next_devname[sizeof (audio_next_devname) - 1] = 0;
-}
-
 static int
 resize_array(oss_device_t *osdev, adev_t ***arr, int *size, int increment)
 {
@@ -6114,14 +6098,15 @@ resize_array(oss_device_t *osdev, adev_t ***arr, int *size, int increment)
 }
 
 int
-oss_install_audiodev (int vers,
+oss_install_audiodev_with_devname (int vers,
 		      oss_device_t * osdev,
 		      oss_device_t * master_osdev,
 		      char *name,
 		      const audiodrv_t * driver,
 		      int driver_size,
 		      int flags,
-		      unsigned int format_mask, void *devc, int parent)
+		      unsigned int format_mask, void *devc, int parent,
+		      char * devfile_name)
 {
   audiodrv_t *d;
   adev_t *op;
@@ -6338,13 +6323,13 @@ oss_install_audiodev (int vers,
       oss_devnode_t name;
       char tmpl[32];
 
-      if (*audio_next_devname != 0)
+      if (*devfile_name != 0)
 	{
 	  /*
 	   * A name was suggested by the low level driver
 	   */
-	  strcpy (tmpl, audio_next_devname);
-	  *audio_next_devname = 0;
+	  strcpy (tmpl, devfile_name);
+	  *devfile_name = 0;
 	}
       else if (flags & ADEV_NOOUTPUT)
 	sprintf (tmpl, "pcmin%d", osdev->num_audiorec++);
@@ -6398,7 +6383,6 @@ oss_install_audiodev (int vers,
   if (!reinsterted_device && update_devlists && !hidden_device)
     add_to_devlists (op);
 #endif
-  audio_next_devname[0] = 0;
 
   {
     int i;
@@ -6411,6 +6395,27 @@ oss_install_audiodev (int vers,
   }
 
   return num;
+}
+
+int
+oss_install_audiodev (int vers,
+		      oss_device_t * osdev,
+		      oss_device_t * master_osdev,
+		      char *name,
+		      const audiodrv_t * driver,
+		      int driver_size,
+		      int flags,
+		      unsigned int format_mask, void *devc, int parent)
+{
+ return oss_install_audiodev_with_devname (vers,
+		      osdev,
+		      master_osdev,
+		      ame,
+		      driver,
+		      driver_size,
+		      flags,
+		      format_mask, devc, parent,
+		      ""); /* Use default device file naming */
 }
 
 void
@@ -6430,7 +6435,6 @@ oss_audio_delayed_attach (void)
 	    audio_startups[i].osdev = NULL;	/* Inactivate it */
 	}
     }
-  audio_next_devname[0] = 0;
 }
 
 /*ARGSUSED*/

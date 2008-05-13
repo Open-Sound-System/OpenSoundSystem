@@ -3087,7 +3087,7 @@ static mixer_driver_t envy24_mixer_driver = {
 
 static int
 install_adev (envy24_devc * devc, char *name, int flags, int skip,
-	      int portc_flags, char *port_id)
+	      int portc_flags, char *port_id, char *devfile_name)
 {
   int dev, i;
   adev_p adev;
@@ -3097,7 +3097,7 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
   if (portc_flags & PORTC_SPDOUT)
     fmts |= AFMT_AC3;
 
-  if ((dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				   devc->osdev,
 				   devc->osdev,
 				   name,
@@ -3106,7 +3106,8 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
 				   ADEV_AUTOMODE | ADEV_NOMMAP |
 				   flags | ADEV_NOVIRTUAL,
 				   fmts | AFMT_S16_LE | AFMT_S32_LE |
-				   AFMT_S24_LE, NULL, -1)) < 0)
+				   AFMT_S24_LE, NULL, -1,
+				   devfile_name)) < 0)
     {
       dev = -1;
       return 0;
@@ -3220,6 +3221,7 @@ install_output_devices (envy24_devc * devc, int mask)
 
   for (i = 0; i < nc; i += devc->skipdevs)
     {
+      char *devfile_name = "";
 
       if (devc->skipdevs != 2)
 	lr = (i & 1) ? "R" : "L";
@@ -3236,7 +3238,7 @@ install_output_devices (envy24_devc * devc, int mask)
 	  sprintf (tmp, "%s %sS/PDIF out %s", devc->model_data->product, kind,
 		   lr);
 	  sprintf (id, "SPDIF%s", lr);
-	  oss_audio_set_devname ("spdout");
+	  devfile_name = "spdout";
 	  break;
 
 	default:
@@ -3256,7 +3258,7 @@ install_output_devices (envy24_devc * devc, int mask)
 
       if (mask & (1 << devc->curr_outch))
 	install_adev (devc, tmp, ADEV_NOINPUT, devc->skipdevs, portc_flags,
-		      id);
+		      id, devfile_name);
       else
 	devc->curr_outch += devc->skipdevs;
     }
@@ -3306,7 +3308,7 @@ install_virtual_output_devices (envy24_devc * devc, int mask)
 	}
 
       if (!(mask & (1 << devc->curr_outch)))	/* Not done yet */
-	install_adev (devc, tmp, ADEV_NOINPUT, devc->skipdevs, 0, "virtual");
+	install_adev (devc, tmp, ADEV_NOINPUT, devc->skipdevs, 0, "virtual", ""); // TODO: Find better device file name
       else
 	devc->curr_outch += devc->skipdevs;
     }
@@ -3330,6 +3332,7 @@ install_input_devices (envy24_devc * devc, int mask)
 
   for (i = 0; i < devc->nr_rec_channels; i += devc->skipdevs)
     {
+      char *devfile_name = "";
 
       if (devc->skipdevs != 2)
 	lr = (i & 1) ? "R" : "L";
@@ -3341,7 +3344,7 @@ install_input_devices (envy24_devc * devc, int mask)
 	  portc_flags = PORTC_SPDIN;
 	  sprintf (tmp, "%s S/PDIF in %s", devc->model_data->product, lr);
 	  sprintf (id, "SPDIF%s", lr);
-	  oss_audio_set_devname ("spdin");
+	  devfile_name = "spdin";
 	  break;
 
 	case 10:
@@ -3349,7 +3352,7 @@ install_input_devices (envy24_devc * devc, int mask)
 	  sprintf (tmp, "%s input from mon. mixer %s",
 		   devc->model_data->product, lr);
 	  sprintf (id, "MON%s", lr);
-	  oss_audio_set_devname ("mon");
+	  devfile_name = "mon";
 	  break;
 
 	default:
@@ -3368,7 +3371,7 @@ install_input_devices (envy24_devc * devc, int mask)
 
       if (mask & (1 << devc->curr_inch))
 	install_adev (devc, tmp, ADEV_NOOUTPUT, devc->skipdevs, portc_flags,
-		      id);
+		      id, devfile_name);
       else
 	devc->curr_inch += devc->skipdevs;
     }

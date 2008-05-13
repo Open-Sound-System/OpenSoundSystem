@@ -322,9 +322,8 @@ envy24d_install (envy24_devc * devc)
    * Output device
    */
   sprintf (tmpname, "%s (all outputs)", devc->model_data->product);
-  oss_audio_set_devname ("multich_out");
 
-  if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
 				    devc->osdev,
 				    tmpname,
@@ -332,7 +331,8 @@ envy24d_install (envy24_devc * devc)
 				    sizeof (audiodrv_t),
 				    ADEV_NOVIRTUAL | ADEV_NOINPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
-				    AFMT_S32_LE, NULL, -1)) >= 0)
+				    AFMT_S32_LE, NULL, -1,
+				    "multich_out")) >= 0)
     {
       portc = &devc->direct_portc_out;
       audio_engines[adev]->devc = devc;
@@ -360,9 +360,8 @@ envy24d_install (envy24_devc * devc)
    * Input device
    */
   sprintf (tmpname, "%s (all inputs)", devc->model_data->product);
-  oss_audio_set_devname ("multich_in");
 
-  if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
 				    devc->osdev,
 				    tmpname,
@@ -370,7 +369,8 @@ envy24d_install (envy24_devc * devc)
 				    sizeof (audiodrv_t),
 				    ADEV_NOVIRTUAL | ADEV_NOOUTPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
-				    AFMT_S32_LE, NULL, -1)) >= 0)
+				    AFMT_S32_LE, NULL, -1,
+				    "multich_in")) >= 0)
     {
       portc = &devc->direct_portc_in;
       audio_engines[adev]->devc = devc;
