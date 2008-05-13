@@ -21,18 +21,18 @@ typedef struct _dmap_t dmap_t;
 /*
  * Audio device flags (adev_t->flags)
  */
-#define ADEV_DEFAULT		0x00000001	/* Preferred default audio device candidate */
-#define ADEV_AUTOMODE		0x00000002	/* Playbak pointer loops automatically */
-#define ADEV_DUPLEX		0x00000004	/* Device permits full duplex (O_RDWR method) */
-#define ADEV_NOINPUT		0x00000008	/* Device cannot do input */
-#define ADEV_NOOUTPUT		0x00000010	/* Device cannot do output */
-#define ADEV_VMIX		0x00000020	/* Device is virtual mixer one */
+#define ADEV_DEFAULT		0x0000000000000001LL	/* Preferred default audio device candidate */
+#define ADEV_AUTOMODE		0x0000000000000002LL	/* Playbak pointer loops automatically */
+#define ADEV_DUPLEX		0x0000000000000004LL	/* Device permits full duplex (O_RDWR method) */
+#define ADEV_NOINPUT		0x0000000000000008LL	/* Device cannot do input */
+#define ADEV_NOOUTPUT		0x0000000000000010LL	/* Device cannot do output */
+#define ADEV_VMIX		0x0000000000000020LL	/* Device is virtual mixer one */
 
-/* NOTE! 0x00000040 is free */
+/* NOTE! 0x0000000000000040 is free */
 
-#define ADEV_VIRTUAL		0x00000080	/* Virtual audio device */
-#define ADEV_OPENED		0x00000100	/* Will be set when the device is open */
-#define ADEV_NOCONVERT		0x00000200	/* No automatic format conversions are permitted */
+#define ADEV_VIRTUAL		0x0000000000000080LL	/* Virtual audio device */
+#define ADEV_OPENED		0x0000000000000100LL	/* Will be set when the device is open */
+#define ADEV_NOCONVERT		0x0000000000000200LL	/* No automatic format conversions are permitted */
 
 /*
  * ADEV_HIDDEN is reserved for internal use by the audio core and it must
@@ -40,22 +40,23 @@ typedef struct _dmap_t dmap_t;
  * adev->caps |= PCM_CAP_HIDDEN if they like to hide the device file from
  * ordinary audio applications.
  */
-#define ADEV_HIDDEN		0x00001000
+#define ADEV_HIDDEN		0x0000000000001000LL
 
-#define ADEV_FIXEDRATE		0x00002000	/* Fixed sampling rate (obsolete) */
-#define ADEV_16BITONLY		0x00004000	/* Only 16 bit audio support */
-#define ADEV_STEREOONLY		0x00008000	/* Only stereo (requires 16BITONLY) */
-#define ADEV_SHADOW		0x00010000	/* "shadow" device */
-#define ADEV_8BITONLY		0x00020000	/* Only 8 bits */
-#define ADEV_32BITONLY		0x00040000	/* Only 24 or 32 bits */
-#define ADEV_NOVIRTUAL		0x00080000	/* Don't install SoftOSS automatically for this device */
-#define ADEV_NOSRC		0x00100000	/* Don't do any kind of SRC */
-#define ADEV_SPECIAL		0x00200000	/* Multich or otherwise special dev */
-#define ADEV_NOMMAP		0x00400000	/* No MMAP capability */
-#define ADEV_DISABLE_VIRTUAL	0x00800000	/* Not compatible with virtual drivers  */
-#define ADEV_COLD		0x01000000	/* Reserved for a future feature - DO NOT USE */
-#define ADEV_HWMIX		0x02000000	/* Device supports "hardware mixing" */
-#define ADEV_LOOP		0x04000000	/* Loopback device */
+#define ADEV_FIXEDRATE		0x0000000000002000LL	/* Fixed sampling rate (obsolete) */
+#define ADEV_16BITONLY		0x0000000000004000LL	/* Only 16 bit audio support */
+#define ADEV_STEREOONLY		0x0000000000008000LL	/* Only stereo (requires 16BITONLY) */
+#define ADEV_SHADOW		0x0000000000010000LL	/* "shadow" device */
+#define ADEV_8BITONLY		0x0000000000020000LL	/* Only 8 bits */
+#define ADEV_32BITONLY		0x0000000000040000LL	/* Only 24 or 32 bits */
+#define ADEV_NOVIRTUAL		0x0000000000080000LL	/* Don't install SoftOSS automatically for this device */
+#define ADEV_NOSRC		0x0000000000100000LL	/* Don't do any kind of SRC */
+#define ADEV_SPECIAL		0x0000000000200000LL	/* Multich or otherwise special dev */
+#define ADEV_NOMMAP		0x0000000000400000LL	/* No MMAP capability */
+#define ADEV_DISABLE_VIRTUAL	0x0000000000800000LL	/* Not compatible with virtual drivers  */
+#define ADEV_COLD		0x0000000001000000LL	/* Reserved for a future feature - DO NOT USE */
+#define ADEV_HWMIX		0x0000000002000000LL	/* Device supports "hardware mixing" */
+#define ADEV_LOOP		0x0000000004000000LL	/* Loopback device */
+#define ADEV_ATTACH_VMIX	0x0000000008000000LL	/* Attach vmix automatically */
 
 #ifdef _KERNEL
 typedef struct _audiodrv_t

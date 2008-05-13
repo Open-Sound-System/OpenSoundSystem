@@ -6120,7 +6120,7 @@ oss_install_audiodev (int vers,
 		      char *name,
 		      const audiodrv_t * driver,
 		      int driver_size,
-		      int flags,
+		      long long flags,
 		      unsigned int format_mask, void *devc, int parent)
 {
   audiodrv_t *d;
@@ -6367,6 +6367,15 @@ oss_install_audiodev (int vers,
       oss_install_chrdev (osdev, name, OSS_DEV_DSP, devfile_num,
 			  &audio_cdev_drv, chdev_flags);
       osdev->num_audio_engines++;
+
+      if (flags & ADEV_ATTACH_VMIX)
+         {
+		 /*
+		  * Attach virtual mixer with the default parameters.
+		  */
+		 vmix_attach_audiodev(osdev, devfile_num, -1, 0);
+	 }
+
     }
   else
     {

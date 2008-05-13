@@ -186,7 +186,7 @@ struct _adev_t
   int enabled;
   int unloaded;
   struct _adev_t *next_in, *next_out;	/* Links to the next "shadow" devices */
-  int flags;
+  long long flags;
   int open_flags;
   int src_quality;
   int caps;
@@ -343,7 +343,7 @@ int oss_install_audiodev (int vers,
 			  char *name,
 			  const audiodrv_t * driver,
 			  int driver_size,
-			  int flags,
+			  long long flags,
 			  unsigned int format_mask, void *devc, int parent);
 extern void install_vdsp (oss_device_t * osdev);
 extern int *load_mixer_volumes (char *name, int *levels, int present);
