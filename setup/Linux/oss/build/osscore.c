@@ -1987,6 +1987,10 @@ EXPORT_FUNC (uart401_disable);
 EXPORT_FUNC (uart401_irq);
 EXPORT_SYMBOL (mixer_ext_set_init_fn);
 EXPORT_SYMBOL (mixer_ext_set_vmix_init_fn);
+#ifdef CONFIG_OSS_VMIX
+EXPORT_FUNC (vmix_attach_audiodev);
+EXPORT_FUNC (vmix_detach_audiodev);
+#endif
 EXPORT_SYMBOL (mixer_ext_set_strings);
 EXPORT_SYMBOL (mixer_ext_create_group);
 EXPORT_SYMBOL (mixer_ext_create_group_flags);

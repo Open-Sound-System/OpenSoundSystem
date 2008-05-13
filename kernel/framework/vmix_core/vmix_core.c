@@ -2063,8 +2063,85 @@ vmix_uninit (void)
 }
 #endif
 
+int
+vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int input_master, unsigned int attach_flags)
+{
+/*
+ * Purpose: Create a vmix instance for an audio device.
+ *
+ * This function will be called by OSS drivers after installing the audio devices. It will create
+ * an vmix instance for the device.
+ *
+ * Parameters:
+ *
+ * osdev:		The osdev structure of the actual hardware device.
+ * masterdev:		The audio engine number of the master (playback or duplex) device.
+ * input_master:	Input master device (if different than masterdev). Value of -1 means that the
+ * 			masterdev device should also be used as the input master device (if it supports
+ * 			input).
+ * attach_flags:	Reserved for future use.
+ */
+cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, input_master, attach_flags);
+	return -EIO;
+}
+
+void
+vmix_detach_audiodev(oss_device_t *osdev, int masterdev)
+{
+/*
+ * Purpose: Detach the vmix subsystem from the audio device.
+ *
+ * Most drivers don't call this since vmix instances will be automatically detached when the 
+ * master device is removed. However drivers that support dynamically created/deleted devices must
+ * call this when a device is deleted.
+ *
+ * Paramaters:
+ *
+ * osdev:		The osdev structure of the actual hardware device.
+ * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
+ */
+cmn_err(CE_CONT, "vmix_detach_audiodev(%p, %d)\n", osdev, masterdev);
+}
+
+void
+vmix_unplug_audiodev(oss_device_t *osdev, int masterdev)
+{
+/*
+ * Purpose: Temporarily disable the vmix subsystem for an unplugged audio device.
+ *
+ * Most drivers don't call this since vmix instances will be automatically detached when the 
+ * master device is removed. However drivers that support hotpluggable devices must
+ * call this when a device is deleted.
+ *
+ * Paramaters:
+ *
+ * osdev:		The osdev structure of the actual hardware device.
+ * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
+ */
+cmn_err(CE_CONT, "vmix_unplug_audiodev(%p, %d)\n", osdev, masterdev);
+}
+
+void
+vmix_replug_audiodev(oss_device_t *osdev, int masterdev)
+{
+/*
+ * Purpose: Reactivate vmix subsystem for an audio device that was previously unplugged
+ *
+ * A device which have vmix disabled by vmix_unplug_audiodev can be reactivated by calling this
+ * function. Note that the device must have been registered with vmix by calling vmix_attach_audiodev
+ * when the device was attached.
+ *
+ * Paramaters:
+ *
+ * osdev:		The osdev structure of the actual hardware device.
+ * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
+ */
+cmn_err(CE_CONT, "vmix_replug_audiodev(%p, %d)\n", osdev, masterdev);
+}
+
 void
 vmix_uninit (void)
 {
 	// TODO: Is there any need for this?
+cmn_err(CE_CONT, "vmix_uninit() called\n");
 }

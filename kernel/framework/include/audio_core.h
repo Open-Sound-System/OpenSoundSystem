@@ -285,6 +285,7 @@ struct _adev_t
   oss_longname_t song_name;
   oss_label_t label;
   oss_devnode_t devnode;
+  void *vmix_mixer;		/* Pointer to the vmix_mixer_t structure for this device */
 };
 
 #define UNIT_EXPAND		1024

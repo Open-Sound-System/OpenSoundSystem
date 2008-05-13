@@ -1115,6 +1115,11 @@ ich_init (ich_devc * devc)
 	  portc->port_type = port_fmt;
 	  if (audio_engines[adev]->flags & ADEV_FIXEDRATE)
 	    audio_engines[adev]->fixed_rate = 48000;
+
+	  if (i == 0)
+	  {
+		  vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+	  }
 	}
     }
   return 1;
