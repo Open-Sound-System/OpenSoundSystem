@@ -6212,6 +6212,7 @@ oss_install_audiodev (int vers,
 	memset ((char *) d, 0, sizeof (audiodrv_t));
       memcpy ((char *) d, (char *) driver, driver_size);
       num = num_audio_engines;
+      audio_engines[num] = op;
       num_audio_engines++;
 
       update_devlists = 1;
@@ -6328,6 +6329,7 @@ oss_install_audiodev (int vers,
 		   }
 	     }
 
+      	     audio_devfiles[num_audio_devfiles] = op;
 	     devfile_num = num_audio_devfiles++;
 	}
     }
@@ -6368,14 +6370,20 @@ oss_install_audiodev (int vers,
 			  &audio_cdev_drv, chdev_flags);
       osdev->num_audio_engines++;
 
+#ifdef CONFIG_OSS_VMIX
       if (flags & ADEV_ATTACH_VMIX)
          {
+		 int err;
+
 		 /*
 		  * Attach virtual mixer with the default parameters.
 		  */
-		 vmix_attach_audiodev(osdev, devfile_num, -1, 0);
+		 if ((err=vmix_attach_audiodev(osdev, devfile_num, -1, 0))<0)
+		    {
+			    cmn_err(CE_NOTE, "Cannot attach virtual mixer to audio engine %s, error=\n", op->name, err);
+		    }
 	 }
-
+#endif
     }
   else
     {

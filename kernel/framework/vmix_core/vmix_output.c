@@ -351,8 +351,7 @@ vmix_play_callback (int dev, int parm)
   oss_native_word flags;
   int i;
 
-  vmix_devc_t *devc = vmix_devc;
-  vmix_mixer_t *mixer = devc->mixers[parm];
+  vmix_mixer_t *mixer = adev->vmix_mixer;
   vmix_engine_t *eng = &mixer->play_engine;
 
 #ifdef CONFIG_OSS_VMIX_FLOAT
@@ -368,12 +367,6 @@ vmix_play_callback (int dev, int parm)
   if (dmap->bytes_in_use == 0)
     {
       cmn_err (CE_WARN, "Bytes in use=0, eng=%d\n", adev->engine_num);
-      return;
-    }
-
-  if (parm < 0 || parm >= devc->num_mixers)	/* Bad instance number */
-    {
-      cmn_err (CE_WARN, "Bad vmix instance %d\n", parm);
       return;
     }
 

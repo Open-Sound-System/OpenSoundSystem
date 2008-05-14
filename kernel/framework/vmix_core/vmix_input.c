@@ -193,8 +193,7 @@ vmix_record_callback (int dev, int parm)
   dmap_t *dmap = adev->dmap_in;
   oss_native_word flags;
 
-  vmix_devc_t *devc = vmix_devc;
-  vmix_mixer_t *mixer = devc->mixers[parm];
+  vmix_mixer_t *mixer = adev->vmix_mixer;
   vmix_engine_t *eng = &mixer->record_engine;
 
 #ifdef CONFIG_OSS_VMIX_FLOAT

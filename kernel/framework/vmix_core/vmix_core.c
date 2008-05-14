@@ -11,6 +11,10 @@
 #include <oss_config.h>
 #include "vmix.h"
 
+static int vmix_disabled = 0;
+static vmix_mixer_t *mixer_list = NULL; /* List of all currently installed mixer instances */
+static int instance_num = 0;
+
 static const unsigned char peak_cnv[256] = {
   0, 18, 29, 36, 42, 47, 51, 54, 57, 60, 62, 65, 67, 69, 71, 72,
   74, 75, 77, 78, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 89, 90,
@@ -42,8 +46,6 @@ static const unsigned char peak_cnv[256] = {
   143, 143, 143, 143, 143, 143, 144, 144, 144, 144, 144, 144, 144, 144, 144,
   144,
 };
-
-vmix_devc_t *vmix_devc = NULL;
 
 /*
  * Mixer/control panel interface
@@ -1319,7 +1321,7 @@ static audiodrv_t vmix_driver = {
  */
 
 static void
-create_outputdev (vmix_mixer_t * mixer)
+create_vmix_engine (vmix_mixer_t * mixer)
 {
   vmix_portc_t *portc;
   int n;
@@ -1598,21 +1600,12 @@ check_masterdev (void *mx)
   DDB (cmn_err
        (CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num,
 	adev->name));
+cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
+
 
   /* Don't accept virtual devices other than loopback ones */
   if (adev->flags & ADEV_VIRTUAL && !(adev->flags & ADEV_LOOP))
     return 0;
-
-  /* Ensure that we are not managing this master device yet */
-
-  for (i = 0; i < mixer->instance_num; i++)
-    {
-      vmix_mixer_t *old_mixer = mixer->devc->mixers[i];
-
-      dev = mixer->masterdev;
-      if (dev == old_mixer->masterdev || dev == old_mixer->inputdev)
-	return 0;
-    }
 
   if (adev->flags & ADEV_NOOUTPUT)
     return 0;
@@ -1651,9 +1644,8 @@ check_masterdev (void *mx)
  * Good. Initialize all per-mixer variables
  */
   mixer->master_osdev = adev->master_osdev;
+  adev->vmix_mixer = mixer;
   MUTEX_INIT (mixer->master_osdev, mixer->mutex, MH_DRV + 4);
-
-  mixer->devc->card_mask |= (1LL << adev->card_number);
 
   DDB (cmn_err (CE_CONT, "Vmix masterdev=%d\n", mixer->masterdev));
   /* TODO: Prevent the other virtual drivers from picking this one */
@@ -1725,6 +1717,7 @@ check_masterdev (void *mx)
 	  }
 
 	mixer->inputdev = dev;
+  	adev->vmix_mixer = mixer;
 	DDB (cmn_err (CE_CONT, "Vmix inputdev=%d\n", mixer->inputdev));
 	/* TODO: Prevent the other virtual drivers from picking this one */
 	break;
@@ -1766,22 +1759,14 @@ check_masterdev (void *mx)
 
   mixer->installed_ok = 1;
 
-  for (i = 0; i < mixer->numoutputs; i++)
-    {
-      create_outputdev (mixer);
-    }
-  relink_masterdev (mixer);
+  create_vmix_engine (mixer); // TODO: This should be done on demand
+
+  //relink_masterdev (mixer); // TODO: Enable this
 
   if (mixer->inputdev > -1)
     relink_inputdev (mixer);
 
-  if (mixer->numloops > MAX_LOOPDEVS)
-    mixer->numloops = MAX_LOOPDEVS;
-
-  for (i = 0; i < mixer->numloops; i++)
-    {
-      create_loopdev (mixer);
-    }
+  // create_loopdev (mixer); // TODO: Enable this
 
   if (mixer->num_clientdevs > 0 && mixer->output_mixer_dev > -1)
     {
@@ -1801,53 +1786,31 @@ check_masterdev (void *mx)
   return 1;
 }
 
-static int
-find_masterdev (void *mx)
+int
+vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned int attach_flags)
 {
-  vmix_mixer_t *mixer = mx;
-  int dev;
+/*
+ * Purpose: Create a vmix instance for an audio device.
+ *
+ * This function will be called by OSS drivers after installing the audio devices. It will create
+ * an vmix instance for the device.
+ *
+ * Parameters:
+ *
+ * osdev:		The osdev structure of the actual hardware device.
+ * masterdev:		The audio engine number of the master (playback or duplex) device.
+ * inputdev:		Input master device (if different than masterdev). Value of -1 means that the
+ * 			masterdev device should also be used as the input master device (if it supports
+ * 			input).
+ * attach_flags:	Reserved for future use.
+ */
 
-  for (dev = 0; dev < num_audio_devfiles; dev++)
-    {
-
-      if (audio_devfiles[dev] == NULL)
-	continue;
-
-      if (mixer->devc->card_mask & (1LL << audio_devfiles[dev]->card_number))
-	{			/* Already driving some device that belongs to the same card */
-	  continue;
-	}
-
-      if (audio_devfiles[dev]->flags & ADEV_NOVIRTUAL)	/* Do not pick this by default */
-	{
-	  continue;
-	}
-
-      if (audio_devfiles[dev]->vmix_flags & VMIX_SKIP)	/* Do not pick this by default */
-	{
-	  continue;
-	}
-
-      if (audio_devfiles[dev]->flags & ADEV_SPECIAL)	/* Reserved device */
-	{
-	  continue;
-	}
-
-      mixer->masterdev = audio_devfiles[dev]->engine_num;
-      mixer->inputdev = -1;
-
-      if (check_masterdev (mixer))
-	return 1;
-      mixer->masterdev = -1;
-    }
-  return 0;
-}
-
-static void
-create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
-	     int numloops, int rate)
-{
   vmix_mixer_t *mixer;
+
+cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inputdev, attach_flags);
+
+  if (vmix_disabled) /* Vmix not available in the system */
+     return -EIO;
 
   if ((mixer = PMALLOC (devc->osdev, sizeof (*mixer))) == NULL)
     {
@@ -1857,15 +1820,14 @@ create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
 
   memset (mixer, 0, sizeof (*mixer));
 
-  mixer->devc = devc;
-  mixer->osdev = devc->osdev;
+  mixer->osdev = osdev;
   mixer->first_input_mixext = -1;
   mixer->first_output_mixext = -1;
   mixer->src_quality = 0;
 
-  mixer->instance_num = devc->num_mixers;
+  mixer->instance_num = instance_num++;
   if (mixer->instance_num > 0)
-    mixer->osdev = osdev_clone (devc->osdev, mixer->instance_num);
+    mixer->osdev = osdev_clone (osdev, mixer->instance_num);
 
   mixer->output_mixer_dev = -1;
   mixer->input_mixer_dev = -1;
@@ -1878,30 +1840,26 @@ create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
   mixer->play_engine.outvol -= 3;	/* For overflow protection */
 #endif
 
-  if (numoutputs > MAX_OUTDEVS)
-    numoutputs = MAX_OUTDEVS;
-
   mixer->masterdev = masterdev;
   mixer->inputdev = inputdev;
-  mixer->numoutputs = numoutputs;
-  mixer->numloops = numloops;
-  mixer->rate = rate;
+  mixer->rate = 48000; // TODO: Handle this better
 
-  DDB (cmn_err (CE_CONT, "Create instance %d\n", devc->num_mixers));
+  DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
   DDB (cmn_err (CE_CONT, "vmix_masterdev=%d\n", masterdev));
   DDB (cmn_err (CE_CONT, "vmix_inputdev=%d\n", inputdev));
-  DDB (cmn_err (CE_CONT, "vmix_numoutputs=%d\n", numoutputs));
-  DDB (cmn_err (CE_CONT, "vmix_numloops=%d\n", numloops));
-  DDB (cmn_err (CE_CONT, "vmix_rate=%d\n", rate));
+  DDB (cmn_err (CE_CONT, "vmix_rate=%d\n", mixer->rate));
   DDB (cmn_err (CE_CONT, "\n"));
 
-  devc->mixers[devc->num_mixers++] = mixer;
+  /*
+   * Insert the newly created mixer to the myxer list.
+   */
+  mixer->next = mixer_list;
+  mixer_list = mixer;
 
   if (masterdev >= 0)
     {
       if (masterdev >= num_audio_devfiles)
 	{
-	  oss_audio_register_client (check_masterdev, mixer, devc->osdev);
 	  return;
 	}
 
@@ -1923,166 +1881,7 @@ create_vmix (vmix_devc_t * devc, int masterdev, int inputdev, int numoutputs,
       return;
     }
 
-  if (find_masterdev (mixer))
-    return;
-
-  oss_audio_register_client (find_masterdev, mixer, devc->osdev);
-}
-
-#if 0
-// TODO: Rewrite this old interface
-void
-oss_create_vmix (void *devc, int masterdev, int inputdev, int numoutputs,
-		 int numloops, int rate)
-{
-  create_vmix (devc, masterdev, inputdev, numoutputs, numloops, rate);
-}
-
-int
-vmix_core_attach (oss_device_t * osdev)
-{
-  vmix_devc_t *devc;
-  static int vmix_loaded = 0;
-
-#ifdef CONFIG_OSS_VMIX_FLOAT
-  int check;
-/*
- * Check that the processor is compatible with vmix (has proper FP support).
- */
-
-  if ((check = oss_fp_check ()) <= 0)
-    {
-      cmn_err (CE_WARN,
-	       "This processor architecture is not compatible with vmix (info=%d) - Not attached.\n",
-	       check);
-      return 0;
-    }
-#endif
-
-  if (vmix_loaded)
-    {
-      return 0;
-    }
-  vmix_loaded = 1;
-
-  devc = PMALLOC (osdev, sizeof (*devc));
-
-  if (devc == NULL)
-    {
-      cmn_err (CE_WARN, "Out of memory - cannot allocate devc\n");
-      return 0;
-    }
-  memset (devc, 0, sizeof (*devc));
-
-  devc->osdev = osdev;
-  osdev->devc = devc;
-  vmix_devc = devc;
-
-  oss_register_device (osdev, "OSS transparent virtual mixer");
-
-  return 1;
-}
-
-void
-vmix_uninit (void)
-{
-  int i;
-  vmix_devc_t *devc;
-  oss_device_t *osdev;
-
-  devc = vmix_devc;
-  if (vmix_devc == NULL)
-    {
-      DDB (cmn_err (CE_NOTE, "vmix_devc==NULL"));
-      return;
-    }
-
-  osdev = devc->osdev;
-
-  if (oss_disable_device (osdev) < 0)
-    return;
-
-  for (i = 0; i < devc->num_mixers; i++)
-    {
-      vmix_mixer_t *mixer;
-      mixer = devc->mixers[i];
-
-      if (mixer->first_input_mixext >= 0)	/* Remove input mixer elements? */
-	mixer_ext_truncate (mixer->input_mixer_dev,
-			    mixer->first_input_mixext);
-
-      if (mixer->first_output_mixext >= 0)	/* Remove output mixer elements? */
-	mixer_ext_truncate (mixer->output_mixer_dev,
-			    mixer->first_output_mixext);
-
-      if (oss_disable_device (mixer->osdev) < 0)
-	return;
-    }
-
-  for (i = 0; i < devc->num_mixers; i++)
-    {
-      vmix_mixer_t *mixer;
-      mixer = devc->mixers[i];
-
-      if (mixer->master_osdev != NULL)
-	{
-	  MUTEX_CLEANUP (mixer->mutex);
-	}
-
-      if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
-	continue;
-
-      if (!mixer->installed_ok)
-	{
-	  oss_unregister_device (mixer->osdev);
-	  continue;
-	}
-
-      if (audio_engines[mixer->masterdev] == NULL)
-	continue;
-
-      audio_engines[mixer->masterdev]->redirect_out = -1;
-
-      if (mixer->inputdev > -1)
-	{
-	  audio_engines[mixer->inputdev]->redirect_in = -1;
-	  audio_engines[mixer->masterdev]->redirect_in = -1;
-	}
-      unlink_masterdev (mixer);
-
-      if (mixer->inputdev > -1 && mixer->inputdev != mixer->masterdev)
-	{
-	  unlink_inputdev (mixer);
-	}
-      oss_unregister_device (mixer->osdev);
-    }
-
-  oss_unregister_device (osdev);
-
-  return;
-}
-#endif
-
-int
-vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int input_master, unsigned int attach_flags)
-{
-/*
- * Purpose: Create a vmix instance for an audio device.
- *
- * This function will be called by OSS drivers after installing the audio devices. It will create
- * an vmix instance for the device.
- *
- * Parameters:
- *
- * osdev:		The osdev structure of the actual hardware device.
- * masterdev:		The audio engine number of the master (playback or duplex) device.
- * input_master:	Input master device (if different than masterdev). Value of -1 means that the
- * 			masterdev device should also be used as the input master device (if it supports
- * 			input).
- * attach_flags:	Reserved for future use.
- */
-cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, input_master, attach_flags);
-	return -EIO;
+  return -EIO;
 }
 
 void
@@ -2140,8 +1939,66 @@ cmn_err(CE_CONT, "vmix_replug_audiodev(%p, %d)\n", osdev, masterdev);
 }
 
 void
-vmix_uninit (void)
+vmix_core_init (oss_device_t *osdev)
 {
-	// TODO: Is there any need for this?
+#ifdef CONFIG_OSS_VMIX_FLOAT
+  int check;
+/*
+ * Check that the processor is compatible with vmix (has proper FP support).
+ */
+
+  if ((check = oss_fp_check ()) <= 0)
+    {
+      vmix_disabled = 1;
+      cmn_err (CE_WARN,
+	       "This processor architecture is not compatible with vmix (info=%d) - Not enabled.\n",
+	       check);
+      return;
+    }
+#endif
+}
+
+void
+vmix_core_uninit (void)
+{
+	vmix_mixer_t *mixer = mixer_list;
 cmn_err(CE_CONT, "vmix_uninit() called\n");
+
+  while (mixer != NULL)
+    {
+      if (mixer->master_osdev != NULL)
+	{
+	  MUTEX_CLEANUP (mixer->mutex);
+	}
+
+      if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
+	continue;
+
+      if (!mixer->installed_ok)
+	{
+	  oss_unregister_device (mixer->osdev);
+	  continue;
+	}
+
+      if (audio_engines[mixer->masterdev] == NULL)
+	continue;
+
+      audio_engines[mixer->masterdev]->redirect_out = -1;
+
+      if (mixer->inputdev > -1)
+	{
+	  audio_engines[mixer->inputdev]->redirect_in = -1;
+	  audio_engines[mixer->masterdev]->redirect_in = -1;
+	}
+      unlink_masterdev (mixer);
+
+      if (mixer->inputdev > -1 && mixer->inputdev != mixer->masterdev)
+	{
+	  unlink_inputdev (mixer);
+	}
+
+      mixer = mixer->next;
+    }
+
+  mixer_list = NULL; /* Everything removed */
 }

@@ -36,7 +36,8 @@ extern void install_dev_mixer (oss_device_t * osdev);
  * vmix_core.c
  */
 
-extern void vmix_uninit (void);
+extern void vmix_core_uninit (void);
+extern void vmix_core_init (oss_device_t *osdev);
 extern int vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int input_master, unsigned int attach_flags);
 extern void vmix_detach_audiodev(oss_device_t *osdev, int masterdev);
 extern void vmix_unplug_audiodev(oss_device_t *osdev, int masterdev);

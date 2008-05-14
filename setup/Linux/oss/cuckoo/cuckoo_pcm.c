@@ -238,6 +238,11 @@ snd_cuckoo_playback_open (snd_pcm_substream_t * substream)
       return -EBUSY;
     }
 
+/*
+ * TODO: This code should be changed to call oss_audio_open_devfile() or oss_audio_open_engine()
+ *       instead of adev->d->adrv_open(). However this change may be very tricky because the
+ *       change will have side effects here and there.
+ */
   if ((err = adev->d->adrv_open (adev->engine_num, OPEN_WRITE, 0)) < 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
@@ -289,7 +294,11 @@ snd_cuckoo_capture_open (snd_pcm_substream_t * substream)
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return -EBUSY;
     }
-
+/*
+ * TODO: This code should be changed to call oss_audio_open_devfile() or oss_audio_open_engine()
+ *       instead of adev->d->adrv_open(). However this change may be very tricky because the
+ *       change will have side effects here and there.
+ */
   if ((err = adev->d->adrv_open (adev->engine_num, OPEN_READ, 0)) < 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);

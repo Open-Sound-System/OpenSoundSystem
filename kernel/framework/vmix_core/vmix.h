@@ -13,7 +13,6 @@
 #define MAX_REC_CHANNELS	12
 #define CHBUF_SAMPLES		2048	/* Max samples (frames) per fragment */
 
-typedef struct _vmix_devc_t vmix_devc_t;
 typedef struct _vmix_mixer_t vmix_mixer_t;
 typedef struct _vmix_portc_t vmix_portc_t;
 typedef struct _vmix_engine_t vmix_engine_t;
@@ -21,7 +20,6 @@ typedef struct _vmix_engine_t vmix_engine_t;
 struct _vmix_portc_t		/* Audio device specific data */
 {
   int num;
-  vmix_devc_t *devc;
   vmix_mixer_t *mixer;
   int dev_type;
 #define DT_IN		1
@@ -84,7 +82,7 @@ struct _vmix_engine_t
 
 struct _vmix_mixer_t		/* Instance specific data */
 {
-  vmix_devc_t *devc;
+  vmix_mixer_t *next;		/* Pointer to the next vmix instance */
   int instance_num;
   oss_device_t *osdev;
   oss_device_t *master_osdev;
@@ -103,8 +101,6 @@ struct _vmix_mixer_t		/* Instance specific data */
  */
   int masterdev;
   int inputdev;
-  int numoutputs;
-  int numloops;
   int rate;
 
   int src_quality;		/* Control panel setting */
@@ -128,21 +124,6 @@ struct _vmix_mixer_t		/* Instance specific data */
   int first_input_mixext;
   int first_output_mixext;
 };
-
-struct _vmix_devc_t
-{
-  oss_device_t *osdev;
-
-  /*
-   * Instances
-   */
-  int num_mixers;
-  vmix_mixer_t *mixers[MAX_INSTANCES];
-
-  unsigned long long card_mask;
-};
-
-extern vmix_devc_t *vmix_devc;	/* Global devc structure for all instances */
 
 extern void vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev,
 				    dmap_t * dmap);
