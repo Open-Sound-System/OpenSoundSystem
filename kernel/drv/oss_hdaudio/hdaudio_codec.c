@@ -304,7 +304,7 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 {
   hdaudio_mixer_t *mixer = mixer_devs[dev]->devc;
 
-  unsigned int cad, wid, typ, ix, left, right, a, b, v;
+  unsigned int cad, wid, linked_wid, typ, ix, left, right, a, b, v;
   widget_t *widget;
 
   ix = ctrl & 0xff;
@@ -319,6 +319,11 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
     return -EIO;
 
   widget = &mixer->codecs[cad]->widgets[wid];
+
+  if (mixer->codecs[cad]->vendor_flags & VF_VAIO_HACK)
+    linked_wid = (wid == 0x02) ? 0x05 : ((wid == 0x05) ? 0x02 : 0);
+  else
+    linked_wid = 0;
 
   if (cmd == SNDCTL_MIX_READ)
     switch (typ)
@@ -528,6 +533,8 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  else
 	    v = scaleout_vol (v, widget->outamp_caps);
 	  corb_write (mixer, cad, wid, 0, SET_GAIN (1, 0, 1, 0, ix), v);
+	  if (linked_wid)
+	    corb_write (mixer, cad, wid, 0, SET_GAIN (1, 0, 1, 0, ix), v);
 	  return value;
 	  break;
 
@@ -538,12 +545,16 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  else
 	    v = scaleout_vol (v, widget->outamp_caps);
 	  corb_write (mixer, cad, wid, 0, SET_GAIN (1, 0, 1, 0, ix), v);
+	  if (linked_wid)
+	    corb_write (mixer, cad, linked_wid, 0, SET_GAIN (1, 0, 1, 0, ix), v);
 	  v = ((value >> 16) & 0xffff);
 	  if (v == 0)
 	    v = 0x80;		/* Muted */
 	  else
 	    v = scaleout_vol (v, widget->outamp_caps);
 	  corb_write (mixer, cad, wid, 0, SET_GAIN (1, 0, 0, 1, ix), v);
+	  if (linked_wid)
+	    corb_write (mixer, cad, linked_wid, 0, SET_GAIN (1, 0, 0, 1, ix), v);
 	  return value;
 	  break;
 
@@ -552,6 +563,8 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  if (value)
 	    v = 0x80;
 	  corb_write (mixer, cad, wid, 0, SET_GAIN (1, 0, 1, 1, ix), v);
+	  if (linked_wid)
+	    corb_write (mixer, cad, linked_wid, 0, SET_GAIN (1, 0, 1, 1, ix), v);
 	  return value;
 	  break;
 
@@ -2270,16 +2283,32 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
 	  hdaudio_endpointinfo_t *ep;
 	  ep = &endpoint[i];
 
-	  corb_write (mixer, ep->cad, ep->base_wid, 0, SET_CONVERTER,
-		      (stream_number << 4) | (i * 2));
 	  corb_write (mixer, ep->cad, ep->base_wid, 0, SET_CONVERTER_FORMAT,
 		      tmp);
+	  corb_write (mixer, ep->cad, ep->base_wid, 0, SET_CONVERTER,
+		      (stream_number << 4) | (i * 2));
 	}
 #endif
     }
 
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_VAIO_HACK)
+    {
+      /*
+       * STAC9872 specific hack. In Sony VAIO configurations, the DAC widget
+       * used for the headphone jack needs to duplicate the stream playing on
+       * the DAC widget for the speaker when not in multichannel mode.
+       */
+      if (channels <= 2 && endpoint->base_wid == 0x05)
+	{
+	  corb_write (mixer, endpoint->cad, 0x02, 0, SET_CONVERTER_FORMAT,
+		      tmp);
+	  corb_write (mixer, endpoint->cad, 0x02, 0, SET_CONVERTER,
+		      stream_number << 4);
+	}
+    }
+
 #if 1
-  if (mixer->codecs[endpoint->cad]->codec_desc->flags & VF_ALC88X_HACK)
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_ALC88X_HACK)
     {
       /*
        * ALC88x specfic hack. These codecs cannot play S/PDIF unless the front
@@ -2341,7 +2370,15 @@ hdaudio_codec_reset_endpoint (hdaudio_mixer_t * mixer,
       }
 #endif
 
-  if (mixer->codecs[endpoint->cad]->codec_desc->flags & VF_ALC88X_HACK)
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_VAIO_HACK)
+    /* Also set headphone DAC to play the iddle stream */
+    if (channels <= 2 && endpoint->base_wid == 0x05)
+      {
+	corb_write (mixer, endpoint->cad, 0x02, 0, SET_CONVERTER,
+		    endpoint->iddle_stream << 4);
+      }
+
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_ALC88X_HACK)
     if (endpoint->is_digital && endpoint->auto_muted)	/* Restore automatic analog mute back to normal */
       {
 	if (corb_read
@@ -2416,10 +2453,15 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
   widget_t *volume_widget =
     &mixer->codecs[endpoint->cad]->widgets[endpoint->volume_wid];
   char tmp[128], *t;
-  unsigned int a, b;
+  unsigned int linked_wid, a, b;
   int i, v, left, right;
   int nsteps;
 
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_VAIO_HACK)
+    linked_wid = (endpoint->volume_wid == 0x02) ? 0x05 :
+		  ((endpoint->volume_wid == 0x05) ? 0x02 : 0);
+  else 
+    linked_wid = 0;
 
   switch (cmd)
     {
@@ -2568,11 +2610,17 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
 	a |= 0x80;		/* Mute */
       corb_write (mixer, volume_widget->cad, volume_widget->wid, 0,
 		  SET_GAIN (1, 0, 1, 0, 0), a);
+      if (linked_wid)
+	 corb_write (mixer, volume_widget->cad, linked_wid, 0,
+		     SET_GAIN (1, 0, 1, 0, 0), a);
       a = (right * nsteps) / 100;
       if (right == 0)
 	a |= 0x80;		/* Mute */
       corb_write (mixer, volume_widget->cad, volume_widget->wid, 0,
 		  SET_GAIN (1, 0, 0, 1, 1), a);
+      if (linked_wid)
+	 corb_write (mixer, volume_widget->cad, linked_wid, 0,
+		     SET_GAIN (1, 0, 0, 1, 1), a);
 
       mixer_devs[mixer->mixer_dev]->modify_counter++;
       return *arg = v;

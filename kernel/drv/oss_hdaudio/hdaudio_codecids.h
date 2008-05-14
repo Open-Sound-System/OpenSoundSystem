@@ -16,6 +16,8 @@ struct codec_desc
 #define VF_NONE         0x00000000
 #define VF_ALC88X_HACK  0x00000001      /* ALC88x requires special handling for
 S/PDIF */
+#define VF_VAIO_HACK    0x00000002      /* VAIO STAC9872 requires special
+handling for headphone DAC */
   char **remap;
 
   /*
@@ -882,6 +884,7 @@ static const codec_desc_t codecs[] = {
 
   {0x83847628, "STAC9274X5NH", VF_NONE, (char **) &stac923xremap },
   {0x83847629, "STAC9274D5NH", VF_NONE, (char **) &stac923xremap },
+  {0x83847661, "CXD9872RD", VF_NONE, NULL, 0x76543012},
   {0x83847662, "STAC9872AK", VF_NONE, NULL, 0x76543012},
   {0x83847664, "STAC9872K", VF_NONE, NULL, 0x76543210}, /* Vaio VGN-AR51J */
 
@@ -940,24 +943,24 @@ static const char *vaio_remap[] = {
 	"pcm",		/* 0x03 */ // Unused
 	"pcm",		/* 0x04 */ // Unused
 	"speaker",	/* 0x05 */
-	"rec",		/* 0x06 */
-	"rec",		/* 0x07 */
+	"rec1",		/* 0x06 */
+	"rec1-vol",	/* 0x07 */
 	"rec",		/* 0x08 */
-	"rec",		/* 0x09 */
+	"rec-vol",	/* 0x09 */
 	"headphone",	/* 0x0a */
-	"speaker",	/* 0x0b */
-	"speaker",	/* 0x0c */
+	ES,		/* 0x0b */ // Unused
+	ES,		/* 0x0c */ // Unused
 	"mic",		/* 0x0d */
-	"speaker",	/* 0x0e */
+	ES,		/* 0x0e */
 	"int-speaker",	/* 0x0f */
 	"spdifout1",	/* 0x10 */
-	"int-digout",	/* 0x11 */
+	"int-digout1",	/* 0x11 */
 	"spdifin",	/* 0x12 */
-	"speaker",	/* 0x13 */
+	"int-digout",	/* 0x13 */
 	"int-mic",	/* 0x14 */
 	"rec",		/* 0x15 */
 	"beep",		/* 0x16 */
-	"vol1",		/* 0x17 */
+	"vol",		/* 0x17 */
 	"spdifout",	/* 0x18 */
 	NULL
 };
@@ -1037,16 +1040,27 @@ static const codec_desc_t subdevices[] = {
    * Has three codecs. Primary (Stac9872K), Modem (Conexant) and
    * HDMI digital output (ALC262). Disable the mixer entries for codecs 2 and 3.
    */
-  {0x104d2200, "Vaio/STAC9872K", VF_NONE, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847664, 0x104d9016},
+  {0x104d2200, "Vaio/STAC9872K", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847664, 0x104d9016},
   /* 2nd codec (#1) is "Conexant2c06" modem */
   {0x104d2200, "Vaio/HDMI", VF_NONE, (char **) &alc262_vaio_remap, 0, NULL_mixer_init, 0x10ec0262, 0x104d9016}, 
   /****/
 
   /*
+   * Sony VAIO SZ2, SZ3, and FE
+   */
+  {0x104d0700, "Vaio/CXD9872RD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847661, 0x104d81e6},
+  {0x104d1000, "Vaio/CXD9872RD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847661, 0x104d81ef},
+
+  /*
+   * Sony VAIO AR
+   */
+  {0x104d1300, "Vaio/CXD9872AKD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847664, 0x104d81fd},
+
+  /*
    * Sony Vaio SZ (SZ650) has two codecs, STAC9872AK and Conexant modem.
    * Assume the audio codec is identical with Vaio AGN (above).
    */
-  {0x104d1e00, "Vaio/STAC9872AK", VF_NONE, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d9008},
+  {0x104d1e00, "Vaio/STAC9872AK", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d9008},
 
   {0, "Unknown"}
 };
