@@ -1943,7 +1943,7 @@ EXPORT_FUNC (oss_disable_device);
 EXPORT_FUNC (oss_free_dmabuf);
 EXPORT_SYMBOL (oss_map_pci_mem);
 EXPORT_SYMBOL (oss_install_audiodev);
-EXPORT_SYMBOL (oss_install_audiodev_with-devname);
+EXPORT_SYMBOL (oss_install_audiodev_with_devname);
 EXPORT_FUNC (oss_audio_set_error);
 EXPORT_SYMBOL (load_mixer_volumes);
 EXPORT_SYMBOL (oss_unmap_pci_mem);
