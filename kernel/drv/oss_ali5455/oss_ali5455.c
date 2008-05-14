@@ -362,6 +362,7 @@ ALI_audio_set_channels (int dev, short arg)
 
   if (arg>6)
      arg=6;
+
   if ((arg != 1) && (arg != 2) && (arg != 4) && (arg != 6))
     return portc->channels;
   portc->channels = arg;
@@ -954,11 +955,11 @@ oss_ali5455_detach (oss_device_t * osdev)
       CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32);
       devc->bdlBuffer = NULL;
     }
+
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
   UNMAP_PCI_IOADDR (devc->osdev, 0);
 
   oss_unregister_device (osdev);
   return 1;
-
 }

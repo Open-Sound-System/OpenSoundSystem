@@ -1312,7 +1312,8 @@ setup_spdif_control (envy24_devc * devc)
     }
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_audio_open (int dev, int mode, int open_flags)
 {
   envy24_portc *portc = audio_engines[dev]->portc;
@@ -1401,7 +1402,8 @@ envy24_audio_open (int dev, int mode, int open_flags)
   return 0;
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24_audio_close (int dev, int mode)
 {
   envy24_devc *devc = audio_engines[dev]->devc;
@@ -1431,13 +1433,15 @@ envy24_audio_close (int dev, int mode)
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24_audio_output_block (int dev, oss_native_word buf, int count,
 			   int fragsize, int intrflag)
 {
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24_audio_start_input (int dev, oss_native_word buf, int count,
 			  int fragsize, int intrflag)
 {
@@ -1555,7 +1559,8 @@ envy24_audio_trigger (int dev, int state)
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_audio_prepare_for_input (int dev, int bsize, int bcount)
 {
   int nsamples, nbytes;
@@ -1600,7 +1605,8 @@ envy24_audio_prepare_for_input (int dev, int bsize, int bcount)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_audio_prepare_for_output (int dev, int bsize, int bcount)
 {
   int nsamples, nbytes;
@@ -1662,7 +1668,8 @@ envy24_audio_prepare_for_output (int dev, int bsize, int bcount)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_alloc_buffer (int dev, dmap_t * dmap, int direction)
 {
   envy24_devc *devc = audio_engines[dev]->devc;
@@ -1695,7 +1702,8 @@ envy24_alloc_buffer (int dev, dmap_t * dmap, int direction)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_free_buffer (int dev, dmap_t * dmap, int direction)
 {
   if (dmap->dmabuf == NULL)
@@ -1769,7 +1777,8 @@ static const audiodrv_t envy24_audio_driver = {
   envy24_sync_control
 };
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
   extern int envy24_realencoder_hack;
@@ -1965,7 +1974,8 @@ read_peak (envy24_devc * devc, int ch)
   return tmp;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/
+static int
 envy24_get_peak (int dev, int ctrl, unsigned int cmd, int value)
 {
   static const unsigned char peak_cnv[256] = {
@@ -2480,7 +2490,8 @@ envy24_set_spdifrout (int dev, int ctrl, unsigned int cmd, int value)
   return -EINVAL;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_output_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, num, skip;
@@ -2517,8 +2528,8 @@ create_output_mixer (int dev, envy24_devc * devc, int root)
 					   num, envy24_set_mon,
 					   MIXT_STEREOSLIDER16,
 					   tmp, 1440,
-					   MIXF_READABLE |
 					   MIXF_MONVOL |
+					   MIXF_READABLE |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return err;
@@ -2533,7 +2544,8 @@ create_output_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_input_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->inportmask, group, err, num, skip;
@@ -2566,8 +2578,8 @@ create_input_mixer (int dev, envy24_devc * devc, int root)
 					   num, envy24_set_mon,
 					   MIXT_STEREOSLIDER16,
 					   tmp, 1440,
-					   MIXF_READABLE |
 					   MIXF_MONVOL |
+					   MIXF_READABLE |
 					   MIXF_WRITEABLE | MIXF_CENTIBEL)) <
 	  0)
 	return err;
@@ -2591,7 +2603,8 @@ create_input_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_mon_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, num, skip;
@@ -2633,9 +2646,9 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       num, envy24_set_mon,
 					       MIXT_STEREOSLIDER16,
 					       tmp, 1440,
+					       MIXF_MONVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
-					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2651,9 +2664,9 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       num, envy24_set_mon,
 					       MIXT_STEREOSLIDER16,
 					       tmp, 1440,
+					       MIXF_MONVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
-					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2681,9 +2694,9 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       num, envy24_set_mon,
 					       MIXT_STEREOSLIDER16,
 					       tmp, 1440,
+					       MIXF_MONVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
-					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2700,9 +2713,9 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
 					       num, envy24_set_mon,
 					       MIXT_STEREOSLIDER16,
 					       tmp, 1440,
+					       MIXF_MONVOL |
 					       MIXF_READABLE |
 					       MIXF_WRITEABLE |
-					       MIXF_MONVOL |
 					       MIXF_CENTIBEL)) < 0)
 	    return err;
 	}
@@ -2711,7 +2724,8 @@ create_mon_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_peak_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, num, skip;
@@ -2800,7 +2814,8 @@ envy24_set_enum_mask (int dev, int ctl, oss_native_word mask)
       ext->enum_present[i / 8] |= (1 << (i % 8));
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_rout_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip, num, chnum;
@@ -3266,7 +3281,8 @@ install_output_devices (envy24_devc * devc, int mask)
   return 1;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 install_virtual_output_devices (envy24_devc * devc, int mask)
 {
 #if 0

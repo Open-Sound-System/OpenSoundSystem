@@ -739,9 +739,11 @@ trident_audio_prepare_for_input (int dev, int bsize, int bcount)
     }
   else
     {
+#if !defined(sparc)
       if (devc->chip_type == ALI_5451_ID)
 	WRITEL (devc->osdev,
 		READL (devc->osdev, 0xd4) | ((unsigned int) 1 << 31), 0xd4);
+#endif
 
       /* for SiS 7018: Rec with PCM_LR, MONO_MIX, SRC_EN */
       if (devc->chip_type == SIS_7018_ID)
@@ -1553,7 +1555,12 @@ oss_trident_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+
+#ifdef MEM_MAPPED_REGISTERS
+  UNMAP_PCI_MEM(osdev, 1, devc->bar1addr, devc->bar1virt, 1024x1024);
+#else
   UNMAP_PCI_IOADDR (devc->osdev, 0);
+#endif
 
   oss_unregister_device (devc->osdev);
   return 1;

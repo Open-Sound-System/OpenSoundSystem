@@ -6,7 +6,7 @@
  */
 
 #include "hckernel.h"
-static int num_errors=0; /* Dummy variable used to supress lint warnings. */
+static int num_errors = 0; /* Dummy variable used to supress lint warnings. */
 
 #define DMAREC
 
@@ -1094,8 +1094,8 @@ SetFormat (allegro_devc * devc, IN PALLEGRO_WAVE AllegroWave,
 	  (devc, gphwi, AllegroWave->DspClientInstance,
 	   KOPENCLOSE_SYNCHRONOUS) != KRETURN_SUCCESS)
 	{
-		_Debug_Printf_Service ("Close inst!\n");
-	  	num_errors++;
+	   _Debug_Printf_Service ("Close inst!\n");
+	   num_errors++;
 	}
 
 #if 0

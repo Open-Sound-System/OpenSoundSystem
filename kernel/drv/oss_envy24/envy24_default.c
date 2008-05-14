@@ -619,7 +619,8 @@ WriteCsField (envy24_devc * devc, unsigned char bByteNum,
 }
 #endif
 
- /*ARGSUSED*/ void
+/*ARGSUSED*/ 
+void
 write_cs8427_spdif (envy24_devc * devc, int d)
 {
   int i;
@@ -656,7 +657,8 @@ write_cs8427_spdif (envy24_devc * devc, int d)
 -------------------------------------------------------------------------------
   Notes       : 
 =============================================================================*/
- /*ARGSUSED*/ static unsigned char
+/*ARGSUSED*/ 
+static unsigned char
 IIC_GetSDA (envy24_devc * devc, unsigned long dwPortAddr)
 {
 
@@ -701,7 +703,8 @@ IIC_GetSDA (envy24_devc * devc, unsigned long dwPortAddr)
 -------------------------------------------------------------------------------
   Notes       : 
 =============================================================================*/
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 IIC_SetIic (envy24_devc * devc, unsigned int dwPortAddr, unsigned char fSDA,
 	    unsigned char fSCL)
 {
@@ -1485,7 +1488,8 @@ envy24_set_ews88 (int dev, int ctrl, unsigned int cmd, int value)
   return -EINVAL;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_akm_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip, codec, ports;
@@ -1607,7 +1611,8 @@ create_akm_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_ap_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip, codec, ports;
@@ -1682,7 +1687,8 @@ create_ap_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_d410_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip;
@@ -1758,7 +1764,8 @@ create_d410_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_ewx2496_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip, codec, ports;
@@ -1833,7 +1840,8 @@ create_ewx2496_mixer (int dev, envy24_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_ews88_mixer (int dev, envy24_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, skip, codec, ports;
@@ -2115,7 +2123,8 @@ default_mix_init (envy24_devc * devc, int dev, int group)
   return 0;
 }
 
- /*ARGSUSED*/ int
+/*ARGSUSED*/ 
+int
 cs8427_spdif_ioctl (envy24_devc * devc, int dev, unsigned int cmd,
 		    ioctl_arg arg)
 {
@@ -2259,7 +2268,8 @@ set_spdif_control (int dev, int ctrl, unsigned int cmd, int value)
   return -EIO;
 }
 
- /*ARGSUSED*/ int
+/*ARGSUSED*/ 
+int
 cs8427_spdif_mixer_init (envy24_devc * devc, int dev, int group)
 {
   int err;

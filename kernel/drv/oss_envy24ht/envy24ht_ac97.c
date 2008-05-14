@@ -65,12 +65,14 @@ i2c_write (envy24ht_devc * devc, unsigned char addr, unsigned char pos,
 }
 #endif
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 init_cs8415a (envy24ht_devc * devc)
 {
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 init_wm8728 (envy24ht_devc * devc)
 {
 
@@ -103,7 +105,8 @@ ac97_card_init (envy24ht_devc * devc)
   init_wm8728 (devc);
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 ac97_mixer_init (envy24ht_devc * devc, int dev, int group)
 {
   return 0;

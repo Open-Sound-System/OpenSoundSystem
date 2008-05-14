@@ -1391,7 +1391,7 @@ audigyls_mix_init (int dev)
 
   if ((err = mixer_ext_create_control (dev, group, 3, audigyls_mix_control,
 				       MIXT_MONOSLIDER, "RECORDVOL", 255,
-				       MIXF_RECVOL | MIXF_READABLE | MIXF_WRITEABLE |
+				       MIXF_READABLE | MIXF_WRITEABLE |
 				       MIXF_RECVOL)) < 0)
     return err;
 

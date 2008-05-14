@@ -468,7 +468,7 @@ via97_audio_prepare_for_output (int dev, int bsize, int bcount)
   unsigned char tmp;
   oss_native_word flags;
 
-  if (audio_engines[dev]->dmap_in->dmabuf_phys == 0)
+  if (audio_engines[dev]->dmap_out->dmabuf_phys == 0)
     return -ENOSPC;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);

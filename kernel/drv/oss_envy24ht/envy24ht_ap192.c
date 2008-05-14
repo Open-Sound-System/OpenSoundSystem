@@ -512,7 +512,8 @@ ap192_set_ak4358 (int dev, int ctrl, unsigned int cmd, int value)
 }
 
 #if 0
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 set_mongain (envy24ht_devc * devc, int reg, int value)
 {
   if (value < 0)
@@ -524,7 +525,8 @@ set_mongain (envy24ht_devc * devc, int reg, int value)
 }
 #endif
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 ap192_mixer_init (envy24ht_devc * devc, int dev, int g)
 {
   int group = g;

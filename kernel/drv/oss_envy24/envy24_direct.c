@@ -36,20 +36,23 @@ envy24d_recintr (envy24_devc * devc)
   oss_audio_inputintr (devc->direct_portc_in.audio_dev, 0);
 }
 
- /*ARGSUSED*/ static short
+/*ARGSUSED*/ 
+static short
 envy24d_audio_set_channels (int dev, short arg)
 {
   envy24d_portc *portc = audio_engines[dev]->portc;
   return portc->channels;
 }
 
- /*ARGSUSED*/ static unsigned int
+/*ARGSUSED*/ 
+static unsigned int
 envy24d_audio_set_format (int dev, unsigned int arg)
 {
   return AFMT_S32_LE;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   return -EINVAL;
@@ -63,7 +66,8 @@ envy24d_audio_reset (int dev)
   envy24d_audio_trigger (dev, 0);
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_audio_open (int dev, int mode, int open_flags)
 {
   envy24_devc *devc = audio_engines[dev]->devc;
@@ -113,13 +117,15 @@ envy24d_audio_close (int dev, int mode)
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24d_audio_output_block (int dev, oss_native_word buf, int count,
 			    int fragsize, int intrflag)
 {
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24d_audio_start_input (int dev, oss_native_word buf, int count,
 			   int fragsize, int intrflag)
 {
@@ -178,7 +184,8 @@ envy24d_audio_trigger (int dev, int state)
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_audio_prepare_for_input (int dev, int bsize, int bcount)
 {
   envy24_devc *devc = audio_engines[dev]->devc;
@@ -186,7 +193,8 @@ envy24d_audio_prepare_for_input (int dev, int bsize, int bcount)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_audio_prepare_for_output (int dev, int bsize, int bcount)
 {
   envy24_devc *devc = audio_engines[dev]->devc;
@@ -231,7 +239,8 @@ envy24d_alloc_buffer (int dev, dmap_t * dmap, int direction)
   return -EIO;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_free_buffer (int dev, dmap_t * dmap, int direction)
 {
   dmap->dmabuf = NULL;
@@ -268,14 +277,16 @@ envy24d_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   return -1;			/* TODO: Input handling */
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_check_input (int dev)
 {
   cmn_err (CE_WARN, "Envy24d: Input timed out.\n");
   return -EIO;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24d_check_output (int dev)
 {
   cmn_err (CE_WARN, "Envy24d: Output timed out (%d)\n", GET_JIFFIES ());

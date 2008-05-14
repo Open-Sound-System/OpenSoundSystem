@@ -231,7 +231,8 @@ midiintr (envy24ht_devc * devc)
     }
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/
+static int
 midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	   oss_midi_inputbuf_t inputbuf, oss_midi_outputintr_t outputintr)
 {
@@ -304,7 +305,8 @@ midi_out (int dev, unsigned char midi_byte)
   return 1;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
   return -EINVAL;
@@ -412,7 +414,8 @@ envy24htintr (oss_device_t * osdev)
   return serviced;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
   extern int envy24ht_fake_mixer;
@@ -548,7 +551,8 @@ read_peak (envy24ht_devc * devc, int ch)
   return tmp;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_get_peak (int dev, int ctrl, unsigned int cmd, int value)
 {
   static const unsigned char peak_cnv[256] = {
@@ -614,7 +618,8 @@ envy24ht_get_peak (int dev, int ctrl, unsigned int cmd, int value)
   return -EINVAL;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_peak_mixer (int dev, envy24ht_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, err, num, skip;
@@ -680,7 +685,8 @@ create_peak_mixer (int dev, envy24ht_devc * devc, int root)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 create_rout_mixer (int dev, envy24ht_devc * devc, int root)
 {
   int i, mask = devc->outportmask, group, ret, num;
@@ -734,7 +740,8 @@ create_rout_mixer (int dev, envy24ht_devc * devc, int root)
 /*
  * S/PDIF lowlevel driver
  */
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 default_reprogram_device (void *_devc, void *_portc,
 			  oss_digital_control * ctl, unsigned int mask)
 {
@@ -1210,7 +1217,8 @@ load_eeprom (envy24ht_devc * devc)
   return 1;
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 dump_regs (envy24ht_devc * devc, char *lbl)
 {
 #if 0
@@ -1392,7 +1400,8 @@ envy24ht_set_channels (int dev, short arg)
   return portc->channels = 2;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 ac3_write (adev_t * adev,
 	   dmap_t * dmap,
 	   void *frombuf, void *tobuf, int maxspace, int *fromlen, int *tolen)
@@ -1477,7 +1486,8 @@ envy24ht_reset (int dev)
   envy24ht_trigger (dev, 0);
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_open_input (int dev, int mode, int open_flags)
 {
   envy24ht_portc *portc = audio_engines[dev]->portc;
@@ -1520,7 +1530,8 @@ envy24ht_open_input (int dev, int mode, int open_flags)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_open_output (int dev, int mode, int open_flags)
 {
   envy24ht_portc *portc = audio_engines[dev]->portc;
@@ -1592,13 +1603,15 @@ envy24ht_close (int dev, int mode)
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24ht_output_block (int dev, oss_native_word buf, int count, int fragsize,
 		       int intrflag)
 {
 }
 
- /*ARGSUSED*/ static void
+/*ARGSUSED*/ 
+static void
 envy24ht_start_input (int dev, oss_native_word buf, int count, int fragsize,
 		      int intrflag)
 {
@@ -1659,7 +1672,8 @@ envy24ht_trigger (int dev, int state)
     dump_regs (devc, "trigger");
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_prepare_for_input (int dev, int bsize, int bcount)
 {
   envy24ht_devc *devc = audio_engines[dev]->devc;
@@ -1684,7 +1698,8 @@ envy24ht_prepare_for_input (int dev, int bsize, int bcount)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_prepare_for_output (int dev, int bsize, int bcount)
 {
   envy24ht_devc *devc = audio_engines[dev]->devc;
@@ -1719,7 +1734,8 @@ envy24ht_prepare_for_output (int dev, int bsize, int bcount)
   return 0;
 }
 
- /*ARGSUSED*/ static int
+/*ARGSUSED*/ 
+static int
 envy24ht_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
   envy24ht_portc *portc = audio_engines[dev]->portc;

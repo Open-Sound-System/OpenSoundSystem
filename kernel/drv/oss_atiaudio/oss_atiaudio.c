@@ -214,11 +214,13 @@ ATIIXPintr (oss_device_t * osdev)
 
 		break;
 	      }
+
 	    if (dmap->fragment_size == 0)
 	      {
 		cmn_err (CE_WARN, "dmap->fragment_size == 0\n");
 		continue;
 	      }
+
 	    ptr /= dmap->fragment_size;
 
 	    if ((ptr < 0) || (ptr > dmap->nfrags))
@@ -257,11 +259,13 @@ ATIIXPintr (oss_device_t * osdev)
 
 		break;
 	      }
+
 	    if (dmap->fragment_size == 0)
 	      {
 		cmn_err (CE_WARN, "dmap->fragment_size == 0\n");
 		continue;
 	      }
+
 	    ptr /= dmap->fragment_size;
 
 	    if ((ptr < 0) || (ptr > dmap->nfrags))
@@ -284,6 +288,7 @@ ATIIXPintr (oss_device_t * osdev)
 	  int ptr, n = 0;
 	  int timeout = 1000;
 	  serviced = 1;
+
 	  while (timeout--)
 	    {
 	      ptr = READL (devc->osdev, 0x5c);
@@ -294,6 +299,7 @@ ATIIXPintr (oss_device_t * osdev)
 		continue;
 	      break;
 	    }
+
 	  if (dmap->fragment_size == 0)
 	    cmn_err (CE_WARN, "dmap->fragment_size == 0\n");
 	  else
@@ -354,6 +360,7 @@ ATI_audio_set_channels (int dev, short arg)
 
   if (arg>6)
      arg=6;
+
   if ((arg != 1) && (arg != 2) && (arg != 4) && (arg != 6))
     return portc->channels;
   portc->channels = arg;

@@ -1577,8 +1577,8 @@ PBYTE kAllocDspMemory
 	      DWORD dwCodeArea;
 	      /*LINTED*/
 	      dwCodeArea = ((pbMemFound - phwi->abCodeMemoryMap) *
-			    phwi->dwCodeMemoryUnitLength) +
-		phwi->dwCodeMemoryBegin;
+			     phwi->dwCodeMemoryUnitLength) +
+			     phwi->dwCodeMemoryBegin;
 
 	      if (!kBinStructAddress (phwi, dwClient, dwCodeArea))
 		{
@@ -3531,7 +3531,7 @@ KRETURN kOpenInstance
       pClient_Inst->dwDspDataClientArea =
       /*LINTED*/
 	((pClient_Inst->pbDspDataMapPtr - phwi->abDataMemoryMap) *
-	 phwi->dwDataMemoryUnitLength) + phwi->dwDataMemoryBegin;
+	  phwi->dwDataMemoryUnitLength) + phwi->dwDataMemoryBegin;
 
       /* clear DSP client data memory */
 
@@ -3652,7 +3652,7 @@ KRETURN kOpenInstance
       /*LINTED*/
 	((phwi->asClientTable[dwClient].pbDspCodeMapPtr -
 	  phwi->abCodeMemoryMap) * phwi->dwCodeMemoryUnitLength) +
-	phwi->dwCodeMemoryBegin;
+	  phwi->dwCodeMemoryBegin;
 
       pClient_Inst->dwDspCodeClientArea =
 	phwi->asClientTable[dwClient].dwDspCodeClientArea;
