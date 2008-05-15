@@ -808,7 +808,7 @@ via8233_init (via8233_devc * devc)
       portc = &devc->portc[i];
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX;
+	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       else

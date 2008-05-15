@@ -87,7 +87,7 @@ typedef struct
   unsigned int response, resp_ex;
 } rirb_entry_t;
 
-typedef struct hda_devc
+typedef struct hda_devc_t
 {
   oss_device_t *osdev;
   oss_native_word base;
@@ -125,13 +125,14 @@ typedef struct hda_devc
 
   hda_portc output_portc[MAX_OUTPUTS];
   hda_portc input_portc[MAX_INPUTS];
+  int num_outputs, num_inputs;
 
   int num_spdin, num_spdout;
 }
-hda_devc;
+hda_devc_t;
 
 static int
-rirb_intr (hda_devc * devc)
+rirb_intr (hda_devc_t * devc)
 {
   int serviced = 0;
   unsigned char rirbsts;
@@ -180,7 +181,7 @@ rirb_intr (hda_devc * devc)
 static int
 hdaintr (oss_device_t * osdev)
 {
-  hda_devc *devc = (hda_devc *) osdev->devc;
+  hda_devc_t *devc = (hda_devc_t *) osdev->devc;
   unsigned int status;
   int serviced = 0;
   int i;
@@ -242,7 +243,7 @@ do_corb_write (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
   unsigned int wp;
   unsigned int tmp;
   oss_native_word flags;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
 
   tmp = (cad << 28) | (d << 27) | (nid << 20) | (verb << 8) | (parm & 0xffff);
   wp = PCI_READB (devc->osdev, devc->azbar + HDA_CORBWP) & 0x00ff;
@@ -265,7 +266,7 @@ do_corb_write_nomutex (void *dc, unsigned int cad, unsigned int nid, unsigned in
   unsigned int wp;
   unsigned int tmp;
   oss_native_word flags;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
 
   tmp = (cad << 28) | (d << 27) | (nid << 20) | (verb << 8) | (parm & 0xffff);
   wp = PCI_READB (devc->osdev, devc->azbar + HDA_CORBWP) & 0x00ff;
@@ -285,7 +286,7 @@ do_corb_read (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 	      unsigned int *lower)
 {
   int tmout;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -319,7 +320,7 @@ do_corb_read_poll (void *dc, unsigned int cad, unsigned int nid,
 		   unsigned int *upper, unsigned int *lower)
 {
   int tmout = 0;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -356,7 +357,7 @@ corb_read (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 	   unsigned int verb, unsigned int parm, unsigned int *upper,
 	   unsigned int *lower)
 {
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
 
 /*
  * Do three retries using different access methods
@@ -438,7 +439,7 @@ static short
 hda_audio_set_channels (int dev, short arg)
 {
   hda_portc *portc = audio_engines[dev]->portc;
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   adev_p adev = audio_engines[dev];
   int i, n1, n2;
 
@@ -526,7 +527,7 @@ static int
 do_corb_write_simple (void *dc, unsigned int v)
 {
   unsigned int wp;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
 
   wp = PCI_READB (devc->osdev, devc->azbar + HDA_CORBWP) & 0x00ff;
 
@@ -543,7 +544,7 @@ static int
 do_corb_read_simple (void *dc, unsigned int cmd, unsigned int *v)
 {
   int tmout = 0;
-  hda_devc *devc = (hda_devc *) dc;
+  hda_devc_t *devc = (hda_devc_t *) dc;
 
   do_corb_write_simple (dc, cmd);
 
@@ -568,7 +569,7 @@ do_corb_read_simple (void *dc, unsigned int cmd, unsigned int *v)
 static int
 hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   extern int hdaudio_snoopy;
 
@@ -629,7 +630,7 @@ static int
 hda_audio_open (int dev, int mode, int openflags)
 {
   hda_portc *portc = audio_engines[dev]->portc;
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
   hda_engine_t *engines, *engine = NULL;
   int i, n;
@@ -710,7 +711,7 @@ static void
 hda_audio_close (int dev, int mode)
 {
   hda_portc *portc = audio_engines[dev]->portc;
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
   int i;
 
@@ -767,7 +768,7 @@ hda_audio_start_input (int dev, oss_native_word buf, int count,
 static void
 hda_audio_trigger (int dev, int state)
 {
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   hda_engine_t *engine = portc->engine;
   oss_native_word flags;
@@ -846,7 +847,7 @@ hda_audio_trigger (int dev, int state)
 }
 
 static void
-init_bdl (hda_devc * devc, hda_engine_t * engine, dmap_p dmap)
+init_bdl (hda_devc_t * devc, hda_engine_t * engine, dmap_p dmap)
 {
   int i;
   bdl_t *bdl = engine->bdl;
@@ -862,7 +863,7 @@ init_bdl (hda_devc * devc, hda_engine_t * engine, dmap_p dmap)
 }
 
 static int
-setup_audio_engine (hda_devc * devc, hda_engine_t * engine, hda_portc * portc,
+setup_audio_engine (hda_devc_t * devc, hda_engine_t * engine, hda_portc * portc,
 		    dmap_t * dmap)
 {
   unsigned int tmp, tmout;
@@ -931,7 +932,7 @@ setup_audio_engine (hda_devc * devc, hda_engine_t * engine, hda_portc * portc,
 static int
 hda_audio_prepare_for_input (int dev, int bsize, int bcount)
 {
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_in;
   oss_native_word flags;
@@ -961,7 +962,7 @@ hda_audio_prepare_for_input (int dev, int bsize, int bcount)
 static int
 hda_audio_prepare_for_output (int dev, int bsize, int bcount)
 {
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   hda_engine_t *engine;
 
@@ -993,7 +994,7 @@ hda_audio_prepare_for_output (int dev, int bsize, int bcount)
 static int
 hda_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
-  hda_devc *devc = audio_engines[dev]->devc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   hda_engine_t *engine;
   unsigned int ptr;
@@ -1034,7 +1035,7 @@ static const audiodrv_t hda_audio_driver = {
 };
 
 static int
-reset_controller (hda_devc * devc)
+reset_controller (hda_devc_t * devc)
 {
   unsigned int tmp, tmout;
 
@@ -1074,7 +1075,7 @@ reset_controller (hda_devc * devc)
 }
 
 static int
-setup_controller (hda_devc * devc)
+setup_controller (hda_devc_t * devc)
 {
   unsigned int tmp, tmout;
   oss_native_word phaddr;
@@ -1184,7 +1185,7 @@ setup_controller (hda_devc * devc)
 }
 
 static int
-setup_engines (hda_devc * devc)
+setup_engines (hda_devc_t * devc)
 {
   int i, p;
   unsigned int gcap;
@@ -1262,7 +1263,7 @@ setup_engines (hda_devc * devc)
 
 /*ARGSUSED*/
 static void
-init_adev_caps (hda_devc * devc, adev_p adev, hdaudio_endpointinfo_t * ep)
+init_adev_caps (hda_devc_t * devc, adev_p adev, hdaudio_endpointinfo_t * ep)
 {
   int i;
 
@@ -1301,7 +1302,7 @@ hdaudio_reprogram_spdif (void *_devc, void *_portc,
 			 oss_digital_control * ctl, unsigned int mask)
 {
   unsigned short cbits = 0;
-  hda_devc *devc = _devc;
+  hda_devc_t *devc = _devc;
   oss_native_word flags;
   hdaudio_endpointinfo_t *endpoint = devc->spdifout_endpoint;
 
@@ -1352,7 +1353,7 @@ spdif_driver_t hdaudio_spdif_driver = {
 static int
 spdif_mixer_init (int dev)
 {
-  hda_devc *devc = mixer_devs[dev]->hw_devc;
+  hda_devc_t *devc = mixer_devs[dev]->hw_devc;
   int err;
 
   if ((err = oss_spdif_mix_init (&devc->spdc)) < 0)
@@ -1362,7 +1363,7 @@ spdif_mixer_init (int dev)
 }
 
 static void
-install_outputdevs (hda_devc * devc)
+install_outputdevs (hda_devc_t * devc)
 {
   int i, n, pass, audio_dev, output_num=0;
   char tmp_name[64];
@@ -1444,6 +1445,7 @@ install_outputdevs (hda_devc * devc)
 	  devc->first_dev = audio_dev;
 
 	adev = audio_engines[audio_dev];
+	devc->num_outputs = i+1;
 
 	adev->devc = devc;
 	adev->portc = portc;
@@ -1508,7 +1510,7 @@ install_outputdevs (hda_devc * devc)
 }
 
 static void
-install_inputdevs (hda_devc * devc)
+install_inputdevs (hda_devc_t * devc)
 {
   int i, n, audio_dev;
   char tmp_name[64];
@@ -1564,6 +1566,7 @@ install_inputdevs (hda_devc * devc)
 	devc->first_dev = audio_dev;
 
       adev = audio_engines[audio_dev];
+      devc->num_inputs = i+1;
 
       adev->devc = devc;
       adev->portc = portc;
@@ -1586,8 +1589,25 @@ install_inputdevs (hda_devc * devc)
     }
 }
 
+static void
+activate_vmix (hda_devc_t * devc)
+{
+/*
+ * Attach vmix engines to all outputs and inputs.
+ */
+
+	if (devc->num_outputs > 0)
+	   {
+		   if (devc->num_inputs < 1)
+		      vmix_attach_audiodev(devc->osdev, devc->output_portc[0].audiodev, -1, 0);
+		   else
+  		      vmix_attach_audiodev(devc->osdev, devc->output_portc[0].audiodev, devc->input_portc[0].audiodev, 0);
+	   };
+
+}
+
 static int
-init_HDA (hda_devc * devc)
+init_HDA (hda_devc_t * devc)
 {
   unsigned int gcap;
   unsigned int tmp;
@@ -1651,6 +1671,7 @@ init_HDA (hda_devc * devc)
 
   install_outputdevs (devc);
   install_inputdevs (devc);
+  activate_vmix (devc);
 
   return 1;
 }
@@ -1662,7 +1683,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
   unsigned char pci_irq_line, pci_revision, btmp;
   unsigned short pci_command, vendor, device, wtmp;
   unsigned short subvendor, subdevice;
-  hda_devc *devc;
+  hda_devc_t *devc;
   static int already_attached = 0;
   int err;
 
@@ -1813,7 +1834,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
 int
 oss_hdaudio_detach (oss_device_t * osdev)
 {
-  hda_devc *devc = (hda_devc *) osdev->devc;
+  hda_devc_t *devc = (hda_devc_t *) osdev->devc;
   int j;
 
   if (oss_disable_device (osdev) < 0)

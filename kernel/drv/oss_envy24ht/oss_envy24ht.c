@@ -2010,6 +2010,9 @@ init_devices (envy24ht_devc * devc)
     }
 
   init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0);
+
+  vmix_attach_audiodev(devc->osdev, devc->play_portc[0].dev, devc->rec_portc[0].dev, 0);
+
   if (devc->model_data->flags & MF_SPDIFIN)
     {
       oss_audio_set_devname ("spdin");

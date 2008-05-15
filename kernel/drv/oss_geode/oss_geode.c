@@ -745,7 +745,7 @@ init_geode (geode_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps = opts | ADEV_DUPLEX;
+	  caps = opts | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

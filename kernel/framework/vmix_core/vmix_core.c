@@ -1817,7 +1817,7 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
   if ((mixer = PMALLOC (devc->osdev, sizeof (*mixer))) == NULL)
     {
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
-      return;
+      return -EIO;
     }
 
   memset (mixer, 0, sizeof (*mixer));
@@ -1860,27 +1860,26 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
 
   if (masterdev >= 0)
     {
-      if (masterdev >= num_audio_devfiles)
+      if (masterdev >= num_audio_engines)
 	{
-	  return;
+	  return -EIO;
 	}
 
-      masterdev = mixer->masterdev = audio_devfiles[masterdev]->engine_num;
+      masterdev = mixer->masterdev;
 
       if (mixer->inputdev >= 0)
 	{
-	  if (inputdev >= num_audio_devfiles)
+	  if (inputdev >= num_audio_engines)
 	    inputdev = mixer->inputdev = -1;
-	  else
-	    inputdev = mixer->inputdev = audio_devfiles[inputdev]->engine_num;
 	}
 
       if (!check_masterdev (mixer))
 	{
 	  cmn_err (CE_CONT, "Vmix instance %d: Invalid master device %d\n",
 		   mixer->instance_num + 1, mixer->masterdev);
+	  return -ENXIO;
 	}
-      return;
+      return 0;
     }
 
   return -EIO;
@@ -1947,6 +1946,7 @@ vmix_create_client(void *mixer_)
   oss_native_word flags;
   vmix_portc_t *portc;
   vmix_mixer_t *mixer = mixer_;
+cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
 
 /*
  * First check if any of the already created engines is free and available for use.
@@ -1975,6 +1975,7 @@ vmix_create_client(void *mixer_)
      cmn_err(CE_WARN, "Failed to create a vmix engine, error=%d\n", engine_num);
      return engine_num;
   }
+cmn_err(CE_CONT, "Engine := %d\n", engine_num);
 
   portc = audio_engines[engine_num]->portc;
 

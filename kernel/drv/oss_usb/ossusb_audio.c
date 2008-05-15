@@ -1344,7 +1344,7 @@ ossusb_init_audiostream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
 	}
       else
 	{
-	  opts |= ADEV_NOINPUT;
+	  opts |= ADEV_NOINPUT | ADEV_ATTACH_VMIX;
 	}
     }
 

@@ -1586,7 +1586,7 @@ attach_channel_vortex2 (vortex_devc * devc, int my_mixer)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->name);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

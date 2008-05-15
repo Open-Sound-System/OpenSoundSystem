@@ -2196,7 +2196,7 @@ init_cmpci (cmpci_devc * devc)
       if (i == 0)
 	{
 	  sprintf (tmp_name, "%s (rev %0d)", devc->chip_name, devc->chiprev);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

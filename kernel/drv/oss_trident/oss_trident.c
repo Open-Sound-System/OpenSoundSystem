@@ -1283,7 +1283,7 @@ init_trident (trident_devc * devc)
       sprintf (tmp_name, "%s (rev %d)", devc->chip_name, devc->revision);
       if (i == 0)
 	{
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

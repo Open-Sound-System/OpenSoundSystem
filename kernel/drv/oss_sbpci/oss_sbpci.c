@@ -1217,7 +1217,7 @@ init_apci97 (apci97_devc * devc, int device_id)
       if (i == 0)
 	{
 	  sprintf (tmp_name, "%s (rev %d)", devc->chip_name, devc->revision);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

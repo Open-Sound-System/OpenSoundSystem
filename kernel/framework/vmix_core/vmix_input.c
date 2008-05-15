@@ -202,6 +202,9 @@ vmix_record_callback (int dev, int parm)
   fp_flags_t fp_flags;
 #endif
 
+  if (mixer == NULL) /* Houston, we have a problem. */
+     return;
+
   UP_STATUS (0x02);
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 #ifdef CONFIG_OSS_VMIX_FLOAT
@@ -300,6 +303,7 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
 {
   int i;
 
+cmn_err(CE_CONT, "a\n");
   switch (fmt)
     {
     case AFMT_S16_NE:
@@ -327,6 +331,7 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
       return;
     }
 
+cmn_err(CE_CONT, "b\n");
   mixer->record_engine.fragsize = dmap->fragment_size;
 
   mixer->record_engine.samples_per_frag =
@@ -340,9 +345,11 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
       return;
     }
 
+cmn_err(CE_CONT, "c\n");
   for (i = 0; i < mixer->record_engine.channels; i++)
     if (mixer->record_engine.chbufs[i] == NULL)	/* Not allocated yet */
       {
+cmn_err(CE_CONT, "e\n");
 	mixer->record_engine.chbufs[i] =
 	  PMALLOC (mixer->master_portc,
 		   CHBUF_SAMPLES * sizeof (vmix_sample_t));
@@ -351,15 +358,21 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
 	    cmn_err (CE_WARN, "Out of memory\n");
 	    return;
 	  }
+cmn_err(CE_CONT, "f\n");
       }
+cmn_err(CE_CONT, "g\n");
 
   dmap->audio_callback = vmix_record_callback;	/* Enable conversions */
   dmap->callback_parm = mixer->instance_num;
   dmap->dma_mode = PCM_ENABLE_INPUT;
+cmn_err(CE_CONT, "h\n");
 
   if (mixer->num_clientdevs > 1)
     adev->redirect_out = mixer->client_portc[0]->audio_dev;
+cmn_err(CE_CONT, "i\n");
+cmn_err(CE_CONT, "Calling vmix_record_callback(%d, %d)\n", mixer->inputdev, mixer->instance_num);
   vmix_record_callback (mixer->inputdev, mixer->instance_num);
+cmn_err(CE_CONT, "j\n");
 }
 
 void

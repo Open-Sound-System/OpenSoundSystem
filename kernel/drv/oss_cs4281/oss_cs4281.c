@@ -890,16 +890,16 @@ init_cs4281 (cs4281_devc * devc)
       cs4281_portc *portc = &devc->portc[i];
       char tmp_name[100];
       strcpy (tmp_name, devc->chip_name);
-      caps = ADEV_AUTOMODE | ADEV_DUPLEX;
 
       if (i == 0)
 	{
+          caps = ADEV_AUTOMODE | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       else
 	{
+          caps = ADEV_AUTOMODE | ADEV_DUPLEX | ADEV_SHADOW;
 	  strcpy (tmp_name, devc->chip_name);
-	  caps |= ADEV_SHADOW;
 	}
 
       if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,

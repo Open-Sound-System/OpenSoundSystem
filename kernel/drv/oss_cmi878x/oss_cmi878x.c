@@ -2065,7 +2065,7 @@ init_cmi8788 (cmi8788_devc * devc)
 	{
 	case 0:
 	  sprintf (tmp_name, "%s (MultiChannel)", devc->chip_name);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  fmt |= AFMT_S32_LE;
 	  portc->port_type = ADEV_MULTICH;
 	  portc->min_rate = 32000;
