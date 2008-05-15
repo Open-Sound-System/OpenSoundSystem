@@ -16,6 +16,7 @@
 #include <oss_config.h>
 
 extern int src_quality;
+extern int vmix_disabled;
 
 /*
  * Resizeable audio device tables
