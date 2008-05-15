@@ -10,6 +10,11 @@
 #define OS_VERSION "6"
 #define OpenServer
 
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
+#endif
+
 #if 0
 // Enable kernel level debugging
 #define DEBUG

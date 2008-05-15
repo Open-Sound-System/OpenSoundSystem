@@ -12,6 +12,11 @@
 #define __EXTENDED__
 #define Solaris
 
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
+#endif
+
 #define VDEV_SUPPORT
 #define USE_DEVICE_SUBDIRS
 
