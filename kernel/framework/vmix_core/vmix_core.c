@@ -11,7 +11,7 @@
 #include <oss_config.h>
 #include "vmix.h"
 
-static int vmix_disabled = 0;
+extern int vmix_disabled;	/* Configuration option (osscore.conf) */
 static vmix_mixer_t *mixer_list = NULL; /* List of all currently installed mixer instances */
 static int instance_num = 0;
 
