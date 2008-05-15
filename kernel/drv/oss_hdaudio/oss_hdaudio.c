@@ -1592,6 +1592,7 @@ install_inputdevs (hda_devc_t * devc)
 static void
 activate_vmix (hda_devc_t * devc)
 {
+#ifdef CONFIG_OSS_VMIX
 /*
  * Attach vmix engines to all outputs and inputs.
  */
@@ -1603,7 +1604,7 @@ activate_vmix (hda_devc_t * devc)
 		   else
   		      vmix_attach_audiodev(devc->osdev, devc->output_portc[0].audiodev, devc->input_portc[0].audiodev, 0);
 	   };
-
+#endif
 }
 
 static int

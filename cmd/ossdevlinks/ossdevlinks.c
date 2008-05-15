@@ -4,7 +4,7 @@
  * Description:
  * Device file naming scheme was changed in OSS 4.0. This utility is used
  * to create old style "legacy" device files such as /dev/dsp0 to the
- * corresponding new stype name (such as /dev/sblive0_pcm0).
+ * corresponding new type name (such as /dev/oss/oss_sblive0/pcm0).
  *
  * By default the currently existing device links will be preserved. Legacy
  * devices for newly installed devices will be allocated after the

@@ -1405,12 +1405,14 @@ cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
 int
 oss_ich_suspend(oss_device_t *osdev)
 {
+cmn_err(CE_CONT, "oss_ich_suspend()\n");
 	return 0; /* Failed */
 }
 
 int
 oss_ich_resume(oss_device_t *osdev)
 {
+cmn_err(CE_CONT, "oss_ich_resume()\n");
 	return 0; /* Failed */
 }
 #endif

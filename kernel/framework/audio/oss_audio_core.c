@@ -1671,6 +1671,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 /*
  * Get a vmix engine if the device has vmix support enabled.
  */
+  if (!vmix_disabled)
   if (adev->vmix_mixer != NULL)	// Virtual mixer attached
      {
 	     int vmix_dev;
@@ -1693,11 +1694,12 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
      }
 #endif
 
+#if 0
 /*
  * Follow redirection chain for the device.
  *
  * (TODO: This feature was for earlier versions of vmix/softoss and not in use for the time being. However
- * it is possible that some other driver finds use for it in the future.
+ * it is possible that some other driver finds use for it in the future).
  */
 
   if (!open_excl)
@@ -1732,6 +1734,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	    adev->engine_num));
       dev = redirect;
     }
+#endif
 
   while (adev != NULL)
     {
