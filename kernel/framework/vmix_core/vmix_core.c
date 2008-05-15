@@ -857,6 +857,8 @@ vmix_open (int dev, int mode, int open_flags)
 
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 
+  portc->open_pending = 0;	/* Was set to 1 by vmix_create_client */
+
   if (portc->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
@@ -1320,7 +1322,7 @@ static audiodrv_t vmix_driver = {
  * Initialization support
  */
 
-static void
+static int
 create_vmix_engine (vmix_mixer_t * mixer)
 {
   vmix_portc_t *portc;
@@ -1337,7 +1339,10 @@ create_vmix_engine (vmix_mixer_t * mixer)
    */
 
   if (mixer->masterdev == -1)
-    return;
+    return -ENXIO;
+
+  if (mixer->num_clientdevs >= MAX_CLIENTS) /* Cannot create more client engines */
+     return -EBUSY;
 
   /*
    * Other than the first instance are unlikely to be default the default
@@ -1349,12 +1354,14 @@ create_vmix_engine (vmix_mixer_t * mixer)
   if ((portc = PMALLOC (mixer->devc->osedv, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
-      return;
+      return -ENOMEM;
     }
   memset (portc, 0, sizeof (*portc));
+  portc->open_pending = 1; /* Reserve this engine to the client it was created for */
 
   n = mixer->num_clientdevs++;
   portc->num = n;
+
   mixer->client_portc[n] = portc;
 
   if (n > 0)
@@ -1379,7 +1386,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
 						AFMT_S16_NE | AFMT_S32_NE |
 						AFMT_FLOAT, mixer, -1)) < 0)
     {
-      return;
+      return portc->audio_dev;
     }
 
   adev = audio_engines[portc->audio_dev];
@@ -1421,6 +1428,8 @@ create_vmix_engine (vmix_mixer_t * mixer)
 	  audio_engines[mixer->masterdev]->redirect_in = portc->audio_dev;
 	}
     }
+
+  return portc->audio_dev;
 }
 
 static void
@@ -1759,23 +1768,16 @@ cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
 
   mixer->installed_ok = 1;
 
-  create_vmix_engine (mixer); // TODO: This should be done on demand
-
-  //relink_masterdev (mixer); // TODO: Enable this
-
-  if (mixer->inputdev > -1)
-    relink_inputdev (mixer);
-
   // create_loopdev (mixer); // TODO: Enable this
 
-  if (mixer->num_clientdevs > 0 && mixer->output_mixer_dev > -1)
+  if (mixer->output_mixer_dev > -1)
     {
       mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
 				  create_output_controls, 20, mixer);
     }
 
-  if (mixer->inputdev >= 0 && mixer->num_clientdevs > 0
-      && mixer->input_mixer_dev > -1)
+  if (mixer->inputdev >= 0 &&
+      mixer->input_mixer_dev > -1)
     {
       mixer_ext_set_vmix_init_fn (mixer->input_mixer_dev,
 				  create_input_controls, 10, mixer);
@@ -1936,6 +1938,57 @@ vmix_replug_audiodev(oss_device_t *osdev, int masterdev)
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
 cmn_err(CE_CONT, "vmix_replug_audiodev(%p, %d)\n", osdev, masterdev);
+}
+
+int
+vmix_create_client(void *mixer_)
+{
+  int engine_num=-1, i;
+  oss_native_word flags;
+  vmix_portc_t *portc;
+  vmix_mixer_t *mixer = mixer_;
+
+/*
+ * First check if any of the already created engines is free and available for use.
+ */
+
+  MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
+  for (i=0;i<mixer->num_clientdevs;i++)
+  {
+	  portc = mixer->client_portc[i];
+
+	  if (portc->open_mode != 0 || portc->open_pending)
+	     continue;
+
+	  portc->open_pending = 1;
+	  engine_num = portc->audio_dev;
+  }
+  MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
+ 
+/*
+ * Create a new engine and use it
+ */
+
+  if (engine_num < 0) /* Engine not allocated yet */
+  if ((engine_num = create_vmix_engine (mixer))<0)
+  {
+     cmn_err(CE_WARN, "Failed to create a vmix engine, error=%d\n", engine_num);
+     return engine_num;
+  }
+
+  portc = audio_engines[engine_num]->portc;
+
+  /* portc->open_pending = 1; // This was done already by create_vmix_engine() */
+
+#if 0
+  // TODO: Check if the devices still need to be relinked after restructuring vmix
+  relink_masterdev (mixer);
+
+  if (mixer->inputdev > -1)
+    relink_inputdev (mixer);
+#endif
+
+  return engine_num;
 }
 
 void

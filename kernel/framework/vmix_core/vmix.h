@@ -5,9 +5,8 @@
 
 #define SUPPORTED_FORMATS (AFMT_S16_NE | AFMT_S16_OE | AFMT_S32_NE | AFMT_S32_OE)
 
-#define MAX_INSTANCES		8
-#define MAX_OUTDEVS		16
-#define MAX_LOOPDEVS		4
+#define MAX_CLIENTS		16	/* Mixing more than 16 streams together doesn't make any sense. */
+#define MAX_LOOPDEVS		2
 #define MAX_PLAY_CHANNELS	12
 /* MAX_REC_CHANNELS must be less or equal than MAX_PLAY_CHANNELS */
 #define MAX_REC_CHANNELS	12
@@ -21,6 +20,7 @@ struct _vmix_portc_t		/* Audio device specific data */
 {
   int num;
   vmix_mixer_t *mixer;
+  vmix_portc_t *next;		/* Linked list for all portc structures */
   int dev_type;
 #define DT_IN		1
 #define DT_OUT		2
@@ -35,6 +35,8 @@ struct _vmix_portc_t		/* Audio device specific data */
   int audio_dev;
   int open_mode;
   int trigger_bits;
+
+  int open_pending;	/* Set to 1 by vmix_create_client() and cleared by vmix_open() */
 
   int play_dma_pointer;
   int play_choffs;		/* Index of the first channel on multich play engines */
@@ -109,9 +111,8 @@ struct _vmix_mixer_t		/* Instance specific data */
 
   vmix_engine_t play_engine, record_engine;
 
-  vmix_portc_t *client_portc[MAX_OUTDEVS];
+  vmix_portc_t *client_portc[MAX_CLIENTS];
   vmix_portc_t *loop_portc[MAX_LOOPDEVS];
-
   int num_clientdevs, num_loopdevs;
 
 /*

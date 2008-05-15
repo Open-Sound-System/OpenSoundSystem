@@ -1666,6 +1666,39 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 
       goto done;
     }
+  
+#ifdef CONFIG_OSS_VMIX
+/*
+ * Get a vmix engine if the device has vmix support enabled.
+ */
+  if (adev->vmix_mixer != NULL)	// Virtual mixer attached
+     {
+	     int vmix_dev;
+
+	     /*
+	      * Create a new vmix client instance.
+	      */
+
+	     if ((vmix_dev=vmix_create_client(adev->vmix_mixer))>=0)
+	        {
+		      if ((dev = oss_audio_open_engine (vmix_dev, dev_class, file,
+							recursive, open_flags, newdev)) < 0)
+			{
+			  cmn_err(CE_WARN, "Failed to open vmix engine %d\n", vmix_dev);
+			  return dev;
+			}
+		
+		      goto done;
+		}
+     }
+#endif
+
+/*
+ * Follow redirection chain for the device.
+ *
+ * (TODO: This feature was for earlier versions of vmix/softoss and not in use for the time being. However
+ * it is possible that some other driver finds use for it in the future.
+ */
 
   if (!open_excl)
      {
@@ -6157,7 +6190,7 @@ oss_install_audiodev (int vers,
     }
 #ifdef linux
   /*
-   * For teh Cuckoo module
+   * For the Cuckoo module
    */
   oss_adev_pointer = audio_engines;
 #endif
@@ -6399,7 +6432,7 @@ oss_install_audiodev (int vers,
 	}
       else
 	{
-	  sprintf (op->devnode, "audio_engine%d", num);
+	  strcpy (op->devnode, "HiddenAudioDevice");
 	}
     }
 
