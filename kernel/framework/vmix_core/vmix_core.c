@@ -1846,6 +1846,7 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
   mixer->inputdev = inputdev;
   mixer->rate = 48000; // TODO: Handle this better
 
+cmn_err (CE_CONT, "Create instance %d\n", instance_num);
   DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
   DDB (cmn_err (CE_CONT, "vmix_masterdev=%d\n", masterdev));
   DDB (cmn_err (CE_CONT, "vmix_inputdev=%d\n", inputdev));
@@ -1975,7 +1976,7 @@ cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
      cmn_err(CE_WARN, "Failed to create a vmix engine, error=%d\n", engine_num);
      return engine_num;
   }
-cmn_err(CE_CONT, "Engine := %d\n", engine_num);
+cmn_err(CE_CONT, "Engine=%d\n", engine_num);
 
   portc = audio_engines[engine_num]->portc;
 

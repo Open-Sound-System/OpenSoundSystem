@@ -221,9 +221,10 @@ print_audio_info (void)
 	  printf ("%02d: ", i);
 	  if (!ainfo.enabled)
 	    printf ("(");
-	  printf ("%s ", ainfo.name);
+	  printf ("%s", ainfo.name);
 	  if (!ainfo.enabled)
 	    printf (")");
+	  printf(" ");
 	  printf ("(device file %s)\n", ainfo.devnode);
 	}
       else
