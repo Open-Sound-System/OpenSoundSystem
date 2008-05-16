@@ -5443,10 +5443,19 @@ audio_uninit_device (int dev)
       adev->out_wq = NULL;
     }
 
+#ifdef CONFIG_OSS_VMIX
+  if (adev->vmix_mixer != NULL)
+     {
+	     vmix_delete_mixer(adev->vmix_mixer);
+	     adev->vmix_mixer = NULL;
+     }
+#endif
+
   MUTEX_CLEANUP (adev->mutex);
 
   if (adev->dmap_out != NULL)
     MUTEX_CLEANUP (adev->dmap_out->mutex);
+
   if (adev->flags & ADEV_DUPLEX && adev->dmap_in != NULL
       && adev->dmap_out != adev->dmap_in)
     {

@@ -189,8 +189,11 @@ vmix_outportc_vol (int dev, int ctrl, unsigned int cmd, int value)
   if (mixer == NULL)
     return -ENXIO;
 
-  if (ctrl < 0 || ctrl >= mixer->num_clientdevs)
+  if (ctrl < 0)
     return -ENXIO;
+
+  if (ctrl >= mixer->num_clientdevs)			/* Client engine not created yet */
+     return (DB_SIZE * 5) | ((DB_SIZE * 5) << 16);	/* Force to maximum level */
 
   portc = mixer->client_portc[ctrl];
 
@@ -238,6 +241,39 @@ vmix_outportc_vu (int dev, int ctrl, unsigned int cmd, int value)
   portc->vu[0] = portc->vu[1] = 0;
 
   return val;
+}
+
+static void
+create_client_controls (void *vmix_mixer, int client_num)
+{
+  /*
+   * Create the pcmN sliders
+   */
+  int group, err, i, ctl;
+  vmix_mixer_t *mixer = vmix_mixer;
+  int mixer_dev;
+  char name[32];
+cmn_err(CE_CONT, "create_client_controls(%p, %d)\n", vmix_mixer, client_num);
+
+  mixer_dev = mixer->output_mixer_dev;
+  group = mixer->client_mixer_group;
+
+  if (mixer_dev < 0 || mixer_dev >= num_mixers)
+     return;
+
+  sprintf (name, "@pcm%d", mixer->client_portc[client_num]->audio_dev);
+  if ((err =
+       mixer_ext_create_control (mixer_dev, group, client_num, vmix_outportc_vol,
+				     MIXT_STEREOSLIDER16, name, DB_SIZE * 5,
+				     MIXF_READABLE | MIXF_WRITEABLE |
+				     MIXF_CENTIBEL | MIXF_PCMVOL)) < 0)
+	return;
+
+ if ((err =
+      mixer_ext_create_control (mixer_dev, group, client_num, vmix_outportc_vu,
+				     MIXT_STEREOPEAK, "", 144,
+				     MIXF_READABLE | MIXF_DECIBEL)) < 0)
+	return;
 }
 
 static int
@@ -303,32 +339,9 @@ create_output_controls (int mixer_dev)
 					   MIXF_READABLE | MIXF_DECIBEL)) < 0)
 	return err;
 
-  /*
-   * Create the dspN sliders
-   */
-
   sprintf (tmp, "vmix%d-out", mixer->instance_num);
-  if ((group = mixer_ext_create_group (mixer_dev, 0, tmp)) < 0)
-    return group;
-
-  for (i = 0; i < mixer->num_clientdevs; i++)
-    {
-      char name[32];
-
-      sprintf (name, "@pcm%d", mixer->client_portc[i]->audio_dev);
-      if ((err =
-	   mixer_ext_create_control (mixer_dev, group, i, vmix_outportc_vol,
-				     MIXT_STEREOSLIDER16, name, DB_SIZE * 5,
-				     MIXF_READABLE | MIXF_WRITEABLE |
-				     MIXF_CENTIBEL | MIXF_PCMVOL)) < 0)
-	return err;
-
-      if ((err =
-	   mixer_ext_create_control (mixer_dev, group, i, vmix_outportc_vu,
-				     MIXT_STEREOPEAK, "", 144,
-				     MIXF_READABLE | MIXF_DECIBEL)) < 0)
-	return err;
-    }
+  if ((mixer->client_mixer_group = mixer_ext_create_group (mixer_dev, 0, tmp)) < 0)
+    return mixer->client_mixer_group;
 
   return 0;
 }
@@ -1745,10 +1758,11 @@ cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
  */
 
   adev = audio_engines[mixer->masterdev];
-  if (adev->mixer_dev != -1)
+
+  if (mixer->osdev->first_mixer >= 0)
     {
-      mixer->output_mixer_dev = adev->mixer_dev;
-      mixer->input_mixer_dev = adev->mixer_dev;
+      mixer->output_mixer_dev = mixer->osdev->first_mixer;
+      mixer->input_mixer_dev = mixer->osdev->first_mixer;
     }
 
   if (mixer->inputdev != -1 && mixer->inputdev != mixer->masterdev)
@@ -1768,10 +1782,11 @@ cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
 
   mixer->installed_ok = 1;
 
-  // create_loopdev (mixer); // TODO: Enable this
+  // create_loopdev (mixer); // TODO: Make this configurable.
 
   if (mixer->output_mixer_dev > -1)
     {
+cmn_err(CE_CONT, "Hook output mixer %d\n", mixer->output_mixer_dev);
       mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
 				  create_output_controls, 20, mixer);
     }
@@ -1779,9 +1794,15 @@ cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
   if (mixer->inputdev >= 0 &&
       mixer->input_mixer_dev > -1)
     {
+cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
       mixer_ext_set_vmix_init_fn (mixer->input_mixer_dev,
 				  create_input_controls, 10, mixer);
     }
+
+/*
+ * Crate one client in advance so that that SNDCTL_AUDIOINFO can provide proper info.
+ */
+  vmix_create_client (mixer);
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 
@@ -1819,6 +1840,7 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
       return -EIO;
     }
+cmn_err(CE_CONT, "Mixer struct = %p\n", mixer);
 
   memset (mixer, 0, sizeof (*mixer));
 
@@ -1884,6 +1906,12 @@ cmn_err (CE_CONT, "Create instance %d\n", instance_num);
     }
 
   return -EIO;
+}
+
+void
+vmix_delete_mixer(void * vmix_mixer)
+{
+cmn_err(CE_CONT, "vmix_delete_mixer(%p)\n", vmix_mixer);
 }
 
 void
@@ -1971,24 +1999,26 @@ cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
  */
 
   if (engine_num < 0) /* Engine not allocated yet */
-  if ((engine_num = create_vmix_engine (mixer))<0)
-  {
-     cmn_err(CE_WARN, "Failed to create a vmix engine, error=%d\n", engine_num);
-     return engine_num;
-  }
+     {
+	  if ((engine_num = create_vmix_engine (mixer))<0)
+	    {
+	        cmn_err(CE_WARN, "Failed to create a vmix engine, error=%d\n", engine_num);
+	        return engine_num;
+	     }
+
+  	   portc = audio_engines[engine_num]->portc;
+	   create_client_controls (mixer, portc->num);
+     }
 cmn_err(CE_CONT, "Engine=%d\n", engine_num);
 
   portc = audio_engines[engine_num]->portc;
 
   /* portc->open_pending = 1; // This was done already by create_vmix_engine() */
 
-#if 0
-  // TODO: Check if the devices still need to be relinked after restructuring vmix
   relink_masterdev (mixer);
 
   if (mixer->inputdev > -1)
     relink_inputdev (mixer);
-#endif
 
   return engine_num;
 }

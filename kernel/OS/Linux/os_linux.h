@@ -75,6 +75,8 @@ struct _oss_device_t
   int num_audioplay, num_audiorec, num_audioduplex;
   int num_mididevs;
   int num_mixerdevs;
+  int num_loopdevs;
+  int first_mixer;	/* This must be set to -1 by osdev_create() */
   int major;
   struct module *owner;		/* Pointer to THISMODULE (needed by osscore.c) */
   char modname[32];

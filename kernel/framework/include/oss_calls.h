@@ -43,6 +43,7 @@ extern void vmix_detach_audiodev(oss_device_t *osdev, int masterdev);
 extern void vmix_unplug_audiodev(oss_device_t *osdev, int masterdev);
 extern void vmix_replug_audiodev(oss_device_t *osdev, int masterdev);
 extern int vmix_create_client(void *vmix_mixer);
+extern void vmix_delete_mixer(void * vmix_mixer);
 
 /*
  * oss_audio_core.c

@@ -5,11 +5,27 @@
 
 #define SUPPORTED_FORMATS (AFMT_S16_NE | AFMT_S16_OE | AFMT_S32_NE | AFMT_S32_OE)
 
-#define MAX_CLIENTS		16	/* Mixing more than 16 streams together doesn't make any sense. */
-#define MAX_LOOPDEVS		2
+/*
+ * Maximum number of clients per "real" device is defined by MAX_CLIENTS. Limit of 4 would be good for 95% of systems.
+ * For each client there will be a mixer volume control and peak meter in the mixer interface. Raising the
+ * client limit will make the mixer interface larger and larger. Something like 8 is probably the practical limit
+ * for number of clients.
+ *
+ * Mixing more than 16 streams together doesn't make much sense since the result is likely to be
+ * just noise. Mixing a stream will cause some overhead so it's not a good idea to let large number of iddle
+ * applications running muted or playing silence.
+ */
+
+#define MAX_CLIENTS		8	
+
+#define MAX_LOOPDEVS		2	/* Maximum number of vmix loopback devices */
+
+/*
+ * 8 play channels and 2 rec channels might be OK for most devices. However envy24 requires 10 play and 12 rec 
+ * channels for the "raw devices". Some professional (ADAT) cards like Digi96 requires 8+8 channels.
+ */
 #define MAX_PLAY_CHANNELS	12
 /* MAX_REC_CHANNELS must be less or equal than MAX_PLAY_CHANNELS */
-#define MAX_REC_CHANNELS	12
 #define CHBUF_SAMPLES		2048	/* Max samples (frames) per fragment */
 
 typedef struct _vmix_mixer_t vmix_mixer_t;
@@ -124,6 +140,7 @@ struct _vmix_mixer_t		/* Instance specific data */
   int input_mixer_dev;
   int first_input_mixext;
   int first_output_mixext;
+  int client_mixer_group;	/* Create the client controls under this mixer group */
 };
 
 extern void vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev,

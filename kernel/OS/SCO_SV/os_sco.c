@@ -620,6 +620,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   osdev->key = *dip;
   osdev->osid = dip;
   osdev->available = 1;
+  osdev->first_mixer = -1;
   osdev->instance = instance;
   osdev->dev_type = dev_type;
   osdev->devc = NULL;

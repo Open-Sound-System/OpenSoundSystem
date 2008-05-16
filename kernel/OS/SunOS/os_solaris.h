@@ -131,6 +131,8 @@ struct _oss_device_t
   int num_audioplay, num_audiorec, num_audioduplex;
   int num_mididevs;
   int num_mixerdevs;
+  int num_loopdevs;
+  int first_mixer;	/* This must be set to -1 by osdev_create() */
   char *hw_info;
 
   volatile int refcount;	/* Nonzero means that the device is needed by some other (virtual) driver. */

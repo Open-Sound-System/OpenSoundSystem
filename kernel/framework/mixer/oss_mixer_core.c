@@ -2487,6 +2487,9 @@ oss_install_mixer (int vers,
   op->priority = 0;		/* Normal (low) priority */
   op->real_dev = num;
 
+  if (osdev->first_mixer == -1) /* Not defined yet */
+     osdev->first_mixer = num;
+
   mixer_devs[num] = op;
 /*
  * Create the device node

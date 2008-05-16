@@ -1455,6 +1455,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   osdev->num_audioduplex = 0;
   osdev->num_mididevs = 0;
   osdev->num_mixerdevs = 0;
+  osdev->first_mixer = -1;
 
   switch (dev_type)
     {
