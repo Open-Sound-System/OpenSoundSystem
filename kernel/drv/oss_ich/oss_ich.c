@@ -286,7 +286,6 @@ ichintr (oss_device_t * osdev)
   oss_native_word flags;
   int i;
 
-
   flags = 0;			/* To prevent compiler warnings */
   MUTEX_ENTER (devc->mutex, flags);
   /* Get pending interrupts and acknowledge them */

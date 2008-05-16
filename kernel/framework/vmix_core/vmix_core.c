@@ -1803,6 +1803,7 @@ cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
  * Crate one client in advance so that that SNDCTL_AUDIOINFO can provide proper info.
  */
   vmix_create_client (mixer);
+  mixer->client_portc[0]->open_pending = 0; /* Mark this free engine to be free for use */
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 
