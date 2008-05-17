@@ -330,7 +330,7 @@ init_status (void)
 	}
       }
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
   if (!put_status ("\nMIDI devices:\n"))
     return;
 

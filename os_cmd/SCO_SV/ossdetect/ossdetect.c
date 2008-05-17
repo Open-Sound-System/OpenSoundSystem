@@ -22,7 +22,6 @@ dev_t default_dev = 0;
 #define MAX_PASS	3
 
 static char *osslibdir = "/usr/lib/oss";
-static char *vmix = "VMIX";
 
 static int verbose = 0;
 
@@ -329,8 +328,6 @@ main (int argc, char *argv[])
     load_devlist ("/etc/oss_3rdparty", 1);
 
   pci_detect ();
-
-  add_drv (vmix, PSEUDO_PASS);
 
   if ((f = fopen ("/usr/lib/oss/etc/installed_drivers", "w")) == NULL)
     {

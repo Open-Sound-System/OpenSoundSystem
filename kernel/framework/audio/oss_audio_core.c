@@ -16,6 +16,7 @@
 #include <oss_config.h>
 
 extern int src_quality;
+extern int vmix_disabled;
 
 /*
  * Resizeable audio device tables
@@ -1664,6 +1665,41 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 
       goto done;
     }
+  
+#ifdef CONFIG_OSS_VMIX
+/*
+ * Get a vmix engine if the device has vmix support enabled.
+ */
+  if (!vmix_disabled)
+  if (adev->vmix_mixer != NULL)	// Virtual mixer attached
+     {
+	     int vmix_dev;
+
+	     /*
+	      * Create a new vmix client instance.
+	      */
+
+	     if ((vmix_dev=vmix_create_client(adev->vmix_mixer))>=0)
+	        {
+		      if ((dev = oss_audio_open_engine (vmix_dev, dev_class, file,
+							recursive, open_flags, newdev)) < 0)
+			{
+			  cmn_err(CE_WARN, "Failed to open vmix engine %d\n", vmix_dev);
+			  return dev;
+			}
+		
+		      goto done;
+		}
+     }
+#endif
+
+#if 0
+/*
+ * Follow redirection chain for the device.
+ *
+ * (TODO: This feature was for earlier versions of vmix/softoss and not in use for the time being. However
+ * it is possible that some other driver finds use for it in the future).
+ */
 
   if (!open_excl)
      {
@@ -1697,6 +1733,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	    adev->engine_num));
       dev = redirect;
     }
+#endif
 
   while (adev != NULL)
     {
@@ -5404,10 +5441,19 @@ audio_uninit_device (int dev)
       adev->out_wq = NULL;
     }
 
+#ifdef CONFIG_OSS_VMIX
+  if (adev->vmix_mixer != NULL)
+     {
+	     vmix_delete_mixer(adev->vmix_mixer);
+	     adev->vmix_mixer = NULL;
+     }
+#endif
+
   MUTEX_CLEANUP (adev->mutex);
 
   if (adev->dmap_out != NULL)
     MUTEX_CLEANUP (adev->dmap_out->mutex);
+
   if (adev->flags & ADEV_DUPLEX && adev->dmap_in != NULL
       && adev->dmap_out != adev->dmap_in)
     {
@@ -6104,9 +6150,14 @@ oss_install_audiodev_with_devname (int vers,
 		      char *name,
 		      const audiodrv_t * driver,
 		      int driver_size,
+<<<<<<< /disk3/sources/oss-sunray/kernel/framework/audio/oss_audio_core.c
+		      long long flags,
+		      unsigned int format_mask, void *devc, int parent)
+=======
 		      int flags,
 		      unsigned int format_mask, void *devc, int parent,
 		      char * devfile_name)
+>>>>>>> /tmp/oss_audio_core.c~other.T9iSqH
 {
   audiodrv_t *d;
   adev_t *op;
@@ -6142,7 +6193,7 @@ oss_install_audiodev_with_devname (int vers,
     }
 #ifdef linux
   /*
-   * For teh Cuckoo module
+   * For the Cuckoo module
    */
   oss_adev_pointer = audio_engines;
 #endif
@@ -6197,6 +6248,7 @@ oss_install_audiodev_with_devname (int vers,
 	memset ((char *) d, 0, sizeof (audiodrv_t));
       memcpy ((char *) d, (char *) driver, driver_size);
       num = num_audio_engines;
+      audio_engines[num] = op;
       num_audio_engines++;
 
       update_devlists = 1;
@@ -6313,6 +6365,7 @@ oss_install_audiodev_with_devname (int vers,
 		   }
 	     }
 
+      	     audio_devfiles[num_audio_devfiles] = op;
 	     devfile_num = num_audio_devfiles++;
 	}
     }
@@ -6352,6 +6405,21 @@ oss_install_audiodev_with_devname (int vers,
       oss_install_chrdev (osdev, name, OSS_DEV_DSP, devfile_num,
 			  &audio_cdev_drv, chdev_flags);
       osdev->num_audio_engines++;
+
+#ifdef CONFIG_OSS_VMIX
+      if (flags & ADEV_ATTACH_VMIX)
+         {
+		 int err;
+
+		 /*
+		  * Attach virtual mixer with the default parameters.
+		  */
+		 if ((err=vmix_attach_audiodev(osdev, devfile_num, -1, 0))<0)
+		    {
+			    cmn_err(CE_NOTE, "Cannot attach virtual mixer to audio engine %s, error=\n", op->name, err);
+		    }
+	 }
+#endif
     }
   else
     {
@@ -6367,7 +6435,7 @@ oss_install_audiodev_with_devname (int vers,
 	}
       else
 	{
-	  sprintf (op->devnode, "audio_engine%d", num);
+	  strcpy (op->devnode, "HiddenAudioDevice");
 	}
     }
 

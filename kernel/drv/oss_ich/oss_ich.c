@@ -286,7 +286,6 @@ ichintr (oss_device_t * osdev)
   oss_native_word flags;
   int i;
 
-
   flags = 0;			/* To prevent compiler warnings */
   MUTEX_ENTER (devc->mutex, flags);
   /* Get pending interrupts and acknowledge them */
@@ -1061,7 +1060,7 @@ ich_init (ich_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  opts |= ADEV_DUPLEX;
+	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       if (i == 1)
 	{
@@ -1407,12 +1406,14 @@ cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
 int
 oss_ich_suspend(oss_device_t *osdev)
 {
+cmn_err(CE_CONT, "oss_ich_suspend()\n");
 	return 0; /* Failed */
 }
 
 int
 oss_ich_resume(oss_device_t *osdev)
 {
+cmn_err(CE_CONT, "oss_ich_resume()\n");
 	return 0; /* Failed */
 }
 #endif

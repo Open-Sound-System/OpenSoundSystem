@@ -1435,7 +1435,7 @@ attach_channel (vortex_devc * devc, int my_mixer)
       if (i == 0)
 	{
 	  sprintf (tmp_name, "Aureal Vortex (%s)", devc->name);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

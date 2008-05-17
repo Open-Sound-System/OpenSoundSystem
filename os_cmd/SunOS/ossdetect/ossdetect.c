@@ -20,8 +20,6 @@ static char arch[32] = "";
 static int install_imux = 0;
 static char *safe_mode="";
 
-static char *vmix = "oss_vmix";
-
 /* List of all modules installed in the system (OSS and non-oss) */
 #define MAX_MODS 512
 static char *installed_modules[MAX_MODS];
@@ -643,9 +641,6 @@ main (int argc, char *argv[])
 	  load_license ("/etc/oss/license.asc");
 	  exit (0);
 	  break;
-	case 'V':
-	  vmix = NULL;
-	  break;
 	}
 
   load_license ("/etc/oss/license.asc");
@@ -766,14 +761,6 @@ main (int argc, char *argv[])
 	      exit (256);
 	    }
 	}
-
-  /* if there is a VMIX driver, install it */
-  if (vmix != NULL)
-    {
-      check_conf (vmix, 1, "");
-      add_drv ("OSS Virtual mixer/synth driver", vmix,
-	       "-m '* 0666 root sys'");
-    }
 
   if (install_imux)
     {

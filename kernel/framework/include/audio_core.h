@@ -186,7 +186,7 @@ struct _adev_t
   int enabled;
   int unloaded;
   struct _adev_t *next_in, *next_out;	/* Links to the next "shadow" devices */
-  int flags;
+  long long flags;
   int open_flags;
   int src_quality;
   int caps;
@@ -285,6 +285,7 @@ struct _adev_t
   oss_longname_t song_name;
   oss_label_t label;
   oss_devnode_t devnode;
+  void *vmix_mixer;		/* Pointer to the vmix_mixer_t structure for this device */
 };
 
 #define UNIT_EXPAND		1024
@@ -341,7 +342,7 @@ int oss_install_audiodev (int vers,
 			  char *name,
 			  const audiodrv_t * driver,
 			  int driver_size,
-			  int flags,
+			  long long flags,
 			  unsigned int format_mask, void *devc, int parent);
 
 int oss_install_audiodev_with_devname (int vers,

@@ -1026,7 +1026,7 @@ install_audio_devices (emu10k1x_devc * devc)
 	}
 
       if (i == 0)
-	flags |= ADEV_DUPLEX;
+	flags |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
       else
 	flags |= ADEV_NOINPUT;
 

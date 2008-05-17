@@ -686,9 +686,8 @@ attach_channel (digi32_devc * devc, int chnum, char *name,
   opts =
     ADEV_DUPLEX | ADEV_STEREOONLY | ADEV_COLD | ADEV_NOMMAP | ADEV_NOVIRTUAL;
 
-  if (chnum > 0)
-    opts |= ADEV_SHADOW;
-
+  if (chnum != 0)
+     opts |= ADEV_SHADOW;
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,

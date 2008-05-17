@@ -19,7 +19,7 @@ extern unsigned char tmp_status;
 
 #undef SINE_DEBUG
 
-#ifndef VMIX_USE_FLOAT
+#ifndef CONFIG_OSS_VMIX_FLOAT
 #undef SINE_DEBUG
 #endif
 
@@ -122,7 +122,7 @@ vmix_rec_export_16ne (vmix_portc_t * portc, int nsamples)
   short *outp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) x
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 32767.0;
 #endif
 #include "rec_export.inc"
@@ -134,7 +134,7 @@ vmix_rec_export_16oe (vmix_portc_t * portc, int nsamples)
   short *outp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) bswap16(x)
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 32767.0;
 #endif
 #include "rec_export.inc"
@@ -151,7 +151,7 @@ vmix_rec_export_32ne (vmix_portc_t * portc, int nsamples)
   int *outp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) x
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 2147483647.0;
 #endif
 #include "rec_export.inc"
@@ -163,13 +163,13 @@ vmix_rec_export_32oe (vmix_portc_t * portc, int nsamples)
   int *outp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) bswap32(x)
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 2147483647.0;
 #endif
 #include "rec_export.inc"
 }
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 void
 vmix_rec_export_float (vmix_portc_t * portc, int nsamples)
 {
@@ -193,19 +193,21 @@ vmix_record_callback (int dev, int parm)
   dmap_t *dmap = adev->dmap_in;
   oss_native_word flags;
 
-  vmix_devc_t *devc = vmix_devc;
-  vmix_mixer_t *mixer = devc->mixers[parm];
+  vmix_mixer_t *mixer = adev->vmix_mixer;
   vmix_engine_t *eng = &mixer->record_engine;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   fp_env_t fp_buf;
   short *fp_env = fp_buf;
   fp_flags_t fp_flags;
 #endif
 
+  if (mixer == NULL) /* Houston, we have a problem. */
+     return;
+
   UP_STATUS (0x02);
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   {
     /*
      * Align the FP save buffer to 16 byte boundary
@@ -276,7 +278,7 @@ vmix_record_callback (int dev, int parm)
       dmap->user_counter += dmap->fragment_size;
     }
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   FP_RESTORE (fp_env, fp_flags);
 #endif
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);

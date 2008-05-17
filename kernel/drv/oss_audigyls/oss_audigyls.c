@@ -1445,7 +1445,7 @@ install_audio_devices (audigyls_devc * devc)
 	case 0:
 	  portc->play_port = 0;
 	  portc->rec_port = 2;
-	  flags |= ADEV_DUPLEX;
+	  flags |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  break;
 	case 1:
 	  portc->play_port = 0;

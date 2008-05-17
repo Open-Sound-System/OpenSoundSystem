@@ -144,6 +144,7 @@ osdev_create (dev_info_t * dip, int dev_type,
   osdev->instance = instance;
   osdev->dip = dip;
   osdev->available = 1;
+  osdev->first_mixer = -1;
 
   strcpy (osdev->modname, nick);
 

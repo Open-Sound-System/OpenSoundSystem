@@ -12,6 +12,11 @@
 #define __EXTENDED__
 #define Solaris
 
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
+#endif
+
 #define VDEV_SUPPORT
 #define USE_DEVICE_SUBDIRS
 
@@ -126,6 +131,8 @@ struct _oss_device_t
   int num_audioplay, num_audiorec, num_audioduplex;
   int num_mididevs;
   int num_mixerdevs;
+  int num_loopdevs;
+  int first_mixer;	/* This must be set to -1 by osdev_create() */
   char *hw_info;
 
   volatile int refcount;	/* Nonzero means that the device is needed by some other (virtual) driver. */

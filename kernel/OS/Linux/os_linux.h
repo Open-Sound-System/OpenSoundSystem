@@ -25,8 +25,9 @@
 #undef  MEMDEBUG
 #define VDEV_SUPPORT
 
-#if (defined(i386) || defined(x86_64)) && !defined(CONFIG_OSS_FIXDEPOINT)
-#define VMIX_USE_FLOAT
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
 #endif
 
 /*
@@ -74,6 +75,8 @@ struct _oss_device_t
   int num_audioplay, num_audiorec, num_audioduplex;
   int num_mididevs;
   int num_mixerdevs;
+  int num_loopdevs;
+  int first_mixer;	/* This must be set to -1 by osdev_create() */
   int major;
   struct module *owner;		/* Pointer to THISMODULE (needed by osscore.c) */
   char modname[32];

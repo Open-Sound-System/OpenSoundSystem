@@ -1291,7 +1291,7 @@ init_ymf7xx (ymf7xx_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

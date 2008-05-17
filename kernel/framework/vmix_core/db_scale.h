@@ -8,7 +8,7 @@
  * Table size is 25 dB (first entry is handled as mute).
  */
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 const float vmix_db_table[DB_SIZE + 1] = {
   0.0 /* MUTE */ , 0.0035481, 0.0039811, 0.0044668, 0.0050119,
   0.0056234, 0.0063096, 0.0070795, 0.0079433, 0.0089125,

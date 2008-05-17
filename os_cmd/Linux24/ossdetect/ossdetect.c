@@ -20,8 +20,6 @@
 
 static char *osslibdir = "/usr/lib/oss";
 
-static char *vmix = "VMIX";
-
 static int usb_ok = 0;
 
 static int verbose = 0;
@@ -479,9 +477,6 @@ main (int argc, char *argv[])
       perror ("/usr/lib/oss/etc/installed_drivers");
       exit (-1);
     }
-
-  /* Add vmix as the last driver */
-  add_drv (vmix, PSEUDO_PASS);
 
   for (pass = 0; pass < MAX_PASS; pass++)
     for (i = 0; i < ndrivers; i++)

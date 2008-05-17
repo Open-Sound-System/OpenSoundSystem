@@ -1,9 +1,3 @@
-lynxtwo	pci1621,20	LynxTWO-A Studio Interface
-lynxtwo	pci1621,21	LynxTWO-B Studio Interface
-lynxtwo	pci1621,22	LynxTWO-C Studio Interface
-lynxtwo	pci1621,23	Lynx-L22 Studio Interface
-lynxtwo	pci1621,24	Lynx AES16 Studio Interface
-lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 oss_ali5455	pci10b9,5455	ALI M5455
 oss_allegro	pci125d,1988	ESS Allegro ES1988
 oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
@@ -167,7 +161,6 @@ oss_via823x	pci1106,7059	VIA VT8233A
 oss_via823x	pcs1462,3800	MSI K7T266
 oss_via823x	pcs1462,4720	MSI KT3 Ultra 
 oss_via97	pci1106,3058	VIA VT82C686 
-oss_vmix	VMIX	OSS Transparent Virtual Mixing Architecture
 oss_vortex	pci12eb,1	Aureal Vortex (AU8820)
 oss_vortex	pci12eb,2	Aureal Vortex2 (AU8830)
 oss_vortex	AU8810		Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
@@ -179,6 +172,3 @@ oss_ymf7xx	pci1073,a	Yamaha DS-XG YMF740
 oss_ymf7xx	pci1073,c	Yamaha DS-XG YMF740C
 oss_ymf7xx	pci1073,d	Yamaha DS-XG YMF724F
 osscore	OSSCORE	OSS Core services
-riptide	pci127a,4310	Conexant Riptide 
-riptide	pci127a,4320	Conexant Riptide
-sonorus	pci1057,1801	Sonorus STUDI/O
