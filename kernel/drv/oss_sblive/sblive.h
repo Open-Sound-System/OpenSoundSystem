@@ -142,7 +142,7 @@
 #define SRDA		0x07e
 #define STDA		0x07f
 #define L_FXRT		0x00b
-#define FXRT		((devc->card_type&SB_AUDIGY)? 0x7d:0x00b)	/* W:cnl */
+#define FXRT		((devc->feature_mask&SB_AUDIGY)? 0x7d:0x00b)	/* W:cnl */
 #define MAPA		0x00c
 #define MAPB		0x00d
 #define VEV		0x010	/* W:cnl */
@@ -213,9 +213,9 @@
 #define HLIEH		0x067	/* DW:nocnl */
 #define HLIPL		0x068	/* DW:nocnl */
 #define HLIPH		0x069	/* DW:nocnl */
-#define GPR0		((devc->card_type==SB_LIVE)? 0x100:0x400)	/* DW:nocnl */
+#define GPR0		((devc->feature_mask&SB_LIVE)? 0x100:0x400)	/* DW:nocnl */
 #define TMA0		0x300	/* Tank memory */
-#define UC0		((devc->card_type==SB_LIVE) ? 0x400:0x600)	/* DSM microcode memory */
+#define UC0		((devc->feature_mask&SB_LIVE) ? 0x400:0x600)	/* DSM microcode memory */
 
 /* Interrupt enable register */
 #define IE	0x0c
@@ -454,7 +454,7 @@ sblive_reg;
 typedef struct
 {
   int magic;
-  int card_type;
+  int feature_mask;
   int size;			/* # of instructions */
   unsigned int code[1024];
   gpr_info parms;

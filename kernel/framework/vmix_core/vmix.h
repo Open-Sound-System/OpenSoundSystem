@@ -26,6 +26,8 @@
  */
 #define MAX_PLAY_CHANNELS	12
 /* MAX_REC_CHANNELS must be less or equal than MAX_PLAY_CHANNELS */
+#define MAX_REC_CHANNELS	12
+
 #define CHBUF_SAMPLES		2048	/* Max samples (frames) per fragment */
 
 typedef struct _vmix_mixer_t vmix_mixer_t;

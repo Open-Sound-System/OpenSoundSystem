@@ -342,7 +342,7 @@ int oss_install_audiodev (int vers,
 			  char *name,
 			  const audiodrv_t * driver,
 			  int driver_size,
-			  long long flags,
+			  unsigned long long flags,
 			  unsigned int format_mask, void *devc, int parent);
 
 int oss_install_audiodev_with_devname (int vers,

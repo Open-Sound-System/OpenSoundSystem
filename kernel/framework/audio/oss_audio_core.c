@@ -6150,14 +6150,9 @@ oss_install_audiodev_with_devname (int vers,
 		      char *name,
 		      const audiodrv_t * driver,
 		      int driver_size,
-<<<<<<< /disk3/sources/oss-sunray/kernel/framework/audio/oss_audio_core.c
-		      long long flags,
-		      unsigned int format_mask, void *devc, int parent)
-=======
 		      int flags,
 		      unsigned int format_mask, void *devc, int parent,
 		      char * devfile_name)
->>>>>>> /tmp/oss_audio_core.c~other.T9iSqH
 {
   audiodrv_t *d;
   adev_t *op;
@@ -6472,7 +6467,7 @@ oss_install_audiodev (int vers,
 		      char *name,
 		      const audiodrv_t * driver,
 		      int driver_size,
-		      int flags,
+		      unsigned long long flags,
 		      unsigned int format_mask, void *devc, int parent)
 {
  return oss_install_audiodev_with_devname (vers,

@@ -2026,16 +2026,12 @@ init_devices (envy24ht_devc * devc)
 			DF_SPDIF | DF_AC3, "spdif", "spdout");
     }
 
-<<<<<<< /disk3/sources/oss-sunray/kernel/drv/oss_envy24ht/oss_envy24ht.c
-  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0);
+  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0, "");
 
 #ifdef CONFIG_OSS_VMIX
   vmix_attach_audiodev(devc->osdev, devc->play_portc[0].dev, devc->rec_portc[0].dev, 0);
 #endif
 
-=======
-  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0, "");
->>>>>>> /tmp/oss_envy24ht.c~other.REp03R
   if (devc->model_data->flags & MF_SPDIFIN)
     {
       init_rec_device (devc, 0x00c, 0x30, 0x04, "digital", DF_SPDIF, "spdin");
