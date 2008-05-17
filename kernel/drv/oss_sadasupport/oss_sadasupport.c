@@ -28,33 +28,7 @@
 
 int sadasupport_rate = 48000;
 
-/*
- * Some known programs have native OSS mode (plugin). Such programs should
- * not use this emulation module. Some others may open /dev/audioctl
- * in wrong mode which may require adjustment.
- */
-
-typedef struct
-{
-  char *name;
-  unsigned long flags;
-} blacklist_t;
-
-#define BL_BLACKLIST		0x00000001
-#define BL_MODE_WRITE		0x00000002
-#define BL_MODE_READ		0x00000004
-#define BL_MODE_READWRITE	0x00000008
-
 static int do_byteswap = 0;
-
-static const blacklist_t blacklist[] = {
-  {"xmms", BL_MODE_WRITE},
-  {"gnome-settings-daemon", BL_MODE_WRITE},
-//      {"java", BL_MODE_READWRITE},
-  {"sdtaudio", BL_MODE_READWRITE},
-  {"mixer_applet2", BL_MODE_WRITE},
-  {NULL}
-};
 
 #ifdef SOL9
 extern am_ad_src_entry_t am_src1;
@@ -450,23 +424,6 @@ sadasupport_open (queue_t * q, dev_t * devp, int flag, int sflag,
   DDB (cmn_err
        (CE_CONT, "sadasupport_open(dev=%x, flag=%x, sflag=%x)\n",
 	dev, flag, sflag));
-
-  cmd = oss_get_procname ();
-  DDB (cmn_err (CE_CONT, "Command %s\n", cmd));
-
-  for (i = 0; blacklist[i].name != NULL; i++)
-    if (strncmp (cmd, blacklist[i].name, 16) == 0)
-      {
-	bl_flags = blacklist[i].flags;
-
-	if (bl_flags & BL_BLACKLIST)
-	  {
-	    cmn_err (CE_NOTE,
-		     "%s must not use /dev/audio - Use native OSS mode instead.\n",
-		     blacklist[i].name);
-	    return ENXIO;
-	  }
-      }
 
   if (devc == NULL)
     return EIO;
