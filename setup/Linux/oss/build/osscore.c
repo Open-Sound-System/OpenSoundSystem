@@ -283,7 +283,7 @@ static void
 init_proc_fs (void)
 {
   if ((oss_proc_root =
-       create_proc_entry ("opensound", 0700 | S_IFDIR, &proc_root)) == NULL)
+       create_proc_entry ("opensound", 0700 | S_IFDIR, NULL)) == NULL)
     {
       oss_cmn_err (CE_CONT, "Cannot create /proc/opensound\n");
       return;
@@ -306,7 +306,7 @@ uninit_proc_fs (void)
     {
       if (oss_proc_devfiles)
 	remove_proc_entry ("devfiles", oss_proc_root);
-      remove_proc_entry ("opensound", &proc_root);
+      remove_proc_entry ("opensound", NULL);
     }
 }
 
