@@ -351,7 +351,14 @@ typedef struct sblive_devc
   oss_mutex_t low_mutex;
   oss_device_t *osdev;
   char *card_name;
-  int card_type;
+
+  /*
+   * Device feature mask tells which kind of features are suported by the
+   * hardware. Audigy2/2val have multiple bits set while Live! has just
+   * the SB_LIVE bits. So Features of Audigy will be reported by Audigy2/val
+   * too.
+   */
+  int feature_mask;
 #define SB_LIVE		1
 #define SB_AUDIGY	2
 #define SB_AUDIGY2	4

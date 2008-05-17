@@ -153,7 +153,7 @@ sblive_read_reg (sblive_devc * devc, int reg, int chn)
   unsigned int ptr, ptr_addr_mask, val, mask, size, offset;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
-  ptr_addr_mask = (devc->card_type & SB_AUDIGY) ? 0x0fff0000 : 0x07ff0000;
+  ptr_addr_mask = (devc->feature_mask & SB_AUDIGY) ? 0x0fff0000 : 0x07ff0000;
   ptr = ((reg << 16) & ptr_addr_mask) | (chn & 0x3f);
   OUTL (devc->osdev, ptr, devc->base + 0x00);	/* Pointer */
   val = INL (devc->osdev, devc->base + 0x04);	/* Data */
@@ -177,7 +177,7 @@ sblive_write_reg (sblive_devc * devc, int reg, int chn, unsigned int value)
   unsigned int ptr, ptr_addr_mask, mask, size, offset;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
-  ptr_addr_mask = (devc->card_type & SB_AUDIGY) ? 0x0fff0000 : 0x07ff0000;
+  ptr_addr_mask = (devc->feature_mask & SB_AUDIGY) ? 0x0fff0000 : 0x07ff0000;
   ptr = ((reg << 16) & ptr_addr_mask) | (chn & 0x3f);
   OUTL (devc->osdev, ptr, devc->base + 0x00);	/* Pointer */
   if (reg & 0xff000000)
@@ -327,7 +327,7 @@ sbliveintr (oss_device_t * osdev)
 
   if (status & 0x00000080)	/* MIDI RX interrupt */
     {
-      if (devc->card_type & SB_AUDIGY)
+      if (devc->feature_mask & SB_AUDIGY)
 	audigyuartintr (devc);
       else
 	uart401_irq (&devc->uart401devc);
@@ -795,7 +795,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       if (GET_PROCESS_UID () != 0)	/* Not root */
 	return -EINVAL;
 #endif
-      return *arg = devc->card_type & ~SB_AUDIGY2;
+      return *arg = devc->feature_mask & ~SB_AUDIGY2;
       break;
 
     }
@@ -1058,7 +1058,7 @@ write_routing (sblive_devc * devc, int voice, unsigned char *routing)
   if (routing == NULL)
     routing = default_routing;
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       unsigned int srda = 0;
 
@@ -1130,7 +1130,7 @@ update_output_volume (int dev, int voice, int chn)
       send[3] = 0;		/* Muted */
 
       /* sends are revered between Audigy2 and Audigy */
-      left = (devc->card_type & SB_AUDIGY2) ? 1 : 0;
+      left = (devc->feature_mask & SB_AUDIGY2) ? 1 : 0;
       right = !left;
 
       if (portc->channels > 1)
@@ -1224,7 +1224,7 @@ setup_audio_voice (int dev, int voice, int chn)
   sblive_write_reg (devc, VTFT, voice, 0xffff);
   sblive_write_reg (devc, CVCF, voice, 0xffff);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     sblive_write_reg (devc, SRDA, voice, 0x03020100);
   else
     sblive_write_reg (devc, FXRT, voice, 0x32100000);
@@ -1560,7 +1560,7 @@ sblive_audio_trigger (int dev, int state)
 		}
 	      else
 		{
-		  if (devc->card_type & SB_AUDIGY)
+		  if (devc->feature_mask & SB_AUDIGY)
 		    {
 		      tmp |= 0x10;	/* Left channel enable */
 		      if (portc->channels > 1)
@@ -1665,7 +1665,7 @@ sblive_audio_prepare_for_input (int dev, int bsize, int bcount)
 
   if (portc->input_type == ITYPE_ANALOG)
     {
-      if (devc->card_type & SB_AUDIGY)
+      if (devc->feature_mask & SB_AUDIGY)
 	sblive_write_reg (devc, ADCSR, 0,
 			  speed_tab[portc->speedsel].audigy_recbits);
       else
@@ -1757,7 +1757,7 @@ sblive_alloc_buffer (int dev, dmap_t * dmap, int direction)
       dmap->buffsize = DMABUF_SIZE;
     }
 
-  if (devc->card_type & SB_LIVE)
+  if (devc->feature_mask & SB_LIVE)
     if (dmap->dmabuf_phys & 0x80000000)
       {
 	cmn_err (CE_CONT, "Got DMA buffer address beyond 2G limit.\n");
@@ -2334,7 +2334,7 @@ attach_mpu (sblive_devc * devc)
 
   sprintf (tmp, "%s external MIDI", devc->card_name);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       if (!probe_audigyuart (devc))
 	{
@@ -2450,7 +2450,7 @@ init_effects (sblive_devc * devc)
   int i;
   unsigned short pc;
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       pc = 0;
       for (i = 0; i < 512; i++)
@@ -2512,7 +2512,7 @@ init_emu10k1 (sblive_devc * devc)
   sblive_write_reg (devc, SOLH, 0, 0xffffffff);
 
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       sblive_write_reg (devc, 0x5e, 0, 0xf00);	/* ?? */
       sblive_write_reg (devc, 0x5f, 0, 0x3);	/* ?? */
@@ -2552,7 +2552,7 @@ init_emu10k1 (sblive_devc * devc)
   memset (devc->vpage_map, 0, devc->max_pages * 4);
 
   tmp = phaddr;
-  if (devc->card_type & SB_LIVE)
+  if (devc->feature_mask & SB_LIVE)
     {
       if (tmp & 0x80000000)
 	{
@@ -2592,7 +2592,7 @@ init_emu10k1 (sblive_devc * devc)
     }
 
   devc->silent_page_phys = phaddr;
-  if (devc->card_type & SB_LIVE)
+  if (devc->feature_mask & SB_LIVE)
     if (devc->silent_page_phys & 0x80000000)
       {
 	cmn_err (CE_CONT,
@@ -2611,7 +2611,7 @@ init_emu10k1 (sblive_devc * devc)
   for (i = 0; i < 64; i++)
     sblive_init_voice (devc, i);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       sblive_write_reg (devc, SCS0, 0, 0x2108504);
       sblive_write_reg (devc, SCS1, 0, 0x2108504);
@@ -2649,7 +2649,7 @@ init_emu10k1 (sblive_devc * devc)
 			AC97SLOT_REAR_RIGHT);
     }
 
-  if (devc->card_type & SB_AUDIGY2)
+  if (devc->feature_mask & SB_AUDIGY2)
     {
       /* Enable analog outputs on Audigy2 */
       int tmp;
@@ -2667,7 +2667,7 @@ init_emu10k1 (sblive_devc * devc)
 
       /* Setup SRCMulti Input Audio Enable */
       /* Setup SRCMulti Input Audio Enable */
-      if (devc->card_type & SB_AUDIGY2VAL)
+      if (devc->feature_mask & SB_AUDIGY2VAL)
 	OUTL (devc->osdev, 0x7B0000, devc->base + 0x20);
       else
 	OUTL (devc->osdev, 0x6E0000, devc->base + 0x20);
@@ -2686,7 +2686,7 @@ init_emu10k1 (sblive_devc * devc)
        */
       tmp = INL (devc->osdev, devc->base + 0x18);
       tmp |= 0x0040;
-      if (devc->card_type & SB_AUDIGY2VAL)
+      if (devc->feature_mask & SB_AUDIGY2VAL)
 	tmp |= 0x0060;
 
       OUTL (devc->osdev, tmp, devc->base + 0x18);
@@ -2695,11 +2695,11 @@ init_emu10k1 (sblive_devc * devc)
   sblive_write_reg (devc, SOLL, 0, 0xffffffff);
   sblive_write_reg (devc, SOLH, 0, 0xffffffff);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       unsigned int mode = 0;
 
-      if (devc->card_type & SB_AUDIGY2)
+      if (devc->feature_mask & SB_AUDIGY2)
 	mode |= HCFG_AC3ENABLE_GPSPDIF | HCFG_AC3ENABLE_CDSPDIF;
       if (xmem_mode)
 	{
@@ -2739,17 +2739,17 @@ init_emu10k1 (sblive_devc * devc)
   oss_udelay (100);
   OUTL (devc->osdev, tmp, devc->base + 0x14);
 
-  /* switch the shared SPDIF/OUT3 to DIGITAL or ANALOG mode */
+  /* Switch the shared SPDIF/OUT3 to DIGITAL or ANALOG mode */
   /* depending on whether the port is SPDIF or analog */
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       reg = INL (devc->osdev, devc->base + 0x18) & ~A_IOCFG_GPOUT0;
       val = (audigy_digital_din) ? 0x4 : 0;
       reg |= val;
       OUTL (devc->osdev, reg, devc->base + 0x18);
     }
-  if (devc->card_type == SB_LIVE)	/* SBLIVE */
+  if (devc->feature_mask & SB_LIVE)	/* SBLIVE */
     {
       reg = INL (devc->osdev, devc->base + 0x14) & ~HCFG_GPOUT0;
       val = (sblive_digital_din) ? HCFG_GPOUT0 : 0;
@@ -2777,7 +2777,7 @@ sblive_init_voice (sblive_devc * devc, int voice)
   sblive_write_reg (devc, Z1, voice, 0x0);
   sblive_write_reg (devc, Z2, voice, 0x0);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     sblive_write_reg (devc, SRDA, voice, 0x03020100);
   sblive_write_reg (devc, FXRT, voice, 0x32100000);
 
@@ -2795,7 +2795,7 @@ sblive_init_voice (sblive_devc * devc, int voice)
   sblive_write_reg (devc, VEV, voice, 0x0);
   sblive_write_reg (devc, MEV, voice, 0x0);
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     {
       sblive_write_reg (devc, CSBA, voice, 0x0);
       sblive_write_reg (devc, CSDC, voice, 0x0);
@@ -3528,9 +3528,9 @@ get_port_name (sblive_devc * devc, int n)
 {
   int max_names = 3;
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     max_names = 3;
-  if (devc->card_type & SB_LIVE)
+  if (devc->feature_mask & SB_LIVE)
     max_names = 2;
 
   n = n - 1;
@@ -3547,7 +3547,7 @@ unload_mpu (sblive_devc * devc)
   if (devc == NULL)
     return;
 
-  if (devc->card_type & SB_AUDIGY)
+  if (devc->feature_mask & SB_AUDIGY)
     unload_audigyuart (devc);
   else
     uart401_disable (&devc->uart401devc);
@@ -3653,24 +3653,24 @@ oss_sblive_attach (oss_device_t * osdev)
 	devc->card_name = "SB Audigy4";
       else
 	devc->card_name = "SB Audigy2 Value";
-      devc->card_type = SB_AUDIGY | SB_AUDIGY2 | SB_AUDIGY2VAL;
+      devc->feature_mask = SB_AUDIGY | SB_AUDIGY2 | SB_AUDIGY2VAL;
     }
   else if (device == PCI_DEVICE_ID_AUDIGY)
     {
       devc->card_name = "SB Audigy2";
-      devc->card_type = SB_AUDIGY | SB_AUDIGY2;
+      devc->feature_mask = SB_AUDIGY | SB_AUDIGY2;
     }
   else if (device == PCI_DEVICE_ID_AUDIGY_CARDBUS)
     {
       if (devc->subvendor >= 0x10021102 && devc->subvendor <= 0x20051102)
 	{
 	  devc->card_name = "SB Audigy2 ZS Notebook";
-	  devc->card_type = SB_AUDIGY | SB_AUDIGY2;
+	  devc->feature_mask = SB_AUDIGY | SB_AUDIGY2;
 	}
       else
 	{
 	  devc->card_name = "SB Audigy";
-	  devc->card_type = SB_AUDIGY;
+	  devc->feature_mask = SB_AUDIGY;
 	}
       DDB (cmn_err (CE_CONT,
 		    "emu10k2 chip rev %d, pcb rev %d\n", pci_revision,
@@ -3679,7 +3679,7 @@ oss_sblive_attach (oss_device_t * osdev)
   else
     {
       devc->card_name = "SB Live";
-      devc->card_type = SB_LIVE;
+      devc->feature_mask = SB_LIVE;
       devc->min_audiodevs = 4;	/* Just 5.1 */
     }
 
@@ -3786,7 +3786,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	  if (i >= devc->min_audiodevs + 1)
 	    caps |= ADEV_SHADOW;
 	}
-      if ((devc->card_type & SB_AUDIGY) && i == audiodevs_to_create - 1)
+      if ((devc->feature_mask & SB_AUDIGY) && i == audiodevs_to_create - 1)
 	{
 	  sprintf (tmp, "%s raw S/PDIF (output only)", devc->card_name);
 	  caps &= ~(ADEV_SHADOW | ADEV_HWMIX);
@@ -3794,7 +3794,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	  fmts |= AFMT_AC3;
 	}
 
-      if (devc->card_type & SB_AUDIGY)
+      if (devc->feature_mask & SB_AUDIGY)
 	caps |= ADEV_COLD;
 
       if ((portc->audiodev =
@@ -3827,7 +3827,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	  adev->min_rate = 8000;
 	  adev->max_rate = 48000;
 
-	  if (!(devc->card_type & SB_AUDIGY))
+	  if (!(devc->feature_mask & SB_AUDIGY))
 	    {
 	      /*
 	       * SB Live supports only 31 PCI address bits
@@ -3838,7 +3838,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	  portc->mode = 0;
 	  adev->oformat_mask |= AFMT_AC3;
 	  portc->input_type = ITYPE_ANALOG;
-	  if ((devc->card_type & SB_AUDIGY) && i == audiodevs_to_create - 1)
+	  if ((devc->feature_mask & SB_AUDIGY) && i == audiodevs_to_create - 1)
 	    portc->input_type = ITYPE_SPDIF;
 	  if (i == 1)
 	    frontdev = portc->audiodev;
@@ -3856,7 +3856,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	  devc->voice_busy[i * 2] = 1;
 	  devc->voice_busy[i * 2 + 1] = 1;
 	  portc->resetvol = 0;
-	  if (devc->card_type == SB_LIVE)
+	  if (devc->feature_mask & SB_LIVE)
 	    {
 /*
  * Do not enable vmix by default on Live! It would cause enormous 
@@ -3883,7 +3883,7 @@ oss_sblive_attach (oss_device_t * osdev)
 
 	  if (i == 0)
 	    {
-	      if (devc->card_type & SB_LIVE)
+	      if (devc->feature_mask & SB_LIVE)
 		adev->magic = EMU10K1_MAGIC;
 	      else
 		adev->magic = EMU10K2_MAGIC;
