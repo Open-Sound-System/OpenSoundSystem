@@ -835,7 +835,7 @@ load_devinfo (int dev)
   int ngroups = 0;
   int parent;
   int change_color;
-  oss_mixext *thisrec;
+  oss_mixext *thisrec, *nextrec;
   oss_mixerinfo mi;
   GdkColor color;
   GtkWidget *wid, *wid2, *gang, *rootwid = NULL, *pw, *frame, *box;
@@ -932,6 +932,30 @@ load_devinfo (int dev)
 	case MIXT_GROUP:
 	  if (!show_all)
 	    break;
+#if 1
+/*
+ * Ignore the group if the next mixer entry is also a group. This 
+ * should prevent empty groups on the screen. By Clive Wright.
+ */
+	  nextrec = &extrec[dev][i+1];
+	  nextrec->dev = dev;
+	  nextrec->ctrl = i+1;
+
+	  if (ioctl (mixer_fd, SNDCTL_MIX_EXTINFO, nextrec) == -1)
+	    {
+	      if (errno == EINVAL)
+	          printf ("Incompatible OSS version\n");
+	      else
+	          perror ("SNDCTL_MIX_EXTINFO");
+	      exit (-1);
+	    }
+	  /*
+	   * Ignore group if next record is also a group with the same parent
+	   */
+	  if (nextrec->type == MIXT_GROUP
+	      && (thisrec->parent == nextrec->parent))
+	    break;
+#endif
 	  parent = thisrec->parent;
 	  name = cut_name (thisrec->id);
 	  if (*extnames[parent] == '\0')
