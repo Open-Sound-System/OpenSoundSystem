@@ -5,15 +5,31 @@
 
 #define SUPPORTED_FORMATS (AFMT_S16_NE | AFMT_S16_OE | AFMT_S32_NE | AFMT_S32_OE)
 
-#define MAX_INSTANCES		8
-#define MAX_OUTDEVS		16
-#define MAX_LOOPDEVS		4
+/*
+ * Maximum number of clients per "real" device is defined by MAX_CLIENTS. Limit of 4 would be good for 95% of systems.
+ * For each client there will be a mixer volume control and peak meter in the mixer interface. Raising the
+ * client limit will make the mixer interface larger and larger. Something like 8 is probably the practical limit
+ * for number of clients.
+ *
+ * Mixing more than 16 streams together doesn't make much sense since the result is likely to be
+ * just noise. Mixing a stream will cause some overhead so it's not a good idea to let large number of iddle
+ * applications running muted or playing silence.
+ */
+
+#define MAX_CLIENTS		8	
+
+#define MAX_LOOPDEVS		2	/* Maximum number of vmix loopback devices */
+
+/*
+ * 8 play channels and 2 rec channels might be OK for most devices. However envy24 requires 10 play and 12 rec 
+ * channels for the "raw devices". Some professional (ADAT) cards like Digi96 requires 8+8 channels.
+ */
 #define MAX_PLAY_CHANNELS	12
 /* MAX_REC_CHANNELS must be less or equal than MAX_PLAY_CHANNELS */
 #define MAX_REC_CHANNELS	12
+
 #define CHBUF_SAMPLES		2048	/* Max samples (frames) per fragment */
 
-typedef struct _vmix_devc_t vmix_devc_t;
 typedef struct _vmix_mixer_t vmix_mixer_t;
 typedef struct _vmix_portc_t vmix_portc_t;
 typedef struct _vmix_engine_t vmix_engine_t;
@@ -21,8 +37,8 @@ typedef struct _vmix_engine_t vmix_engine_t;
 struct _vmix_portc_t		/* Audio device specific data */
 {
   int num;
-  vmix_devc_t *devc;
   vmix_mixer_t *mixer;
+  vmix_portc_t *next;		/* Linked list for all portc structures */
   int dev_type;
 #define DT_IN		1
 #define DT_OUT		2
@@ -38,10 +54,12 @@ struct _vmix_portc_t		/* Audio device specific data */
   int open_mode;
   int trigger_bits;
 
+  int open_pending;	/* Set to 1 by vmix_create_client() and cleared by vmix_open() */
+
   int play_dma_pointer;
   int play_choffs;		/* Index of the first channel on multich play engines */
   int rec_choffs;		/* Index of the first channel on multich rec engines */
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   float play_dma_pointer_src;
 #endif
   int rec_dma_pointer;
@@ -53,7 +71,7 @@ struct _vmix_portc_t		/* Audio device specific data */
   int do_src;
 };
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
    typedef float vmix_sample_t;
 #else
    typedef int vmix_sample_t;
@@ -84,7 +102,7 @@ struct _vmix_engine_t
 
 struct _vmix_mixer_t		/* Instance specific data */
 {
-  vmix_devc_t *devc;
+  vmix_mixer_t *next;		/* Pointer to the next vmix instance */
   int instance_num;
   oss_device_t *osdev;
   oss_device_t *master_osdev;
@@ -103,8 +121,6 @@ struct _vmix_mixer_t		/* Instance specific data */
  */
   int masterdev;
   int inputdev;
-  int numoutputs;
-  int numloops;
   int rate;
 
   int src_quality;		/* Control panel setting */
@@ -113,9 +129,8 @@ struct _vmix_mixer_t		/* Instance specific data */
 
   vmix_engine_t play_engine, record_engine;
 
-  vmix_portc_t *client_portc[MAX_OUTDEVS];
+  vmix_portc_t *client_portc[MAX_CLIENTS];
   vmix_portc_t *loop_portc[MAX_LOOPDEVS];
-
   int num_clientdevs, num_loopdevs;
 
 /*
@@ -127,22 +142,8 @@ struct _vmix_mixer_t		/* Instance specific data */
   int input_mixer_dev;
   int first_input_mixext;
   int first_output_mixext;
+  int client_mixer_group;	/* Create the client controls under this mixer group */
 };
-
-struct _vmix_devc_t
-{
-  oss_device_t *osdev;
-
-  /*
-   * Instances
-   */
-  int num_mixers;
-  vmix_mixer_t *mixers[MAX_INSTANCES];
-
-  unsigned long long card_mask;
-};
-
-extern vmix_devc_t *vmix_devc;	/* Global devc structure for all instances */
 
 extern void vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev,
 				    dmap_t * dmap);
@@ -155,11 +156,11 @@ extern void vmix_outmix_16ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_16oe (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_32ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_outmix_32oe (vmix_portc_t * portc, int nsamples);
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 extern void vmix_outmix_float (vmix_portc_t * portc, int nsamples);
 #endif
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * For the time being these routines will only work in floating point.
  */
@@ -174,14 +175,14 @@ extern void vmix_rec_export_16ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_16oe (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_32ne (vmix_portc_t * portc, int nsamples);
 extern void vmix_rec_export_32oe (vmix_portc_t * portc, int nsamples);
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 extern void vmix_rec_export_float (vmix_portc_t * portc, int nsamples);
 #endif
 
 #define DB_SIZE	50
 #define VMIX_VOL_SCALE	100
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
    extern const float vmix_db_table[DB_SIZE + 1];
 #else
    extern const int vmix_db_table[DB_SIZE + 1];

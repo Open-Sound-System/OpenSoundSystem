@@ -22,7 +22,7 @@ extern unsigned char tmp_status;
 
 #undef  SINE_DEBUG
 
-#ifndef VMIX_USE_FLOAT
+#ifndef CONFIG_OSS_VMIX_FLOAT
 #undef SINE_DEBUG
 #endif
 
@@ -45,7 +45,7 @@ static const float sine_table[SINE_SIZE] = {
 static int sine_phase[MAX_PLAY_CHANNELS] = { 0 };
 #endif
 
-#ifndef VMIX_USE_FLOAT
+#ifndef CONFIG_OSS_VMIX_FLOAT
 /*
  * Simple limiter to prevent overflows when using fixed point computations
  */
@@ -209,7 +209,7 @@ void
 vmix_outmix_16ne (vmix_portc_t * portc, int nsamples)
 {
   short *inp;
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 3.0517578125e-5;	/* 1.0 / 32768.0 */
 #endif
 #undef VMIX_BYTESWAP
@@ -221,7 +221,7 @@ void
 vmix_outmix_16oe (vmix_portc_t * portc, int nsamples)
 {
   short *inp;
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 3.0517578125e-5;	/* 1.0 / 32768.0 */
 #endif
 #undef VMIX_BYTESWAP
@@ -240,7 +240,7 @@ vmix_outmix_32ne (vmix_portc_t * portc, int nsamples)
   int *inp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) x
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 4.65661287308e-10;	/* 1.0 / 2147483648.0 */
 #endif
 #include "playmix.inc"
@@ -252,13 +252,13 @@ vmix_outmix_32oe (vmix_portc_t * portc, int nsamples)
   int *inp;
 #undef VMIX_BYTESWAP
 #define VMIX_BYTESWAP(x) bswap32(x)
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   double range = 4.65661287308e-10;	/* 1.0 / 2147483648.0 */
 #endif
 #include "playmix.inc"
 }
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 void
 vmix_outmix_float (vmix_portc_t * portc, int nsamples)
 {
@@ -272,7 +272,7 @@ vmix_outmix_float (vmix_portc_t * portc, int nsamples)
 }
 #endif
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Mixing functions (with sample rate conversions)
  */
@@ -351,11 +351,10 @@ vmix_play_callback (int dev, int parm)
   oss_native_word flags;
   int i;
 
-  vmix_devc_t *devc = vmix_devc;
-  vmix_mixer_t *mixer = devc->mixers[parm];
+  vmix_mixer_t *mixer = adev->vmix_mixer;
   vmix_engine_t *eng = &mixer->play_engine;
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   fp_env_t fp_buf;
   short *fp_env = fp_buf;
   fp_flags_t fp_flags;
@@ -371,12 +370,6 @@ vmix_play_callback (int dev, int parm)
       return;
     }
 
-  if (parm < 0 || parm >= devc->num_mixers)	/* Bad instance number */
-    {
-      cmn_err (CE_WARN, "Bad vmix instance %d\n", parm);
-      return;
-    }
-
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 
   if (dmap->dmabuf == NULL)
@@ -385,7 +378,7 @@ vmix_play_callback (int dev, int parm)
       return;
     }
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 
   {
     /*
@@ -432,7 +425,7 @@ vmix_play_callback (int dev, int parm)
       outbuf = dmap->dmabuf + p;
       if (dmap->dmabuf != NULL)
 	{
-#ifndef VMIX_USE_FLOAT
+#ifndef CONFIG_OSS_VMIX_FLOAT
 	  process_limiter (&eng->limiter_statevar, eng->chbufs, eng->channels,
 			   eng->samples_per_frag);
 #endif
@@ -444,7 +437,7 @@ vmix_play_callback (int dev, int parm)
 
     }
 
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
   FP_RESTORE (fp_env, fp_flags);
 #endif
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);

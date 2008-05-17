@@ -759,7 +759,7 @@ init_vibes (vibes_devc * devc)
 
   for (i = 0; i < MAX_PORTC; i++)
     {
-      int flags = ADEV_AUTOMODE | ADEV_DUPLEX;
+      int flags = ADEV_AUTOMODE | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 
       portc = &devc->portc[i];
 

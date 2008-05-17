@@ -10,6 +10,11 @@
 #define OS_VERSION "6"
 #define OpenServer
 
+#if (!defined(i386) && !defined(x86_64)) || defined(CONFIG_OSS_FIXDEPOINT)
+// Floating point is not supported or it's disabled
+#undef CONFIG_OSS_VMIX_FLOAT
+#endif
+
 #if 0
 // Enable kernel level debugging
 #define DEBUG
@@ -132,6 +137,8 @@ struct _oss_device_t
   int num_audioplay, num_audiorec, num_audioduplex;
   int num_mididevs;
   int num_mixerdevs;
+  int num_loopdevs;
+  int first_mixer;	/* This must be set to -1 by osdev_create() */
 
   volatile int refcount;	/* Nonzero means that the device is needed by some other (virtual) driver. */
 

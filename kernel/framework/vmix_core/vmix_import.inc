@@ -1,4 +1,4 @@
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Purpose: Recording device to local input buffer import routine for vmix
  */

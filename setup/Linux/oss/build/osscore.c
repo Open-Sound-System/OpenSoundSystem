@@ -17,6 +17,7 @@ typedef int *ioctl_arg;
 #include <stdarg.h>
 #include <linux/vmalloc.h>
 #include "../include/internals/timestamp.h"
+#include "../include/internals/local_config.h"
 #include "ossddk/oss_exports.h"
 #include "wrap.h"
 #include "ossdip.h"
@@ -1756,6 +1757,8 @@ oss_unregister_module (struct module *mod)
 module_init (osscore_init);
 module_exit (osscore_exit);
 
+#ifdef CONFIG_OSS_VMIX_FLOAT
+
 #define FP_SAVE(envbuf)		asm ("fnsave %0":"=m" (*envbuf));
 #define FP_RESTORE(envbuf)		asm ("frstor %0":"=m" (*envbuf));
 
@@ -1888,6 +1891,7 @@ oss_fp_restore (short *envbuf, unsigned int flags[])
     }
   write_cr0 (flags[0]);		/* Restore cr0 */
 }
+#endif
 
 #if 0
 void
@@ -1905,9 +1909,13 @@ __stack_chk_fail (void)
 #define EXPORT_DATA(name) extern int name;EXPORT_SYMBOL(name);
 
 /* EXPORT_SYMBOL (__stack_chk_fail); */
+
+#ifdef CONFIG_OSS_VMIX_FLOAT
 EXPORT_SYMBOL (oss_fp_check);
 EXPORT_SYMBOL (oss_fp_save);
 EXPORT_SYMBOL (oss_fp_restore);
+#endif
+
 EXPORT_SYMBOL (oss_register_chrdev);
 EXPORT_SYMBOL (oss_unregister_chrdev);
 EXPORT_SYMBOL (oss_reserve_pages);
@@ -1979,6 +1987,10 @@ EXPORT_FUNC (uart401_disable);
 EXPORT_FUNC (uart401_irq);
 EXPORT_SYMBOL (mixer_ext_set_init_fn);
 EXPORT_SYMBOL (mixer_ext_set_vmix_init_fn);
+#ifdef CONFIG_OSS_VMIX
+EXPORT_FUNC (vmix_attach_audiodev);
+EXPORT_FUNC (vmix_detach_audiodev);
+#endif
 EXPORT_SYMBOL (mixer_ext_set_strings);
 EXPORT_SYMBOL (mixer_ext_create_group);
 EXPORT_SYMBOL (mixer_ext_create_group_flags);
@@ -2122,8 +2134,6 @@ EXPORT_FUNC (oss_do_timing);
 EXPORT_FUNC (oss_do_timing2);
 EXPORT_FUNC (oss_timing_enter);
 EXPORT_FUNC (oss_timing_leave);
-EXPORT_FUNC (vmix_core_attach);
-EXPORT_FUNC (oss_create_vmix);
 EXPORT_SYMBOL (__udivdi3);
 EXPORT_SYMBOL (__umoddi3);
 EXPORT_SYMBOL (__divdi3);

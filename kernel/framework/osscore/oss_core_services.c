@@ -29,7 +29,10 @@ oss_unload_drivers (void)
   if (!drivers_loaded)
     return;
   drivers_loaded = 0;
-  vmix_uninit ();
+
+#ifdef CONFIG_OSS_VMIX
+  vmix_core_uninit ();
+#endif
 
   oss_audio_uninit ();
 
@@ -64,4 +67,7 @@ oss_common_init (oss_device_t * osdev)
   oss_midi_init (osdev);
   install_vmidi (osdev);
   install_dev_mixer (osdev);
+#ifdef CONFIG_OSS_VMIX
+  vmix_core_init (osdev);
+#endif
 }

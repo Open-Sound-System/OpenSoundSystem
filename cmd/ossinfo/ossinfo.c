@@ -23,6 +23,7 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
+#include <local_config.h>
 #include <soundcard.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,7 +73,7 @@ print_global_info (void)
 
   printf ("Number of audio devices:	%d\n", sysinfo.numaudios);
   printf ("Number of audio engines:	%d\n", sysinfo.numaudioengines);
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
   printf ("Number of MIDI devices:		%d\n", sysinfo.nummidis);
 #endif
   printf ("Number of mixer devices:	%d\n", sysinfo.nummixers);
@@ -220,9 +221,10 @@ print_audio_info (void)
 	  printf ("%02d: ", i);
 	  if (!ainfo.enabled)
 	    printf ("(");
-	  printf ("%s ", ainfo.name);
+	  printf ("%s", ainfo.name);
 	  if (!ainfo.enabled)
 	    printf (")");
+	  printf(" ");
 	  printf ("(device file %s)\n", ainfo.devnode);
 	}
       else
@@ -436,7 +438,7 @@ print_audio_info (void)
 }
 
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 /*
  * The print_midi_info() routine prints all possible information available
  * for a MIDI device. The verbose level defines what to print.
@@ -702,7 +704,7 @@ usage (char *progname)
   printf ("\t-A\t\tPrint audio devicefile info (for O_EXCL applications)\n");
   printf ("\t-e\t\tPrint audio engine info\n");
   printf ("\t-x\t\tPrint mixer info\n");
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
   printf ("\t-m\t\tPrint MIDI info\n");
 #endif
   printf ("\t-d\t\tPrint device object (\"card\")list\n");
@@ -796,11 +798,13 @@ main (int argc, char *argv[])
 	    action_mask |= ACT_AUDIO;
 	    show_engines = 1;
 	    break;
-#ifndef MIDI_DISABLED
 	  case 'm':
+#ifdef CONFIG_OSS_MIDI
 	    action_mask |= ACT_MIDI;
-	    break;
+#else
+	    fprintf (stderr, "Note! MIDI support is available in the current version of OSS so -m has no effect.\n");
 #endif
+	    break;
 	  case 'x':
 	    action_mask |= ACT_MIXER;
 	    break;
@@ -829,7 +833,7 @@ main (int argc, char *argv[])
     print_global_info ();
   if (action_mask & ACT_CARDS)
     print_card_info ();
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
   if (action_mask & ACT_MIDI)
     print_midi_info ();
 #endif

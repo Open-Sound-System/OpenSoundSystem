@@ -894,6 +894,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   osdev->instance = instance;
   osdev->dev_type = dev_type;
   osdev->devc = NULL;
+  osdev->first_mixer = -1;
   sprintf (osdev->nick, "%s%d", nick, instance);
   strcpy (osdev->modname, nick);
 

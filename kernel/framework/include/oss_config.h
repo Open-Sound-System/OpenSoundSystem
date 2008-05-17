@@ -25,6 +25,7 @@ typedef int (*oss_tophalf_handler_t) (struct _oss_device_t * osdev);
 typedef void (*oss_bottomhalf_handler_t) (struct _oss_device_t * osdev);
 
 #include <ossddk/oss_exports.h>
+#include <local_config.h>
 #include <os.h>
 
 #include <ossddk/ossddk.h>

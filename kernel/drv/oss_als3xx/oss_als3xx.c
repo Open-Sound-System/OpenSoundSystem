@@ -725,7 +725,7 @@ init_als300 (als300_devc * devc)
 	{
 	  sprintf (tmp_name, "%s (Rev %c)", devc->chip_name,
 		   'A' + devc->chip_rev);
-	  caps |= ADEV_DUPLEX;
+	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	}
       else
 	{

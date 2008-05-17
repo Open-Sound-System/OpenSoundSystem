@@ -812,7 +812,7 @@ init_ALI (ALI_devc * devc)
 
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX;
+	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       if (i == 1)

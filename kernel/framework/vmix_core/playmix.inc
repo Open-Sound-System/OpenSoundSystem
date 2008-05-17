@@ -1,4 +1,4 @@
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Purpose: Application to local playback buffer import routine for vmix (FP)
  */

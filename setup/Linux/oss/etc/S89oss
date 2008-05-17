@@ -51,16 +51,17 @@ case "$1" in
   stop)
         echo -n 'Stopping Open Sound System: '
 
-	if test -f $OSSLIBDIR/starting
-	then
-		ls -l $OSSLIBDIR/starting
-		echo Previous start of OSS crashed the system so OSS will not be stopped
-		exit 0
-	fi
-        if test -f /usr/sbin/soundoff
-	then
-	   /usr/sbin/soundoff
-	fi
+#	if test -f $OSSLIBDIR/starting
+#	then
+#		ls -l $OSSLIBDIR/starting
+#		echo Previous start of OSS crashed the system so OSS will not be stopped
+#		exit 0
+#	fi
+#        if test -f /usr/sbin/soundoff
+#	then
+#	   /usr/sbin/soundoff
+#	fi
+	/usr/sbin/savemixer
 	exit 0
         ;;
   restart)

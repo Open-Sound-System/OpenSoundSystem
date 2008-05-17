@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <soundcard.h>
 #include <sys/ioctl.h>
+#include <local_config.h>
 
 static char *progname = NULL;
 static int mixerfd = -1;
@@ -999,7 +1000,7 @@ show_level (int dev, char *cname)
     }
 }
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 int state = 0, ch = 0;
 int route[16];
 int nch = 0;
@@ -1164,7 +1165,7 @@ main (int argc, char *argv[])
 	      exit (0);
 	      break;
 
-#ifndef MIDI_DISABLED
+#ifdef CONFIG_OSS_MIDI
 	    case 'm':
 	      midi_mixer (dev, optarg, argv, optind, argc);
 	      exit (0);

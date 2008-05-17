@@ -725,7 +725,7 @@ init_via97 (via97_devc * devc)
 
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX;
+	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
 	  strcpy (tmp_name, "VIA 82C686 AC97 Controller");
 	}
       else

@@ -1,4 +1,4 @@
-#ifdef VMIX_USE_FLOAT
+#ifdef CONFIG_OSS_VMIX_FLOAT
 /*
  * Purpose: Local output buffer to device export routine for vmix (FP version)
  */
