@@ -103,6 +103,14 @@ static int mixer_num = 1;
 #define EIDRM EFAULT
 #endif
 
+enum uflag {
+  WHAT_LABEL,
+  WHAT_UPDATE,
+  WHAT_VMIX
+};
+
+typedef enum uflag uflag_t;
+
 typedef struct ctlrec
 {
   struct ctlrec *next;
@@ -113,9 +121,7 @@ typedef struct ctlrec
   char frame_name[FRAME_NAME_LENGTH+1];
   int last_left, last_right;
   int full_scale;
-  int what_to_do;
-#define WHAT_LABEL	1
-#define WHAT_UPDATE	2
+  uflag_t what_to_do;
   int parm;
 }
 ctlrec_t;
@@ -150,7 +156,7 @@ static void connect_scrollers (oss_mixext *, GtkObject *,
                                GtkObject *, GtkWidget *);
 static void connect_value_poll (oss_mixext *, GtkWidget *);
 static void create_update (GtkWidget *, GtkObject *, GtkObject *, GtkWidget *,
-                           oss_mixext *, int, int);
+                           oss_mixext *, uflag_t, int);
 static GtkRequisition create_widgets (void);
 static char * cut_name (char *);
 static void do_update (ctlrec_t *);
@@ -456,7 +462,7 @@ set_value (oss_mixext * thisrec, int value)
 
 static void
 create_update (GtkWidget * frame, GtkObject * left, GtkObject * right,
-	       GtkWidget * gang, oss_mixext * thisrec, int what, int parm)
+	       GtkWidget * gang, oss_mixext * thisrec, uflag_t what, int parm)
 {
   ctlrec_t *srec;
 
@@ -961,7 +967,7 @@ load_devinfo (int dev)
 	  if (*extnames[parent] == '\0')
 	    strcpy (tmp, name);
 	  else
-         snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
+            snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	  store_name (dev, i, tmp, extnames);
 	  if (!change_orient && (parent == 0))
 	    pw = rootwid;
@@ -998,6 +1004,15 @@ load_devinfo (int dev)
 	  gtk_widget_set_name (wid, extnames[i]);
 	  gtk_widget_show_all (frame);
 	  widgets[i] = wid;
+	  {
+	    int tmp = -1;
+
+            if ((sscanf (extnames[i], "vmix%d-out", &tmp) == 1) &&
+		(tmp >= 0))
+	      {
+		create_update (NULL, NULL, NULL, wid, thisrec, WHAT_VMIX, n);
+	      }
+	  }
 	  break;
 
 	case MIXT_HEXVALUE:
@@ -1056,7 +1071,9 @@ load_devinfo (int dev)
 	  break;
 
 	case MIXT_ONOFF:
-	case MIXT_MUTE: // TODO: Mute could have custom widget
+#ifdef MIXT_MUTE
+	case MIXT_MUTE: /* TODO: Mute could have custom widget */
+#endif /* MIXT_MUTE */
 	  if (!show_all)
 	    break;
 	  parent = thisrec->parent;
@@ -1659,7 +1676,9 @@ do_update (ctlrec_t * srec)
   switch (srec->mixext->type)
     {
     case MIXT_ONOFF:
+#ifdef MIXT_MUTE
     case MIXT_MUTE:
+#endif /* MIXT_MUTE */
       gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (srec->gang), val);
       break;
 
@@ -1779,6 +1798,31 @@ poll_all (gpointer data)
      	      gtk_frame_set_label (GTK_FRAME (srec->frame), new_label);
 	    }
 	  break;
+	case WHAT_VMIX:
+	  { int i = dev;
+/*
+ * The aforementioned mixer controls can be create dynamically, so ossxmix
+ * needs to poll for this. Handling for this is here
+ */
+	  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &i) == -1)
+	    {
+	      perror ("SNDCTL_MIX_NREXT");
+	      if (errno == EINVAL)
+		fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
+	      exit (-1);
+	    }
+	    if (i != srec->parm)
+	      {
+		srec->parm = i;
+/*
+ * Since we know the added controls are vmix controls, we should be able to do
+ * something more graceful here, like reloading only the current device, or
+ * even adding the controls directly. This will do for now.
+ */
+		reload_gui ();
+		return TRUE;
+	      }
+	  } break;
 	case WHAT_UPDATE:
 	  if (status_changed)
 	    do_update (srec);
@@ -1913,7 +1957,7 @@ find_default_mixer (void)
 
       if (mi.enabled)
         {
-          if (best == -1) best = i;
+          if ((best == -1) && (mi.priority > -2)) best = i;
 
           if (mi.priority > bestpri)
             {
@@ -1925,7 +1969,7 @@ find_default_mixer (void)
 
   if (best == -1)
     {
-      fprintf (stderr, "No mixers are available\n");
+      fprintf (stderr, "No mixers are available for use as a default mixer\n");
       exit (-1);
     }
 
