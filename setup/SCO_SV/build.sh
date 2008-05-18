@@ -127,6 +127,12 @@ do
   fi
 done
 
+for i in $SRCDIR/misc/man1m/*.man
+do
+	N=`basename $i .man`
+	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/man/man1/$N.1
+done
+
 rm -f prototype/usr/man/man8/ossdetect.8
 $TXT2MAN -t "ossdetect" -v "User Commands" -s 8 os_cmd/SCO_SV/ossdetect/ossdetect.man > prototype/usr/man/man8/ossdetect.8
 echo done ossdetect

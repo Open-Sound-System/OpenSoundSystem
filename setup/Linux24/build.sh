@@ -112,6 +112,12 @@ do
 	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $n |gzip > prototype/usr/share/man/man7/$N.7.gz
 done
 
+for n in $SRCDIR/misc/man1m/*.man
+do
+	N=`basename $n .man`
+	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $n |gzip > prototype/usr/man/man1/$N.1.gz
+done
+
 if ! cp lib/libOSSlib/libOSSlib.so lib/libsalsa/.libs/libsalsa.so.2.0.0 prototype/usr/lib/oss/lib
 then
   echo Warning: No libsalsa library compiled
