@@ -210,7 +210,7 @@ extern void *oss_memcpy (void *t_, const void *f_, size_t l);
 #define memcpy oss_memcpy
 
 extern void *oss_memset (void *t, int val, size_t l);
-#undef menset
+#undef memset
 #define memset oss_memset
 
 extern int oss_strcmp (const char *s1, const char *s2);
