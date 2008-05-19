@@ -23,8 +23,7 @@ fi
 case $state in
 
 'start')
-	/usr/sbin/savemixer -L > /dev/null 2>&1
-	/usr/sbin/ossdevlinks > /dev/null 2>&1
+	soundon
         exit 0
         ;;
 'stop')

@@ -1,0 +1,77 @@
+#!/bin/sh
+
+if test -f /etc/oss.conf
+then
+. /etc/oss.conf
+else
+   OSSLIBDIR=/usr/lib/oss
+fi
+
+LOG=$OSSLIBDIR/logs/soundoff.log
+rm -f $LOG
+
+if test "`/usr/sbin/modinfo|grep OSS` " = " "
+then
+  exit 0
+fi
+
+PIDLIST="`fuser /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null`"
+
+if test ! "$PIDLIST " = " "
+then
+  echo
+  echo 'Error: OSS devices are in use by the following application(s)'
+  echo
+
+  for n in $PIDLIST
+  do
+    ps -p $n |grep -v PID
+  done
+
+  echo
+  echo Please terminate these applications and try soundoff again
+  echo
+  exit 1
+fi
+
+# Save mixer settings automatically if requested
+if test -f $OSSLIBDIR/etc/userdefs && /usr/xpg4/bin/grep -q "autosave_mixer yes" $OSSLIBDIR/etc/userdefs
+then
+	/usr/sbin/savemixer 
+fi
+
+echo Modules to be unloaded >> $LOG
+/usr/sbin/modinfo|grep OSS >> $LOG
+
+# Perform three iterations since certain drivers may depend on each other
+
+if test -f $OSSLIBDIR/etc/installed_drivers
+then
+   for i in 1 2 3 4 5
+   do
+      for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/ .*//'`
+      do
+	N=`modinfo|grep " $n "|sed 's/^ //'|sed 's/ .*//'`
+	if test "$N " != " "
+	then
+	   echo Unload $n/$N>> $LOG
+	   /usr/sbin/modunload -i $N >> $LOG 2>&1
+	fi
+      done
+   done 
+fi
+
+#remove the osscore module that isn't listed in installed_drivers
+N=`modinfo|grep " osscore "|sed 's/^ //'|sed 's/ .*//'`
+echo Unload osscore >> $LOG
+/usr/sbin/modunload -i $N >> $LOG  2>&1
+
+if test "`/usr/sbin/modinfo|grep OSS` " = " "
+then
+  exit 0
+fi
+
+echo Modules left >> $LOG
+/usr/sbin/modinfo|grep OSS >> $LOG
+
+exit 0
