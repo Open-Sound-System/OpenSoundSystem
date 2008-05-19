@@ -25,17 +25,10 @@ then
   exit 1
 fi
 
-if test -f /etc/oss.conf
-then
-. /etc/oss.conf
-else
-   OSSLIBDIR=/usr/lib/oss
-fi
-
-LOG=$OSSLIBDIR/logs/soundon.log
+LOG=/var/log/soundon.log
 
 echo "Open Sound System starting" `date` > $LOG
-echo "OSS version: " `cat $OSSLIBDIR/version.dat` >> $LOG 2>&1
+echo "OSS version: " `cat /etc/oss/version.dat` >> $LOG 2>&1
 echo Solaris version: `uname -a` >> $LOG
 echo CPU: `isainfo -k` >> $LOG
 
@@ -45,7 +38,7 @@ then
 	/usr/sbin/modinfo|grep OSS >> $LOG
 fi
 
-if test -f $OSSLIBDIR/etc/license.asc
+if test -f /etc/oss/license.asc
 then
    /usr/sbin/ossdetect -l >> $LOG
 fi
@@ -54,18 +47,18 @@ fi
 /usr/sbin/modload $DRVPATH/osscore >> $LOG 2>&1
 /usr/sbin/modinfo|grep " osscore " >> $LOG
 
-if test -f $OSSLIBDIR/etc/installed_drivers
+if test -f /etc/oss/installed_drivers
 then
 
    echo "Loading driver modules" >> $LOG
-   for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/ .*//'`
+   for n in `cat /etc/oss/installed_drivers | sed 's/ .*//'`
    do
 	/usr/sbin/modload $DRVPATH/$n >> $LOG 2>&1
 	/usr/sbin/modinfo|grep " $n " >> $LOG
    done
 else
-	echo $OSSLIBDIR/etc/installed_drivers not found. >> $LOG
-	echo $OSSLIBDIR/etc/installed_drivers not found.
+	echo /etc/oss/installed_drivers not found. >> $LOG
+	echo /etc/oss/installed_drivers not found.
 	exit 1
 fi
 
@@ -77,9 +70,9 @@ find /devices -name *_mid* > /dev/null
 /usr/sbin/devlinks
 
 # Restore the legacy device links.
-if test -f $OSSLIBDIR/etc/legacy_devices
+if test -f /etc/oss/legacy_devices
 then
-	sh $OSSLIBDIR/etc/legacy_devices >> $LOG 2>&1
+	sh /etc/oss/legacy_devices >> $LOG 2>&1
 fi
 
 echo "=========" >> $LOG
@@ -91,7 +84,7 @@ echo "OSS configuration" >> $LOG
 echo "=========" >> $LOG
 cat /dev/sndstat >> $LOG
 
-if test -f $OSSLIBDIR/etc/mixer.save  || test -f $OSSLIBDIR/etc/dspdevs.map || test -f $OSSLIBDIR/etc/applist.conf
+if test -f /etc/oss/mixer.save  || test -f /etc/oss/dspdevs.map || test -f /etc/oss/applist.conf
 then
 	/usr/sbin/savemixer -L
 fi
@@ -134,10 +127,10 @@ rm -f /tmp/ossmsg
 
 fi
 
-if test -x $OSSLIBDIR/oss/soundon.user
+if test -x /etc/oss/soundon.user
 then
-  echo Running $OSSLIBDIR/soundon.user >> $LOG
-  $OSSLIBDIR/soundon.user >> $LOG 2>&1
+  echo Running /etc/oss/soundon.user >> $LOG
+  /etc/oss/soundon.user >> $LOG 2>&1
 fi
 
 exit 0

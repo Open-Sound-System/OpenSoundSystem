@@ -21,7 +21,6 @@ mkdir prototype/usr/lib/oss/etc
 mkdir prototype/usr/lib/oss/save
 mkdir prototype/usr/lib/oss/conf.tmpl
 mkdir prototype/usr/lib/oss/lib
-mkdir prototype/usr/lib/oss/logs
 mkdir prototype/usr/lib/oss/modules.regparm
 mkdir prototype/usr/lib/oss/modules.noregparm
 mkdir prototype/usr/lib/oss/objects.regparm

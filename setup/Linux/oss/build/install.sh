@@ -161,11 +161,6 @@ ln -sf ../include/sys/*.h ../include/sys/ossddk .
 rm -f Makefile
 ln -s Makefile.osscore Makefile
 
-if ! test -d $OSSLIBDIR/logs
-then
-	mkdir $OSSLIBDIR/logs
-fi
-
 echo Building module osscore
 
 if ! make KERNELDIR=$KERNELDIR> build.list 2>&1
@@ -289,7 +284,7 @@ fi
 
 # Install ALSA interface module (Cuckoo)
 #(cd $OSSLIBDIR/cuckoo && make clean) > /dev/null 2>&1
-#if (cd $OSSLIBDIR/cuckoo && make install) > $OSSLIBDIR/logs/cuckoo.log 2>&1
+#if (cd $OSSLIBDIR/cuckoo && make install) > /var/log/cuckoo.log 2>&1
 #then
 #  touch $OSSLIBDIR/.cuckoo_installed
 #fi

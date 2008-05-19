@@ -23,9 +23,7 @@ fi
 
 NOTIFY=0
 
-mkdir $OSSLIBDIR/logs > /dev/null 2>&1
-
-LOG=$OSSLIBDIR/logs/soundon.log
+LOG=/var/log/soundon.log
 echo "Open Sound System starting" `date` > $LOG
 echo "OSS version: " `cat $OSSLIBDIR/version.dat` >> $LOG 2>&1
 KERNEL_VERSION=`uname -r`
@@ -68,20 +66,20 @@ then
 	echo This may take few moments - please stand by...
 	echo Relinking OSS kernel modules for $KERNEL_VERMAGIC >> $LOG
 
-	rm -f $OSSLIBDIR/logs/relink.log
-	if ! (cd $OSSLIBDIR/build && sh install.sh > $OSSLIBDIR/logs/relink.log 2>&1)
+	rm -f /var/log/relink.log
+	if ! (cd $OSSLIBDIR/build && sh install.sh > /var/log/relink.log 2>&1)
 	then
-		cat $OSSLIBDIR/logs/relink.log >> $LOG 2>&1
-		cat $OSSLIBDIR/logs/relink.log
+		cat /var/log/relink.log >> $LOG 2>&1
+		cat /var/log/relink.log
 		echo
 		echo Relinking the OSS kernel modules failed
-		rm -f $OSSLIBDIR/logs/relink.log
+		rm -f /var/log/relink.log
 		exit 20
 	fi
 	
-	cat $OSSLIBDIR/logs/relink.log >> $LOG 2>&1
+	cat /var/log/relink.log >> $LOG 2>&1
 	echo Relinking OSS kernel modules finished
-	rm -f $OSSLIBDIR/logs/relink.log
+	rm -f /var/log/relink.log
 fi
 
 if ! test -f /lib/modules/`uname -r`/kernel/oss/osscore.ko
