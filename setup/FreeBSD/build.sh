@@ -80,7 +80,7 @@ done
 for i in $SRCDIR/misc/man1m/*.man
 do
         N=`basename $i .man`
-        $SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/man/man1/$N.1
+        $SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/share/man/man1/$N.1
 done
 
 rm -f prototype/usr/share/man/man8/ossdetect.8

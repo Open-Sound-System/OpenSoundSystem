@@ -115,7 +115,7 @@ done
 for n in $SRCDIR/misc/man1m/*.man
 do
 	N=`basename $n .man`
-	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $n |gzip > prototype/usr/man/man1/$N.1.gz
+	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $n |gzip > prototype/usr/share/man/man1/$N.1.gz
 done
 
 if ! cp lib/libOSSlib/libOSSlib.so lib/libsalsa/.libs/libsalsa.so.2.0.0 prototype/usr/lib/oss/lib
