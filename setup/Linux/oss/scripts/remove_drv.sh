@@ -16,11 +16,12 @@ fi
 if test -x /sbin/chkconfig
 then
   /sbin/chkconfig alsasound off > /dev/null 2>&1
-else 
-if test -x /usr/sbin/update-rc.d
+elif test -x /usr/sbin/update-rc.d
 then
   /usr/sbin/update-rc.d -f alsa-utils remove > /dev/null 2>&1
-fi
+elif test -x /usr/sbin/alsa
+then
+  /usr/sbin/alsa force-unload > /dev/null 2>&1
 fi
 
 if test -d /lib/modules/`uname -r`/kernel/sound
@@ -75,8 +76,6 @@ echo killing
 fi
 
 # Remove all loaded ALSA modules
-timeout=0
-
 SOUNDDEVS=
 
 if test -f /dev/mixer.old
@@ -89,8 +88,13 @@ then
 	SOUNDDEVS="$SOUNDDEVS /dev/snd.osssave/*"
 fi
 
-while test "`cat /proc/modules|grep ^snd_|sed 's/ .*//'` " != " "
+for timeout in 0 1 2 3 4 5 6 7 8 9 10 11
 do
+   if test "`cat /proc/modules|grep ^snd_|sed 's/ .*//'` " == " "
+   then
+      break
+   fi
+
    if test $timeout -gt 10
    then
      	echo Cannot unload the ALSA modules. Apparently there is some
@@ -117,8 +121,6 @@ do
    done
 
    sleep 1
-
-   timeout=`echo $timeout+1|bc`
 done
 
 rmmod snd > /dev/null 2>&1
