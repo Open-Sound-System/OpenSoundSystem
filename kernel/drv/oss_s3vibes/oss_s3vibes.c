@@ -759,7 +759,7 @@ init_vibes (vibes_devc * devc)
 
   for (i = 0; i < MAX_PORTC; i++)
     {
-      int flags = ADEV_AUTOMODE | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+      int flags = ADEV_AUTOMODE | ADEV_DUPLEX;
 
       portc = &devc->portc[i];
 
@@ -789,6 +789,10 @@ init_vibes (vibes_devc * devc)
       portc->open_mode = 0;
       portc->trigger_bits = 0;
       portc->audio_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+      if (i == 0)
+	 vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
     }
   return 1;
 }

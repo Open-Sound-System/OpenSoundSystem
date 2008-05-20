@@ -1370,7 +1370,7 @@ init_apci (apci_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -1409,9 +1409,12 @@ init_apci (apci_devc * devc)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->atype = i;
+          audio_engines[adev]->mixer_dev = my_mixer;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
-
-      audio_engines[adev]->mixer_dev = my_mixer;
     }
 
   if ((devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "AUDIOPCI", "AudioPCI UART", &apci_midi_driver, sizeof (midi_driver_t), NULL,	/*&std_midi_synth, */

@@ -893,7 +893,7 @@ init_cs4281 (cs4281_devc * devc)
 
       if (i == 0)
 	{
-          caps = ADEV_AUTOMODE | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+          caps = ADEV_AUTOMODE | ADEV_DUPLEX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       else
@@ -928,6 +928,10 @@ init_cs4281 (cs4281_devc * devc)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->audio_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
 

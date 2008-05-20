@@ -1217,7 +1217,7 @@ init_apci97 (apci97_devc * devc, int device_id)
       if (i == 0)
 	{
 	  sprintf (tmp_name, "%s (rev %d)", devc->chip_name, devc->revision);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -1249,6 +1249,10 @@ init_apci97 (apci97_devc * devc, int device_id)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->atype = i;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
 
       audio_engines[adev]->mixer_dev = my_mixer;

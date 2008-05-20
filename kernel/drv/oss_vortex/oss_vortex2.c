@@ -1586,7 +1586,7 @@ attach_channel_vortex2 (vortex_devc * devc, int my_mixer)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->name);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -1626,6 +1626,10 @@ attach_channel_vortex2 (vortex_devc * devc, int my_mixer)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->audio_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
   return;

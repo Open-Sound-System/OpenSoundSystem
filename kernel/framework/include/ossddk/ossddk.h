@@ -56,7 +56,6 @@ typedef struct _dmap_t dmap_t;
 #define ADEV_COLD		0x0000000001000000LL	/* Reserved for a future feature - DO NOT USE */
 #define ADEV_HWMIX		0x0000000002000000LL	/* Device supports "hardware mixing" */
 #define ADEV_LOOP		0x0000000004000000LL	/* Loopback device */
-#define ADEV_ATTACH_VMIX	0x0000000008000000LL	/* Attach vmix automatically */
 
 #ifdef _KERNEL
 typedef struct _audiodrv_t

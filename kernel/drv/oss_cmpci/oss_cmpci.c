@@ -2198,7 +2198,7 @@ init_cmpci (cmpci_devc * devc)
       if (i == 0)
 	{
 	  sprintf (tmp_name, "%s (rev %0d)", devc->chip_name, devc->chiprev);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -2237,11 +2237,14 @@ init_cmpci (cmpci_devc * devc)
 	    DMABUF_SIZE_16BITS;
 	  portc->open_mode = 0;
 	  portc->audio_enabled = 0;
+          audio_engines[portc->audiodev]->mixer_dev = devc->mixer_dev;
+          devc->dev_mode = DEFAULT_MODE;
+          devc->spdif_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, portc->audiodev, -1, 0);
+#endif
 	}
-
-      audio_engines[portc->audiodev]->mixer_dev = devc->mixer_dev;
-      devc->dev_mode = DEFAULT_MODE;
-      devc->spdif_enabled = 0;
     }
   return 1;
 }

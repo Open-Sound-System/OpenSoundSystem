@@ -107,6 +107,7 @@ struct _vmix_mixer_t		/* Instance specific data */
   oss_device_t *osdev;
   oss_device_t *master_osdev;
   oss_mutex_t mutex;
+  unsigned int flags;
 
   int installed_ok;
 

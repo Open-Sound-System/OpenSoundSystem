@@ -1529,7 +1529,8 @@ relink_masterdev (vmix_mixer_t * mixer)
 
   if (master_adev == NULL || master_adev->unloaded || !master_adev->enabled)
     {
-      cmn_err (CE_WARN, "vmix: master_adev is not available\n");
+      cmn_err (CE_WARN, "vmix: master_adev %d is not available\n", mixer->masterdev);
+      cmn_err (CE_CONT, "master_adev=%p, unloaded=%d, enabled=%d\n", master_adev, master_adev->unloaded, master_adev->enabled);
       return;
     }
 
@@ -1667,7 +1668,9 @@ cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
  */
   mixer->master_osdev = adev->master_osdev;
   adev->vmix_mixer = mixer;
+//cmn_err(CE_CONT, "Calling MUTEX_INIT mast=%p, mixer=%p, mutex=%p\n", mixer->master_osdev, mixer,mixer->mutex);
   MUTEX_INIT (mixer->master_osdev, mixer->mutex, MH_DRV + 4);
+//cmn_err(CE_CONT, "OK\n");
 
   DDB (cmn_err (CE_CONT, "Vmix masterdev=%d\n", mixer->masterdev));
   /* TODO: Prevent the other virtual drivers from picking this one */
@@ -1802,8 +1805,15 @@ cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
 /*
  * Crate one client in advance so that that SNDCTL_AUDIOINFO can provide proper info.
  */
-  vmix_create_client (mixer);
-  mixer->client_portc[0]->open_pending = 0; /* Mark this free engine to be free for use */
+  if (!(mixer->flags & VMIX_INSTALL_NOPREALOC))
+     {
+	int cl;
+	
+	for (cl=0;cl<4;cl++)
+    	    vmix_create_client (mixer);
+	for (cl=0;cl<4;cl++)
+  	    mixer->client_portc[cl]->open_pending = 0; /* Mark this free engine to be free for use */
+     }
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 
@@ -1826,7 +1836,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
  * inputdev:		Input master device (if different than masterdev). Value of -1 means that the
  * 			masterdev device should also be used as the input master device (if it supports
  * 			input).
- * attach_flags:	Reserved for future use.
+ * attach_flags:	Flags like VMIX_INSTALL_NOPREALOC.
  */
 
   vmix_mixer_t *mixer;
@@ -1868,6 +1878,7 @@ cmn_err(CE_CONT, "Mixer struct = %p\n", mixer);
   mixer->masterdev = masterdev;
   mixer->inputdev = inputdev;
   mixer->rate = 48000; // TODO: Handle this better
+  mixer->flags = attach_flags;
 
 cmn_err (CE_CONT, "Create instance %d\n", instance_num);
   DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));

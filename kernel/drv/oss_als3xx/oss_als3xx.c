@@ -725,7 +725,7 @@ init_als300 (als300_devc * devc)
 	{
 	  sprintf (tmp_name, "%s (Rev %c)", devc->chip_name,
 		   'A' + devc->chip_rev);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -763,6 +763,10 @@ init_als300 (als300_devc * devc)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->audio_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
 
     }

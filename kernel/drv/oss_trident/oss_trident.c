@@ -1285,7 +1285,7 @@ init_trident (trident_devc * devc)
       sprintf (tmp_name, "%s (rev %d)", devc->chip_name, devc->revision);
       if (i == 0)
 	{
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -1407,6 +1407,10 @@ init_trident (trident_devc * devc)
 	      portc->rbank = BANK_B;
 	      WRITEL (devc->osdev, READL (devc->osdev, CIR) | 0x10000, CIR);
 	    }
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
 
       devc->audio_opened = 0;

@@ -2166,7 +2166,7 @@ init_maestro (maestro_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -2208,6 +2208,10 @@ init_maestro (maestro_devc * devc)
 	  portc->channels = 0;
 	  audio_engines[adev]->mixer_dev = my_mixer;
 	  audio_engines[adev]->vmix_flags = VMIX_MULTIFRAG;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
   return 1;

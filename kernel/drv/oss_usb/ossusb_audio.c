@@ -1344,7 +1344,7 @@ ossusb_init_audiostream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
 	}
       else
 	{
-	  opts |= ADEV_NOINPUT | ADEV_ATTACH_VMIX;
+	  opts |= ADEV_NOINPUT;
 	}
     }
 
@@ -1387,16 +1387,13 @@ ossusb_init_audiostream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
 				    portc->num_settings, name);
     }
 
-/*
- * Invoke vmix after the input device (TY_OUTPUT surprise surprise) has been
- * installed. Typical USB devices attach the input device(s) after the output
- * device(s). In this way both directions should be present before vmix is
- * attached. This means that USB devices that define recording interfaces
- * before output ones cannot use vmix.
- */
-  if (devc->units[portc->terminal_link].typ == TY_OUTPUT)
-    oss_audio_delayed_attach ();
-
+#if 0
+  // TODO: This needs to be checked before vmix is enabled
+#ifdef CONFIG_OSS_VMIX
+  if (devc->units[portc->terminal_link].typ != TY_OUTPUT)
+     vmix_attach_audiodev(devc->osdev, portc->audio_dev, -1, 0);
+#endif
+#endif
   return devc;
 }
 

@@ -6401,20 +6401,9 @@ oss_install_audiodev_with_devname (int vers,
 			  &audio_cdev_drv, chdev_flags);
       osdev->num_audio_engines++;
 
-#ifdef CONFIG_OSS_VMIX
-      if (flags & ADEV_ATTACH_VMIX)
-         {
-		 int err;
+      op->enabled = 1;
+      op->unloaded = 0;
 
-		 /*
-		  * Attach virtual mixer with the default parameters.
-		  */
-		 if ((err=vmix_attach_audiodev(osdev, devfile_num, -1, 0))<0)
-		    {
-			    cmn_err(CE_NOTE, "Cannot attach virtual mixer to audio engine %s, error=\n", op->name, err);
-		    }
-	 }
-#endif
     }
   else
     {
@@ -6438,9 +6427,6 @@ oss_install_audiodev_with_devname (int vers,
   oss_install_chrdev (osdev, NULL, OSS_DEV_DSP_ENGINE, num,
 		      &audio_engine_cdev_drv, chdev_flags);
 #endif
-
-  op->enabled = 1;
-  op->unloaded = 0;
 
 #if 0
   if (!reinsterted_device && update_devlists && !hidden_device)

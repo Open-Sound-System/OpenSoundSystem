@@ -808,7 +808,7 @@ via8233_init (via8233_devc * devc)
       portc = &devc->portc[i];
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  opts |= ADEV_DUPLEX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       else
@@ -853,6 +853,10 @@ via8233_init (via8233_devc * devc)
 	  portc->open_mode = 0;
 	  portc->audio_enabled = 0;
 	  portc->audiodev = adev;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
 

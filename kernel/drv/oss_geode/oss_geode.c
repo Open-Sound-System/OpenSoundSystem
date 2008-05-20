@@ -745,7 +745,7 @@ init_geode (geode_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps = opts | ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps = opts | ADEV_DUPLEX;
 	}
       else
 	{
@@ -783,6 +783,10 @@ init_geode (geode_devc * devc)
 	      audio_engines[adev]->fixed_rate = 48000;
 	      audio_engines[adev]->min_rate = 48000;
 	    }
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
 
     }

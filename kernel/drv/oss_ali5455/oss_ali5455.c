@@ -812,7 +812,7 @@ init_ALI (ALI_devc * devc)
 
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  opts |= ADEV_DUPLEX;
 	  strcpy (tmp_name, devc->chip_name);
 	}
       if (i == 1)
@@ -858,6 +858,10 @@ init_ALI (ALI_devc * devc)
 	  portc->port_type = port_fmt;
 	  if (audio_engines[my_dev]->flags & ADEV_FIXEDRATE)
 	    audio_engines[my_dev]->fixed_rate = 48000;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, my_dev, -1, 0);
+#endif
 	}
     }
   return 1;

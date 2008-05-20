@@ -1445,7 +1445,7 @@ install_audio_devices (audigyls_devc * devc)
 	case 0:
 	  portc->play_port = 0;
 	  portc->rec_port = 2;
-	  flags |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  flags |= ADEV_DUPLEX;
 	  break;
 	case 1:
 	  portc->play_port = 0;
@@ -1501,6 +1501,10 @@ install_audio_devices (audigyls_devc * devc)
       devc->playvol[i] = 0x3030;
       devc->recvol = 128;
       portc->bits = AFMT_S16_LE;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
     }
 
 #ifdef USE_REMUX

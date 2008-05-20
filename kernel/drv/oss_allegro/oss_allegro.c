@@ -861,7 +861,7 @@ init_allegro (allegro_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  caps |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  caps |= ADEV_DUPLEX;
 	}
       else
 	{
@@ -896,6 +896,10 @@ init_allegro (allegro_devc * devc)
 	  portc->open_mode = 0;
 	  portc->audiodev = adev;
 	  portc->audio_enabled = 0;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
 

@@ -1060,7 +1060,7 @@ ich_init (ich_devc * devc)
       if (i == 0)
 	{
 	  strcpy (tmp_name, devc->chip_name);
-	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  opts |= ADEV_DUPLEX;
 	}
       if (i == 1)
 	{
@@ -1116,6 +1116,10 @@ ich_init (ich_devc * devc)
 	  portc->port_type = port_fmt;
 	  if (audio_engines[adev]->flags & ADEV_FIXEDRATE)
 	    audio_engines[adev]->fixed_rate = 48000;
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
   return 1;

@@ -1026,7 +1026,7 @@ install_audio_devices (emu10k1x_devc * devc)
 	}
 
       if (i == 0)
-	flags |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	flags |= ADEV_DUPLEX;
       else
 	flags |= ADEV_NOINPUT;
 
@@ -1060,6 +1060,10 @@ install_audio_devices (emu10k1x_devc * devc)
       portc->port_number = i;
       portc->channels = 2;
       portc->fmt = AFMT_S16_LE;
+#ifdef CONFIG_OSS_VMIX
+      if (i == 0)
+         vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
     }
 
 #ifdef USE_REMUX

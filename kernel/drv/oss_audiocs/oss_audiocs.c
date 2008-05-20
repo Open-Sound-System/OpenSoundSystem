@@ -1545,7 +1545,7 @@ cs4231_init (cs4231_devc_t * devc)
 
   if (devc->model > MD_1848)
     {
-      devc->audio_flags |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+      devc->audio_flags |= ADEV_DUPLEX;
     }
 
   if ((my_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
@@ -1570,6 +1570,10 @@ cs4231_init (cs4231_devc_t * devc)
 
   cs4231_init_hw (devc);
 
+#ifdef CONFIG_OSS_VMIX
+  if (i == 0)
+     vmix_attach_audiodev(devc->osdev, my_dev, -1, 0);
+#endif
 #if 0
   test_it (devc);
 #endif

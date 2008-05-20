@@ -725,7 +725,7 @@ init_via97 (via97_devc * devc)
 
       if (i == 0)
 	{
-	  opts |= ADEV_DUPLEX | ADEV_ATTACH_VMIX;
+	  opts |= ADEV_DUPLEX;
 	  strcpy (tmp_name, "VIA 82C686 AC97 Controller");
 	}
       else
@@ -769,6 +769,10 @@ init_via97 (via97_devc * devc)
 	      audio_engines[adev]->min_rate = 48000;
 	      audio_engines[adev]->max_rate = 48000;
 	    }
+#ifdef CONFIG_OSS_VMIX
+	  if (i == 0)
+	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 	}
     }
   return 1;
