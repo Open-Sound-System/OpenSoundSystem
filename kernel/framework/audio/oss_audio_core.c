@@ -1684,7 +1684,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 		      if ((dev = oss_audio_open_engine (vmix_dev, dev_class, file,
 							recursive, open_flags, newdev)) < 0)
 			{
-			  cmn_err(CE_WARN, "Failed to open vmix engine %d\n", vmix_dev);
+			  cmn_err(CE_WARN, "Failed to open vmix engine %d, err=%d\n", vmix_dev, dev);
 			  return dev;
 			}
 		
@@ -6421,6 +6421,8 @@ oss_install_audiodev_with_devname (int vers,
 	{
 	  strcpy (op->devnode, "HiddenAudioDevice");
 	}
+      op->enabled = 1;
+      op->unloaded = 0;
     }
 
 #ifdef VDEV_SUPPORT

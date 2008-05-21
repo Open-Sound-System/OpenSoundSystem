@@ -746,7 +746,7 @@ start_engines (vmix_mixer_t * mixer)
   dmap_in = adev_in->dmap_in;
   adev_out->cooked_enable = 0;
 
-  if (mixer->inputdev > 0 && mixer->inputdev != mixer->masterdev)
+  if (mixer->inputdev > -1 && mixer->inputdev != mixer->masterdev)
     {
       /*
        * Open input device
@@ -795,7 +795,7 @@ start_engines (vmix_mixer_t * mixer)
   else
     {
       int trig2 = PCM_ENABLE_INPUT;
-      if (mixer->inputdev > 0)
+      if (mixer->inputdev > -1)
 	if (oss_audio_ioctl (mixer->inputdev, NULL, SNDCTL_DSP_SETTRIGGER,
 			     (ioctl_arg) & trig2) < 0)
 	  {
@@ -1623,8 +1623,6 @@ check_masterdev (void *mx)
   DDB (cmn_err
        (CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num,
 	adev->name));
-cmn_err(CE_CONT, "Check masterdev eng=%d/%s\n", adev->engine_num, adev->name);
-
 
   /* Don't accept virtual devices other than loopback ones */
   if (adev->flags & ADEV_VIRTUAL && !(adev->flags & ADEV_LOOP))
@@ -2003,6 +2001,7 @@ cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
 
 	  portc->open_pending = 1;
 	  engine_num = portc->audio_dev;
+	  break;
   }
   MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
  
@@ -2021,7 +2020,7 @@ cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
   	   portc = audio_engines[engine_num]->portc;
 	   create_client_controls (mixer, portc->num);
      }
-cmn_err(CE_CONT, "Engine=%d\n", engine_num);
+cmn_err(CE_CONT, "New client engine=%d\n", engine_num);
 
   portc = audio_engines[engine_num]->portc;
 
