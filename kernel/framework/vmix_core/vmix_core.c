@@ -1335,6 +1335,133 @@ static audiodrv_t vmix_driver = {
  * Initialization support
  */
 
+static void
+relink_masterdev (vmix_mixer_t * mixer)
+{
+/*
+ * Insert the VMIX devices to the engine search list of the master device.
+ */
+  adev_t *first_adev, *last_adev, *master_adev;
+  int i, n = mixer->num_clientdevs;
+
+  n = n - 1;
+  if (n < 1)
+    return;
+
+  first_adev = audio_engines[mixer->client_portc[0]->audio_dev];
+  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
+  master_adev = audio_engines[mixer->masterdev];
+
+/*
+ * Relink client devices in the proper way.
+ */
+
+  for (i=0;i<mixer->num_clientdevs;i++)
+  {
+	  adev_t *adev = audio_engines[mixer->client_portc[i]->audio_dev];
+
+	  if (i==mixer->num_clientdevs-1)
+	     adev->next_out = NULL;
+	  else
+	     adev->next_out = audio_engines[mixer->client_portc[i+1]->audio_dev];
+cmn_err(CE_CONT, "Adev %d, next=%p\n", adev->engine_num, adev->next_out);
+  }
+
+  if (master_adev == NULL || master_adev->unloaded || !master_adev->enabled)
+    {
+      cmn_err (CE_WARN, "vmix: master_adev %d is not available\n", mixer->masterdev);
+      cmn_err (CE_CONT, "master_adev=%p, unloaded=%d, enabled=%d\n", master_adev, master_adev->unloaded, master_adev->enabled);
+      return;
+    }
+
+  last_adev->next_out = NULL;
+  master_adev->next_out = first_adev;
+}
+
+static void
+unlink_masterdev (vmix_mixer_t * mixer)
+{
+/*
+ * Remove the VMIX devices from the engine search list of the master device.
+ */
+  adev_t *last_adev, *master_adev;
+  int n = mixer->num_clientdevs;
+
+  if (n < 1)
+    return;
+
+  n = n - 1;
+
+  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
+  master_adev = audio_engines[mixer->masterdev];
+
+  if (master_adev == NULL)
+    {
+      cmn_err (CE_WARN, "master_adev == NULL\n");
+      return;
+    }
+
+  master_adev->next_out = last_adev->next_out;
+  last_adev->next_out = NULL;
+}
+
+static void
+relink_inputdev (vmix_mixer_t * mixer)
+{
+/*
+ * Insert the VMIX devices to the engine search list of the input device.
+ */
+  adev_t *first_adev, *last_adev, *input_adev;
+  int i, n = mixer->num_clientdevs;
+
+/*
+ * Relink client devices in the proper way.
+ */
+
+  for (i=0;i<mixer->num_clientdevs;i++)
+  {
+	  adev_t *adev = audio_engines[mixer->client_portc[i]->audio_dev];
+
+	  if (i==mixer->num_clientdevs-1)
+	     adev->next_in = NULL;
+	  else
+	     adev->next_in = audio_engines[mixer->client_portc[i+1]->audio_dev];
+  }
+
+  if (n < 1)
+    return;
+
+  n = n - 1;
+
+  first_adev = audio_engines[mixer->client_portc[0]->audio_dev];
+  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
+  input_adev = audio_engines[mixer->inputdev];
+
+  last_adev->next_in = NULL;
+  input_adev->next_in = first_adev;
+}
+
+static void
+unlink_inputdev (vmix_mixer_t * mixer)
+{
+/*
+ * Remove the VMIX devices from the engine search list of the input device.
+ */
+  adev_t *last_adev, *input_adev;
+  int n = mixer->num_clientdevs;
+
+  if (n < 1)
+    return;
+
+  n = n - 1;
+
+  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
+  input_adev = audio_engines[mixer->inputdev];
+
+  input_adev->next_in = last_adev->next_in;
+  last_adev->next_in = NULL;
+}
+
 static int
 create_vmix_engine (vmix_mixer_t * mixer)
 {
@@ -1442,6 +1569,12 @@ create_vmix_engine (vmix_mixer_t * mixer)
 	}
     }
 
+  relink_masterdev (mixer);
+
+  if (mixer->inputdev > -1)
+    relink_inputdev (mixer);
+
+
   return portc->audio_dev;
 }
 
@@ -1508,104 +1641,6 @@ create_loopdev (vmix_mixer_t * mixer)
   portc->channels = 2;
   portc->volume[0] = DB_SIZE * 5;
   portc->volume[1] = DB_SIZE * 5;
-}
-
-static void
-relink_masterdev (vmix_mixer_t * mixer)
-{
-/*
- * Insert the VMIX devices to the engine search list of the master device.
- */
-  adev_t *first_adev, *last_adev, *master_adev;
-  int n = mixer->num_clientdevs;
-
-  n = n - 1;
-  if (n < 1)
-    return;
-
-  first_adev = audio_engines[mixer->client_portc[0]->audio_dev];
-  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
-  master_adev = audio_engines[mixer->masterdev];
-
-  if (master_adev == NULL || master_adev->unloaded || !master_adev->enabled)
-    {
-      cmn_err (CE_WARN, "vmix: master_adev %d is not available\n", mixer->masterdev);
-      cmn_err (CE_CONT, "master_adev=%p, unloaded=%d, enabled=%d\n", master_adev, master_adev->unloaded, master_adev->enabled);
-      return;
-    }
-
-  last_adev->next_out = master_adev->next_out;
-  master_adev->next_out = first_adev;
-}
-
-static void
-unlink_masterdev (vmix_mixer_t * mixer)
-{
-/*
- * Remove the VMIX devices from the engine search list of the master device.
- */
-  adev_t *last_adev, *master_adev;
-  int n = mixer->num_clientdevs;
-
-  if (n < 1)
-    return;
-
-  n = n - 1;
-
-  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
-  master_adev = audio_engines[mixer->masterdev];
-
-  if (master_adev == NULL)
-    {
-      cmn_err (CE_WARN, "master_adev == NULL\n");
-      return;
-    }
-
-  master_adev->next_out = last_adev->next_out;
-  last_adev->next_out = NULL;
-}
-
-static void
-relink_inputdev (vmix_mixer_t * mixer)
-{
-/*
- * Insert the VMIX devices to the engine search list of the input device.
- */
-  adev_t *first_adev, *last_adev, *input_adev;
-  int n = mixer->num_clientdevs;
-
-  if (n < 1)
-    return;
-
-  n = n - 1;
-
-  first_adev = audio_engines[mixer->client_portc[0]->audio_dev];
-  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
-  input_adev = audio_engines[mixer->inputdev];
-
-  last_adev->next_in = input_adev->next_in;
-  input_adev->next_in = first_adev;
-}
-
-static void
-unlink_inputdev (vmix_mixer_t * mixer)
-{
-/*
- * Remove the VMIX devices from the engine search list of the input device.
- */
-  adev_t *last_adev, *input_adev;
-  int n = mixer->num_clientdevs;
-
-  if (n < 1)
-    return;
-
-  n = n - 1;
-
-  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
-  input_adev = audio_engines[mixer->inputdev];
-
-  input_adev->next_in = last_adev->next_in;
-  last_adev->next_in = NULL;
 }
 
 static int
@@ -2025,12 +2060,6 @@ cmn_err(CE_CONT, "New client engine=%d\n", engine_num);
   portc = audio_engines[engine_num]->portc;
 
   /* portc->open_pending = 1; // This was done already by create_vmix_engine() */
-
-  relink_masterdev (mixer);
-
-  if (mixer->inputdev > -1)
-    relink_inputdev (mixer);
-
   return engine_num;
 }
 

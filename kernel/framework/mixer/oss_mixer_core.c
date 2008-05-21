@@ -1442,7 +1442,8 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
       next = adev->next_out;
 
 #ifdef VDEV_SUPPORT
-      while (combine_slaves && next != NULL)
+      i = 0;
+      while (combine_slaves && next != NULL && i++ < num_audio_engines)
 	{
 	  ainfo_combine_caps (info, next);
 	  next = next->next_out;
@@ -1458,7 +1459,8 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
       next = adev->next_in;
 
 #ifdef VDEV_SUPPORT
-      while (combine_slaves && next != NULL)
+      i=0;
+      while (combine_slaves && next != NULL && i++ < num_audio_engines)
 	{
 	  ainfo_combine_caps (info, next);
 	  next = next->next_in;
