@@ -26,6 +26,16 @@ else
    ln -s $OSSLIBDIR/modules.noregparm $OSSLIBDIR/modules
 fi
 
+if test -f /lib/modules/`uname -r`/kernel/oss/vmix.ko || test -f /lib/modules/`uname -r`/kernel/oss/oss_vmix.ko
+then
+# Older versions of OSS modules exist under /lib/modules. This indicates that
+# previous version of OSS has not been properly uninstalled. Use brute force
+# to get rid of it.
+
+	rm -f /lib/modules/`uname -r`/kernel/oss/*.ko
+	/usr/sbin/ossdetect
+fi
+
 if ! test -f $OSSLIBDIR/objects/osscore.o
 then
 	echo Error: OSS core module for $REGPARM kernel is not available in $OSSLIBDIR/objects
