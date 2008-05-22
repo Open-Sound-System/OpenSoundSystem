@@ -69,6 +69,7 @@ cp $KERNEL32/.version prototype/etc/oss/version.dat
 
 cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 cp $KERNEL32/target/bin/* prototype/usr/bin
+cp $KERNEL32/target/sbin/* prototype/usr/sbin
 cp $KERNEL32/setup/SunOS/sbin/* prototype/usr/sbin
 chmod 500 prototype/usr/sbin/*
 echo "autosave_mixer yes" > prototype/etc/oss/userdefs
