@@ -121,9 +121,11 @@ do
 	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
-
-	rm -f /tmp/ossman.txt
 done
+
+sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
+$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip > prototype/usr/share/man/man7/osscore.7.gz
+rm -f /tmp/ossman.txt
 
 # Link the optional NOREGPARM modules
 if test -d noregparm

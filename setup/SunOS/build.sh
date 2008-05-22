@@ -83,7 +83,7 @@ then
 	# osscommon
 	if ld -64 -dy -r -Nmisc/usba -o prototype/kernel/misc/$KERNEL64/osscommon $KERNEL64/target/objects/*.o
 	then
-		$TXT2MAN -v "OSS Devices" -s 7 $KERNEL64/kernel/framework/osscore/osscore.man > prototype/usr/man/man7d/osscore.7d
+		$TXT2MAN -v "OSS Devices" -s 7 $KERNEL64/kernel/drv/osscore/osscore.man > prototype/usr/man/man7d/osscore.7d
 	else
 		exit 1
 	fi

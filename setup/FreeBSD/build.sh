@@ -87,6 +87,32 @@ rm -f prototype/usr/share/man/man8/ossdetect.8
 $SRCDIR/setup/txt2man -t "ossdetect" -v "User Commands" -s 8 os_cmd/FreeBSD/ossdetect/ossdetect.man > prototype/usr/share/man/man8/ossdetect.8
 echo done ossdetect
 
+for n in target/modules/*.o
+do
+	N=`basename $n .o`
+	ld -r -o prototype/usr/lib/oss/$MODULES/$N.o $n
+	echo Check devices for $N
+  	grep "^$N[ 	]" ./devices.list >> devlist.txt
+
+	rm -f /tmp/ossman.txt
+
+	if test -f $SRCDIR/kernel/drv/$N/$N.man
+	then
+	  sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
+	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip > prototype/usr/share/man/man7/$N.7.gz
+	else
+		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
+		then
+	  		sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
+	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip > prototype/usr/share/man/man7/$N.7.gz
+		fi
+	fi
+done
+
+sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
+$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip > prototype/usr/share/man/man7/osscore.7.gz
+rm -f /tmp/ossman.txt
+
 cp .version prototype/usr/lib/oss/version.dat
 
 # Licensing stuff
