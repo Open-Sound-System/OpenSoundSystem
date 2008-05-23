@@ -87,19 +87,27 @@ virtualdrv_init (void)
 {
   static int instance = 0, maj;
 
+cmn_err(CE_CONT, "a\n");
   if ((osdev =
        osdev_create (NULL, DRIVER_TYPE, instance++, DRIVER_NICK,
 		     NULL)) == NULL)
     {
       return -ENOMEM;
     }
+cmn_err(CE_CONT, "b\n");
   osdev_set_owner (osdev, THIS_MODULE);
+cmn_err(CE_CONT, "c\n");
   maj = oss_request_major (osdev, 0, DRIVER_NICK);
+cmn_err(CE_CONT, "d\n");
   osdev_set_major (osdev, maj);
+cmn_err(CE_CONT, "e\n");
   if (!DRIVER_ATTACH (osdev))
     return -EIO;
+cmn_err(CE_CONT, "f\n");
   oss_register_module (THIS_MODULE);
+cmn_err(CE_CONT, "g\n");
   oss_audio_delayed_attach ();
+cmn_err(CE_CONT, "a\n");
   return 0;
 }
 
