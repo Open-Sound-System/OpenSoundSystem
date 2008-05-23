@@ -40,8 +40,6 @@ typedef struct _smap_t dmap_t;
 #include "../include/internals/audio_core.h"
 #include "../include/internals/mixer_core.h"
 
-extern int flat_device_model;
-
 MODULE_LICENSE ("GPL v2");
 MODULE_DESCRIPTION ("Open Sound System core services");
 MODULE_AUTHOR ("4Front Technologies (support@opensound.com)");
@@ -225,11 +223,15 @@ int oss_hz = HZ;
 extern int max_intrate;
 extern int detect_trace;
 extern int src_quality;
+extern int flat_device_model;
+extern int vmix_disabled;
 
 module_param (oss_hz, int, S_IRUGO);
 module_param (max_intrate, int, S_IRUGO);
 module_param (detect_trace, int, S_IRUGO);
 module_param (src_quality, int, S_IRUGO);
+module_param (flat_device_model, int, S_IRUGO);
+module_param (vmix_disabled, int, S_IRUGO);
 
 static struct proc_dir_entry *oss_proc_root = NULL;
 static struct proc_dir_entry *oss_proc_devfiles = NULL;
@@ -2100,7 +2102,6 @@ EXPORT_DATA (num_mididevs);
 EXPORT_SYMBOL (num_mixers);
 EXPORT_DATA (oss_timing_mutex);
 EXPORT_DATA (oss_num_cards);
-EXPORT_DATA (flat_device_model);
 EXPORT_FUNC (oss_do_timing);
 EXPORT_FUNC (oss_do_timing2);
 EXPORT_FUNC (oss_timing_enter);
@@ -2132,4 +2133,3 @@ EXPORT_SYMBOL (oss_add_audio_devlist);
 extern void *oss_adev_pointer;
 EXPORT_SYMBOL (oss_adev_pointer);
 
-module_param (flat_device_model, int, S_IRUGO);
