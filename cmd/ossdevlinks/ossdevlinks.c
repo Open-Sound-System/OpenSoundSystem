@@ -855,7 +855,7 @@ save_links (void)
 int
 main (int argc, char *argv[])
 {
-  int i,c;
+  int c;
 
   if ((mixerfd = open ("/dev/mixer", O_RDWR, 0)) == -1)
     {
