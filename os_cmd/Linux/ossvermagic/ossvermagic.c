@@ -37,7 +37,6 @@ sym_callback (char *buffer, int blen, Elf_Sym * sym, char *name, int addr)
 {
 
   char tmp[256], *vermagic = tmp;
-  int i;
 
   ok = 1;
   exit_status = 0;
@@ -196,9 +195,8 @@ find_system_vermagic (void)
 int
 main (int argc, char *argv[])
 {
-  int i, j, n, ok;
+  int i, ok;
   int do_sys = 0;
-  char nodename[30];
   int valid = 0;
 
   if (argc < 2)

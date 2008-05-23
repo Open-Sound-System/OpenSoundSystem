@@ -12,9 +12,7 @@
 int
 hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
 {
-  int wid;
   int ctl=0;
-  codec_t *codec = mixer->codecs[cad];
 
   DDB(cmn_err(CE_CONT, "hdaudio_ferrari5k_mixer_init got called.\n"));
 
@@ -131,8 +129,6 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		/* Src 0x17=black */
 		/* Src 0xb=input-mix */
 		{
-			int amp_group;
-
 #if 1
 			if (HDA_INSRC_SELECT(0x23, group, ctl, "recsrc", 1))
 			    HDA_CHOICES(ctl, "ext-mic int-mic line-out-jack unused unused unused unused unused unused unused input-mix");
@@ -171,8 +167,6 @@ hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top
 		/* Src 0x17=black */
 		/* Src 0xb=input-mix */
 		{
-			int amp_group;
-
 #if 1
 			if (HDA_INSRC_SELECT(0x22, group, ctl, "recsrc", 1))
 			    HDA_CHOICES(ctl, "ext-mic int-mic line-out-jack unused unused unused unused unused unused unused input-mix");

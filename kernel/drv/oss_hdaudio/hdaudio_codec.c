@@ -93,8 +93,7 @@ static mixer_driver_t hda_mixer_driver = {
 static void
 propagate_names (hdaudio_mixer_t * mixer)
 {
-  int c, c2, w, w2;
-  int n, start;
+  int c, w;
   int i;
 /*
  * Check if the same name can be used for all the widgets on an unique path.
@@ -149,7 +148,6 @@ check_names (hdaudio_mixer_t * mixer)
 {
   int c, c2, w, w2;
   int n, start;
-  int i;
 
 /*
  * Make sure all widgets have unique names.
@@ -740,7 +738,6 @@ hdaudio_mix_init (int dev)
     if (mixer->codecs[cad] != &NULL_codec)
       {
 	codec_t *codec = mixer->codecs[cad];
-	int group = 0;
 
 	if (codec == &NULL_codec || codec->nwidgets == 0)	/* Codec not active */
 	  continue;
@@ -1491,7 +1488,6 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
       case NT_PIN:		/* Pin complex */
 	{
 	  unsigned int conf;
-	  int num = codec->jack_number++;
 	  unsigned int pincaps;
 
 	  if (!corb_read
@@ -2665,7 +2661,7 @@ hda_codec_add_pingroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (widget->used || widget->skip)
     return 0;
 
-  if ((group_size <= 1 || (*n % group_size) == 0 && *n > 0))
+  if (group_size <= 1 || ((*n % group_size) == 0 && *n > 0))
     {
       if ((grp = mixer_ext_create_group (dev, top_group, parent_name)) > 0)
 	*parent_group = grp;
@@ -2700,7 +2696,7 @@ hda_codec_add_adcgroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (widget->used || widget->skip)
     return 0;
 
-  if ((group_size <= 1 || (*n % group_size) == 0 && *n > 0))
+  if (group_size <= 1 || ((*n % group_size) == 0 && *n > 0))
     {
       if ((grp = mixer_ext_create_group (dev, top_group, parent_name)) > 0)
 	*parent_group = grp;
@@ -2735,7 +2731,7 @@ hda_codec_add_miscgroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (widget->used || widget->skip)
     return 0;
 
-  if ((group_size <= 1 || (*n % group_size) == 0 && *n > 0))
+  if (group_size <= 1 || ((*n % group_size) == 0 && *n > 0))
     {
       if ((grp = mixer_ext_create_group (dev, top_group, parent_name)) > 0)
 	*parent_group = grp;
@@ -2958,7 +2954,7 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, maxval, val, ctl = 0;
+  int ctl = 0;
   oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
@@ -2972,7 +2968,6 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 
   if (widget->outamp_caps & AMPCAP_MUTE)	/* Only mute control */
     {
-      char tmpname[32];
       // name = "mute";
 
       if ((ctl = mixer_ext_create_control (mixer->mixer_dev,
@@ -3078,7 +3073,7 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   widget_t *widget;
   codec_t *codec;
   oss_mixext *ent;
-  int typ, maxval, val, ctl = 0;
+  int ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3121,7 +3116,6 @@ hda_codec_set_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, maxval, val, ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3145,7 +3139,7 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   widget_t *widget;
   codec_t *codec;
   oss_mixext *ent;
-  int typ, maxval, val, ctl = 0;
+  int ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return -ENXIO;
@@ -3190,7 +3184,7 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int i, typ, maxval, val;
+  int i;
   oss_mixext *ext;
 
   *ctl = 0;
@@ -3258,7 +3252,6 @@ hda_codec_add_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, maxval, val;
   oss_mixext *ext;
   int i;
 
@@ -3333,7 +3326,6 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 {
   widget_t *widget;
   codec_t *codec;
-  int typ, maxval, val;
   unsigned int conf, b;
   oss_mixext *ext;
   int i;
@@ -3442,7 +3434,6 @@ hda_codec_set_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 		      int value)
 {
   codec_t *codec;
-  int i;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return;
@@ -3463,7 +3454,7 @@ hda_codec_add_choices (int dev, hdaudio_mixer_t * mixer, int ctl,
   return 0;
 }
 
-int
+void
 hda_codec_set_color(int dev, hdaudio_mixer_t *mixer, int ctl, int color)
 {
   oss_mixext *ext;

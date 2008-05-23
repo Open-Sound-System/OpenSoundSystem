@@ -2264,7 +2264,7 @@ static void *
 ossusb_device_attach (udi_usb_devc * usbdev, oss_device_t * osdev)
 {
   ossusb_devc *devc;
-  char *devpath, *as;
+  char *devpath;
   int inum;
   int old = 1;
   int i;

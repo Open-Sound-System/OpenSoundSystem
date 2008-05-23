@@ -77,8 +77,8 @@ sample_parms;
 
 typedef struct _adev_t adev_t, *adev_p;
 typedef struct _dmap_t *dmap_p;
-typedef int (*cnv_func_t) (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-			   void **tgtp, sample_parms * source,
+typedef int (*cnv_func_t) (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+			   unsigned char **tgtp, sample_parms * source,
 			   sample_parms * target);
 
 struct _dmap_t

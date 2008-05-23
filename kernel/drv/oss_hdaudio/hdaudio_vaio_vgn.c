@@ -13,9 +13,7 @@ int
 hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 			     int top_group)
 {
-  int wid;
   int ctl = 0;
-  codec_t *codec = mixer->codecs[cad];
 
   DDB (cmn_err (CE_CONT, "hdaudio_vaio_vgn_mixer_init got called.\n"));
 

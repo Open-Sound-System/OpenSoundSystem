@@ -249,7 +249,7 @@ create_client_controls (void *vmix_mixer, int client_num)
   /*
    * Create the pcmN sliders
    */
-  int group, err, i, ctl;
+  int group, err;
   vmix_mixer_t *mixer = vmix_mixer;
   int mixer_dev;
   char name[32];
@@ -279,7 +279,7 @@ cmn_err(CE_CONT, "create_client_controls(%p, %d)\n", vmix_mixer, client_num);
 static int
 create_output_controls (int mixer_dev)
 {
-  int group, err, i, ctl;
+  int  ctl;
   vmix_mixer_t *mixer = mixer_devs[mixer_dev]->vmix_devc;
   char tmp[32];
 
@@ -290,14 +290,14 @@ create_output_controls (int mixer_dev)
       if (mixer->max_channels>2)
 	 {
 	      sprintf (tmp, "vmix%d-channels", mixer->instance_num);
-	      if ((err = mixer_ext_create_control (mixer_dev, 0, 511, vmix_outvol,
+	      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 511, vmix_outvol,
 						   MIXT_ENUM,
 						   tmp, 2,
 						   MIXF_READABLE | MIXF_WRITEABLE)) <
 		  0)
-		return err;
+		return ctl;
 	
-	      mixer_ext_set_strings (mixer_dev, err,
+	      mixer_ext_set_strings (mixer_dev, ctl,
 				     "Stereo Multich", 0);
 	 }
 
@@ -319,25 +319,28 @@ create_output_controls (int mixer_dev)
   if (!(mixer->vmix_flags & VMIX_NOMAINVOL))
     {
       sprintf (tmp, "vmix%d-vol", mixer->instance_num);
-      if ((err = mixer_ext_create_control (mixer_dev, 0, 0, vmix_outvol,
+      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 0, vmix_outvol,
 					   MIXT_MONOSLIDER16,
 					   tmp, DB_SIZE * 5,
 					   MIXF_READABLE | MIXF_WRITEABLE |
 					   MIXF_CENTIBEL | MIXF_PCMVOL)) < 0)
-	return err;
+	return ctl;
+
+      if (mixer->first_output_mixext == -1)
+	mixer->first_output_mixext = ctl;
     }
   else
     mixer->play_engine.outvol = DB_SIZE * 5;
 
-      if (mixer->first_output_mixext == -1)
-	mixer->first_output_mixext = err;
-
       sprintf (tmp, "vmix%d-out", mixer->instance_num);
-      if ((err = mixer_ext_create_control (mixer_dev, 0, 1, vmix_outvol,
+      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 1, vmix_outvol,
 					   MIXT_STEREOPEAK,
 					   tmp, 144,
 					   MIXF_READABLE | MIXF_DECIBEL)) < 0)
-	return err;
+	return ctl;
+
+  if (mixer->first_output_mixext == -1)
+     mixer->first_output_mixext = ctl;
 
   sprintf (tmp, "vmix%d-out", mixer->instance_num);
   if ((mixer->client_mixer_group = mixer_ext_create_group (mixer_dev, 0, tmp)) < 0)
@@ -1649,7 +1652,7 @@ check_masterdev (void *mx)
   vmix_mixer_t *mixer = mx;
   adev_t *adev;
   int rate_source;
-  int dev, i;
+  int dev;
 
   if (mixer->masterdev >= num_audio_engines)
     return 0;
@@ -1818,7 +1821,7 @@ check_masterdev (void *mx)
 
   mixer->installed_ok = 1;
 
-  // create_loopdev (mixer); // TODO: Make this configurable.
+  create_loopdev (mixer); // TODO: Make this configurable.
 
   if (mixer->output_mixer_dev > -1)
     {

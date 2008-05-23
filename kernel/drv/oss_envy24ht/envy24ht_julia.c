@@ -293,6 +293,8 @@ julia_set_syncsource (envy24ht_devc * devc, int value)
       julia_set_rate (devc);
     }
   }
+
+  return 0;
 }
 
 static int

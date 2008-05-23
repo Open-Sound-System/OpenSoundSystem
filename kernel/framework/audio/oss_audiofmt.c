@@ -398,7 +398,7 @@ static int sine_ptr = 0;
 #endif
 
 static int
-cnv_default (adev_p adev, dmap_p dmap, void **srcp, int *srcl, void **tgtp,
+cnv_default (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl, unsigned char **tgtp,
 	     sample_parms * source, sample_parms * target)
 {
   void *p1 = *srcp, *p2 = *tgtp, *tmpp;
@@ -938,7 +938,7 @@ cnv_default (adev_p adev, dmap_p dmap, void **srcp, int *srcl, void **tgtp,
 }
 
 static int
-cnv_srconly (adev_p adev, dmap_p dmap, void **srcp, int *srcl, void **tgtp,
+cnv_srconly (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl, unsigned char **tgtp,
 	     sample_parms * source, sample_parms * target)
 {
   void *p1 = *srcp, *p2 = *tgtp, *tmpp;

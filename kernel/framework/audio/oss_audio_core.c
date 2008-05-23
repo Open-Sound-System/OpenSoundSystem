@@ -1618,7 +1618,6 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
   int open_excl = 0;
   adev_p adev;
   int mode = OPEN_READ | OPEN_WRITE;
-  int redirect = -1;
 
 #ifdef DO_TIMINGS
   {
@@ -4257,8 +4256,8 @@ find_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
   move_raw_rdpointer (adev, dmap, l);
 
   if ((err =
-       dmap->convert_func (adev, dmap, (void **) &p1, &l2,
-			   (void **) &p2, &adev->hw_parms,
+       dmap->convert_func (adev, dmap, &p1, &l2,
+			   &p2, &adev->hw_parms,
 			   &adev->user_parms)) < 0)
     return err;
 
@@ -5081,8 +5080,8 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	    cmn_err (CE_WARN, "audio: uiomove(UIO_WRITE) (conv) failed\n");
 	  UP_STATUS (STS_CONVERT);
 	  if ((err =
-	       dmap->convert_func (adev, dmap, (void **) &p1, &l2,
-				   (void **) &p2, &adev->user_parms,
+	       dmap->convert_func (adev, dmap, &p1, &l2,
+				   &p2, &adev->user_parms,
 				   &adev->hw_parms)) < 0)
 	    {
 	      cmn_err (CE_WARN, "Format conversion failed (%d)\n", err);

@@ -712,7 +712,6 @@ cs461x_audio_open (int dev, int mode, int open_flags)
 {
   cs461x_portc *portc = audio_engines[dev]->portc;
   cs461x_devc *devc = audio_engines[dev]->devc;
-  dmap_t *dmapin = audio_engines[dev]->dmap_in;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);

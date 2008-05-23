@@ -26,8 +26,6 @@
 extern int hdaudio_snoopy;
 extern int hdaudio_jacksense;
 
-static int do_jacksense;
-
 static int
 count_linked_controls (hdaudio_mixer_t * mixer, codec_t * codec,
 		       widget_t * widget, int recursive)
@@ -342,7 +340,7 @@ attach_selector (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
   unsigned int c, b;
   char *name = "src";
 
-  int i, ctl, valid_sel;
+  int i, ctl;
   char tmp[256], *t = tmp;
   oss_mixext *ext;
   int count = 0;
@@ -701,7 +699,6 @@ static int
 attach_misc_widget (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		    widget_t * widget, int parent_group)
 {
-  int group = parent_group, g;
   int err;
   int nselect = 0;
   int num_amps = 0;

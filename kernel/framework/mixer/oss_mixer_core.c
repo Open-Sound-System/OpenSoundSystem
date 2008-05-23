@@ -1478,7 +1478,7 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
 int
 oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 {
-  int val, i;
+  int val;
   int combine_slaves = 0;
 #ifdef MANAGE_DEV_DSP
 #ifdef VDEV_SUPPORT

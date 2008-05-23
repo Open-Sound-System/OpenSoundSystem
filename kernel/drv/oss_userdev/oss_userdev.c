@@ -18,8 +18,6 @@ userdev_devc_t *userdev_active_device_list = NULL;
 int
 oss_userdev_attach (oss_device_t * osdev)
 {
-  int i;
-
   userdev_osdev = osdev;
 
   osdev->devc = NULL;
@@ -27,7 +25,7 @@ oss_userdev_attach (oss_device_t * osdev)
 
   oss_register_device (osdev, "User space audio driver subsystem");
 
-  attach_control_device(void);
+  //attach_control_device(void);
 
   return 1;
 }
@@ -36,7 +34,6 @@ int
 oss_userdev_detach (oss_device_t * osdev)
 {
   userdev_devc_t *devc;
-  int i;
 
   if (oss_disable_device (osdev) < 0)
     return 0;

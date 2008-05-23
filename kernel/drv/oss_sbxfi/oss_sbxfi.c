@@ -148,8 +148,6 @@ static short
 sbxfi_set_channels (int dev, short arg)
 {
   sbxfi_portc_t *portc = audio_engines[dev]->portc;
-  sbxfi_devc_t *devc = audio_engines[dev]->devc;
-  oss_native_word flags;
 
   if (arg == 0)
     return portc->channels;
@@ -469,7 +467,6 @@ init_play_device (sbxfi_devc_t * devc,
   int opts, dev, formats;
   char tmp[80];
   sbxfi_portc_t *portc = NULL;
-  int i;
   adev_p adev;
 
   sprintf (tmp, "%s %s", devc->name, name);
@@ -553,7 +550,6 @@ init_rec_device (sbxfi_devc_t * devc,
   int opts, dev, formats;
   char tmp[80];
   sbxfi_portc_t *portc = NULL;
-  int i;
   adev_p adev;
 
   sprintf (tmp, "%s %s", devc->name, name);
@@ -945,7 +941,6 @@ int
 oss_sbxfi_detach (oss_device_t * osdev)
 {
   sbxfi_devc_t *devc = (sbxfi_devc_t *) osdev->devc;
-  sbxfi_portc_t *portc = &devc->play_portc[0];
 
   if (oss_disable_device (osdev) < 0)
     return 0;

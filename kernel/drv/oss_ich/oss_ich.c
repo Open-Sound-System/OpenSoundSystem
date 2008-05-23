@@ -1163,7 +1163,8 @@ oss_ich_attach (oss_device_t * osdev)
        device != NVIDIA_DEVICE_NFORCE && device != NVIDIA_DEVICE_NFORCE2 &&
        device != NVIDIA_DEVICE_NFORCE3 && device != NVIDIA_DEVICE_CK8S &&
        device != NVIDIA_DEVICE_NFORCE4 && device != NVIDIA_DEVICE_CK8 &&
-       device != NVIDIA_DEVICE_MCP51) && device != NVIDIA_DEVICE_MCP4)
+       device != NVIDIA_DEVICE_MCP51 && device != NVIDIA_DEVICE_MCP4
+       ))
     {
       cmn_err (CE_WARN, "Hardware not recognized (vendor=%x, dev=%x)\n",
 	       vendor, device);

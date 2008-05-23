@@ -28,7 +28,7 @@ typedef struct
   timeout_id_t timeout_id;
 } midimix_devc;
 
-static midimix_devc midimix_devs[MAX_INSTANCES] = { 0 };
+static midimix_devc midimix_devs[MAX_INSTANCES] = {{ 0 }};
 static int ndevs = 0;
 
 static void
@@ -51,7 +51,6 @@ void
 parser_cb (void *context, int category, unsigned char msg, unsigned char ch,
 	   unsigned char *parms, int len)
 {
-  midimix_devc *devc = context;
 
   if (category == CAT_CHN && msg == MIDI_CTL_CHANGE)
     {

@@ -55,7 +55,7 @@ extern int hda_codec_add_pinselect(int dev, hdaudio_mixer_t *mixer, int cad, int
 extern int hda_codec_add_choices(int dev, hdaudio_mixer_t *mixer, int ctl, const char *choiselist);
 #define HDA_CHOICES(ctl, choicelist) hda_codec_add_choices(dev, mixer, ctl, choicelist)
 
-extern int hda_codec_set_color(int dev, hdaudio_mixer_t *mixer, int ctl, int color);
+extern void hda_codec_set_color(int dev, hdaudio_mixer_t *mixer, int ctl, int color);
 #define HDA_COLOR(ctl, color) hda_codec_set_color(dev, mixer, ctl, color)
 
 #endif

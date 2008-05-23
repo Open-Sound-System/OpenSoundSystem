@@ -314,7 +314,7 @@ void
 _SetupSB055xADC (sbxfi_devc_t * devc, unsigned int src, unsigned char mic20db)
 {
   unsigned short gpioorg;
-  unsigned short gpioval;
+  unsigned short gpioval = 0x28;
 
 
   // check and set the following GPIO bits accordingly
@@ -861,7 +861,7 @@ SetupPlayMixer (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 void
 SetupAndStartPlaySRC (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 {
-  unsigned int Sa, Ladr, Ca, Ctl;
+  unsigned int Sa, Ladr, Ca, Ctl = 0x44c;
   unsigned int srcch;
   unsigned int dwSamplingRate;
   int count;
@@ -1148,7 +1148,7 @@ SetupRecordFormat (sbxfi_devc_t * devc)
 void
 SetupAndStartRecordSRC (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 {
-  unsigned int Sa, Ladr, Ca, Ctl;
+  unsigned int Sa, Ladr, Ca, Ctl = 0x64d;
   int count;
   unsigned int srcch, srcch2;
   unsigned int dwSamplingRate;

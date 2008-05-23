@@ -5,11 +5,11 @@
 
 /*ARGSUSED*/
 static int
-cnv_F8bits_T16bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		    void **tgtp, sample_parms * source, sample_parms * target)
+cnv_F8bits_T16bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		    unsigned char **tgtp, sample_parms * source, sample_parms * target)
 {
   unsigned char *p1 = *srcp;
-  short *p2 = *tgtp;
+  short *p2 = (short*)*tgtp;
   int len = *srcl;
   int i, l;
 
@@ -21,7 +21,7 @@ cnv_F8bits_T16bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
     p2[i] = ((int) p1[i] - 128) << 8;
 
   *srcl = len * 2 / 1;
-  *srcp = p2;
+  *srcp = (unsigned char*)p2;
   *tgtp = p1;
 
   return 0;
@@ -29,11 +29,11 @@ cnv_F8bits_T16bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
 
 /*ARGSUSED*/
 static int
-cnv_F8bits_T32bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		    void **tgtp, sample_parms * source, sample_parms * target)
+cnv_F8bits_T32bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		    unsigned char **tgtp, sample_parms * source, sample_parms * target)
 {
   unsigned char *p1 = *srcp;
-  int *p2 = *tgtp;
+  int *p2 = (int *)*tgtp;
   int len = *srcl;
   int i, l;
 
@@ -45,7 +45,7 @@ cnv_F8bits_T32bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
     p2[i] = ((int) p1[i] - 128) << 24;
 
   *srcl = len * 4 / 1;
-  *srcp = p2;
+  *srcp = (unsigned char *)p2;
   *tgtp = p1;
 
   return 0;
@@ -53,10 +53,10 @@ cnv_F8bits_T32bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
 
 /*ARGSUSED*/
 static int
-cnv_F16bits_T8bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		    void **tgtp, sample_parms * source, sample_parms * target)
+cnv_F16bits_T8bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		    unsigned char **tgtp, sample_parms * source, sample_parms * target)
 {
-  short *p1 = *srcp;
+  short *p1 = (short*)*srcp;
   unsigned char *p2 = *tgtp;
   int len = *srcl;
   int i, l;
@@ -69,20 +69,20 @@ cnv_F16bits_T8bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
     p2[i] = (((int) p1[i]) >> 8) + 128;
 
   *srcl = len * 1 / 2;
-  *srcp = p2;
-  *tgtp = p1;
+  *srcp = (unsigned char *)p2;
+  *tgtp = (unsigned char *)p1;
 
   return 0;
 }
 
 /*ARGSUSED*/
 static int
-cnv_F16bits_T32bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		     void **tgtp, sample_parms * source,
+cnv_F16bits_T32bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		     unsigned char **tgtp, sample_parms * source,
 		     sample_parms * target)
 {
-  short *p1 = *srcp;
-  int *p2 = *tgtp;
+  short *p1 = (short *)*srcp;
+  int *p2 = (int *)*tgtp;
   int len = *srcl;
   int i, l;
 
@@ -94,18 +94,18 @@ cnv_F16bits_T32bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
     p2[i] = ((int) p1[i]) << 16;
 
   *srcl = len * 4 / 2;
-  *srcp = p2;
-  *tgtp = p1;
+  *srcp = (unsigned char *)p2;
+  *tgtp = (unsigned char *)p1;
 
   return 0;
 }
 
 /*ARGSUSED*/
 static int
-cnv_F32bits_T8bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		    void **tgtp, sample_parms * source, sample_parms * target)
+cnv_F32bits_T8bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		    unsigned char **tgtp, sample_parms * source, sample_parms * target)
 {
-  int *p1 = *srcp;
+  int *p1 = (int*)*srcp;
   unsigned char *p2 = *tgtp;
   int len = *srcl;
   int i, l;
@@ -119,19 +119,19 @@ cnv_F32bits_T8bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
 
   *srcl = len * 1 / 4;
   *srcp = p2;
-  *tgtp = p1;
+  *tgtp = (unsigned char *)p1;
 
   return 0;
 }
 
 /*ARGSUSED*/
 static int
-cnv_F32bits_T16bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
-		     void **tgtp, sample_parms * source,
+cnv_F32bits_T16bits (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl,
+		     unsigned char **tgtp, sample_parms * source,
 		     sample_parms * target)
 {
-  int *p1 = *srcp;
-  short *p2 = *tgtp;
+  int *p1 = (int *)*srcp;
+  short *p2 = (short *)*tgtp;
   int len = *srcl;
   int i, l;
 
@@ -143,8 +143,8 @@ cnv_F32bits_T16bits (adev_p adev, dmap_p dmap, void **srcp, int *srcl,
     p2[i] = (((int) p1[i]) >> 16);
 
   *srcl = len * 2 / 4;
-  *srcp = p2;
-  *tgtp = p1;
+  *srcp = (unsigned char *)p2;
+  *tgtp = (unsigned char *)p1;
 
   return 0;
 }

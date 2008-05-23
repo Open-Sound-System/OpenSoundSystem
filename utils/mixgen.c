@@ -703,9 +703,9 @@ main (int argc, char *argv[])
     ("hdaudio_%s_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)\n",
      codec_name);
   printf ("{\n");
-  printf ("  int wid;\n");
+  //printf ("  int wid;\n");
   printf ("  int ctl=0;\n");
-  printf ("  codec_t *codec = mixer->codecs[cad];\n");
+  //printf ("  codec_t *codec = mixer->codecs[cad];\n");
 
   printf ("\n");
   printf

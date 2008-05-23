@@ -131,6 +131,7 @@ valid_elf_file (Elf64_Ehdr * hdr)
 }
 #endif
 
+#if 0
 static char *
 locate_symbol (char *buffer, int len, char *symname)
 {
@@ -181,7 +182,7 @@ locate_symbol (char *buffer, int len, char *symname)
     }
   return NULL;
 }
-
+#endif
 
 int
 elf_read_datasym (char *buffer, int blen, Elf_Sym * sym, int addr,
@@ -301,7 +302,7 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
   Elf_Ehdr *ehdr = (Elf_Ehdr *) buffer;
   Elf_Shdr *shdr;
   Elf_Sym *sym = NULL;
-  char *strtab = NULL, *ptr;
+  char *strtab = NULL;
   int symsize = 0;
   int i;
   int shstrndx = -1;

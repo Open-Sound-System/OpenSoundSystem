@@ -723,7 +723,6 @@ static int
 install_client (userdev_devc_t * devc)
 {
   userdev_portc_t *portc = &devc->client_portc;
-  char tmp[64];
   int adev;
 
   int opts =
@@ -764,7 +763,7 @@ install_client (userdev_devc_t * devc)
   return 0;
 }
 
-static int
+int
 create_device_pair(void)
 {
   int client_engine, server_engine;
@@ -798,12 +797,12 @@ create_device_pair(void)
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
   devc->next_instance = userdev_active_device_list;
   userdev_active_device_list = devc;
-  MUTEX_ENXIT_IRQRESTORE(userdev_global_mutex, flags);
+  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 
   return server_engine;
 }
 
-static void
+void
 delete_device_pair(userdev_devc_t *devc)
 {
   MUTEX_CLEANUP(devc->mutex);

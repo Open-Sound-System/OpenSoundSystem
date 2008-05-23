@@ -265,7 +265,6 @@ do_corb_write_nomutex (void *dc, unsigned int cad, unsigned int nid, unsigned in
 {
   unsigned int wp;
   unsigned int tmp;
-  oss_native_word flags;
   hda_devc_t *devc = (hda_devc_t *) dc;
 
   tmp = (cad << 28) | (d << 27) | (nid << 20) | (verb << 8) | (parm & 0xffff);
@@ -571,7 +570,6 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
-  extern int hdaudio_snoopy;
 
   //if (hdaudio_snoopy)
     switch (cmd)
@@ -994,7 +992,6 @@ hda_audio_prepare_for_output (int dev, int bsize, int bcount)
 static int
 hda_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
-  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_portc *portc = audio_engines[dev]->portc;
   hda_engine_t *engine;
   unsigned int ptr;
