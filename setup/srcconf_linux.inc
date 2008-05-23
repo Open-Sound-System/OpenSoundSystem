@@ -25,12 +25,12 @@ check_sysdep (conf_t * conf, struct utsname *un)
   sprintf (cmd, "%s -c -o srcconf.o -fno-stack-protector setup/srcconf.c >/dev/null 2>&1", targetcc);
   if (system(cmd)==0)
      {
-  	strcpy(conf->OSflags, "-ffreestanding -fno-common -fno-stack-protector");
+  	strcpy(conf->OSflags, "-ffreestanding -fno-common -fno-stack-protector -Wall -Werror");
 	unlink("srcconf.o");
      }
   else
      {
-  	strcpy(conf->OSflags, "-ffreestanding -fno-common");
+  	strcpy(conf->OSflags, "-ffreestanding -fno-common -Wall -Werror");
      }
 
   strcpy (conf->cplusplus, "g++ -fno-rtti -fno-exceptions -I.");
