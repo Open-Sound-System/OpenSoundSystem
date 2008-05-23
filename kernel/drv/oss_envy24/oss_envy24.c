@@ -890,15 +890,10 @@ envy24_start_recording (envy24_devc * devc)
   oss_udelay (20);
   OUTW (devc->osdev, devc->recbuffsize / 4 - 1, devc->mt_base + 0x24);	/* Count */
   OUTL (devc->osdev, devc->recbuf_phys, devc->mt_base + 0x20);	/* Base */
-  oss_udelay (20);
-  oss_udelay (20);
-  oss_udelay (20);
+  oss_udelay (60);
   OUTW (devc->osdev, devc->hw_rfragsize / 4 - 1, devc->mt_base + 0x26);	/* Interrupt rate */
 
-  oss_udelay (20);
-  oss_udelay (20);
-  oss_udelay (20);
-  oss_udelay (20);
+  oss_udelay (60);
 }
 
 void
@@ -1592,7 +1587,7 @@ envy24_audio_prepare_for_input (int dev, int bsize, int bcount)
 
   if (nbytes != bsize)
     {
-      dmap_p dmap = audio_engines[dev]->dmap_out;
+      dmap_p dmap = audio_engines[dev]->dmap_in;
       dmap->fragment_size = bsize = nbytes;
       dmap->bytes_in_use = dmap->fragment_size * dmap->nfrags;
       if (dmap->bytes_in_use > dmap->buffsize)
