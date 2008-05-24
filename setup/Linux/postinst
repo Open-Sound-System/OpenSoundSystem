@@ -1,0 +1,9 @@
+#!/bin/sh
+echo "Building OSS Modules for Linux-`uname -p` `uname -r`"
+cd /usr/lib/oss/build
+sh install.sh
+echo "Starting Open Sound System"
+sync
+/usr/sbin/soundoff >> /dev/null 2>&1
+sync
+/usr/sbin/soundon || exit 0
