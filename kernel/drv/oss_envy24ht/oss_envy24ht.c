@@ -1830,7 +1830,7 @@ static const int bindings[MAX_ODEV] = {
   DSP_BIND_REAR
 };
 
-static void
+static int
 init_play_device (envy24ht_devc * devc, int chmask, int offset,
 		  unsigned char mask, char *name, int dev_flags,
 		  char *port_id, char *devfile_name)
@@ -1846,7 +1846,7 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
   if (devc->nr_outdevs >= MAX_ODEV)
     {
       cmn_err (CE_CONT, "Envy24ht: Too many audio devices\n");
-      return;
+      return -ENXIO;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOINPUT;
@@ -1872,7 +1872,7 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
 				   opts, formats, devc, -1,
 				   devfile_name)) < 0)
     {
-      return;
+      return dev;
     }
 
   if (devc->first_dev == -1)
@@ -1925,9 +1925,11 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
 	audio_engines[dev]->caps |= PCM_CAP_ANALOGOUT | DSP_CH_STEREO;
     }
   devc->nr_outdevs++;
+
+  return dev;
 }
 
-static void
+static int
 init_rec_device (envy24ht_devc * devc, int chmask, int offset,
 		 unsigned char mask, char *name, int dev_flags, char *devfile_name)
 {
@@ -1941,7 +1943,7 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
   if (devc->nr_indevs >= MAX_IDEV)
     {
       cmn_err (CE_CONT, "Envy24ht: Too many audio devices\n");
-      return;
+      return -ENXIO;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOOUTPUT | ADEV_COLD;
@@ -1962,7 +1964,7 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
 				   opts, formats, devc, -1,
 				   devfile_name)) < 0)
     {
-      return;
+      return dev;
     }
 
   if (devc->first_dev == -1)
@@ -1995,17 +1997,21 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
   else
     audio_engines[dev]->caps |= PCM_CAP_ANALOGIN | DSP_CH_STEREO;
   devc->nr_indevs++;
+
+  return dev;
 }
 
 static void
 init_devices (envy24ht_devc * devc)
 {
+  int front_engine, rec_engine;
+
   OUTB (devc->osdev, 0x03, devc->mt_base + 0x19);	/* Channel allocation */
   OUTB (devc->osdev, 0x00, devc->mt_base + 0x1b);	/* Unpause ALL channels */
 
   devc->first_dev = -1;
 
-  init_play_device (devc, 0x003, 0x10, 0x01, devc->channel_names[0],
+  front_engine=init_play_device (devc, 0x003, 0x10, 0x01, devc->channel_names[0],
 		    DF_MULTICH, "front", "");
 
   if (devc->model_data->nr_outs > 2)
@@ -2026,16 +2032,20 @@ init_devices (envy24ht_devc * devc)
 			DF_SPDIF | DF_AC3, "spdif", "spdout");
     }
 
-  init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0, "");
-
-#ifdef CONFIG_OSS_VMIX
-  vmix_attach_audiodev(devc->osdev, devc->play_portc[0].dev, devc->rec_portc[0].dev, 0);
-#endif
+  rec_engine = init_rec_device (devc, 0x003, 0x20, 0x02, "analog", 0, "");
 
   if (devc->model_data->flags & MF_SPDIFIN)
     {
       init_rec_device (devc, 0x00c, 0x30, 0x04, "digital", DF_SPDIF, "spdin");
     }
+
+#ifdef CONFIG_OSS_VMIX
+    if (rec_engine < 0)
+       rec_engine = -1; /* Not available */
+
+    if (front_engine >= 0)
+       vmix_attach_audiodev(devc->osdev, front_engine, rec_engine, 0);
+#endif
 }
 
 static void
