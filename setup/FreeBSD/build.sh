@@ -99,18 +99,18 @@ do
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
 	then
 	  sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
-	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip > prototype/usr/share/man/man7/$N.7.gz
+	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 	else
 		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 		then
 	  		sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
-	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip > prototype/usr/share/man/man7/$N.7.gz
+	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
 done
 
 sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
-$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip > prototype/usr/share/man/man7/osscore.7.gz
+$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
 rm -f /tmp/ossman.txt
 
 cp .version prototype/usr/lib/oss/version.dat
