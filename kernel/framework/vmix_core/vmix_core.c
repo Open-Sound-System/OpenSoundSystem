@@ -1494,7 +1494,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   if (mixer->instance_num > 0)
     opts |= ADEV_SPECIAL;
 
-  if ((portc = PMALLOC (mixer->devc->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (mixer->osedv, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return -ENOMEM;
@@ -1593,7 +1593,7 @@ create_loopdev (vmix_mixer_t * mixer)
   if (mixer->masterdev == -1)
     return;
 
-  if ((portc = PMALLOC (mixer->devc->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (mixer->osedv, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return;
@@ -1882,7 +1882,7 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
   if (vmix_disabled) /* Vmix not available in the system */
      return -EIO;
 
-  if ((mixer = PMALLOC (devc->osdev, sizeof (*mixer))) == NULL)
+  if ((mixer = PMALLOC (osdev, sizeof (*mixer))) == NULL)
     {
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
       return -EIO;

@@ -436,10 +436,10 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
   audio_engines[mixer->inputdev]->hw_parms.channels =
     mixer->record_engine.channels;
   audio_engines[mixer->inputdev]->hw_parms.rate = mixer->record_engine.rate;
-  audio_engines[mixer->inputdev]->dmap_out->data_rate =
+  audio_engines[mixer->inputdev]->dmap_in->data_rate =
     mixer->record_engine.rate * mixer->record_engine.channels *
     mixer->record_engine.bits / 8;
-  audio_engines[mixer->inputdev]->dmap_out->frame_size =
+  audio_engines[mixer->inputdev]->dmap_in->frame_size =
     mixer->record_engine.channels * mixer->record_engine.bits / 8;
 
   old_min = adev->min_fragments;
