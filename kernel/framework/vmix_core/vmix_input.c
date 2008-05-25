@@ -361,7 +361,10 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
   dmap->dma_mode = PCM_ENABLE_INPUT;
 
   if (mixer->num_clientdevs > 1)
+  {
     adev->redirect_out = mixer->client_portc[0]->audio_dev;
+    adev->vmix_mixer = mixer;
+  }
   vmix_record_callback (mixer->inputdev, mixer->instance_num);
 }
 
