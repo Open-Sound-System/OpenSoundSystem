@@ -1821,8 +1821,6 @@ check_masterdev (void *mx)
 
   mixer->installed_ok = 1;
 
-  create_loopdev (mixer); // TODO: Make this configurable.
-
   if (mixer->output_mixer_dev > -1)
     {
 cmn_err(CE_CONT, "Hook output mixer %d\n", mixer->output_mixer_dev);
@@ -1850,6 +1848,8 @@ cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
 	for (cl=0;cl<4;cl++)
   	    mixer->client_portc[cl]->open_pending = 0; /* Mark this free engine to be free for use */
      }
+
+  create_loopdev (mixer); // TODO: Make this configurable.
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 

@@ -15,6 +15,17 @@ oss_device_t *userdev_osdev = NULL;
 oss_mutex_t userdev_global_mutex;
 userdev_devc_t *userdev_active_device_list = NULL;
 
+static void
+attach_control_device(void)
+{
+/*
+ * Create the control device files that are used to create client/server
+ * device pairs and to redirect access to them.
+ */
+
+	// TODO:
+}
+
 int
 oss_userdev_attach (oss_device_t * osdev)
 {
@@ -25,7 +36,7 @@ oss_userdev_attach (oss_device_t * osdev)
 
   oss_register_device (osdev, "User space audio driver subsystem");
 
-  //attach_control_device(void);
+  attach_control_device();
 
   return 1;
 }
