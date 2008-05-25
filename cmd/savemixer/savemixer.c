@@ -11,7 +11,6 @@
 #include <sys/ioctl.h>
 
 static void change_mixer (char *);
-static void close_device (void);
 static int find_mixerdev (char *);
 static char * get_mapname (void);
 #ifdef APPLIST_SUPPORT
@@ -500,13 +499,6 @@ open_device (char * dev_name, int mode)
       exit (0);
     }
 
-  atexit (close_device);
-}
-
-static void
-close_device (void)
-{
-  close (fd);
 }
 
 int
