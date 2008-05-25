@@ -1,3 +1,4 @@
 #!/bin/sh
 rm -rf /usr/lib/oss/*
 rm -f /usr/lib/libflashsupport.so
+if [ -x /usr/bin/update-menus ]; then /usr/bin/update-menus; fi

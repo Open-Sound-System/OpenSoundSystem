@@ -1,6 +1,7 @@
 #!/bin/bash
 
 VERSION=`sh showversion.sh`
+VERSION=${VERSION#v}
 RELEASE=`cat buildid.dat`
 OSSNAME="oss-linux"
 
@@ -9,64 +10,82 @@ if test `uname -m` = "x86_64"; then ARCH=amd64
 else ARCH=`uname -m|sed 's/^i[3-9]86/i386/'`
 fi
 
-# Checking for known MD5 hasing programs
-if type md5sum; then MD5=MD5SUM
-elif type openssl; then MD5=OPENSSL
-elif type md5; then MD5=MD5
-elif type digest; then MD5=DIGEST
+DEBNAME=${OSSNAME}-${VERSION}-${RELEASE}_${ARCH}
+
+# Checking for known MD5 hashing programs
+if type md5sum > /dev/null 2>&1; then MD5=MD5SUM
+elif type openssl > /dev/null 2>&1; then MD5=OPENSSL
+elif type md5 > /dev/null 2>&1; then MD5=MD5
+elif type digest > /dev/null 2>&1; then MD5=DIGEST
 else echo "There has been no MD5 creation utily found. deb archive creation will be aborted." && exit 1
 fi
 
-DEBNAME=${OSSNAME}-${VERSION}_${RELEASE}_${ARCH}
 echo building $DEBNAME.deb
 
-mkdir control
+
+mkdir control 2>/dev/null
 echo "2.0" > debian-binary
-echo "Package: " $OSSNAME > control/control
-echo "Version: " $VERSION_$RELEASE >> control/control
-echo "Section: sound" >> control/control
-echo "Priority: optional" >> control/control
-echo "Architecture: " $ARCH >> control/control
-echo "Installed-Size: `du -ks prototype | awk '{print $1}'`" >> control/control
-echo "Suggests: libsdl1.2debian-oss | libsdl1.2debian-all, libesd0, libwine-oss, libsox-fmt-oss, mpg123, gstreamer0.10-plugins-bad (>= 0.10.7), libasound2-plugins" >> control/control
-echo "Maintainer: 4Front Technologies <support@opensound.com>" >> control/control
-echo "Description: Open Sound System (http://www.opensound.com)
+cat > control/control << END
+Package: $OSSNAME
+Version: ${VERSION}-${RELEASE}
+Section: sound
+Priority: optional
+Architecture: $ARCH
+Installed-Size: `du -ks prototype | awk '{print $1}'`
+Build-Depends: build-essential sed gawk libtool libgtk2.0-dev
+Depends: binutils, gcc, libc6, libgtk2.0-0, sed (>= 1.0.0)
+Conflicts: libflashsupport
+Provides: oss
+Suggests: libsdl1.2debian-oss | libsdl1.2debian-all, libesd0, libwine-oss, libsox-fmt-oss, mpg123, gstreamer0.10-plugins-bad (>= 0.10.7), libasound2-plugins
+Maintainer: 4Front Technologies <support@opensound.com>
+Description: Open Sound System (http://www.opensound.com)
  OSS provides libraries and necessary drivers for practically all sound
   cards on the market including PnP and many PCI ones which enable you
   to play sound files, compose music, use MIDI (only included in the
   testing releases) and adjust your sound card using various user space
-  programs." >> control/control
+  programs.
+END
+
+# Copying the menu and copyright file to the right place, taking care that the md5sums generation will take place AFTER this step
+mkdir -p prototype/usr/share/menu prototype/usr/share/doc/oss-linux
+cp setup/Linux/menu.ex prototype/usr/share/menu/ossxmix
+cp setup/Linux/copyright prototype/usr/share/doc/oss-linux/
+
 
 # Create the MD5 sums file using the program we have found earlier
-case "$MD5" in
-  MD5SUM)
-    (cd prototype; find . -type f -exec sh -c 'i={}; i=${i#.}; md5sum ".$i"' \; > ../control/md5sums)
-  ;;
-  MD5)
-    (cd prototype; find . -type f -exec sh -c 'i={}; i=${i#.}; x=`md5 ".$i" | awk "{ for (y=1;y<=NF;y++) if ((length(\\$y) == 32) && (\\$y !~ /[\/]/)) {print \\$y; break} }"`; echo "$x  $i"' \; > ../control/md5sums)
-  ;;
-  DIGEST)
-    (cd prototype; find . -type f -exec sh -c 'i={}; i=${i#.}; x=`digest -a md5 ".$i"`; echo "$x  $i"' \; > ../control/md5sums)
-  ;;
-  OPENSSL)
-    (cd prototype; find . -type f -exec sh -c 'i={}; i=${i#.}; x=`openssl md5 $i | awk "{ for (y=1;y<=NF;y++) if ((length(\\$y) == 32) && (\\$y !~ /[\/]/)) {print \\$y; break} }"`; echo "$x  $i"' \; > ../control/md5sums)
-  ;;
-esac
+(cd prototype; find . -type f -exec sh ../setup/Linux/md5.sh "$MD5" "{}" \; > ../control/md5sums)
 
 (cd prototype; find . -type f -print | sed 's/^.//g' | egrep "^/etc/" > ../control/conffiles)
 
+
+# Removing older builds
 rm -rf /tmp/prototype $DEBNAME.deb
+
+
 cp -pRf prototype /tmp
-cp setup/Linux/postinst setup/Linux/prerm setup/Linux/postrm control/
-(cd control; tar cv * | gzip -9 > ../control.tar.gz)
-(cd /tmp/prototype; tar cv ./* | gzip -9 > data.tar.gz)
+cp setup/Linux/preinst setup/Linux/postinst setup/Linux/prerm setup/Linux/postrm control/
+if test -e prototype/usr/lib/oss/lib/libsalsa.so*
+then
+  cp setup/Linux/shlibs control/
+fi
+
+
+# Correcting file and directory permissions required by lintian
+chmod 0755 control/control
+
+# Building control and data archives
+(cd control; tar c * | gzip -9 > ../control.tar.gz)
+(cd /tmp/prototype; tar c ./* | gzip -9 > data.tar.gz)
 mv /tmp/prototype/data.tar.gz .
 
 
+# Creating the actual archive
 ar r $DEBNAME.deb debian-binary control.tar.gz data.tar.gz
+
 
 # Cleanup
 rm -rf /tmp/prototype control control.tar.gz data.tar.gz debian-binary
+
 
 if test -f 4front-private/export_package.sh
 then
