@@ -1614,7 +1614,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 /*
  * Open audio device file (by calling oss_audio_open_engine).
  */
-  int err, d;
+  int err, d, n;
   int open_excl = 0;
   adev_p adev;
   int mode = OPEN_READ | OPEN_WRITE;
@@ -1646,9 +1646,34 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
       return -ENODEV;
     }
   adev = audio_devfiles[dev];
+  dev = adev->engine_num;
+
+  n=0;
+  while (adev->d->adrv_redirect != NULL)
+     {
+	     int next_dev = dev;
+
+	     if (n++ > num_audio_engines)
+		{
+			cmn_err(CE_CONT, "Recursive audio device redirection\n");
+			return -ELOOP;
+		}
+
+
+  	     next_dev = adev->d->adrv_redirect (dev, mode, open_flags);
+
+	     if (next_dev == dev) /* No change */
+		break;
+
+	     if (next_dev < 0 || next_dev >= num_audio_engines)
+		return -ENXIO;
+
+	     dev = next_dev;
+	     adev = audio_engines[dev];
+     }
 
 /*
- * Check Exclusive mode open - do not do any kind of redirection or device
+ * Check Exclusive mode open - do not do any kind of device
  * sharing. For the time being this mode is not supported with devices
  * that do hardware mixing.
  */
