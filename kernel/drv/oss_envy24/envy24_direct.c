@@ -325,7 +325,7 @@ void
 envy24d_install (envy24_devc * devc)
 {
 
-  int adev;
+  int adev, out_dev, in_dev;
   char tmpname[128];
   envy24d_portc *portc;
 
@@ -334,7 +334,7 @@ envy24d_install (envy24_devc * devc)
    */
   sprintf (tmpname, "%s (all outputs)", devc->model_data->product);
 
-  if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
+  if ((out_dev = adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
 				    devc->osdev,
 				    tmpname,
@@ -372,7 +372,7 @@ envy24d_install (envy24_devc * devc)
    */
   sprintf (tmpname, "%s (all inputs)", devc->model_data->product);
 
-  if ((adev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
+  if ((adev = in_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
 				    devc->osdev,
 				    tmpname,
@@ -404,4 +404,12 @@ envy24d_install (envy24_devc * devc)
       portc->direction = OPEN_READ;
       audio_engines[adev]->port_number = 10;	/* First input channel */
     }
+
+#ifdef CONFIG_OSS_VMIX
+  if (in_dev<0)
+     in_dev = -1; /* Input not available */
+
+    if (out_dev >= 0)
+       vmix_attach_audiodev(devc->osdev, out_dev, in_dev, 0);
+#endif
 }
