@@ -6,6 +6,7 @@
 
 #include "oss_userdev_cfg.h"
 #include "userdev.h"
+static void userdev_free_device_pair (userdev_devc_t *devc);
 
 static void
 transfer_audio (userdev_portc_t * server_portc, dmap_t * dmap_from,
@@ -278,6 +279,9 @@ userdev_server_open (int dev, int mode, int open_flags)
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
   adev_t *adev;
+cmn_err(CE_CONT, "Server open %d\n", dev);
+
+  devc->open_pending = 0;
 
   if ((mode & OPEN_READ) && (mode & OPEN_WRITE))
     return -EACCES;
@@ -307,6 +311,7 @@ userdev_server_open (int dev, int mode, int open_flags)
   if (!(mode & OPEN_WRITE))
     adev->flags |= ADEV_NOINPUT;
   adev->enabled = 1;		/* Enable client side */
+  devc->open_count++;
 
   return 0;
 }
@@ -318,6 +323,7 @@ userdev_client_open (int dev, int mode, int open_flags)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
+cmn_err(CE_CONT, "Client open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
     return -ENXIO;
@@ -331,6 +337,7 @@ userdev_client_open (int dev, int mode, int open_flags)
     }
 
   portc->open_mode = mode;
+  devc->open_count++;
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
   return 0;
@@ -343,6 +350,7 @@ userdev_server_close (int dev, int mode)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
+  int open_count;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   audio_engines[portc->peer->audio_dev]->enabled = 0;	/* Disable client side */
@@ -351,6 +359,10 @@ userdev_server_close (int dev, int mode)
   /* Stop the client side */
   portc->peer->input_triggered = 0;
   portc->peer->output_triggered = 0;
+  open_count = --devc->open_count;
+
+  if (open_count == 0)
+     userdev_free_device_pair (devc);
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
@@ -361,6 +373,7 @@ userdev_client_close (int dev, int mode)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
+  int open_count;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->open_mode = 0;
@@ -369,6 +382,10 @@ userdev_client_close (int dev, int mode)
   portc->peer->input_triggered = 0;
   portc->peer->output_triggered = 0;
 
+  open_count = --devc->open_count;
+
+  if (open_count == 0)
+     userdev_free_device_pair (devc);
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
@@ -682,7 +699,7 @@ install_server (userdev_devc_t * devc)
 
   int opts =
     ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL |
-    ADEV_FIXEDRATE | ADEV_SPECIAL;
+    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_HIDDEN;
 
   memset (portc, 0, sizeof (*portc));
 
@@ -711,11 +728,11 @@ install_server (userdev_devc_t * devc)
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->caps |= PCM_CAP_HIDDEN;
-  audio_engines[adev]->max_channels = MAX_CHANNELS;;
+  audio_engines[adev]->max_channels = MAX_CHANNELS;
 
   portc->audio_dev = adev;
 
-  return 0;
+  return adev;
 }
 
 
@@ -727,7 +744,7 @@ install_client (userdev_devc_t * devc)
 
   int opts =
     ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL |
-    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP;
+    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP | ADEV_HIDDEN;
 
   memset (portc, 0, sizeof (*portc));
 
@@ -760,19 +777,20 @@ install_client (userdev_devc_t * devc)
 
   portc->audio_dev = adev;
 
-  return 0;
+  return adev;
 }
 
 int
-create_device_pair(void)
+userdev_create_device_pair(void)
 {
   int client_engine, server_engine;
   userdev_devc_t *devc;
-  oss_native_word flags;
 
   if ((devc=PMALLOC(userdev_osdev, sizeof (*devc))) == NULL)
      return -ENOMEM;
   memset(devc, 0, sizeof(*devc));
+
+  devc->open_pending = 1;
 
   devc->osdev = userdev_osdev;
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
@@ -794,16 +812,51 @@ create_device_pair(void)
   /*
    * Insert the device to the list of available devices
    */
-  MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
-  devc->next_instance = userdev_active_device_list;
-  userdev_active_device_list = devc;
-  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+cmn_err(CE_CONT, "Created new device pair, server=%d, client=%d\n", server_engine, client_engine);
 
   return server_engine;
 }
 
+static void
+userdev_free_device_pair (userdev_devc_t *devc)
+{
+  oss_native_word flags;
+
+cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
+  MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+  devc->next_instance = userdev_free_device_list;
+  userdev_free_device_list = devc;
+  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+}
+
 void
-delete_device_pair(userdev_devc_t *devc)
+userdev_delete_device_pair(userdev_devc_t *devc)
 {
   MUTEX_CLEANUP(devc->mutex);
+}
+
+int
+usrdev_find_free_device_pair(void)
+{
+  oss_native_word flags;
+  userdev_devc_t *devc;
+
+cmn_err(CE_CONT, "usrdev_find_free_device_pair()\n");
+
+  MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+
+  if (userdev_free_device_list != NULL)
+     {
+	devc = userdev_free_device_list;
+	userdev_free_device_list = userdev_free_device_list->next_instance;
+
+	devc->open_pending = 1;
+
+  	MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+cmn_err(CE_CONT, "Reuse %d\n", devc->server_portc.audio_dev);
+	return devc->server_portc.audio_dev;
+     }
+  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+
+  return -ENXIO;
 }

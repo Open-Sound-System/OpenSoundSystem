@@ -30,6 +30,9 @@ struct _userdev_devc_t
   oss_device_t *osdev;
   oss_mutex_t mutex;
 
+  int open_count;	/* 0=not in use, 2=both client and server in use */
+  int open_pending;	/* 1=Device pair marked by userdev_server_redirect */
+
   userdev_devc_t *next_instance;
 
   int rate;
@@ -43,7 +46,8 @@ struct _userdev_devc_t
 
 extern oss_device_t *userdev_osdev;
 extern oss_mutex_t userdev_global_mutex;
-extern userdev_devc_t *userdev_active_device_list;
+extern userdev_devc_t *userdev_free_device_list;
 
-extern int create_device_pair(void);
-extern void delete_device_pair(userdev_devc_t *devc);
+extern int userdev_create_device_pair(void);
+extern void userdev_delete_device_pair(userdev_devc_t *devc);
+extern int usrdev_find_free_device_pair(void);
