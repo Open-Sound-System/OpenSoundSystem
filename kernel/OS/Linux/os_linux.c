@@ -237,9 +237,7 @@ osdev_set_owner (oss_device_t * osdev, struct module *owner)
 void
 osdev_set_major (oss_device_t * osdev, int major)
 {
-cmn_err(CE_CONT, "osdev_set_major(%p)\n", osdev);
   osdev->major = major;
-cmn_err(CE_CONT, "osdev_set_major(%p) done\n", osdev);
 }
 
 void
@@ -850,9 +848,7 @@ oss_request_major (oss_device_t * osdev, int major, char *module)
 {
   int err;
 
-cmn_err(CE_CONT, "Calling oss_register_chrdev()\n");
   err = oss_register_chrdev (osdev, major, module, &oss_fops);
-cmn_err(CE_CONT, "Calling oss_register_chrdev() done, err=%d\n", err);
 
   return err;
 }

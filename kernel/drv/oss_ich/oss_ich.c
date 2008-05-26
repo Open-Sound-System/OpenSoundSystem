@@ -1401,7 +1401,7 @@ oss_ich_detach (oss_device_t * osdev)
 int
 oss_ich_power (oss_device_t *osdev, int component, int level)
 {
-cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
+// cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
 
 	return 0; /* Failed */
 }
@@ -1411,14 +1411,14 @@ cmn_err(CE_CONT, "oss_ich_power(%d, %d)\n", component, level);
 int
 oss_ich_suspend(oss_device_t *osdev)
 {
-cmn_err(CE_CONT, "oss_ich_suspend()\n");
+//cmn_err(CE_CONT, "oss_ich_suspend()\n");
 	return 0; /* Failed */
 }
 
 int
 oss_ich_resume(oss_device_t *osdev)
 {
-cmn_err(CE_CONT, "oss_ich_resume()\n");
+//cmn_err(CE_CONT, "oss_ich_resume()\n");
 	return 0; /* Failed */
 }
 #endif

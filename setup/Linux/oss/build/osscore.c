@@ -964,9 +964,7 @@ oss_register_chrdev (oss_device_t * osdev, unsigned int major,
 		     const char *name, struct oss_file_operation_handle *op)
 {
   int maj;
-cmn_err(CE_CONT, "Calling register_chrdev()\n");
   maj = register_chrdev (major, name, alloc_fop (osdev, op));
-cmn_err(CE_CONT, "Calling register_chrdev() done, maj=%d\n", maj);
 
   return maj;
 }
