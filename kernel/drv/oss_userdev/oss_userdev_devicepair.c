@@ -785,6 +785,7 @@ userdev_create_device_pair(void)
 {
   int client_engine, server_engine;
   userdev_devc_t *devc;
+  oss_native_word flags;
 
   if ((devc=PMALLOC(userdev_osdev, sizeof (*devc))) == NULL)
      return -ENOMEM;
@@ -812,6 +813,10 @@ userdev_create_device_pair(void)
   /*
    * Insert the device to the list of available devices
    */
+  MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+  devc->next_instance = userdev_active_device_list;
+  userdev_active_device_list = devc;
+  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 cmn_err(CE_CONT, "Created new device pair, server=%d, client=%d\n", server_engine, client_engine);
 
   return server_engine;
@@ -824,8 +829,39 @@ userdev_free_device_pair (userdev_devc_t *devc)
 
 cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+
+  /*
+   * Add to the free device pair list.
+   */
   devc->next_instance = userdev_free_device_list;
   userdev_free_device_list = devc;
+
+  /*
+   * Remove the device pair from the active device list.
+   */
+
+  if (userdev_active_device_list == devc) /* First device in the list */
+     {
+	     userdev_active_device_list = userdev_active_device_list->next_instance;
+cmn_err(CE_CONT," Removed %p from free devices (first)\n", devc);
+     }
+  else
+     {
+	     userdev_devc_t *this = userdev_active_device_list, *prev = NULL;
+
+	     while (this != NULL)
+	     {
+		     if (this == devc)
+			{
+				prev->next_instance = this->next_instance; /* Remove */
+cmn_err(CE_CONT, "Removed %p from free devices\n", devc);
+				break;
+			}
+
+		     prev = this;
+		     this = this->next_instance;
+	     }
+     }
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 }
 
@@ -851,6 +887,8 @@ cmn_err(CE_CONT, "usrdev_find_free_device_pair()\n");
 	userdev_free_device_list = userdev_free_device_list->next_instance;
 
 	devc->open_pending = 1;
+  	devc->next_instance = userdev_active_device_list;
+  	userdev_active_device_list = devc;
 
   	MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 cmn_err(CE_CONT, "Reuse %d\n", devc->server_portc.audio_dev);

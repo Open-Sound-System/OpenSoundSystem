@@ -5,6 +5,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 
 #include "oss_userdev_cfg.h"
+#include <oss_userdev_exports.h>
 #include "userdev.h"
 
 oss_device_t *userdev_osdev = NULL;
@@ -22,6 +23,12 @@ oss_mutex_t userdev_global_mutex;
  * reused whenever a new device pair is required.
  */
 userdev_devc_t *userdev_free_device_list = NULL;
+
+/*
+ * Linked list for device pairs that have a server attached. These device 
+ * pairs are available for the clients.
+ */
+userdev_devc_t *userdev_active_device_list = NULL;
 
 /*ARGSUSED*/
 static int

@@ -46,6 +46,7 @@ struct _userdev_devc_t
 
 extern oss_device_t *userdev_osdev;
 extern oss_mutex_t userdev_global_mutex;
+extern userdev_devc_t *userdev_active_device_list;
 extern userdev_devc_t *userdev_free_device_list;
 
 extern int userdev_create_device_pair(void);

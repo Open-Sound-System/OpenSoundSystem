@@ -15,7 +15,7 @@
 #ifndef SOUNDCARD_H
 #define SOUNDCARD_H
 
-#define COPYING40 Copyright (C) 4Front Technologies 2000-2006. Released under the BSD license.
+#define COPYING40 Copyright (C) 4Front Technologies 1992-2008. Released under the BSD license.
 
 #if defined(__cplusplus)
 #define EXTERNC extern "C"
