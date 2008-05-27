@@ -1580,7 +1580,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
 
   return portc->audio_dev;
 }
-
+#if 0
 static void
 create_loopdev (vmix_mixer_t * mixer)
 {
@@ -1645,6 +1645,7 @@ create_loopdev (vmix_mixer_t * mixer)
   portc->volume[0] = DB_SIZE * 5;
   portc->volume[1] = DB_SIZE * 5;
 }
+#endif
 
 static int
 check_masterdev (void *mx)
@@ -1849,7 +1850,7 @@ cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
   	    mixer->client_portc[cl]->open_pending = 0; /* Mark this free engine to be free for use */
      }
 
-  create_loopdev (mixer); // TODO: Make this configurable.
+  //create_loopdev (mixer); // TODO: Make this configurable.
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 

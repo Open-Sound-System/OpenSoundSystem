@@ -135,6 +135,7 @@ setup_sample_format (userdev_portc_t * portc)
   fragsize = (devc->rate * frame_size) / 100;	/* Number of bytes/fragment (100Hz) */
   devc->rate = fragsize * 100 / frame_size;
 
+cmn_err(CE_CONT, "Rate = %d, frag=%d\n", devc->rate, fragsize);
 /* Setup the server side */
   adev = audio_engines[portc->audio_dev];
   adev->min_block = adev->max_block = fragsize;
@@ -278,7 +279,7 @@ userdev_server_open (int dev, int mode, int open_flags)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
-  adev_t *adev;
+  adev_t *adev = audio_engines[dev];
 cmn_err(CE_CONT, "Server open %d\n", dev);
 
   devc->open_pending = 0;
@@ -301,15 +302,6 @@ cmn_err(CE_CONT, "Server open %d\n", dev);
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
-/*
- * Update client device flags
- */
-  adev = audio_engines[portc->peer->audio_dev];
-  adev->flags &= ~(ADEV_NOINPUT | ADEV_NOOUTPUT);
-  if (!(mode & OPEN_READ))
-    adev->flags |= ADEV_NOOUTPUT;
-  if (!(mode & OPEN_WRITE))
-    adev->flags |= ADEV_NOINPUT;
   adev->enabled = 1;		/* Enable client side */
   devc->open_count++;
 
@@ -356,7 +348,7 @@ userdev_server_close (int dev, int mode)
   audio_engines[portc->peer->audio_dev]->enabled = 0;	/* Disable client side */
   portc->open_mode = 0;
 
-  /* Stop the client side */
+  /* Stop the client side because there is no server */
   portc->peer->input_triggered = 0;
   portc->peer->output_triggered = 0;
   open_count = --devc->open_count;
@@ -377,10 +369,6 @@ userdev_client_close (int dev, int mode)
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->open_mode = 0;
-
-  /* Stop the server side */
-  portc->peer->input_triggered = 0;
-  portc->peer->output_triggered = 0;
 
   open_count = --devc->open_count;
 
@@ -488,29 +476,12 @@ static int
 userdev_server_prepare_for_input (int dev, int bsize, int bcount)
 {
   oss_native_word flags;
-  unsigned int status;
 
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->input_triggered = 0;
-
-  /*
-   * Wake the client which may be in waiting in close() 
-   */
-  oss_wakeup (portc->peer->wq, &devc->mutex, &flags, POLLOUT | POLLWRNORM);
-
-  if (!(portc->peer->open_mode & OPEN_WRITE))
-    {
-      /* Sleep until the client side becomes ready */
-      oss_sleep (portc->wq, &devc->mutex, 0, &flags, &status);
-      if (status & WK_SIGNAL)
-	{
-	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EINTR;
-	}
-    }
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
   return 0;
@@ -521,29 +492,12 @@ static int
 userdev_server_prepare_for_output (int dev, int bsize, int bcount)
 {
   oss_native_word flags;
-  unsigned int status;
 
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->output_triggered = 0;
-
-  /*
-   * Wake the client which may be in waiting in close() 
-   */
-  oss_wakeup (portc->peer->wq, &devc->mutex, &flags, POLLIN | POLLRDNORM);
-
-  if (!(portc->peer->open_mode & OPEN_READ))
-    {
-      /* Sleep until the client side becomes ready */
-      oss_sleep (portc->wq, &devc->mutex, 0, &flags, &status);
-      if (status & WK_SIGNAL)
-	{
-	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EINTR;
-	}
-    }
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
   return 0;
@@ -556,19 +510,9 @@ userdev_client_prepare_for_input (int dev, int bsize, int bcount)
   oss_native_word flags;
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
-  unsigned int status;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->input_triggered = 0;
-  /* Wake the server side */
-  oss_wakeup (portc->peer->wq, &devc->mutex, &flags,
-	      POLLIN | POLLRDNORM);
-
-  /*
-   * Delay a moment so that the server side gets chance to reinit itself
-   * for next file/stream.
-   */
-  oss_sleep (portc->wq, &devc->mutex, OSS_HZ, &flags, &status);
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
   return 0;
@@ -581,19 +525,9 @@ userdev_client_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
-  unsigned int status;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   portc->output_triggered = 0;
-  /* Wake the server side */
-  oss_wakeup (portc->peer->wq, &devc->mutex, &flags,
-	      POLLIN | POLLRDNORM);
-
-  /*
-   * Delay a moment so that the server side gets chance to reinit itself
-   * for next file/stream.
-   */
-  oss_sleep (portc->wq, &devc->mutex, OSS_HZ, &flags, &status);
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
   return 0;
@@ -704,12 +638,6 @@ install_server (userdev_devc_t * devc)
   memset (portc, 0, sizeof (*portc));
 
   portc->devc = devc;
-  if ((portc->wq = oss_create_wait_queue (devc->osdev, "userdev")) == NULL)
-    {
-      cmn_err (CE_WARN, "Cannot create userdev wait queue\n");
-      return -EIO;
-    }
-
   portc->port_type = PT_SERVER;
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
@@ -749,12 +677,6 @@ install_client (userdev_devc_t * devc)
   memset (portc, 0, sizeof (*portc));
 
   portc->devc = devc;
-  if ((portc->wq = oss_create_wait_queue (devc->osdev, "userdev")) == NULL)
-    {
-      cmn_err (CE_WARN, "Cannot create userdev wait queue\n");
-      return -EIO;
-    }
-
   portc->port_type = PT_CLIENT;
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
@@ -776,6 +698,9 @@ install_client (userdev_devc_t * devc)
   audio_engines[adev]->enabled = 0;	/* Not enabled until server side is opened */
 
   portc->audio_dev = adev;
+#ifdef CONFIG_OSS_VMIX
+  vmix_attach_audiodev(devc->osdev, adev, -1, 0);
+#endif
 
   return adev;
 }

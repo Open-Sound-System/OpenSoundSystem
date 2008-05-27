@@ -22,7 +22,6 @@ struct _userdev_portc_t
 
   /* State variables */
   int input_triggered, output_triggered;
-  oss_wait_queue_t *wq;
 };
 
 struct _userdev_devc_t
