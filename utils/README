@@ -11,10 +11,9 @@ and used automatically when OSS is built.
 readtimings.c
 
 This is an internal diagnostic tool that can be used to extract run-time tracing
-information produced by OSS. To use it you will need to change the
-#undef DO_TIMINGS line to #define DO_TIMINGS in the os.h file for your
-operating system (for example kernel/OS/Linux/os_linux.h) and then recompile
-OSS. Don't define this flag in production environment since it will cause
+information produced by OSS. To use this feature you need to use
+the --enable-timings option when configuring OSS.
+Don't define this flag in production environment since it will cause
 significant amount of CPU overhead.
 
 Compile this program using "make readtimings" and then copy it to (say)

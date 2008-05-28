@@ -67,7 +67,7 @@ do
 		COPY_OPTIONS="-c"
 		;;
 
-	"--enable_timings")
+	"--enable-timings")
 		# This is option is undocumented and unsupported. It is only
 		# for internal testing by 4Front Technologies and not useful
 		# to anybody else.
