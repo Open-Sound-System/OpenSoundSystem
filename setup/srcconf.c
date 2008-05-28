@@ -1070,6 +1070,13 @@ produce_local_config_h (conf_t * conf)
 	else
 	   fprintf (f, "#define CONFIG_OSS_MIDI\n");
 
+/*
+ * Enable DO_TIMINGS code
+ */
+
+	if (getenv("DO_TIMINGS") != NULL)
+	   fprintf (f, "#define DO_TIMINGS\n");
+
 	fclose (f);
 }
 

@@ -67,6 +67,14 @@ do
 		COPY_OPTIONS="-c"
 		;;
 
+	"--enable_timings")
+		# This is option is undocumented and unsupported. It is only
+		# for internal testing by 4Front Technologies and not useful
+		# to anybody else.
+		DO_TIMINGS="1"
+		export DO_TIMINGS
+		;;
+
 	*)
 
 		echo $0: Unrecognized command line option $1
@@ -93,6 +101,7 @@ do
 		echo "   --config-vmix=NO|FLOAT|FIXEDPOINT	- Configure vmix to use float/int arithmetic or disable it."
 		echo "     (Check possible limitations caused by the OS or the CPU/arch)."
 		echo "   --config-midi=NO|YES		- Enable/disable MIDI support."
+		echo "   --enable_timings		- Enable internal timings (for the readtimings utility)."
 		exit 1
 	esac
 

@@ -2146,7 +2146,6 @@ oss_mixer_ioctl (int dev, struct fileinfo *bogus,
 
 static char timing_buf[256 * 1024] = { 0 }, *timing_ptr = timing_buf;
 static int timing_prev_time = 0;
-static dmap_t *timing_dmap = NULL;
 int timing_flags = 0x7fffffff;
 
 #define TM_SCALE 256

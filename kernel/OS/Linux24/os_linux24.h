@@ -20,7 +20,6 @@
 /*
  * Debugging and misc settings
  */
-#undef  DO_TIMINGS
 #undef  MUTEX_CHECKS
 #undef  MEMDEBUG
 #define VDEV_SUPPORT

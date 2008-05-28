@@ -31,7 +31,6 @@
 #endif
 
 // Timing/tracing analysis stuff. This info can be read with the readtimings utility.
-#undef  DO_TIMINGS
 
 #ifdef DEBUG
 #include <sys/debug.h>

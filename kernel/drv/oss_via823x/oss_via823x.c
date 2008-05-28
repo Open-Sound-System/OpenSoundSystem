@@ -606,7 +606,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 #ifdef DO_TIMINGS
       {
 	char s[32];
-	sprintf ("rawpos=%d", ptr);
+	sprintf (s, "rawpos=%d", ptr);
 	oss_do_timing (s);
       }
 #endif
@@ -631,7 +631,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 #ifdef DO_TIMINGS
       {
 	char s[32];
-	sprintf ("Playpos=%d", pos);
+	sprintf (s, "Playpos=%d", pos);
 	oss_do_timing (s);
       }
 #endif
@@ -684,7 +684,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 #ifdef DO_TIMINGS
       {
 	char s[32];
-	sprintf ("Recpos=%d", pos);
+	sprintf (s, "Recpos=%d", pos);
 	oss_do_timing (s);
       }
 #endif
