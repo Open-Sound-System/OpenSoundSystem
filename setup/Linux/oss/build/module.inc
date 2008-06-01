@@ -60,7 +60,7 @@ pcidrv_init (void)
   if ((err = pci_register_driver (&osspci_driver)) < 0)
     return err;
   oss_register_module (THIS_MODULE);
-  return 1;
+  return 0;
 }
 
 static void __exit
@@ -130,7 +130,7 @@ usbdrv_init (void)
   int res;
 
   if (udi_usb_installed)
-    return 1;
+    return 0;
   if ((osdev =
        osdev_create (NULL, DRV_VIRTUAL, instance++, DRIVER_NICK,
 		     NULL)) == NULL)
