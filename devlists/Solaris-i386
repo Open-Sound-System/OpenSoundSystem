@@ -155,6 +155,7 @@ oss_usb	usb763,1015	M Audio Oygen8 MIDI keyboard
 oss_usb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
 oss_usb	usb499,1009	Yamaha UX16 USB MIDI interface (BETA)
 oss_usb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
+oss_userdev	USERDEV	OSS user space audio driver I/O module
 oss_via823x	pci1106,3059	VIA VT8233/8235/8237 
 oss_via823x	pci1106,4551	VIA VT5432B 
 oss_via823x	pci1106,7059	VIA VT8233A 
