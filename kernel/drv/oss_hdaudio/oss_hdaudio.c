@@ -53,7 +53,7 @@ typedef struct
   unsigned int ioc;
 } bdl_t;
 
-typedef struct hda_portc hda_portc;
+typedef struct hda_portc_t hda_portc_t;
 
 typedef struct
 {
@@ -64,10 +64,10 @@ typedef struct
   int bdl_size, bdl_max;
   unsigned char *base;
   unsigned int intrmask;
-  hda_portc *portc;
+  hda_portc_t *portc;
 } hda_engine_t;
 
-struct hda_portc
+struct hda_portc_t
 {
   int num;
   int open_mode;
@@ -123,8 +123,8 @@ typedef struct hda_devc_t
   int num_outengines, num_inengines;
   hdaudio_endpointinfo_t *spdifout_endpoint;
 
-  hda_portc output_portc[MAX_OUTPUTS];
-  hda_portc input_portc[MAX_INPUTS];
+  hda_portc_t output_portc[MAX_OUTPUTS];
+  hda_portc_t input_portc[MAX_INPUTS];
   int num_outputs, num_inputs;
 
   int num_spdin, num_spdout;
@@ -198,7 +198,7 @@ hdaintr (oss_device_t * osdev)
 	{
 	  hda_engine_t *engine = &devc->outengines[i];
 
-	  hda_portc *portc;
+	  hda_portc_t *portc;
 	  if (status & engine->intrmask)
 	    {
 	      PCI_WRITEB (devc->osdev, engine->base + 0x03, 0x1e);
@@ -214,7 +214,7 @@ hdaintr (oss_device_t * osdev)
 	{
 	  hda_engine_t *engine = &devc->inengines[i];
 
-	  hda_portc *portc;
+	  hda_portc_t *portc;
 	  if (status & engine->intrmask)
 	    {
 	      PCI_WRITEB (devc->osdev, engine->base + 0x03, 0x1e);
@@ -403,7 +403,7 @@ corb_read (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 static int
 hda_audio_set_rate (int dev, int arg)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   adev_p adev = audio_engines[dev];
 
   int best = -1, bestdiff = 10000000;
@@ -437,7 +437,7 @@ hda_audio_set_rate (int dev, int arg)
 static short
 hda_audio_set_channels (int dev, short arg)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   hda_devc_t *devc = audio_engines[dev]->devc;
   adev_p adev = audio_engines[dev];
   int i, n1, n2;
@@ -510,7 +510,7 @@ hda_audio_set_channels (int dev, short arg)
 static unsigned int
 hda_audio_set_format (int dev, unsigned int arg)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
 
   if (arg == 0)
     return portc->bits;
@@ -569,7 +569,7 @@ static int
 hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   hda_devc_t *devc = audio_engines[dev]->devc;
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
 
   //if (hdaudio_snoopy)
     switch (cmd)
@@ -627,7 +627,7 @@ hda_audio_reset (int dev)
 static int
 hda_audio_open (int dev, int mode, int openflags)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   hda_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
   hda_engine_t *engines, *engine = NULL;
@@ -708,7 +708,7 @@ hda_audio_open (int dev, int mode, int openflags)
 static void
 hda_audio_close (int dev, int mode)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   hda_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
   int i;
@@ -746,7 +746,7 @@ static void
 hda_audio_output_block (int dev, oss_native_word buf, int count,
 			int fragsize, int intrflag)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
 
   portc->audio_enabled |= PCM_ENABLE_OUTPUT;
   portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
@@ -757,7 +757,7 @@ static void
 hda_audio_start_input (int dev, oss_native_word buf, int count,
 		       int fragsize, int intrflag)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
 
   portc->audio_enabled |= PCM_ENABLE_INPUT;
   portc->trigger_bits &= ~PCM_ENABLE_INPUT;
@@ -767,7 +767,7 @@ static void
 hda_audio_trigger (int dev, int state)
 {
   hda_devc_t *devc = audio_engines[dev]->devc;
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   hda_engine_t *engine = portc->engine;
   oss_native_word flags;
   unsigned char tmp, intr;
@@ -861,7 +861,7 @@ init_bdl (hda_devc_t * devc, hda_engine_t * engine, dmap_p dmap)
 }
 
 static int
-setup_audio_engine (hda_devc_t * devc, hda_engine_t * engine, hda_portc * portc,
+setup_audio_engine (hda_devc_t * devc, hda_engine_t * engine, hda_portc_t * portc,
 		    dmap_t * dmap)
 {
   unsigned int tmp, tmout;
@@ -931,7 +931,7 @@ static int
 hda_audio_prepare_for_input (int dev, int bsize, int bcount)
 {
   hda_devc_t *devc = audio_engines[dev]->devc;
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_in;
   oss_native_word flags;
   hda_engine_t *engine;
@@ -961,7 +961,7 @@ static int
 hda_audio_prepare_for_output (int dev, int bsize, int bcount)
 {
   hda_devc_t *devc = audio_engines[dev]->devc;
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
   hda_engine_t *engine;
 
   dmap_t *dmap = audio_engines[dev]->dmap_out;
@@ -992,7 +992,8 @@ hda_audio_prepare_for_output (int dev, int bsize, int bcount)
 static int
 hda_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
-  hda_portc *portc = audio_engines[dev]->portc;
+  hda_portc_t *portc = audio_engines[dev]->portc;
+  hda_devc_t *devc = audio_engines[dev]->devc;
   hda_engine_t *engine;
   unsigned int ptr;
 
@@ -1390,7 +1391,7 @@ install_outputdevs (hda_devc_t * devc)
     for (i = 0; i < n; i++)
       {
 	adev_p adev;
-	hda_portc *portc = &devc->output_portc[i];
+	hda_portc_t *portc = &devc->output_portc[i];
 	unsigned int formats = AFMT_S16_LE;
 	int opts = ADEV_AUTOMODE | ADEV_NOINPUT;
 	char *devfile_name = "";
@@ -1532,7 +1533,7 @@ install_inputdevs (hda_devc_t * devc)
   for (i = 0; i < n; i++)
     {
       adev_p adev;
-      hda_portc *portc = &devc->input_portc[i];
+      hda_portc_t *portc = &devc->input_portc[i];
       unsigned int formats = AFMT_S16_LE;
       int opts = ADEV_AUTOMODE | ADEV_NOOUTPUT;
 
