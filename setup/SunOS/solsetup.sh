@@ -65,7 +65,7 @@ install:	all
 	rm -f prototype/kernel/drv/*.conf
 	cp -R prototype/* /
 	sync
-	@echo You need to reboot or run ossdetect to reload the drivers
+	@echo You need to reboot or run soundoff;soundon to reload the drivers
 
 subdirs:
 	cd $KERNEL32;make
