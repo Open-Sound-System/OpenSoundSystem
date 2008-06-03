@@ -30,7 +30,10 @@ struct _userdev_devc_t
   oss_mutex_t mutex;
 
   int open_count;	/* 0=not in use, 2=both client and server in use */
-  int open_pending;	/* 1=Device pair marked by userdev_server_redirect */
+  int open_pending;	/* 1=Device pair marked by userdev_*_redirect() */
+
+  unsigned int match_method;
+  unsigned int match_key;
 
   userdev_devc_t *next_instance;
 

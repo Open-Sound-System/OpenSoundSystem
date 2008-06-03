@@ -867,6 +867,7 @@ vmix_open (int dev, int mode, int open_flags)
   vmix_mixer_t *mixer = portc->mixer;
   oss_native_word flags;
   int start = 0;
+cmn_err(CE_CONT, "vmix_open(%d)\n", dev);
 
   if (mode & portc->disabled_modes)
     return -EACCES;

@@ -316,6 +316,8 @@ cmn_err(CE_CONT, "Client open %d\n", dev);
   if (portc == NULL || portc->peer == NULL)
     return -ENXIO;
 
+  devc->open_pending = 0;
+
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode)
@@ -407,6 +409,21 @@ userdev_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
   return -EINVAL;
 }
 
+static int
+create_instance(int dev, userdev_create_t *crea)
+{
+  userdev_devc_t *devc = audio_engines[dev]->devc;
+  adev_t *adev = audio_engines[dev];
+
+  strcpy(crea->devnode, "/dev/oss/oss_userdev0/client");
+
+  devc->match_method = crea->match_method;
+  devc->match_key = crea->match_key;
+cmn_err(CE_CONT, "Match method %d, key %d\n", devc->match_method, devc->match_key);
+
+  return 0;
+}
+
 /*ARGSUSED*/
 static int
 userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
@@ -417,8 +434,7 @@ userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 	    {
 		userdev_create_t *crea = (userdev_create_t *)arg;
 
-		strcpy(crea->devnode, "/dev/oss/oss_userdev0/client");
-	    	return 0;
+	    	return create_instance(dev, crea);
 	    }
 	    break;
     }
@@ -767,6 +783,9 @@ userdev_free_device_pair (userdev_devc_t *devc)
 
 cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+
+  devc->match_method = 0;
+  devc->match_key = 0;
 
   /*
    * Add to the free device pair list.

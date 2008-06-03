@@ -34,6 +34,9 @@ main(int argc, char *argv[])
 
 	strcpy(crea.name, "Acme test");
 	crea.flags = USERDEV_F_VMIX_ATTACH;
+	crea.match_method = UD_MATCH_PGID;
+	crea.match_key = setpgrp();
+printf("PGID=%d\n", crea.match_key);
 
 	if (ioctl(server_fd, USERDEV_CREATE_INSTANCE, &crea)==-1)
 	{
@@ -42,5 +45,7 @@ main(int argc, char *argv[])
 	}
 
 printf("Created instance, devnode=%s\n", crea.devnode);
+
+	system("bash");
 	exit(0);
 }

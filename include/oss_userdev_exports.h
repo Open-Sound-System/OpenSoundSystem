@@ -26,6 +26,13 @@ typedef struct
 #define USERDEV_F_VMIX_PRECREATE	0x00000002	/* Precreate vmix channels */
 
 	oss_devnode_t devnode;	/* Returns the device file name that clients should open */
+
+	unsigned int match_method;
+#define UD_MATCH_ANY			0
+#define UD_MATCH_UID			1
+#define UD_MATCH_GID			2
+#define UD_MATCH_PGID			3
+	unsigned int match_key;
 } userdev_create_t;
 
 #define USERDEV_CREATE_INSTANCE		__SIOWR('u', 1, userdev_create_t)

@@ -54,7 +54,36 @@ userdev_client_redirect (int dev, int mode, int open_flags)
 /*
  * Purpose: This entry point is used to create new userdev instances and to redirect clients to them.
  */
+
+  userdev_devc_t *devc;
+  oss_native_word flags;
+  
 cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags);
+
+  MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
+  devc=userdev_active_device_list;
+
+  while (devc != NULL)
+  {
+	  if (devc->client_portc.open_mode != 0) /* Already open */
+	  {
+	     devc = devc->next_instance;
+	     continue;
+	  }
+	  
+	  if (devc->open_pending) /* Already being opened */
+	  {
+	     devc = devc->next_instance;
+	     continue;
+	  }
+
+	  devc->open_pending=1;
+  	  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+
+	  return devc->client_portc.audio_dev;
+  }
+
+  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
   return -EIO;
 }
 
@@ -230,13 +259,14 @@ attach_control_device(void)
  * device pairs and to redirect access to them.
  */
 
-  if ((client_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
+  if ((client_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    userdev_osdev,
 				    userdev_osdev,
 				    "User space audio device client side",
 				    &userdev_client_control_driver,
 				    sizeof (audiodrv_t),
-				    ADEV_AUTOMODE, AFMT_S16_NE, NULL, -1)) < 0)
+				    ADEV_AUTOMODE, AFMT_S16_NE, NULL, -1,
+				    "client")) < 0)
     {
       return;
     }

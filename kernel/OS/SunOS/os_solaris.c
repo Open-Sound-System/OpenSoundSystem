@@ -2308,3 +2308,27 @@ debug_mutex_exit (oss_mutex_t * mutex, char *file, int line)
   mutex->line = 0;
 }
 #endif
+
+int
+oss_get_procinfo(int what)
+{
+
+	switch (what)
+	{
+	case OSS_GET_PROCINFO_UID:
+		return ddi_get_cred()->cr_uid;
+		break;
+
+	case OSS_GET_PROCINFO_GID:
+		return ddi_get_cred()->cr_gid;
+		break;
+
+#if 0
+	case OSS_GET_PROCINFO_PGID:
+		return ddi_get_cred()->cr_pgid;
+		break;
+#endif
+
+	}
+	return -EINVAL;
+}

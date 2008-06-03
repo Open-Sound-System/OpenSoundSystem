@@ -322,6 +322,15 @@ extern void osdev_delete (oss_device_t * osdev);
 extern void oss_pci_byteswap (oss_device_t * osdev, int mode);
 
 /*
+ * Process information routines
+ */
+
+extern int oss_get_procinfo(int what);
+#define OSS_GET_PROCINFO_UID                    1
+#define OSS_GET_PROCINFO_GID                    2
+#define OSS_GET_PROCINFO_PGID                   3
+
+/*
  * Error reporting
  */
 #define E_REC	1

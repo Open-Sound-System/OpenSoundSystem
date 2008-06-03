@@ -1901,6 +1901,14 @@ __stack_chk_fail (void)
 }
 #endif
 
+int
+oss_get_procinfo(int what)
+{
+	// TODO
+
+	return -EINVAL;
+}
+
 /*
  * Exported symbols
  */
@@ -2162,6 +2170,7 @@ EXPORT_FUNC (oss_memblk_malloc);
 EXPORT_FUNC (oss_memblk_free);
 EXPORT_FUNC (oss_memblk_unalloc);
 EXPORT_DATA (oss_global_memblk);
+EXPORT_SYMBOL (oss_get_procinfo);
 
 extern void *oss_adev_pointer;
 EXPORT_SYMBOL (oss_adev_pointer);

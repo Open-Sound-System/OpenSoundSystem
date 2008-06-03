@@ -528,6 +528,14 @@ oss_sysuninit (void *p)
     EVENTHANDLER_DEREGISTER (dev_clone, oss_ehtag);
 }
 
+int
+oss_get_procinfo(int what)
+{
+	// TODO
+
+	return -EINVAL;
+}
+
 SYSINIT (oss_sysinit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, oss_sysinit, NULL);
 SYSUNINIT (oss_sysuninit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, oss_sysuninit,
 	   NULL);

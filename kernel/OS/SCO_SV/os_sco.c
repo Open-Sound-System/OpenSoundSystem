@@ -1655,3 +1655,11 @@ print_mutexes (void)
 	       mutex_tab[i].filename, mutex_tab[i].line);
 }
 #endif
+
+int
+oss_get_procinfo(int what)
+{
+	// TODO
+
+	return -EINVAL;
+}
