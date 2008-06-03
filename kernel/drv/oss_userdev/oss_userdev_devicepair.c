@@ -5,6 +5,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 
 #include "oss_userdev_cfg.h"
+#include <oss_userdev_exports.h>
 #include "userdev.h"
 static void userdev_free_device_pair (userdev_devc_t *devc);
 
@@ -279,13 +280,9 @@ userdev_server_open (int dev, int mode, int open_flags)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
-  adev_t *adev = audio_engines[dev];
 cmn_err(CE_CONT, "Server open %d\n", dev);
 
   devc->open_pending = 0;
-
-  if ((mode & OPEN_READ) && (mode & OPEN_WRITE))
-    return -EACCES;
 
   if (portc == NULL || portc->peer == NULL)
     return -ENXIO;
@@ -302,7 +299,6 @@ cmn_err(CE_CONT, "Server open %d\n", dev);
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
-  adev->enabled = 1;		/* Enable client side */
   devc->open_count++;
 
   return 0;
@@ -345,7 +341,6 @@ userdev_server_close (int dev, int mode)
   int open_count;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
-  audio_engines[portc->peer->audio_dev]->enabled = 0;	/* Disable client side */
   portc->open_mode = 0;
 
   /* Stop the client side because there is no server */
@@ -410,6 +405,25 @@ userdev_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     }
 
   return -EINVAL;
+}
+
+/*ARGSUSED*/
+static int
+userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
+{
+  switch (cmd)
+    {
+    case USERDEV_CREATE_INSTANCE:
+	    {
+		userdev_create_t *crea = (userdev_create_t *)arg;
+
+		strcpy(crea->devnode, "/dev/oss/oss_userdev0/client");
+	    	return 0;
+	    }
+	    break;
+    }
+
+  return userdev_ioctl(dev, cmd, arg);
 }
 
 /*ARGSUSED*/
@@ -573,7 +587,7 @@ static audiodrv_t userdev_server_driver = {
   userdev_server_close,
   userdev_output_block,
   userdev_start_input,
-  userdev_ioctl,
+  userdev_server_ioctl,
   userdev_server_prepare_for_input,
   userdev_server_prepare_for_output,
   userdev_reset,
@@ -695,7 +709,6 @@ install_client (userdev_devc_t * devc)
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->max_channels = MAX_CHANNELS;;
-  audio_engines[adev]->enabled = 0;	/* Not enabled until server side is opened */
 
   portc->audio_dev = adev;
 #ifdef CONFIG_OSS_VMIX
@@ -768,7 +781,7 @@ cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   if (userdev_active_device_list == devc) /* First device in the list */
      {
 	     userdev_active_device_list = userdev_active_device_list->next_instance;
-cmn_err(CE_CONT," Removed %p from free devices (first)\n", devc);
+cmn_err(CE_CONT,"Removed %p from active devices (first)\n", devc);
      }
   else
      {
@@ -779,7 +792,7 @@ cmn_err(CE_CONT," Removed %p from free devices (first)\n", devc);
 		     if (this == devc)
 			{
 				prev->next_instance = this->next_instance; /* Remove */
-cmn_err(CE_CONT, "Removed %p from free devices\n", devc);
+cmn_err(CE_CONT, "Removed %p from active devices\n", devc);
 				break;
 			}
 
