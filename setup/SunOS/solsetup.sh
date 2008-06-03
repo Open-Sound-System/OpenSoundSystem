@@ -65,7 +65,10 @@ install:	all
 	rm -f prototype/kernel/drv/*.conf
 	cp -R prototype/* /
 	sync
-	@echo You need to reboot or run soundoff;soundon to reload the drivers
+	soundoff
+	sync
+	soundon
+	sync
 
 subdirs:
 	cd $KERNEL32;make
@@ -104,7 +107,10 @@ install:        all
 	rm -f prototype/kernel/drv/*.conf
 	cp -R prototype/* /
 	sync
-	@echo You need to reboot or run ossdetect to reload the drivers
+	soundoff
+	sync
+	soundon
+	sync
 
 subdirs:
 	cd $KERNEL32;make

@@ -62,12 +62,14 @@ mkdir prototype/usr/man/man1m
 mkdir prototype/usr/man/man7d
 mkdir prototype/usr/include
 mkdir prototype/usr/include/sys
+mkdir prototype/usr/include/oss
 
 cp $KERNEL32/.version prototype/etc/oss/version.dat
 
 # Copy the files to their right place
 
 cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
+cp $SRCDIR/include/oss_userdev_exports.h prototype/usr/include/oss
 cp $KERNEL32/target/bin/* prototype/usr/bin
 cp $KERNEL32/target/sbin/* prototype/usr/sbin
 cp $KERNEL32/setup/SunOS/sbin/* prototype/usr/sbin
