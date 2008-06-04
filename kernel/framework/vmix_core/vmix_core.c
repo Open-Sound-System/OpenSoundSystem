@@ -411,6 +411,7 @@ static short
 vmix_set_channels (int dev, short arg)
 {
   vmix_portc_t *portc = audio_engines[dev]->portc;
+cmn_err(CE_CONT, "vmix_set_channels(%d, %d)\n", dev, arg);
 
   if (portc->dev_type == DT_LOOP)
     {

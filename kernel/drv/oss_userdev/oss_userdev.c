@@ -11,6 +11,9 @@
 oss_device_t *userdev_osdev = NULL;
 static int client_dev = -1, server_dev = -1; /* Control devces */
 
+char *userdev_client_devnode = "/dev/oss/oss_userdev0/client";
+char *userdev_server_devnode = "/dev/oss/oss_userdev0/server";
+
 /*
  * Global device lists and the mutex that protects them.
  */
@@ -65,22 +68,13 @@ cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags)
 
   while (devc != NULL)
   {
-	  if (devc->client_portc.open_mode != 0) /* Already open */
-	  {
-	     devc = devc->next_instance;
-	     continue;
-	  }
-	  
-	  if (devc->open_pending) /* Already being opened */
-	  {
-	     devc = devc->next_instance;
-	     continue;
-	  }
+	  int ok=1;
 
-	  devc->open_pending=1;
-  	  MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
-
-	  return devc->client_portc.audio_dev;
+	  if (ok)
+	     {
+  	  	MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+	  	return devc->client_portc.audio_dev;
+	     }
   }
 
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
@@ -270,6 +264,7 @@ attach_control_device(void)
     {
       return;
     }
+  userdev_server_devnode = audio_engines[client_dev]->devnode;
 
   if ((server_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    userdev_osdev,
@@ -282,6 +277,7 @@ attach_control_device(void)
     {
       return;
     }
+  userdev_client_devnode = audio_engines[client_dev]->devnode;
 }
 
 int

@@ -270,6 +270,7 @@ static void userdev_trigger (int dev, int state);
 static void
 userdev_reset (int dev)
 {
+cmn_err(CE_CONT, "Reset %d\n", dev);
   userdev_trigger (dev, 0);
 }
 
@@ -281,8 +282,6 @@ userdev_server_open (int dev, int mode, int open_flags)
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
 cmn_err(CE_CONT, "Server open %d\n", dev);
-
-  devc->open_pending = 0;
 
   if (portc == NULL || portc->peer == NULL)
     return -ENXIO;
@@ -315,8 +314,6 @@ cmn_err(CE_CONT, "Client open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
     return -ENXIO;
-
-  devc->open_pending = 0;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
@@ -415,7 +412,7 @@ create_instance(int dev, userdev_create_t *crea)
   userdev_devc_t *devc = audio_engines[dev]->devc;
   adev_t *adev = audio_engines[dev];
 
-  strcpy(crea->devnode, "/dev/oss/oss_userdev0/client");
+  strcpy(crea->devnode, userdev_client_devnode);
 
   devc->match_method = crea->match_method;
   devc->match_key = crea->match_key;
@@ -461,19 +458,16 @@ userdev_trigger (int dev, int state)
 {
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
+cmn_err(CE_CONT, "Trigger %d, %d\n", dev, state);
 
   if (portc->open_mode & OPEN_READ)	/* Handle input */
     {
       portc->input_triggered = !!(state & OPEN_READ);
-      if (!portc->input_triggered)
-	portc->peer->output_triggered = 0;
     }
 
   if (portc->open_mode & OPEN_WRITE)	/* Handle output */
     {
       portc->output_triggered = !!(state & OPEN_WRITE);
-      if (!portc->output_triggered)
-	portc->peer->input_triggered = 0;
     }
 
   if (portc->output_triggered || portc->input_triggered)	/* Something is going on */
@@ -663,7 +657,7 @@ install_server (userdev_devc_t * devc)
 
   int opts =
     ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL |
-    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_HIDDEN;
+    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_HIDDEN | ADEV_DUPLEX;
 
   memset (portc, 0, sizeof (*portc));
 
@@ -687,6 +681,7 @@ install_server (userdev_devc_t * devc)
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->caps |= PCM_CAP_HIDDEN;
   audio_engines[adev]->max_channels = MAX_CHANNELS;
+  strcpy(audio_engines[adev]->devnode, userdev_server_devnode);
 
   portc->audio_dev = adev;
 
@@ -701,7 +696,7 @@ install_client (userdev_devc_t * devc)
   int adev;
 
   int opts =
-    ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL |
+    ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL | ADEV_DUPLEX |
     ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP | ADEV_HIDDEN;
 
   memset (portc, 0, sizeof (*portc));
@@ -724,7 +719,8 @@ install_client (userdev_devc_t * devc)
   audio_engines[adev]->min_rate = 5000;
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
-  audio_engines[adev]->max_channels = MAX_CHANNELS;;
+  audio_engines[adev]->max_channels = MAX_CHANNELS;
+  strcpy(audio_engines[adev]->devnode, userdev_client_devnode);
 
   portc->audio_dev = adev;
 #ifdef CONFIG_OSS_VMIX
@@ -744,8 +740,6 @@ userdev_create_device_pair(void)
   if ((devc=PMALLOC(userdev_osdev, sizeof (*devc))) == NULL)
      return -ENOMEM;
   memset(devc, 0, sizeof(*devc));
-
-  devc->open_pending = 1;
 
   devc->osdev = userdev_osdev;
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
@@ -843,7 +837,6 @@ cmn_err(CE_CONT, "usrdev_find_free_device_pair()\n");
 	devc = userdev_free_device_list;
 	userdev_free_device_list = userdev_free_device_list->next_instance;
 
-	devc->open_pending = 1;
   	devc->next_instance = userdev_active_device_list;
   	userdev_active_device_list = devc;
 

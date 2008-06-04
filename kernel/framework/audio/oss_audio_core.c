@@ -3637,6 +3637,8 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 
     case SNDCTL_DSP_SPEED:
       val = *arg;
+      if (val<0)
+	 return -EINVAL;
       return *arg = (oss_audio_set_rate (dev, val));
 
     case SNDCTL_DSP_STEREO:
@@ -3677,6 +3679,10 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	  oss_do_timing2 (DFLAG_PROFILE, tmp);
 	}
 #endif
+	if (val<0)
+	{
+		return -EINVAL;
+	}
 	v = oss_audio_set_channels (dev, val);
 	return *arg = v;
       }

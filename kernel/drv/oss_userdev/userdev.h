@@ -30,7 +30,6 @@ struct _userdev_devc_t
   oss_mutex_t mutex;
 
   int open_count;	/* 0=not in use, 2=both client and server in use */
-  int open_pending;	/* 1=Device pair marked by userdev_*_redirect() */
 
   unsigned int match_method;
   unsigned int match_key;
@@ -54,3 +53,6 @@ extern userdev_devc_t *userdev_free_device_list;
 extern int userdev_create_device_pair(void);
 extern void userdev_delete_device_pair(userdev_devc_t *devc);
 extern int usrdev_find_free_device_pair(void);
+
+extern char *userdev_client_devnode;
+extern char *userdev_server_devnode;
