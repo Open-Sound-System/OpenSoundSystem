@@ -12,7 +12,7 @@ can be added to the OSS configuration using the -i option.
 OPTIONS
 -v		Verbose output
 -i	 	Adds the IMUX driver.
--V		Disables the vmix (virtual mixer) feature.
+-u		Adds the oss_userdev driver.
 -d		Scans /devices and creates device file links
 
 FILES

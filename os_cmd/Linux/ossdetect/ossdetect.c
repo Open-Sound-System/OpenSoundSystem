@@ -451,6 +451,10 @@ main (int argc, char *argv[])
 	  add_drv ("IMUX", PSEUDO_PASS);
 	  break;
 
+	case 'u':
+	  add_drv ("USERDEV", PSEUDO_PASS);
+	  break;
+
 	case 'l':
 	  load_license ("/usr/lib/oss/etc/license.asc");
 	  exit (0);
