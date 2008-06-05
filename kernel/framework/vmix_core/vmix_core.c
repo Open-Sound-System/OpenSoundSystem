@@ -253,7 +253,6 @@ create_client_controls (void *vmix_mixer, int client_num)
   vmix_mixer_t *mixer = vmix_mixer;
   int mixer_dev;
   char name[32];
-cmn_err(CE_CONT, "create_client_controls(%p, %d)\n", vmix_mixer, client_num);
 
   mixer_dev = mixer->output_mixer_dev;
   group = mixer->client_mixer_group;
@@ -411,7 +410,6 @@ static short
 vmix_set_channels (int dev, short arg)
 {
   vmix_portc_t *portc = audio_engines[dev]->portc;
-cmn_err(CE_CONT, "vmix_set_channels(%d, %d)\n", dev, arg);
 
   if (portc->dev_type == DT_LOOP)
     {
@@ -868,7 +866,6 @@ vmix_open (int dev, int mode, int open_flags)
   vmix_mixer_t *mixer = portc->mixer;
   oss_native_word flags;
   int start = 0;
-cmn_err(CE_CONT, "vmix_open(%d)\n", dev);
 
   if (mode & portc->disabled_modes)
     return -EACCES;
@@ -1369,7 +1366,6 @@ relink_masterdev (vmix_mixer_t * mixer)
 	     adev->next_out = NULL;
 	  else
 	     adev->next_out = audio_engines[mixer->client_portc[i+1]->audio_dev];
-cmn_err(CE_CONT, "Adev %d, next=%p\n", adev->engine_num, adev->next_out);
   }
 
   if (master_adev == NULL || master_adev->unloaded || !master_adev->enabled)
@@ -1519,7 +1515,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
 
   master_adev = audio_engines[mixer->masterdev];
 
-  sprintf (tmp, "%s (VMIX%d)", master_adev->name, mixer->instance_num);
+  sprintf (tmp, "%s (vmix)", master_adev->name);
 
   if ((portc->audio_dev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 						mixer->osdev,
@@ -1611,8 +1607,7 @@ create_loopdev (vmix_mixer_t * mixer)
 
   adev = audio_engines[mixer->masterdev];
 
-  sprintf (tmp, "%s (VMIX%d) loopback record", adev->name,
-	   mixer->instance_num);
+  sprintf (tmp, "%s (vmix) loopback record", adev->name);
   sprintf (nick, "loop%d", n);
 
   if ((portc->audio_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
@@ -1657,7 +1652,7 @@ check_masterdev (void *mx)
   int rate_source;
   int dev;
 
-  if (mixer->masterdev >= num_audio_engines)
+  if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
     return 0;
 
   adev = audio_engines[mixer->masterdev];
@@ -1677,24 +1672,6 @@ check_masterdev (void *mx)
 
   if (adev->vmix_flags & VMIX_DISABLED)	/* Not compatible */
     return 0;
-
-  if (adev->vmix_flags & VMIX_SMART_ATTACH)
-    if (mixer->inputdev == -1)
-      {
-	/*
-	 * Check that there is a suitable input master device 
-	 * available before attaching to the master device.
-	 */
-	int j, ok = 0;
-
-	for (j = mixer->masterdev; j < num_audio_engines; j++)
-	  if (audio_engines[j]->rate_source == adev->rate_source)
-	    if (!(audio_engines[j]->flags & ADEV_NOINPUT))
-	      ok = 1;
-
-	if (!ok)
-	  return 0;
-      }
 
   if (adev->max_channels < 2)
     return 0;
@@ -1732,69 +1709,6 @@ check_masterdev (void *mx)
     }
 
 /*
- * Find suitable input device
- */
-  rate_source = adev->rate_source;
-
-  if (mixer->inputdev == -1)
-    for (dev = 0; dev < num_audio_engines; dev++)
-      {
-	adev = audio_engines[dev];
-
-	if (adev->rate_source != rate_source)
-	  {
-	    continue;
-	  }
-
-	if (adev->vmix_flags & VMIX_NOINPUT)
-	  {
-	    continue;
-	  }
-
-	// Don't accept virtual devices other than loopback ones
-	if (adev->flags & ADEV_VIRTUAL && !(adev->flags & ADEV_LOOP))
-	  {
-	    continue;
-	  }
-
-	if (adev->flags & ADEV_DISABLE_VIRTUAL)	/* Not compatible */
-	  continue;
-
-	if ((adev->flags & ADEV_NOINPUT))
-	  {
-	    continue;
-	  }
-
-	if ((adev->flags & ADEV_SPECIAL))
-	  {
-	    continue;
-	  }
-
-	if (adev->max_channels < 2)
-	  {
-	    continue;
-	  }
-
-	if (!(adev->iformat_mask & SUPPORTED_FORMATS))
-	  {
-	    continue;
-	  }
-
-	mixer->inputdev = dev;
-  	adev->vmix_mixer = mixer;
-	DDB (cmn_err (CE_CONT, "Vmix inputdev=%d\n", mixer->inputdev));
-	/* TODO: Prevent the other virtual drivers from picking this one */
-	break;
-      }
-
-  /* Check if the designated input device is already present */
-  if (mixer->inputdev >= num_audio_engines)
-    {
-      return 0;
-    }
-  DDB (cmn_err (CE_CONT, "    Selected input %d\n", mixer->inputdev));
-
-/*
  * At this point we know the input and output master devices so it's the time
  * to create the virtual audio devices.
  */
@@ -1826,7 +1740,6 @@ check_masterdev (void *mx)
 
   if (mixer->output_mixer_dev > -1)
     {
-cmn_err(CE_CONT, "Hook output mixer %d\n", mixer->output_mixer_dev);
       mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
 				  create_output_controls, 20, mixer);
     }
@@ -1834,7 +1747,6 @@ cmn_err(CE_CONT, "Hook output mixer %d\n", mixer->output_mixer_dev);
   if (mixer->inputdev >= 0 &&
       mixer->input_mixer_dev > -1)
     {
-cmn_err(CE_CONT, "Hook input mixer %d\n", mixer->input_mixer_dev);
       mixer_ext_set_vmix_init_fn (mixer->input_mixer_dev,
 				  create_input_controls, 10, mixer);
     }
@@ -1880,7 +1792,6 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 
   vmix_mixer_t *mixer;
 
-cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inputdev, attach_flags);
 
   if (vmix_disabled) /* Vmix not available in the system */
      return -EIO;
@@ -1890,7 +1801,6 @@ cmn_err(CE_CONT, "vmix_attach_audiodev(%p, %d, %d, %u)\n", osdev, masterdev, inp
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
       return -EIO;
     }
-cmn_err(CE_CONT, "Mixer struct = %p\n", mixer);
 
   memset (mixer, 0, sizeof (*mixer));
 
@@ -1919,7 +1829,6 @@ cmn_err(CE_CONT, "Mixer struct = %p\n", mixer);
   mixer->rate = 48000; // TODO: Handle this better
   mixer->flags = attach_flags;
 
-cmn_err (CE_CONT, "Create instance %d\n", instance_num);
   DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
   DDB (cmn_err (CE_CONT, "vmix_masterdev=%d\n", masterdev));
   DDB (cmn_err (CE_CONT, "vmix_inputdev=%d\n", inputdev));
@@ -1962,7 +1871,6 @@ cmn_err (CE_CONT, "Create instance %d\n", instance_num);
 void
 vmix_delete_mixer(void * vmix_mixer)
 {
-cmn_err(CE_CONT, "vmix_delete_mixer(%p)\n", vmix_mixer);
 }
 
 void
@@ -1980,7 +1888,6 @@ vmix_detach_audiodev(oss_device_t *osdev, int masterdev)
  * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
-cmn_err(CE_CONT, "vmix_detach_audiodev(%p, %d)\n", osdev, masterdev);
 }
 
 void
@@ -1998,7 +1905,6 @@ vmix_unplug_audiodev(oss_device_t *osdev, int masterdev)
  * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
-cmn_err(CE_CONT, "vmix_unplug_audiodev(%p, %d)\n", osdev, masterdev);
 }
 
 void
@@ -2016,7 +1922,6 @@ vmix_replug_audiodev(oss_device_t *osdev, int masterdev)
  * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
-cmn_err(CE_CONT, "vmix_replug_audiodev(%p, %d)\n", osdev, masterdev);
 }
 
 int
@@ -2026,7 +1931,6 @@ vmix_create_client(void *mixer_)
   oss_native_word flags;
   vmix_portc_t *portc;
   vmix_mixer_t *mixer = mixer_;
-cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
 
 /*
  * First check if any of the already created engines is free and available for use.
@@ -2061,7 +1965,6 @@ cmn_err(CE_CONT, "vmix_create_client(%p)\n", mixer_);
   	   portc = audio_engines[engine_num]->portc;
 	   create_client_controls (mixer, portc->num);
      }
-cmn_err(CE_CONT, "New client engine=%d\n", engine_num);
 
   portc = audio_engines[engine_num]->portc;
 
@@ -2093,7 +1996,6 @@ void
 vmix_core_uninit (void)
 {
 	vmix_mixer_t *mixer = mixer_list;
-cmn_err(CE_CONT, "vmix_uninit() called\n");
 
   while (mixer != NULL)
     {
@@ -2132,4 +2034,21 @@ cmn_err(CE_CONT, "vmix_uninit() called\n");
     }
 
   mixer_list = NULL; /* Everything removed */
+}
+
+void
+vmix_change_devnames(void *vmix_mixer, const char *name)
+{
+/*
+ * Change audio device names of all client engines.
+ */
+  vmix_mixer_t *mixer = vmix_mixer;
+  int i;
+
+  for (i=0;i<mixer->num_clientdevs;i++)
+  {
+	  adev_t *adev = audio_engines[mixer->client_portc[i]->audio_dev];
+
+	  sprintf(adev->name, "%s (vmix)", name);
+  }
 }
