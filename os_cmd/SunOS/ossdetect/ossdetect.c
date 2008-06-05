@@ -18,6 +18,7 @@
 static int use_force = 0;
 static char arch[32] = "";
 static int install_imux = 0;
+static int install_userdev = 0;
 static char *safe_mode="";
 
 /* List of all modules installed in the system (OSS and non-oss) */
@@ -522,8 +523,10 @@ load_name_to_major (void)
 /*
  * Force reinstall of imux if it is currently installed in the system
  */
-      if (strcmp (line, "imux") == 0)
+      if (strcmp (line, "oss_imux") == 0)
 	install_imux = 1;
+      if (strcmp (line, "oss_userdev") == 0)
+	install_userdev = 1;
     }
 
   fclose (f);
@@ -632,6 +635,9 @@ main (int argc, char *argv[])
 	  break;
 	case 'i':
 	  install_imux = 1;
+	  break;
+	case 'u':
+	  install_userdev = 1;
 	  break;
 	case 'd':
 	  scan_devices ("/devices");	/* Create the device file links */
@@ -764,8 +770,14 @@ main (int argc, char *argv[])
 
   if (install_imux)
     {
-      check_conf ("imux", 1, "");
-      add_drv ("OSS Input Multiplexer", "imux", "-m '* 0666 root sys'");
+      check_conf ("oss_imux", 1, "");
+      add_drv ("OSS Input Multiplexer", "oss_imux", "-m '* 0666 root sys'");
+    }
+
+  if (install_userdev)
+    {
+      check_conf ("oss_userdev", 1, "");
+      add_drv ("OSS User space device deiver", "oss_userdev", "-m '* 0666 root sys'");
     }
 
   check_conf ("oss_sadasupport", 1, "");
