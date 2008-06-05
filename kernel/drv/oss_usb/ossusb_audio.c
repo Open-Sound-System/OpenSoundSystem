@@ -1368,14 +1368,6 @@ ossusb_init_audiostream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
   adev->max_block = 256;
   adev->min_fragments = 4;	/* vmix needs this */
 
-  /*
-   * Se the smart attach flag for vmix. In this way vmix will wait until
-   * there is some input device available before actually attaching the
-   * device. Otherwise vmix will pick the first (output) device before the
-   * input master device gets created.
-   */
-  adev->vmix_flags |= VMIX_SMART_ATTACH;
-
   prepare_altsetting (devc, portc, 1);
 
   if (portc->num_settings > 2)
