@@ -35,6 +35,10 @@ main(int argc, char *argv[])
 	userdev_create_t crea = {0};
 	char cmd[512];
 
+	int rate = 48000;
+	int fmt = AFMT_S16_LE;
+	int channels = 2;
+
 	if (argc != 2)
 	{
 		fprintf(stderr, "Usage: %s <command>\n", argv[0]);
@@ -58,6 +62,15 @@ printf("PGID=%d\n", crea.match_key);
 		perror("USERDEV_CREATE_INSTANCE");
 		exit(-1);
 	}
+
+	if (ioctl(server_fd, SNDCTL_DSP_SETFMT, &fmt)==-1)
+	   perror("SNDCTL_DSP_SETFMT");
+
+	if (ioctl(server_fd, SNDCTL_DSP_CHANNELS, &channels)==-1)
+	   perror("SNDCTL_DSP_CHANNELS");
+
+	if (ioctl(server_fd, SNDCTL_DSP_SPEED, &rate)==-1)
+	   perror("SNDCTL_DSP_SPEED");
 
 printf("Created instance, devnode=%s\n", crea.devnode);
 

@@ -270,7 +270,6 @@ static void userdev_trigger (int dev, int state);
 static void
 userdev_reset (int dev)
 {
-cmn_err(CE_CONT, "Reset %d\n", dev);
   userdev_trigger (dev, 0);
 }
 
@@ -406,17 +405,40 @@ userdev_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
   return -EINVAL;
 }
 
+static void
+set_adev_name(int dev, const char *name)
+{
+  adev_t *adev = audio_engines[dev];
+
+  strcpy(adev->name, name);
+
+#ifdef CONFIG_OSS_VMIX
+  if (adev->vmix_mixer != NULL)
+     vmix_change_devnames(adev->vmix_mixer, name);
+#endif
+	
+}
+
 static int
 create_instance(int dev, userdev_create_t *crea)
 {
   userdev_devc_t *devc = audio_engines[dev]->devc;
   adev_t *adev = audio_engines[dev];
-
-  strcpy(crea->devnode, userdev_client_devnode);
+  char tmp_name[64];
 
   devc->match_method = crea->match_method;
   devc->match_key = crea->match_key;
+  devc->create_flags = crea->flags;
+
+  crea->name[sizeof(crea->name)-1]=0; /* Overflow protectgion */
+
+  sprintf(tmp_name, "%s (server)", crea->name);
+  tmp_name[49]=0;
+  set_adev_name (devc->client_portc.audio_dev, crea->name);
+  set_adev_name (devc->server_portc.audio_dev, tmp_name);
 cmn_err(CE_CONT, "Match method %d, key %d\n", devc->match_method, devc->match_key);
+
+  strcpy(crea->devnode, userdev_client_devnode);
 
   return 0;
 }
@@ -458,7 +480,6 @@ userdev_trigger (int dev, int state)
 {
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
-cmn_err(CE_CONT, "Trigger %d, %d\n", dev, state);
 
   if (portc->open_mode & OPEN_READ)	/* Handle input */
     {
@@ -679,7 +700,6 @@ install_server (userdev_devc_t * devc)
   audio_engines[adev]->min_rate = 5000;
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
-  audio_engines[adev]->caps |= PCM_CAP_HIDDEN;
   audio_engines[adev]->max_channels = MAX_CHANNELS;
   strcpy(audio_engines[adev]->devnode, userdev_server_devnode);
 
@@ -774,6 +794,9 @@ static void
 userdev_free_device_pair (userdev_devc_t *devc)
 {
   oss_native_word flags;
+
+  set_adev_name(devc->client_portc.audio_dev, "User space audio device");
+  set_adev_name(devc->server_portc.audio_dev, "User space audio device server side");
 
 cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);

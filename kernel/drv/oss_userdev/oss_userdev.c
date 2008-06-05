@@ -264,7 +264,7 @@ attach_control_device(void)
     {
       return;
     }
-  userdev_server_devnode = audio_engines[client_dev]->devnode;
+  userdev_server_devnode = audio_engines[server_dev]->devnode;
 
   if ((server_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    userdev_osdev,
@@ -277,6 +277,7 @@ attach_control_device(void)
     {
       return;
     }
+  audio_engines[server_dev]->caps |= PCM_CAP_HIDDEN;
   userdev_client_devnode = audio_engines[client_dev]->devnode;
 }
 

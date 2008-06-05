@@ -31,6 +31,8 @@ struct _userdev_devc_t
 
   int open_count;	/* 0=not in use, 2=both client and server in use */
 
+  int create_flags;	/* Flags from ioctl(USERDEV_CREATE_INSTANCE) */
+
   unsigned int match_method;
   unsigned int match_key;
 

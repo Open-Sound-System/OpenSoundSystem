@@ -1998,6 +1998,7 @@ EXPORT_SYMBOL (mixer_ext_set_vmix_init_fn);
 #ifdef CONFIG_OSS_VMIX
 EXPORT_FUNC (vmix_attach_audiodev);
 EXPORT_FUNC (vmix_detach_audiodev);
+EXPORT_SYMBOL (vmix_change_devnames);
 #endif
 EXPORT_SYMBOL (mixer_ext_set_strings);
 EXPORT_SYMBOL (mixer_ext_create_group);
