@@ -9,6 +9,8 @@
 #include "userdev.h"
 static void userdev_free_device_pair (userdev_devc_t *devc);
 
+extern int userdev_visible_clientnodes;
+
 static void
 transfer_audio (userdev_portc_t * server_portc, dmap_t * dmap_from,
 		dmap_t * dmap_to)
@@ -717,12 +719,15 @@ install_client (userdev_devc_t * devc)
 
   int opts =
     ADEV_STEREOONLY | ADEV_16BITONLY | ADEV_VIRTUAL | ADEV_DUPLEX |
-    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP | ADEV_HIDDEN;
+    ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP;
 
   memset (portc, 0, sizeof (*portc));
 
   portc->devc = devc;
   portc->port_type = PT_CLIENT;
+
+  if (!userdev_visible_clientnodes)
+     opts |= ADEV_HIDDEN;
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
@@ -735,12 +740,14 @@ install_client (userdev_devc_t * devc)
       return adev;
     }
 
+  if (!userdev_visible_clientnodes) /* Invisible client device nodes */
+     strcpy(audio_engines[adev]->devnode, userdev_client_devnode);
+
   audio_engines[adev]->portc = portc;
   audio_engines[adev]->min_rate = 5000;
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->max_channels = MAX_CHANNELS;
-  strcpy(audio_engines[adev]->devnode, userdev_client_devnode);
 
   portc->audio_dev = adev;
 #ifdef CONFIG_OSS_VMIX
