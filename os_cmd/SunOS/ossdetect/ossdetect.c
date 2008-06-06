@@ -248,7 +248,7 @@ install_driver (driver_def_t * drv, char *drv_id)
 /*
  * Hot-pluggable modules should be loaded after other modules.
  */
-  if (strcmp (drv->driver, "ossusb") == 0)
+  if (strcmp (drv->driver, "oss_usb") == 0)
     modules[nmodules].pass = 1;
 
   nmodules++;

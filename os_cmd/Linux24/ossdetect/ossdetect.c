@@ -274,7 +274,7 @@ usb_detect (void)
 #if 0
   char path[512];
 
-  sprintf (path, "%s/modules/ossusb", osslibdir);
+  sprintf (path, "%s/modules/oss_usb", osslibdir);
 
   if (stat (path, &st) == -1)	/* USB module not available */
     return;

@@ -291,7 +291,7 @@ static struct usb_driver oss_usb = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,15)
 owner:THIS_MODULE,
 #endif
-name:"ossusb",
+name:"oss_usb",
 probe:udi_usb_probe,
 disconnect:udi_usb_disconnect,
 id_table:udi_usb_table
