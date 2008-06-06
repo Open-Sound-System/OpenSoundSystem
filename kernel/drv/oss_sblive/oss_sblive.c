@@ -2742,7 +2742,8 @@ init_emu10k1 (sblive_devc * devc)
   /* Switch the shared SPDIF/OUT3 to DIGITAL or ANALOG mode */
   /* depending on whether the port is SPDIF or analog */
 
-  if (devc->feature_mask & SB_AUDIGY)
+  if ((devc->feature_mask == SB_AUDIGY) || (devc->feature_mask == SB_AUDIGY) 
+       || (devc->feature_mask == SB_AUDIGY))
     {
       reg = INL (devc->osdev, devc->base + 0x18) & ~A_IOCFG_GPOUT0;
       val = (audigy_digital_din) ? 0x4 : 0;
@@ -3780,23 +3781,24 @@ oss_sblive_attach (oss_device_t * osdev)
 	{
 	  sprintf (tmp, "%s %s", devc->card_name, get_port_name (devc, i));
 	  caps |= ADEV_NOINPUT;
-
+#if 0
 	  if (i >= devc->min_audiodevs)
 	    caps |= ADEV_HWMIX;
+#endif
 	  if (i >= devc->min_audiodevs + 1)
 	    caps |= ADEV_SHADOW;
 	}
       if ((devc->feature_mask & SB_AUDIGY) && i == audiodevs_to_create - 1)
 	{
 	  sprintf (tmp, "%s raw S/PDIF (output only)", devc->card_name);
-	  caps &= ~(ADEV_SHADOW | ADEV_HWMIX);
+	  caps &= ~(ADEV_SHADOW /* | ADEV_HWMIX*/);
 	  caps |= ADEV_SPECIAL;
 	  fmts |= AFMT_AC3;
 	}
-
+#if 0
       if (devc->feature_mask & SB_AUDIGY)
 	caps |= ADEV_COLD;
-
+#endif
       if ((portc->audiodev =
 	   oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				 devc->osdev,
@@ -3863,7 +3865,7 @@ oss_sblive_attach (oss_device_t * osdev)
  * latencies because emu10k1 doesn't have working full/half buffer DMA
  * interrupts.
  */
-	      adev->vmix_flags = VMIX_MULTIFRAG | VMIX_SKIP;
+	      adev->vmix_flags = VMIX_MULTIFRAG /* | VMIX_SKIP*/;
 	      adev->max_intrate = 50;
 	      adev->min_block = 4096;
 	    }
@@ -3876,9 +3878,10 @@ oss_sblive_attach (oss_device_t * osdev)
 	   * Hide vmix main volume control and peak meters if no 
 	   * real HW mixing devices are enabled.
 	   */
+#if 0
 	  if (audiodevs_to_create <= devc->min_audiodevs)
 	    adev->vmix_flags |= VMIX_NOMAINVOL;
-
+#endif
 	  adev->iformat_mask = AFMT_S16_LE;	/* No 8 bit recording */
 
 	  if (i == 0)
@@ -3888,8 +3891,9 @@ oss_sblive_attach (oss_device_t * osdev)
 	      else
 		adev->magic = EMU10K2_MAGIC;
 	    }
+          if (i == 0)
+            vmix_attach_audiodev(devc->osdev, first_dev, -1, 0);
 	}
-
       adev->mixer_dev = devc->mixer_dev;
     }
 

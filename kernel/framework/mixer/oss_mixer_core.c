@@ -580,7 +580,7 @@ mixer_ext_create_group_flags (int dev, int parent, const char *id,
 			      unsigned int flags)
 {
   oss_mixext *mixext;
-  oss_mixext_desc *mixext_desc;
+  oss_mixext_desc *mixext_desc, *parent_desc;
   int enumber;
 
   flags &= ~MIXF_DESCR;
@@ -591,6 +591,19 @@ mixer_ext_create_group_flags (int dev, int parent, const char *id,
 	       dev);
       return -EFAULT;
     }
+
+  /*
+   * Ensure that the parent node number is valid.
+   */
+  if (parent < 0 || parent >= mixer_devs[dev]->nr_ext)
+     parent = 0;
+
+  parent_desc =
+    &mixer_devs[dev]->extensions[parent];
+  mixext = &parent_desc->ext;
+
+  if (mixext->type != MIXT_DEVROOT && mixext->type != MIXT_GROUP)
+     parent = 0; /* Point to the root group */
 
   if (mixer_devs[dev]->nr_ext >= mixer_devs[dev]->max_ext)
     {
@@ -641,13 +654,14 @@ mixer_ext_truncate (int dev, int index)
 
 static void expand_names (int dev);
 static void unflatten_group (int dev, int group);
+static void touch_parents (int dev, int group);
 
 int
 mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
 			  int type, const char *id, int maxvalue, int flags)
 {
   oss_mixext *mixext;
-  oss_mixext_desc *mixext_desc;
+  oss_mixext_desc *mixext_desc, *parent_desc;
   int enumber;
 
   flags &= ~MIXF_DESCR;
@@ -668,6 +682,20 @@ mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
 
   if (func == NULL)		/* No access function */
     flags &= ~(MIXF_READABLE | MIXF_WRITEABLE);
+
+  /*
+   * Ensure that the parent node number is valid.
+   */
+  if (parent < 0 || parent >= mixer_devs[dev]->nr_ext)
+     parent = 0;
+
+  parent_desc =
+    &mixer_devs[dev]->extensions[parent];
+  mixext = &parent_desc->ext;
+
+  if (mixext->type != MIXT_DEVROOT && mixext->type != MIXT_GROUP)
+     parent = 0; /* Point to the root group */
+
 
   mixext_desc =
     &mixer_devs[dev]->extensions[(enumber = mixer_devs[dev]->nr_ext++)];
@@ -725,6 +753,8 @@ mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
       unflatten_group (dev, parent);
       break;
     }
+
+  touch_parents(dev, parent);
 
   return enumber;
 }
@@ -1003,12 +1033,14 @@ expand_names (int dev)
 static void
 unflatten_group (int dev, int group)
 {
+/*
+ * Clear the MIXF_FLAT flags from all parent groups (recursively):
+ */
   int n;
   oss_mixext_desc *mixext_desc;
   oss_mixext *thisrec = NULL;
 
   n = mixer_devs[dev]->nr_ext;
-  mixer_devs[dev]->names_checked = 1;
 
   if (n < 1)
     return;
@@ -1026,6 +1058,35 @@ unflatten_group (int dev, int group)
     return;
 
   thisrec->flags &= ~MIXF_FLAT;
+
+  if (thisrec->parent >= group)	/* Broken link */
+    return;
+
+  unflatten_group (dev, thisrec->parent);	/* Unflatten the parent */
+}
+
+static void
+touch_parents (int dev, int group)
+{
+  int n;
+  oss_mixext_desc *mixext_desc;
+  oss_mixext *thisrec = NULL;
+
+  n = mixer_devs[dev]->nr_ext;
+
+  if (n < 1)
+    return;
+
+  if (group <= 0 || group >= n)
+    return;
+
+  mixext_desc = &mixer_devs[dev]->extensions[group];
+  thisrec = &mixext_desc->ext;
+
+  if (thisrec->type != MIXT_GROUP && thisrec->type != MIXT_DEVROOT)	/* Not a group */
+    return;
+
+  thisrec->update_counter++;
 
   if (thisrec->parent >= group)	/* Broken link */
     return;

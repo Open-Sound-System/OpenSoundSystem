@@ -1176,7 +1176,7 @@ main (int argc, char *argv[])
 #endif
 
   if (getenv ("SOL9") != NULL)
-    system ("touch kernel/drv/ossusb/.nomake");
+    system ("touch kernel/drv/oss_usb/.nomake");
 
   check_system (&conf);
 
@@ -1190,7 +1190,7 @@ main (int argc, char *argv[])
 	     sprintf (tmp, "setup/%s.conf", env);
   	     if ((cf = fopen (tmp, "r")) != NULL)
     		{
-      	     		parse_config (tmp, &conf);
+      	     		parse_config (cf, &conf);
 			fclose (cf);
      		}
      }

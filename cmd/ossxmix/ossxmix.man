@@ -12,7 +12,6 @@ audio devices are controllers that set the volume, select the input,
 perform certain functions on the speakers or set various device
 characteristics.
 
-
 OPTIONS
 -h          Display usage instructions.
 -d<dev#>    Display only mixer device dev#. If this option is not given then

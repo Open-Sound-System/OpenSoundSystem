@@ -234,7 +234,7 @@ _swap32 (GRCpreg int32_t v)
 int
 grc3_convert (grc3state_t * grc,
 	      int domain, int quality,
-	      const void *src, void *dst,
+	      void *src, void *dst,
 	      int sz, int bufsz, int inc, int offset)
 {
 

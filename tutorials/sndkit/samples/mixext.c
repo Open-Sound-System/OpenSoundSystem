@@ -161,6 +161,7 @@ list_controls (int mixer_dev)
 	      ext.parent);
       printf ("     Type %d (%s), value %d (0x%08x) (max %d)\n", ext.type,
 	      mixt_name (ext.type), val.value, val.value, ext.maxvalue);
+      printf ("     Update counter %d\n", ext.update_counter);
       nn++;
     }
 

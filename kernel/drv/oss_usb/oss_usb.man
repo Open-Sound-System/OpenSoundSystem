@@ -15,7 +15,7 @@ DESCRIPTION
   o Volume control and device input mixer
 
  MIDI
-The ossusb driver supports all MIDI devices that are compatible with the
+The oss_usb driver supports all MIDI devices that are compatible with the
 official USB MIDI specification. In addition the driver supports few devices
 that use their own private protocol (including some Yamaha and Midiman models).
 
@@ -50,7 +50,7 @@ OPTIONS
 None
 
 FILES
-CONFIGFILEPATH/oss_ossusb.conf Device configuration file
+CONFIGFILEPATH/oss_usb.conf Device configuration file
 
 AUTHOR
 4Front Technologies

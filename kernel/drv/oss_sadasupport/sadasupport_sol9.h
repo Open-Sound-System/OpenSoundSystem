@@ -24,23 +24,6 @@ sadasupport_open (queue_t * q, dev_t * devp, int flag, int sflag,
   cmd = oss_get_procname ();
   DDB (cmn_err (CE_CONT, "Command %s\n", cmd));
 
-#ifndef SOL9
-  oss_forceload_drivers (*devp, credp);
-#endif
-  for (i = 0; blacklist[i].name != NULL; i++)
-    if (strncmp (cmd, blacklist[i].name, 16) == 0)
-      {
-	bl_flags = blacklist[i].flags;
-
-	if (bl_flags & BL_BLACKLIST)
-	  {
-	    cmn_err (CE_NOTE,
-		     "%s must not use /dev/audio - Use native OSS mode instead.\n",
-		     blacklist[i]);
-	    return ENXIO;
-	  }
-      }
-
   if (devc == NULL)
     return EIO;
 

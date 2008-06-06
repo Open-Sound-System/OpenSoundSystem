@@ -9,8 +9,8 @@ The savemixer program saves mixer settings. It can also load saved mixer
 settings back into the mixer.
 
 Running this program without any parameters will save the current mixer
-settings into $OSSLIBDIR/etc/mixer.save file. OSSLIBDIR is decided by reading
-/etc/oss.conf, and defaults to /usr/lib/oss.
+settings into /etc/oss/mixer.save or $OSSLIBDIR/etc/mixer.save file.
+OSSLIBDIR is decided by reading /etc/oss.conf, and defaults to /usr/lib/oss.
 
 AUTOMATIC SAVE
 By default the soundoff command will automatically run savemixer to save

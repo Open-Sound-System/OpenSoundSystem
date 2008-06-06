@@ -1398,17 +1398,20 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
     }
 
 #if 1
-  /*
-   * Check if there are some deleted devices.
-   */
-  for (i = 0; i < oss_num_cards; i++)
-    {
-      if (cards[i]->available) /* Not deleted */
-	continue;
-
-      osdev = cards[i];
-      break;
-    }
+  if (osdev == NULL)
+     {
+	  /*
+	   * Check if there are some deleted devices.
+	   */
+	  for (i = 0; i < oss_num_cards; i++)
+	    {
+	      if (cards[i]->available) /* Not deleted */
+		continue;
+	
+	      osdev = cards[i];
+	      break;
+	    }
+      }
 #endif
 
   if (osdev == NULL)
