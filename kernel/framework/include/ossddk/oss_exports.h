@@ -40,11 +40,7 @@ extern int oss_max_audio_engines;
 #define MAX_AUDIO_DEVFILES 	oss_max_audio_devfiles
 #define HARD_MAX_AUDIO_DEVFILES 256
 #define MAX_AUDIO_ENGINES 	oss_max_audio_engines
-#define SYNC_DEVICE_MASK	0xff
-
-#if ((MAX_AUDIO_ENGINES & SYNC_DEVICE_MASK) != MAX_AUDIO_ENGINES)
-#error MAX_AUDIO_ENGINES must fit inside SYNC_DEVICE_MASK
-#endif
+#define SYNC_DEVICE_MASK	0xffff
 
 #define MAX_MIDI_DRIVER		4
 

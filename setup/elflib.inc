@@ -131,7 +131,7 @@ valid_elf_file (Elf64_Ehdr * hdr)
 }
 #endif
 
-#if 0
+#ifdef NEEDS_LOCATE_SYMBOL
 static char *
 locate_symbol (char *buffer, int len, char *symname)
 {

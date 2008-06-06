@@ -425,7 +425,6 @@ static int
 create_instance(int dev, userdev_create_t *crea)
 {
   userdev_devc_t *devc = audio_engines[dev]->devc;
-  adev_t *adev = audio_engines[dev];
   char tmp_name[64];
 
   devc->match_method = crea->match_method;

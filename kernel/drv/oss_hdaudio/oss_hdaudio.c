@@ -993,7 +993,10 @@ static int
 hda_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 {
   hda_portc_t *portc = audio_engines[dev]->portc;
+#ifdef sun
+  // PCI_READL under solaris needs devc->osdev
   hda_devc_t *devc = audio_engines[dev]->devc;
+#endif
   hda_engine_t *engine;
   unsigned int ptr;
 

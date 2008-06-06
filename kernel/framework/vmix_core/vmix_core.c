@@ -1649,8 +1649,6 @@ check_masterdev (void *mx)
 {
   vmix_mixer_t *mixer = mx;
   adev_t *adev;
-  int rate_source;
-  int dev;
 
   if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
     return 0;
