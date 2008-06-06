@@ -1183,7 +1183,7 @@ main (int argc, char *argv[])
 	     sprintf (tmp, "setup/%s.conf", env);
   	     if ((cf = fopen (tmp, "r")) != NULL)
     		{
-      	     		parse_config (tmp, &conf);
+      	     		parse_config (cf, &conf);
 			fclose (cf);
      		}
      }
