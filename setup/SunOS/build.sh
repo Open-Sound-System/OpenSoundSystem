@@ -121,9 +121,9 @@ then
 	done
 
 	# USB Module
-	if test -f $KERNEL64/target/modules/ossusb.o
+	if test -f $KERNEL64/target/modules/oss_usb.o
 	then
-		if ld -64 -dy -r -Nmisc/osscommon -Nmisc/usba -o prototype/kernel/drv/$KERNEL64/ossusb $KERNEL64/target/modules/ossusb.o
+		if ld -64 -dy -r -Nmisc/osscommon -Nmisc/usba -o prototype/kernel/drv/$KERNEL64/oss_usb $KERNEL64/target/modules/oss_usb.o
  		then
   			OK=1
  		else
@@ -170,9 +170,9 @@ then
 	done
 
 	# USB Modules
-	if test -f $KERNEL32/target/modules/ossusb.o
+	if test -f $KERNEL32/target/modules/oss_usb.o
 	then
-		if ld -dy -r -Nmisc/osscommon -Nmisc/usba -o prototype/kernel/drv/ossusb $KERNEL32/target/modules/ossusb.o
+		if ld -dy -r -Nmisc/osscommon -Nmisc/usba -o prototype/kernel/drv/oss_usb $KERNEL32/target/modules/oss_usb.o
 		then
 			OK=1
 		else
@@ -208,7 +208,7 @@ fi
 
 # Generate the config files
 rm -f confgen
-cc -o confgen -DTXT2MAN=\"$TXT2MAN\" $KERNEL32/setup/SunOS/confgen.c
+cc -o confgen -DTXT2MAN=\"$TXT2MAN\" $OSFLAGS $KERNEL32/setup/SunOS/confgen.c
 ./confgen prototype/kernel/drv \\/kernel\\/drv $KERNEL32/kernel/drv/* $KERNEL32/kernel/nonfree/drv/* $KERNEL32/kernel/framework/*
 rm -f confgen
 

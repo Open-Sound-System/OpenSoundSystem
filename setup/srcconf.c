@@ -1169,7 +1169,7 @@ main (int argc, char *argv[])
 #endif
 
   if (getenv ("SOL9") != NULL)
-    system ("touch kernel/drv/ossusb/.nomake");
+    system ("touch kernel/drv/oss_usb/.nomake");
 
   check_system (&conf);
 

@@ -149,6 +149,7 @@ ossdrv_getinfo (dev_info_t * dontcare_dip, ddi_info_cmd_t cmd, void *arg,
   register int error;
   int instance;
   dev_info_t *dip;
+#ifndef SOL9
   oss_cdev_t *cdev;
   int minor;
 
@@ -158,17 +159,26 @@ ossdrv_getinfo (dev_info_t * dontcare_dip, ddi_info_cmd_t cmd, void *arg,
 
   if (minor >= oss_num_cdevs)
    {
-	*result = NULL;
-	return DDI_FAILURE;
+        *result = NULL;
+        return DDI_FAILURE;
    }
 
   if ((cdev = oss_cdevs[minor]) == NULL || cdev->osdev == NULL)
    {
-	*result = NULL;
-	return DDI_FAILURE;
+        *result = NULL;
+        return DDI_FAILURE;
    }
 
   dip = cdev->osdev->dip;
+#else
+  dip = dontcare_dip;
+#endif
+
+  if (dip == NULL)
+    {
+      /* cmn_err (CE_WARN, "ossdrv_getinfo: dip==NULL\n"); */
+      return DDI_FAILURE;
+    }
 
   instance = ddi_get_instance (dip);
 

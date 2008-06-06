@@ -1521,7 +1521,7 @@ cs4231_detect (cs4231_devc_t * devc)
 void
 cs4231_init (cs4231_devc_t * devc)
 {
-  int my_dev, my_mixer;
+  int i, my_dev, my_mixer;
   char dev_name[100];
 
   cs4231_portc_t *portc = NULL;
