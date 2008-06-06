@@ -440,7 +440,7 @@ create_instance(int dev, userdev_create_t *crea)
   set_adev_name (devc->server_portc.audio_dev, tmp_name);
 cmn_err(CE_CONT, "Match method %d, key %d\n", devc->match_method, devc->match_key);
 
-  strcpy(crea->devnode, userdev_client_devnode);
+  strcpy(crea->devnode, audio_engines[devc->client_portc.audio_dev]->devnode);
 
   return 0;
 }
