@@ -51,4 +51,5 @@ extern void vmix_change_devnames(void *vmix_mixer, const char *name);
  * oss_audio_core.c
  */
 
+extern void oss_audio_init (oss_device_t *osdev);
 extern void oss_audio_uninit (void);

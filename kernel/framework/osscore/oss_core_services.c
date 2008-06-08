@@ -62,6 +62,7 @@ oss_common_init (oss_device_t * osdev)
   MUTEX_INIT (osdev, oss_timing_mutex, MH_TOP);
 #endif
   drivers_loaded = 1;
+  oss_audio_init (osdev);
   install_sndstat (osdev);
   install_vdsp (osdev);
   oss_midi_init (osdev);

@@ -18,6 +18,8 @@
 extern int src_quality;
 extern int vmix_disabled;
 
+oss_mutex_t audio_global_mutex;
+
 /*
  * Resizeable audio device tables
  */
@@ -3076,6 +3078,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
   int ret;
   adev_p adev;
   dmap_p dmapin, dmapout;
+  oss_native_word flags;
 #ifdef DO_TIMINGS
   char tmp[128];
   sprintf (tmp, "oss_audio_ioctl(%d, %s)", dev, find_ioctl_name (cmd, arg));
@@ -3444,7 +3447,12 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 
     case SNDCTL_DSP_SYNCSTART:
       val = *arg;
-      return handle_syncstart (adev->engine_num, val);
+
+      MUTEX_ENTER_IRQDISABLE (audio_global_mutex, flags);
+      ret = handle_syncstart (adev->engine_num, val);
+      MUTEX_EXIT_IRQRESTORE (audio_global_mutex, flags);
+
+      return ret;
       break;
 
     case SNDCTL_DSP_GETERROR:
@@ -5493,12 +5501,20 @@ audio_uninit_device (int dev)
 }
 
 void
+oss_audio_init (oss_device_t *osdev)
+{
+	MUTEX_INIT (osdev, audio_global_mutex, MH_DRV);
+}
+
+void
 oss_audio_uninit (void)
 {
 /*
  * Release all memory/resources allocated by the audio core.
  */
   oss_memblk_unalloc(&audio_global_memblk);
+
+  MUTEX_CLEANUP (audio_global_mutex);
 }
 
 void
@@ -5787,7 +5803,11 @@ oss_audio_start_syncgroup (unsigned int syncgroup)
  * This routine is to be called by the /dev/midi driver to start a sync group
  * at the right time.
  */
+  oss_native_word flags;
+
+  MUTEX_ENTER_IRQDISABLE (audio_global_mutex, flags);
   handle_syncstart (syncgroup & SYNC_DEVICE_MASK, syncgroup);
+  MUTEX_EXIT_IRQRESTORE (audio_global_mutex, flags);
 }
 
 #ifdef ALLOW_SELECT
