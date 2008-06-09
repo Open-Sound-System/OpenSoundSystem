@@ -33,6 +33,8 @@ struct _userdev_devc_t
 
   int create_flags;	/* Flags from ioctl(USERDEV_CREATE_INSTANCE) */
 
+  unsigned int poll_ticks; /* Number of clock tickes (OSS_HZ) between polls. */
+
   unsigned int match_method;
   unsigned int match_key;
 

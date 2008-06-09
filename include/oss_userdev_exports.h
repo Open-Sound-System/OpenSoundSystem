@@ -24,6 +24,7 @@ typedef struct
 	unsigned int flags;
 #define USERDEV_F_VMIX_ATTACH		0x00000001	/* Attach vmix */
 #define USERDEV_F_VMIX_PRECREATE	0x00000002	/* Precreate vmix channels */
+#define USERDEV_F_ERROR_ON_NO_CLIENT	0x00000004	/* Return EIO from server read/write if no client is connected. */
 
 	oss_devnode_t devnode;	/* Returns the device file name that clients should open */
 
@@ -33,6 +34,12 @@ typedef struct
 #define UD_MATCH_GID			2
 #define UD_MATCH_PGID			3
 	unsigned int match_key;
+
+	/*
+	 * Poll interval in milliseconds. Poll interval determines
+	 * the fragment size to be used by the device.
+	 */
+	unsigned int poll_interval;
 } userdev_create_t;
 
 #define USERDEV_CREATE_INSTANCE		__SIOWR('u', 1, userdev_create_t)

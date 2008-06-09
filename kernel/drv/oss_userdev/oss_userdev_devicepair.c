@@ -80,7 +80,7 @@ userdev_cb (void *pc)
  */
   userdev_portc_t *server_portc = pc;
   userdev_devc_t *devc = server_portc->devc;
-  int tmout = OSS_HZ / 100;
+  int tmout = devc->poll_ticks;
 
   if (tmout < 1)
     tmout = 1;
@@ -135,7 +135,7 @@ setup_sample_format (userdev_portc_t * portc)
   if (frame_size == 0)
     frame_size = 4;
 
-  fragsize = (devc->rate * frame_size) / 100;	/* Number of bytes/fragment (100Hz) */
+  fragsize = (devc->rate * frame_size * devc->poll_ticks) / OSS_HZ;	/* Number of bytes/fragment */
   devc->rate = fragsize * 100 / frame_size;
 
 cmn_err(CE_CONT, "Rate = %d, frag=%d\n", devc->rate, fragsize);
@@ -431,6 +431,18 @@ create_instance(int dev, userdev_create_t *crea)
   devc->match_key = crea->match_key;
   devc->create_flags = crea->flags;
 
+  devc->poll_ticks = (crea->poll_interval * OSS_HZ) / 1000;
+cmn_err(CE_CONT, "Set poll_ticks=%u, interval=%u, HZ=%d\n", devc->poll_ticks, crea->poll_interval, OSS_HZ);
+
+  if (devc->poll_ticks < 1) 
+     devc->poll_ticks = 1;
+
+  crea->poll_interval = (1000*devc->poll_ticks) / OSS_HZ;
+
+  if (crea->poll_interval<1)
+     crea->poll_interval = 1;
+cmn_err(CE_CONT, "Return poll interval %u\n", crea->poll_interval);
+
   crea->name[sizeof(crea->name)-1]=0; /* Overflow protectgion */
 
   sprintf(tmp_name, "%s (server)", crea->name);
@@ -494,7 +506,7 @@ userdev_trigger (int dev, int state)
 
   if (portc->output_triggered || portc->input_triggered)	/* Something is going on */
     {
-      int tmout = OSS_HZ / 100;
+      int tmout = devc->poll_ticks;
 
       if (tmout < 1)
 	tmout = 1;
@@ -774,6 +786,7 @@ userdev_create_device_pair(void)
   devc->fmt = AFMT_S16_NE;
   devc->fmt_bytes = 2;
   devc->channels = 2;
+  devc->poll_ticks = 10;
 
   if ((server_engine=install_server (devc)) < 0)
      return server_engine;

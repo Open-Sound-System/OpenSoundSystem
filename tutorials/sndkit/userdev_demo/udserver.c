@@ -45,6 +45,7 @@ main(int argc, char *argv[])
 		exit(-1);
 	}
 
+printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 	if ((server_fd = open(SERVER_DEVNAME, O_RDWR, 0))==-1)
 	{
 		perror(SERVER_DEVNAME);
@@ -55,6 +56,7 @@ main(int argc, char *argv[])
 	crea.flags = USERDEV_F_VMIX_ATTACH;
 	crea.match_method = UD_MATCH_PGID;
 	crea.match_key = setpgrp();
+	crea.poll_interval = 10; /* In milliseconds */
 printf("PGID=%d\n", crea.match_key);
 
 	if (ioctl(server_fd, USERDEV_CREATE_INSTANCE, &crea)==-1)
