@@ -8,12 +8,6 @@ ATI IXP200
 ATI IXP300
 ATI IXP400
 Audiotrak Prodigy 7.1
-Aureal Vortex2 (AU8830)
-Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
-Aureal Vortex (AU8820)
-Avance Logic ALS300
-Avance Logic ALS300+
-Avance Logic ALS4000
 C-Media CM8338A
 CMedia CM8338B
 CMedia CM8738/CM8768
@@ -45,14 +39,6 @@ Crystal CS4610
 Crystal CS4615
 Ego Systems Juli@ *BETA*
 EGO SYStems RoMI/O USB MIDI interface (BETA)
-ESS Allegro ES1988
-ESS Canyon 3D-2 ES1992
-ESS Canyon 3D ES1990
-ESS Maestro-1 
-ESS Maestro-2 
-ESS Maestro-2E 
-ESS Maestro3 ES1998
-ESS Maestro3 ES199A
 ESS Solo-1 
 ForteMedia FM 801
 Generic ENVY24 based device
@@ -115,7 +101,6 @@ MSI K7T266
 MSI KT3 Ultra 
 National Semiconductor Geode CS5530
 National Semiconductor Geode SC1200
-Neomagic NM2200AV
 Nvidia CK8
 Nvidia CK8S
 Nvidia High Definition Audio (MCP51)
@@ -134,14 +119,10 @@ OSS loopback audio driver
 OSS MIDI Loopback driver
 OSS user space audio driver I/O module
 Philips ToUcam Pro (mic) (BETA)
-RME Digi32
-RME Digi32/8
-RME Digi32 Pro
 RME Digi96
 RME Digi96/8
 RME Digi96/8 PAD
 RME Digi96/8 PRO
-S3 Sonic Vibes
 SiS 7012 
 SiS 7018 
 SiS High Definition Audio
