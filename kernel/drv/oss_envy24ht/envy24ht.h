@@ -153,7 +153,7 @@ typedef struct
 
   spdif_devc spdc;
   int gains[6];
-  int monitor[4];
+  int monitor[5];
   int recsrc;
 
 /*
@@ -180,7 +180,7 @@ typedef struct
   int m_SPDIFConfig;		/* Aureon */
   int m_Frontjack;		/* Aureon */
   unsigned char m_fDACMute[12];	/* Aureon */
-  unsigned char m_DACVolume[12];	/* Aureon & Juli@ */
+  unsigned char m_DACVolume[13];	/* Aureon & Juli@ */
   unsigned short m_ADCVolume[8];	/* Aureon */
   unsigned char m_ADCMux;	/* Aureon */
   unsigned char m_fSPDIFRecord;	/* Aureon */
@@ -191,6 +191,8 @@ typedef struct
   int mute;
   int reclevel;
   timeout_id_t timeout_id;	/* Juli@ */
+
+  unsigned char syncstart_mask;
 }
 envy24ht_devc;
 

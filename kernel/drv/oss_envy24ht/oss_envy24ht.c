@@ -1747,6 +1747,36 @@ envy24ht_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   return dmap->bytes_in_use - pos;
 }
 
+static int
+envy24ht_sync_control(int dev, int event, int mode)
+{
+  envy24ht_devc *devc = audio_engines[dev]->devc;
+  envy24ht_portc *portc = audio_engines[dev]->portc;
+  unsigned char enable, intrmask;
+  oss_native_word flags;
+  MUTEX_ENTER_IRQDISABLE(devc->mutex, flags);
+  if(event == SYNC_PREPARE)
+  {
+    devc->syncstart_mask |= portc->mask;
+    portc->state_bits = mode;
+  }
+  else if(event == SYNC_TRIGGER)
+  {
+    if(devc->syncstart_mask)
+    {
+      enable = INB (devc->osdev, devc->mt_base + 0x18);
+      intrmask = INB (devc->osdev, devc->mt_base + 0x03);
+      enable |= devc->syncstart_mask;
+      intrmask &= ~devc->syncstart_mask;
+      OUTB (devc->osdev, enable, devc->mt_base + 0x18);
+      OUTB (devc->osdev, intrmask, devc->mt_base + 0x03);
+      devc->syncstart_mask = 0;
+    }
+  }
+  MUTEX_EXIT_IRQRESTORE(devc->mutex, flags);
+  return 0;
+}
+
 #if 0
 static int
 envy24ht_check_output (int dev)
@@ -1791,7 +1821,9 @@ static audiodrv_t envy24ht_output_driver = {
   NULL,				/* envy24ht_free_buffer */
   NULL,
   NULL,
-  envy24ht_get_buffer_pointer
+  envy24ht_get_buffer_pointer,
+  NULL,
+  envy24ht_sync_control
 };
 
 
@@ -1820,7 +1852,9 @@ static audiodrv_t envy24ht_input_driver = {
   NULL,				/* envy24ht_free_buffer */
   NULL,
   NULL,
-  envy24ht_get_buffer_pointer
+  envy24ht_get_buffer_pointer,
+  NULL,
+  envy24ht_sync_control
 };
 
 static const int bindings[MAX_ODEV] = {
@@ -2245,6 +2279,7 @@ oss_envy24ht_attach (oss_device_t * osdev)
       i++;
     }
 
+  devc->syncstart_mask = 0;
   devc->speedbits = 0;
   devc->speed = 0;
   devc->pending_speed = 0;
