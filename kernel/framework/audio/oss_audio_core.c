@@ -2734,7 +2734,7 @@ handle_syncstart (int orig_dev, int group)
 		    }
 		  launch_input (adev, adev->dmap_in);
 		}
-	      if (adev->sync_mode & PCM_ENABLE_INPUT)
+	      if (adev->sync_mode & PCM_ENABLE_OUTPUT)
 		{
 		  dmap_p dmap = adev->dmap_out;
 		  int err;
