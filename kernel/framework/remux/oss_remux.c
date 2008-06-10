@@ -138,8 +138,10 @@ remux_open (int dev, int mode, int open_flags)
 				  &devc->finfo[i], 1, OF_SMALLFRAGS,
 				  NULL)) < 0)
 	{
-	  for (j = 0; j < i - 1; j++)
+	  for (j = 0; j < i; j++)
+	  {
 	    oss_audio_release (devc->physdev[j], &devc->finfo[j]);
+	  }
 
 	  devc->open_mode = 0;
 	  return err;
