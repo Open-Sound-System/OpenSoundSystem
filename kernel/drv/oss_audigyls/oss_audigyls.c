@@ -1501,10 +1501,6 @@ install_audio_devices (audigyls_devc * devc)
       devc->playvol[i] = 0x3030;
       devc->recvol = 128;
       portc->bits = AFMT_S16_LE;
-#ifdef CONFIG_OSS_VMIX
-	  if (i == 0)
-	     vmix_attach_audiodev(devc->osdev, adev, -1, 0);
-#endif
     }
 
 #ifdef USE_REMUX
@@ -1517,6 +1513,11 @@ install_audio_devices (audigyls_devc * devc)
 	remux_install ("AudigyLS 5.1 output", devc->osdev, frontdev,
 		       frontdev + 3, frontdev + 2, -1);
     }
+#endif
+
+#ifdef CONFIG_OSS_VMIX
+	  if (frontdev >= 0)
+	     vmix_attach_audiodev(devc->osdev, frontdev, -1, 0);
 #endif
   return 1;
 }
