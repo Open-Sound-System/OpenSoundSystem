@@ -38,6 +38,8 @@ main(int argc, char *argv[])
 	int rate = 48000;
 	int fmt = AFMT_S16_LE;
 	int channels = 2;
+	int tmp;
+	int fragsize=0;
 
 	if (argc != 2)
 	{
@@ -65,6 +67,9 @@ printf("PGID=%d\n", crea.match_key);
 		exit(-1);
 	}
 
+	tmp=0;
+	ioctl(server_fd, SNDCTL_DSP_COOKEDMODE, &tmp); /* Turn off conversions */
+
 	if (ioctl(server_fd, SNDCTL_DSP_SETFMT, &fmt)==-1)
 	   perror("SNDCTL_DSP_SETFMT");
 
@@ -73,6 +78,11 @@ printf("PGID=%d\n", crea.match_key);
 
 	if (ioctl(server_fd, SNDCTL_DSP_SPEED, &rate)==-1)
 	   perror("SNDCTL_DSP_SPEED");
+
+	if (ioctl(server_fd, SNDCTL_DSP_GETBLKSIZE, &fragsize)==-1)
+	   fragsize = 1024;
+
+printf("Fragment size = %d bytes\n", fragsize);
 
 printf("Created instance, devnode=%s\n", crea.devnode);
 
@@ -84,15 +94,16 @@ printf("Created instance, devnode=%s\n", crea.devnode);
 		 */
 		int l;
 
-		char buffer[1024];
+		char *buffer;
 		signal(SIGCHLD, terminator);
 
-		memset(buffer, 0, sizeof(buffer));
+		buffer = malloc (fragsize);
+		memset(buffer, 0, fragsize);
 
-		write(server_fd, buffer, sizeof(buffer));
-		write(server_fd, buffer, sizeof(buffer));
+		write(server_fd, buffer, fragsize);
+		write(server_fd, buffer, fragsize);
 
-		while ((l=read(server_fd, buffer, sizeof(buffer)))>0)
+		while ((l=read(server_fd, buffer, fragsize))>0)
 		{
 			if (write(server_fd, buffer, l)!=l)
 			{
@@ -103,6 +114,9 @@ printf("Created instance, devnode=%s\n", crea.devnode);
 
 		exit(0);
 	}
+
+	sprintf(cmd, "OSS_AUDIODEV=%s", crea.devnode);
+	putenv(cmd);
 
 	sprintf(cmd, argv[1], crea.devnode, crea.devnode, crea.devnode);
 	printf("Running '%s'\n", cmd);
