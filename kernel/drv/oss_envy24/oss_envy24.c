@@ -251,12 +251,8 @@ handle_playdev (envy24_devc * devc, envy24_portc * portc, int this_frag)
 	short *ip;
 	int *op;
 #ifdef DO_TIMINGS
-	{
-	  char tmp[128];
-	  sprintf (tmp, "Envy24: Copy out %d, %d",
+	oss_timing_printf ("Envy24: Copy out %d, %d",
 		   dmap_get_qhead (dmap) * dmap->fragment_size, nbytes);
-	  oss_do_timing (tmp);
-	}
 #endif
 
 	ip = (short *) (dmap->dmabuf +

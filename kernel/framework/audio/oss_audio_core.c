@@ -999,15 +999,12 @@ oss_audio_set_error (int dev, int mode, int err, int parm)
 
 #ifdef DO_TIMINGS
   {
-    char tmp[100];
-
     if (mode == E_REC)
-      sprintf (tmp, "Audio rec error code %05d/%d, engine=%d", err, parm,
+      oss_timing_printf ("Audio rec error code %05d/%d, engine=%d", err, parm,
 	       mode);
     else
-      sprintf (tmp, "Audio play error code %05d/%d, engine=%d", err, parm,
+      oss_timing_printf ("Audio play error code %05d/%d, engine=%d", err, parm,
 	       mode);
-    oss_do_timing (tmp);
   }
 #endif
 
@@ -1236,11 +1233,7 @@ oss_audio_release (int dev, struct fileinfo *file)
   else
     mode = OPEN_READ | OPEN_WRITE;
 #ifdef DO_TIMINGS
-  {
-    char tmp[100];
-    sprintf (tmp, "=-=-=- Closing audio engine %d -=-=-=", dev);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("=-=-=- Closing audio engine %d -=-=-=", dev);
 #endif
 
   adev = audio_engines[dev];
@@ -1847,11 +1840,7 @@ setup_fragments (adev_p adev, dmap_p dmap, int direction)
   dmap->flags |= DMAP_FRAGFIXED;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[40];
-    sprintf (tmp, "setup_fragments(%d, dir=%d)", adev->engine_num, direction);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("setup_fragments(%d, dir=%d)", adev->engine_num, direction);
 #endif
 
   sz = 1024;
@@ -1959,12 +1948,8 @@ setup_fragments (adev_p adev, dmap_p dmap, int direction)
       if (min > dmap->buffsize / 2)
 	min = dmap->buffsize / 2;
 #ifdef DO_TIMINGS
-      {
-	char tmp[64];
-	sprintf (tmp, "Max intrate %d -> min buffer %d", adev->max_intrate,
+	oss_timing_printf ("Max intrate %d -> min buffer %d", adev->max_intrate,
 		 min);
-	oss_do_timing (tmp);
-      }
 #endif
     }
 
@@ -2040,12 +2025,7 @@ setup_fragments (adev_p adev, dmap_p dmap, int direction)
       dmap->low_water_rq = dmap->bytes_in_use / 4;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[32];
-
-    sprintf (tmp, "fragsz=%d, nfrags=%d", dmap->fragment_size, dmap->nfrags);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("fragsz=%d, nfrags=%d", dmap->fragment_size, dmap->nfrags);
 #endif
 }
 
@@ -2165,12 +2145,7 @@ get_optr (adev_p adev, dmap_p dmap, ioctl_arg arg)
   info->bytes &= 0x3fffffff;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-
-    sprintf (tmp, "GETOPTR(%d,%d,%d)", info->bytes, info->ptr, info->blocks);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("GETOPTR(%d,%d,%d)", info->bytes, info->ptr, info->blocks);
 #endif
   return 0;
 }
@@ -2205,12 +2180,7 @@ get_iptr (adev_p adev, dmap_p dmap, ioctl_arg arg)
   info->bytes &= 0x3fffffff;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-
-    sprintf (tmp, "GETIPTR(%d,%d,%d)", info->bytes, info->ptr, info->blocks);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("GETIPTR(%d,%d,%d)", info->bytes, info->ptr, info->blocks);
 #endif
   return 0;
 }
@@ -2307,12 +2277,7 @@ get_odelay (adev_p adev, dmap_p dmap, ioctl_arg arg)
 
   MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-
-    sprintf (tmp, "GETODELAY(%d, %d)", adev->engine_num, val);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("GETODELAY(%d, %d)", adev->engine_num, val);
 #endif
   return *arg = (val);
 }
@@ -2379,14 +2344,10 @@ get_ospace (adev_p adev, dmap_p dmap, ioctl_arg arg)
       bytes = (int) ((long long) dmap->bytes_in_use - dmap->user_counter);
 #ifdef DO_TIMINGS
       {
-	char tmp[40];
 	oss_do_timing ("GETOSPACE: Not started - ignore device count");
-	sprintf (tmp, "bytes_in_use=%d", dmap->bytes_in_use);
-	oss_do_timing (tmp);
-	sprintf (tmp, "user_counter=%lld", dmap->user_counter);
-	oss_do_timing (tmp);
-	sprintf (tmp, "raw bytes=%d", bytes);
-	oss_do_timing (tmp);
+	oss_timing_printf ("bytes_in_use=%d", dmap->bytes_in_use);
+	oss_timing_printf ("user_counter=%lld", dmap->user_counter);
+	oss_timing_printf ("raw bytes=%d", bytes);
       }
 #endif
       bytes = (bytes / dmap->expand_factor) * UNIT_EXPAND;	/* Round downwards */
@@ -2402,11 +2363,7 @@ get_ospace (adev_p adev, dmap_p dmap, ioctl_arg arg)
 
   info->bytes = audio_space_in_queue (adev, dmap, 0);
 #ifdef DO_TIMINGS
-  {
-    char tmp[40];
-    sprintf (tmp, "audio_space_in_queue returned %d", info->bytes);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("audio_space_in_queue returned %d", info->bytes);
 #endif
 
   if (info->bytes < dmap->low_water)
@@ -2561,13 +2518,8 @@ get_ispace (adev_p adev, dmap_p dmap, ioctl_arg arg)
     info->bytes = info->fragsize * info->fragstotal;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-
-    sprintf (tmp, "GETISPACE(%d,%d,%d,%d)", info->bytes, info->fragments,
+    oss_timing_printf ("GETISPACE(%d,%d,%d,%d)", info->bytes, info->fragments,
 	     info->fragsize, info->fragstotal);
-    oss_do_timing (tmp);
-  }
 #endif
   return 0;
 }
@@ -3074,9 +3026,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
   dmap_p dmapin, dmapout;
   oss_native_word flags;
 #ifdef DO_TIMINGS
-  char tmp[128];
-  sprintf (tmp, "oss_audio_ioctl(%d, %s)", dev, find_ioctl_name (cmd, arg));
-  oss_do_timing (tmp);
+  oss_timing_printf ("oss_audio_ioctl(%d, %s)", dev, find_ioctl_name (cmd, arg));
 #endif
 
   if (cmd == OSS_GETVERSION)
@@ -3202,15 +3152,12 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       ret = get_ospace (adev, dmapout, arg);
 #ifdef DO_TIMINGS
       {
-	char tmp[128];
 	audio_buf_info *info = (audio_buf_info *) arg;
-	sprintf (tmp, "GETOSPACE(b=%d,f=%d,fsz=%d,ft=%d)=%d", info->bytes,
+	oss_timing_printf ("GETOSPACE(b=%d,f=%d,fsz=%d,ft=%d)=%d", info->bytes,
 		 info->fragments, info->fragsize, info->fragstotal, ret);
-	oss_do_timing (tmp);
-	sprintf (tmp, "Low water %d, ap flags=%x, tmpbuf=%d/%d",
+	oss_timing_printf ("Low water %d, ap flags=%x, tmpbuf=%d/%d",
 		 dmapout->low_water, adev->open_flags, dmapout->tmpbuf_ptr,
 		 dmapout->tmpbuf_len);
-	oss_do_timing (tmp);
       }
 #endif
       return ret;
@@ -3894,14 +3841,9 @@ prepare_output (adev_p adev, dmap_p dmap)
     }
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp,
-	     "Prepare output dev=%d, fragsize=%d, nfrags=%d, bytes_in_use=%d/%d",
+     oss_timing_printf ("Prepare output dev=%d, fragsize=%d, nfrags=%d, bytes_in_use=%d/%d",
 	     adev->engine_num, dmap->fragment_size, dmap->nfrags,
 	     dmap->bytes_in_use, dmap->buffsize);
-    oss_do_timing (tmp);
-  }
 #endif
 
   if ((ret =
@@ -4038,14 +3980,9 @@ prepare_input (adev_p adev, dmap_p dmap)
     }
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp,
-	     "Prepare input dev=%d, fragsize=%d, nfrags=%d, bytes_in_use=%d",
+     oss_timing_printf ("Prepare input dev=%d, fragsize=%d, nfrags=%d, bytes_in_use=%d",
 	     adev->engine_num, dmap->fragment_size, dmap->nfrags,
 	     dmap->bytes_in_use);
-    oss_do_timing (tmp);
-  }
 #endif
 
   if ((ret =
@@ -4197,12 +4134,8 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 	}
       count = (int) (dmap->byte_counter - dmap->user_counter);
 #ifdef DO_TIMINGS
-      {
-	char tmp[128];
-	sprintf (tmp, "User counter %d, byte_counter %d", dmap->user_counter,
+	oss_timing_printf ("User counter %d, byte_counter %d", dmap->user_counter,
 		 dmap->byte_counter);
-	oss_do_timing (tmp);
-      }
 #endif
     }
 
@@ -4233,12 +4166,8 @@ move_raw_rdpointer (adev_p adev, dmap_p dmap, int len)
   int ret = 0;
   oss_native_word flags;
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "Move rdpointer, offs=%d, incr %d", dmap->user_counter,
+    oss_timing_printf ("Move rdpointer, offs=%d, incr %d", dmap->user_counter,
 	     len);
-    oss_do_timing (tmp);
-  }
 #endif
   MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
   dmap->user_counter += len;
@@ -4334,11 +4263,7 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
   int c, l, p, ret, n;
   unsigned char *dmabuf;
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "--- audio_read(%d, %d) ---", dev, count);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("--- audio_read(%d, %d) ---", dev, count);
 #endif
 
   sync_seed++;
@@ -4437,11 +4362,7 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
     }
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "-------- Audio read done (%d)", count - c);
-    oss_do_timing (tmp);
-  }
+    oss_timing_printf ("-------- Audio read done (%d)", count - c);
 #endif
 
   return count - c;
@@ -4464,15 +4385,10 @@ audio_space_in_queue (adev_p adev, dmap_p dmap, int count)
     if (cnt > dmap->bytes_in_use)	/* Output underrun */
       {
 #ifdef DO_TIMINGS
-	char msg[64];
-	sprintf (msg, "adev %d: Play underrun B", adev->engine_num);
-	oss_do_timing (msg);
-	sprintf (msg, "  User=%lld", dmap->user_counter);
-	oss_do_timing (msg);
-	sprintf (msg, "  Dev=%lld", dmap->byte_counter);
-	oss_do_timing (msg);
-	sprintf (msg, "  Tmp=%d", dmap->tmpbuf_ptr);
-	oss_do_timing (msg);
+	oss_timing_printf ("adev %d: Play underrun B", adev->engine_num);
+	oss_timing_printf ("  User=%lld", dmap->user_counter);
+	oss_timing_printf ("  Dev=%lld", dmap->byte_counter);
+	oss_timing_printf ("  Tmp=%d", dmap->tmpbuf_ptr);
 #endif
 	cnt = dmap->bytes_in_use;
 	dmap->user_counter = dmap->byte_counter;
@@ -4526,12 +4442,8 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	{
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 #ifdef DO_TIMINGS
-	  {
-	    char tmp[128];
-	    sprintf (tmp, "Space=%d\n", len);
-	    oss_do_timing (tmp);
+	    oss_timing_printf ("Space=%d\n", len);
 	    oss_do_timing ("*** EAGAIN ***");
-	  }
 #endif
 	  if (!(adev->enable_bits & PCM_ENABLE_OUTPUT))
 	    {
@@ -4584,22 +4496,14 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	  return -EAGAIN;
 	}
 #ifdef DO_TIMINGS
-      {
-	char s[16];
-	sprintf (s, "Sleep(%d)", adev->engine_num);
-	oss_do_timing (s);
-      }
+      oss_timing_printf ("Sleep(%d)", adev->engine_num);
       oss_timing_enter (DF_SLEEPWRITE);
 #endif
       UP_STATUS (STS_SLEEP);
       if (!oss_sleep (adev->out_wq, &dmap->mutex, tmout, &flags, &status))
 	{
 #ifdef DO_TIMINGS
-	  {
-	    char s[32];
-	    sprintf (s, "Sleep(%d) (out) timed out", adev->engine_num);
-	    oss_do_timing (s);
-	  }
+	  oss_timing_printf ("Sleep(%d) (out) timed out", adev->engine_num);
 #endif
 	  adev->timeout_count++;
 
@@ -4626,11 +4530,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 
 #ifdef DO_TIMINGS
       oss_timing_leave (DF_SLEEPWRITE);
-      {
-	char s[32];
-	sprintf (s, "Sleep(%d) (out) done", adev->engine_num);
-	oss_do_timing (s);
-      }
+      oss_timing_printf ("Sleep(%d) (out) done", adev->engine_num);
 #endif
 
       if (status & WK_SIGNAL)
@@ -4644,11 +4544,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 
       len = audio_space_in_queue (adev, dmap, count);
 #ifdef DO_TIMINGS
-      {
-	char tmp[128];
-	sprintf (tmp, "Free output space now %d bytes", len);
-	oss_do_timing (tmp);
-      }
+      oss_timing_printf ("Free output space now %d bytes", len);
 #endif
     }				/* Wait for space */
 
@@ -4667,12 +4563,8 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 
   *size = len;
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "Got output buffer, offs %d/%d, len %d", offs,
+  oss_timing_printf ("Got output buffer, offs %d/%d, len %d", offs,
 	     dmap->bytes_in_use, len);
-    oss_do_timing (tmp);
-  }
 #endif
   if (offs < 0 || (offs + len) > dmap->bytes_in_use)
     {
@@ -4745,11 +4637,7 @@ move_wrpointer (adev_p adev, dmap_p dmap, int len)
   int ret = 0;
   oss_native_word flags;
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "Move wrpointer, len %d", len);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("Move wrpointer, len %d", len);
 #endif
   MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
   dmap->underrun_flag = 0;
@@ -4764,15 +4652,9 @@ move_wrpointer (adev_p adev, dmap_p dmap, int len)
 
   dmap->user_counter += len;
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "  User=%lld", dmap->user_counter);
-    oss_do_timing (tmp);
-    sprintf (tmp, "  Byte=%lld", dmap->byte_counter);
-    oss_do_timing (tmp);
-    sprintf (tmp, "  Fill=%lld", dmap->user_counter - dmap->byte_counter);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("  User=%lld", dmap->user_counter);
+  oss_timing_printf ("  Byte=%lld", dmap->byte_counter);
+  oss_timing_printf ("  Fill=%lld", dmap->user_counter - dmap->byte_counter);
 #endif
 
 #ifdef CONFIG_OSSD
@@ -4798,10 +4680,8 @@ move_wrpointer (adev_p adev, dmap_p dmap, int len)
       && (dmap->user_counter < dmap->bytes_in_use / 2))
     {
 #ifdef DO_TIMINGS
-      char tmp[100];
-      sprintf (tmp, "dmap->user_counter=%lld, dmap->fragment_size*2=%ld",
+      oss_timing_printf ("dmap->user_counter=%lld, dmap->fragment_size*2=%ld",
 	       dmap->user_counter, dmap->fragment_size * 2);
-      oss_do_timing (tmp);
       oss_do_timing
 	("Not enough data in the buffer yet - skipping launch_output");
 #endif
@@ -4867,11 +4747,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
   int tmout;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "--- audio_write(%d, %d) ---", dev, count);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("--- audio_write(%d, %d) ---", dev, count);
 #endif
 
   sync_seed++;
@@ -4975,11 +4851,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
   while (c > 0)
     {
 #ifdef DO_TIMINGS
-      {
-	char tmp[32];
-	sprintf (tmp, "%d/%d bytes to go", c, count);
-	oss_do_timing (tmp);
-      }
+	oss_timing_printf ("%d/%d bytes to go", c, count);
 #endif
 
       if (tmout++ > 1000)
@@ -5598,11 +5470,7 @@ audio_inputintr (int dev, int intr_flags)
       return;
     }
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "Inputintr(%d)", dev);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("Inputintr(%d)", dev);
 #endif
 
   if (adev->d->adrv_get_input_pointer == NULL
@@ -5668,15 +5536,10 @@ do_outputintr (int dev, int intr_flags)
       if (!(dmap->mapping_flags & DMA_MAP_MAPPED))
 	{
 #ifdef DO_TIMINGS
-	  char msg[64];
-	  sprintf (msg, "adev %d: Play underrun A", dev);
-	  oss_do_timing (msg);
-	  sprintf (msg, "  User=%lld", dmap->user_counter);
-	  oss_do_timing (msg);
-	  sprintf (msg, "  Dev=%lld", dmap->byte_counter);
-	  oss_do_timing (msg);
-	  sprintf (msg, "  Tmp=%d", dmap->tmpbuf_ptr);
-	  oss_do_timing (msg);
+	  oss_timing_printf ("adev %d: Play underrun A", dev);
+	  oss_timing_printf ("  User=%lld", dmap->user_counter);
+	  oss_timing_printf ("  Dev=%lld", dmap->byte_counter);
+	  oss_timing_printf ("  Tmp=%d", dmap->tmpbuf_ptr);
 #endif
 	  dmap->play_underruns++;
 
@@ -5745,11 +5608,7 @@ audio_outputintr (int dev, int intr_flags)
     }
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "Outputintr(%d)", dev);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("Outputintr(%d)", dev);
 #endif
   UP_STATUS (STS_INTR);
 
@@ -5815,11 +5674,7 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
   oss_native_word flags;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "--- audio_chpoll(%d, %08x) ---", dev, events);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("--- audio_chpoll(%d, %08x) ---", dev, events);
 #endif
 
   if (dev < 0 || dev >= num_audio_engines)
@@ -5941,10 +5796,8 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
       if (bi.bytes < dmap->low_water)
 	{			/* No space yet */
 #ifdef DO_TIMINGS
-	  char s[32];
-	  sprintf (s, "Input not ready yet (%d/%d)\n", bi.bytes,
+	  oss_timing_printf ("Input not ready yet (%d/%d)\n", bi.bytes,
 		   dmap->low_water);
-	  oss_do_timing (s);
 #endif
 	  oss_register_poll (adev->in_wq, &dmap->mutex, &flags, ev);
 	}

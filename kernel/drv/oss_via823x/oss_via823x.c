@@ -604,11 +604,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 	}
 
 #ifdef DO_TIMINGS
-      {
-	char s[32];
-	sprintf (s, "rawpos=%d", ptr);
-	oss_do_timing (s);
-      }
+      oss_timing_printf ("rawpos=%d", ptr);
 #endif
 #if 0
       this_sgd = ptr >> 24;
@@ -629,11 +625,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
       pos += (dmap->fragment_size - tmp) & ~3;
 
 #ifdef DO_TIMINGS
-      {
-	char s[32];
-	sprintf (s, "Playpos=%d", pos);
-	oss_do_timing (s);
-      }
+      oss_timing_printf ("Playpos=%d", pos);
 #endif
       pos = pos % dmap->bytes_in_use;
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
@@ -682,11 +674,7 @@ via8233_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
       pos += (dmap->fragment_size - tmp) & ~3;
 
 #ifdef DO_TIMINGS
-      {
-	char s[32];
-	sprintf (s, "Recpos=%d", pos);
-	oss_do_timing (s);
-      }
+      oss_timing_printf ("Recpos=%d", pos);
 #endif
       pos = pos % dmap->bytes_in_use;
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);

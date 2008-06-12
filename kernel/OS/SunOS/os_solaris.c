@@ -315,9 +315,7 @@ oss_open (dev_t * dev_p, int open_flags, int otyp, cred_t * cred_p)
   oss_native_word flags;
 
 #ifdef DO_TIMINGS
-  char tmp[100];
-  sprintf (tmp, "**** oss_open(%x) ****", getminor (dev));
-  oss_do_timing (tmp);
+  oss_timing_printf ("**** oss_open(%x) ****", getminor (dev));
 #endif
 //cmn_err(CE_CONT, "**** oss_open(%x) ****\n", getminor (dev));
 //cmn_err(CE_CONT, "  PID %d, cmd %s\n", GET_PROCESS_PID(x), GET_PROCESS_NAME(x));
@@ -392,9 +390,7 @@ oss_close (dev_t dev, int flag, int otyp, cred_t * cred_p)
   oss_cdev_t *cdev;
   oss_native_word flags;
 #ifdef DO_TIMINGS
-  char tmp[100];
-  sprintf (tmp, "***** oss_close(%x) ****", getminor (dev));
-  oss_do_timing (tmp);
+  oss_timing_printf ("***** oss_close(%x) ****", getminor (dev));
 #endif
 //cmn_err(CE_CONT, "***** oss_close(%x) ****\n", getminor (dev));
 //cmn_err(CE_CONT, "    PID %d, cmd %s\n", GET_PROCESS_PID(x), GET_PROCESS_NAME(x));
@@ -440,9 +436,7 @@ oss_ioctl (dev_t dev, int cmd, intptr_t arg, int mode, cred_t * cred_p,
   char b[4096], *buf = b;
   oss_cdev_t *cdev;
 #ifdef DO_TIMINGS
-  char tmp[100];
-  sprintf (tmp, "OSS ioctl(%x, %x, %x)", getminor (dev), cmd, arg);
-  oss_do_timing (tmp);
+  oss_timing_printf ("OSS ioctl(%x, %x, %x)", getminor (dev), cmd, arg);
 #endif
 
   *rval_p = 0;
@@ -551,9 +545,7 @@ oss_chpoll (dev_t dev, short events, int anyyet, short *reventsp,
   int ret;
 
 #ifdef DO_TIMINGS
-  char tmp[100];
-  sprintf (tmp, "***** oss_chpoll(%x) ****", getminor (dev));
-  oss_do_timing (tmp);
+  oss_timing_printf ("***** oss_chpoll(%x) ****", getminor (dev));
 #endif
 
   if (getminor (dev) >= OSS_MAX_CDEVS)
@@ -598,9 +590,7 @@ oss_devmap (dev_t dev, devmap_cookie_t handle, offset_t off, size_t len,
   int ret;
 
 #ifdef DO_TIMINGS
-  char tmp[100];
-  sprintf (tmp, "***** oss_devmap(%x) ****", getminor (dev));
-  oss_do_timing (tmp);
+  oss_timing_printf ("***** oss_devmap(%x) ****", getminor (dev));
 #endif
 
   if (getminor (dev) >= OSS_MAX_CDEVS)

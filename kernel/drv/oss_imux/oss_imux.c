@@ -384,13 +384,9 @@ imux_callback (int dev, int parm)
 	  else
 	    memcpy (tbuf, buf, len);
 #ifdef DO_TIMINGS
-	  {
-	    char tmp[128];
-	    sprintf (tmp, "Imux: copy f=%d/%d to ch=%d t=%d/%d", frag, tail,
+	  oss_timing_printf ("Imux: copy f=%d/%d to ch=%d t=%d/%d", frag, tail,
 		     i, dmap_get_qtail (client_dmap),
 		     dmap_get_qhead (client_dmap));
-	    oss_do_timing (tmp);
-	  }
 #endif
 	  oss_audio_inputintr (portc->audio_dev, 0);
 

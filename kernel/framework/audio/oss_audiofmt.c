@@ -234,12 +234,8 @@ do_src (adev_p adev, dmap_p dmap, int srcrate, int tgtrate, void *p1,
     bits = 32;
 
 #  ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "grc3_convert %d bytes / %d samples * %d channels in. ",
+  oss_timing_printf ("grc3_convert %d bytes / %d samples * %d channels in. ",
 	     *len, nsamples, channels);
-    oss_do_timing (tmp);
-  }
 #  endif
 
 #if 0
@@ -289,13 +285,9 @@ do_src (adev_p adev, dmap_p dmap, int srcrate, int tgtrate, void *p1,
     }
 #endif
 #  ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "-> %d bytes, %d samples out, %d samples in",
+  oss_timing_printf ("-> %d bytes, %d samples out, %d samples in",
 	     *len, ((grc3state_t *) dmap->srcstate[0])->outsz,
 	     ((grc3state_t *) dmap->srcstate[0])->insz);
-    oss_do_timing (tmp);
-  }
 #  endif
 #endif
 
@@ -339,11 +331,7 @@ setup_src (adev_p adev, dmap_p dmap, int srate, int trate, int sch, int tch)
       return -EIO;
     }
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "grc3_setup %d -> %d Hz, %d channels", srate, trate, nch);
-    oss_do_timing (tmp);
-  }
+  oss_timing_printf ("grc3_setup %d -> %d Hz, %d channels", srate, trate, nch);
 #endif
 
   for (ch = 0; ch < nch; ch++)
@@ -1137,20 +1125,12 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
     }
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-
-    sprintf (tmp, "Setting up format conversios for device %d",
+    oss_timing_printf ("Setting up format conversios for device %d",
 	     adev->engine_num);
-    oss_do_timing (tmp);
-    sprintf (tmp, "  Speed %d->%d", source->rate, target->rate);
-    oss_do_timing (tmp);
-    sprintf (tmp, "  Channels %d->%d", source->channels, target->channels);
-    oss_do_timing (tmp);
-    sprintf (tmp, "  Format %02x/%s->%02x/%s", source->fmt, src_f->name,
+    oss_timing_printf ("  Speed %d->%d", source->rate, target->rate);
+    oss_timing_printf ("  Channels %d->%d", source->channels, target->channels);
+    oss_timing_printf ("  Format %02x/%s->%02x/%s", source->fmt, src_f->name,
 	     target->fmt, tgt_f->name);
-    oss_do_timing (tmp);
-  }
 #endif
   DDB (cmn_err
        (CE_CONT, "Setting up format conversios for device %d\n",

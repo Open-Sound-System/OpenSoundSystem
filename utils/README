@@ -17,8 +17,7 @@ Don't define this flag in production environment since it will cause
 significant amount of CPU overhead.
 
 Compile this program using "make readtimings" and then copy it to (say)
-/usr/local/bin. After running soundon you need to run readtimings>/dev/null 
-(to flush all load time garbage) and to kill it with ^C.
+/usr/local/bin.
 
 Then start readtimings>some_file.txt in one terminal window (or in backround).
 Run the program you would like to debug in another window. Kill the readtimings

@@ -11,6 +11,10 @@
 #include <stdarg.h>
 oss_mutex_t oss_timing_mutex;
 
+#ifdef DO_TIMINGS
+static int timing_is_active = 0; /* 1=The readtimings utility has been active */
+#endif
+
 void *mixer_devs_p = NULL;
 /*
  * Mixer device list
@@ -66,12 +70,8 @@ oss_legacy_mixer_ioctl (int mixdev, int audiodev, unsigned int cmd,
   int ret;
 
 #ifdef DO_TIMINGS
-  {
-    char tmp[128];
-    sprintf (tmp, "oss_legacy_mixer_ioctl(%d/%d, %08x) entered", mixdev,
+    oss_timing_printf ("oss_legacy_mixer_ioctl(%d/%d, %08x) entered", mixdev,
 	     audiodev, cmd);
-    oss_do_timing (tmp);
-  }
 #endif
 
   if (!(cmd & SIOC_OUT) && !(cmd & SIOC_IN))
@@ -2228,6 +2228,9 @@ oss_do_timing_ (char *txt)
   oss_native_word flags;
   oss_native_word this_time;
 
+  if (!timing_is_active) /* Nobody is listening */
+     return;
+
   MUTEX_ENTER_IRQDISABLE (oss_timing_mutex, flags);
   if ((long) (&timing_buf[sizeof (timing_buf)] - timing_ptr - 8) <= l)
     {
@@ -2353,6 +2356,9 @@ oss_timing_leave (int bin)
 void
 oss_do_timing (char *txt)
 {
+  if (!timing_is_active) /* Nobody is listening */
+     return;
+
   if (timing_flags & DFLAG_ALL)
     oss_do_timing_ (txt);
 }
@@ -2360,6 +2366,9 @@ oss_do_timing (char *txt)
 void
 oss_do_timing2 (int mask, char *txt)
 {
+  if (!timing_is_active) /* Nobody is listening */
+     return;
+
   if ((timing_flags & DFLAG_ALL) || (timing_flags & mask))
     oss_do_timing_ (txt);
 }
@@ -2370,6 +2379,9 @@ oss_timing_printf (char *s, ...)
   char tmp[1024], *a[6];
   va_list ap;
   int i, n = 0;
+
+  if (!timing_is_active) /* Nobody is listening */
+     return;
 
   va_start (ap, s);
 
@@ -2398,6 +2410,8 @@ timing_read (int dev, struct fileinfo *file, uio_t * buf, int count)
    */
   int l;
   oss_native_word flags;
+
+  timing_is_active = 1;
 
   MUTEX_ENTER_IRQDISABLE (oss_timing_mutex, flags);
 
