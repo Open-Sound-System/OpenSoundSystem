@@ -10,12 +10,12 @@ settings of physical and virtual audio devices. OSS version 4 has an extended
 mixer API which supports some device specific features that may not available
 using other mixer applications. 
 
-
 OPTIOMS
--h		Display usage information.
--c		Dump mixer settings for all mixers.
--q		Quiet mode.
 -D		Display device information.
+-c		Dump mixer settings for all mixers.
+-h		Display usage information.
+-q		Quiet mode.
+-v		Verbose mode.
 ctrl# value	Change value of a mixer control.
 <no arg>	Display current/possible settings.
 
