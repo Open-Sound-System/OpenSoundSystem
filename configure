@@ -101,7 +101,7 @@ do
 		echo "   --config-vmix=NO|FLOAT|FIXEDPOINT	- Configure vmix to use float/int arithmetic or disable it."
 		echo "     (Check possible limitations caused by the OS or the CPU/arch)."
 		echo "   --config-midi=NO|YES		- Enable/disable MIDI support."
-		echo "   --enable_timings		- Enable internal timings (for the readtimings utility)."
+		echo "   --enable-timings		- Enable internal timings (for the readtimings utility)."
 		exit 1
 	esac
 
