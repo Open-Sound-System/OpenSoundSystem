@@ -53,3 +53,8 @@ extern void vmix_change_devnames(void *vmix_mixer, const char *name);
 
 extern void oss_audio_init (oss_device_t *osdev);
 extern void oss_audio_uninit (void);
+
+/*
+ * Internal debugging (oss_mixer_core.c)
+ */
+extern void oss_timing_printf (char *s, ...);

@@ -8,6 +8,7 @@
 
 #include <oss_config.h>
 #include <midi_core.h>
+#include <stdarg.h>
 oss_mutex_t oss_timing_mutex;
 
 void *mixer_devs_p = NULL;
@@ -2363,6 +2364,32 @@ oss_do_timing2 (int mask, char *txt)
     oss_do_timing_ (txt);
 }
 
+void
+oss_timing_printf (char *s, ...)
+{
+  char tmp[1024], *a[6];
+  va_list ap;
+  int i, n = 0;
+
+  va_start (ap, s);
+
+  for (i = 0; i < strlen (s); i++)
+    if (s[i] == '%')
+      n++;
+
+  for (i = 0; i < n && i < 6; i++)
+    a[i] = va_arg (ap, char *);
+
+  for (i = n; i < 6; i++)
+    a[i] = NULL;
+
+      sprintf (tmp, s, a[0], a[1], a[2], a[3], a[4], a[5], NULL,
+	       NULL, NULL, NULL);
+      oss_do_timing(tmp);
+
+  va_end (ap);
+}
+
 static int
 timing_read (int dev, struct fileinfo *file, uio_t * buf, int count)
 {
@@ -2419,6 +2446,12 @@ oss_do_timing (char *txt)
 /*ARGSUSED*/
 void
 oss_do_timing2 (int mask, char *txt)
+{
+}
+
+/*ARGSUSED*/
+void
+oss_timing_printf (char *s, ...)
 {
 }
 #endif

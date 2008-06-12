@@ -1351,11 +1351,7 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
        (CE_CONT, "oss_audio_open_engine(%d, mode=0x%x)\n", dev, mode));
 
 #ifdef DO_TIMINGS
-  {
-    char msg[32];
-    sprintf (msg, "-----> oss_audio_open_engine(%d, mode=0x%x)", dev, mode);
-    oss_do_timing (msg);
-  }
+    oss_timing_printf ("-----> oss_audio_open_engine(%d, mode=0x%x)", dev, mode);
 #endif
 
   if (dev < 0 || dev >= num_audio_engines || audio_engines == NULL)
@@ -1582,25 +1578,19 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
 
 #ifdef DO_TIMINGS
   {
-    char tmp[100], *p_name;
+    char *p_name;
     pid_t proc_pid;
-    sprintf (tmp, "=-=-=- Audio device %d (%s) opened, ode %x -=-=-=",
+    oss_timing_printf ("=-=-=- Audio device %d (%s) opened, mode %x -=-=-=",
 	     adev->engine_num, adev->name, mode);
-    oss_do_timing (tmp);
 
     if ((proc_pid = GET_PROCESS_PID (file)) != -1)
-      {
-	sprintf (tmp, "Opened by PID: %d", proc_pid);
-	oss_do_timing (tmp);
-      }
+	oss_timing_printf ("Opened by PID: %d", proc_pid);
 
     if ((p_name = GET_PROCESS_NAME (file)) != NULL)
-      {
-	sprintf (tmp, "Opening process name: %s", p_name);
-	oss_do_timing (tmp);
-      }
+	oss_timing_printf ("Opening process name: %s", p_name);
   }
 #endif
+
 #ifdef CONFIG_OSSD
   ossd_event (adev->engine_num, OSSD_EV_OPEN);
 #endif
@@ -1622,11 +1612,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
   int mode = OPEN_READ | OPEN_WRITE;
 
 #ifdef DO_TIMINGS
-  {
-    char msg[32];
-    sprintf (msg, "-----> oss_audio_open_devfile(%d, mode=0x%x)", dev, mode);
-    oss_do_timing (msg);
-  }
+    oss_timing_printf ("-----> oss_audio_open_devfile(%d, mode=0x%x)", dev, mode);
 #endif
 
   if (file)
@@ -1661,8 +1647,10 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 			return -ELOOP;
 		}
 
-
   	     next_dev = adev->d->adrv_redirect (dev, mode, open_flags);
+#ifdef DO_TIMINGS
+	     oss_timing_printf ("Engine redirect %d -> %d\n", dev, next_dev);
+#endif
 
 	     if (next_dev == dev) /* No change */
 		break;
@@ -1707,12 +1695,18 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 
 	     if ((vmix_dev=vmix_create_client(adev->vmix_mixer))>=0)
 	        {
+#ifdef DO_TIMINGS
+	     oss_timing_printf ("Vmix redirect %d -> %d\n", dev, vmix_dev);
+#endif
 		      if ((dev = oss_audio_open_engine (vmix_dev, dev_class, file,
 							recursive, open_flags, newdev)) < 0)
 			{
 			  cmn_err(CE_WARN, "Failed to open vmix engine %d, err=%d\n", vmix_dev, dev);
 			  return dev;
 			}
+#ifdef DO_TIMINGS
+	     oss_timing_printf ("Vmix engine opened %d -> %d\n", vmix_dev, dev);
+#endif
 		
 		      goto done;
 		}
