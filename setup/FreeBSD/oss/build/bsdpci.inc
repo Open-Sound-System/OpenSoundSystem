@@ -92,6 +92,8 @@ osspci_detach (device_t dev)
       osdev = device_list[i];
       if (osdev->dip == dev)
 	{
+	  if (device_get_state(dev) == DS_BUSY)
+	    device_unbusy(dev);
 	  if (!DRIVER_DETACH (osdev))
 	    {
 	      printf (DRIVER_NICK ": Unloading busy device\n");

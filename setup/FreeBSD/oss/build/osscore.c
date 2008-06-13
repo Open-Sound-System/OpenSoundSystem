@@ -264,7 +264,7 @@ oss_contig_malloc (unsigned long buffsize, unsigned long memlimit,
   *phaddr = 0;
 
   tmpbuf =
-    (char *) contigmalloc (buffsize, M_DEVBUF, M_NOWAIT, 0ul, memlimit,
+    (char *) contigmalloc (buffsize, M_DEVBUF, M_WAITOK, 0ul, memlimit,
 			   PAGE_SIZE, 0ul);
   if (tmpbuf == NULL)
     {

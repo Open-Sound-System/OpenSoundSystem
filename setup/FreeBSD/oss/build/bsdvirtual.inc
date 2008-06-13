@@ -34,6 +34,8 @@ module_detach (void)
     {
       osdev = device_list[i];
 
+      if (osdev->dip != NULL && device_get_state(osdev->dip) == DS_BUSY)
+	device_unbusy(osdev->dip);
       if (!DRIVER_DETACH (osdev))
 	{
 	  printf (DRIVER_NICK ": Unloading busy device\n");
