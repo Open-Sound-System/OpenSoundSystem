@@ -56,7 +56,7 @@ usage (void)
   printf ("\t-c			Dump mixer settings for all mixers\n");
   printf ("\tctrl# value		Change value of a mixer control\n");
   printf ("\t-q			Quiet mode\n");
-  printf ("\t-v			Verbose mode\n");
+  printf ("\t-v1|-v2		Verbose mode (-v2 is more verbose).\n");
   printf ("\t<no arguments>	Display current/possible settings\n");
   exit (-1);
 }
@@ -412,6 +412,33 @@ findenum (char *extname, oss_mixext * rec, char *arg)
 }
 
 static void
+print_description(char *descr)
+{
+	/*
+	 * Print the description string. If verbose==1 then print only the 
+	 * first line. Otherwise print the subsequent lines too.
+	 */
+
+	char *p = descr;
+
+	while (*p != 0)
+	{
+		while (*p && *p != '\n')
+			p++;
+
+		if (*p=='\n')
+		   *p++ = 0;
+
+		printf("  %s\n", descr);
+
+		if (verbose < 2) /* Print only the first line */
+		   return;
+
+		descr = p;
+	}
+}
+
+static void
 show_devinfo (int dev)
 {
   int i, vl, vr, rflag;
@@ -604,7 +631,7 @@ show_devinfo (int dev)
 		  continue;
 		}
 
-              printf ("  %s\n", ei.strings);
+              print_description(ei.strings);
   	    }
 	}
     }
@@ -1176,7 +1203,7 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  while ((c = getopt (argc, argv, "Dcd:hmqv")) != EOF)
+  while ((c = getopt (argc, argv, "Dcd:hmqv:")) != EOF)
 	{
 	  switch (c)
 	    {
@@ -1186,7 +1213,9 @@ main (int argc, char *argv[])
 	      break;
 
 	    case 'v':
-	      verbose = 1;
+	      verbose = atoi (optarg);
+	      if (verbose==0)
+		 verbose = 1;
 	      quiet = 0;
 	      break;
 

@@ -310,7 +310,7 @@ create_output_controls (int mixer_dev)
 
       mixer_ext_set_strings (mixer_dev, ctl,
 			     "Fast Low Medium High High+ Production OFF", 0);
-      mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by virtual mixer.");
+      mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by the virtual mixer.");
 
       /*
        * Create the vmix volume slider and peak meter to the top panel.
