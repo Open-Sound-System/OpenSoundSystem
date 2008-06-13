@@ -2,7 +2,7 @@ LOBJECTS=main.lo output.lo misc.lo pcm.lo mix.lo seq.lo seqmid.lo rawmidi.lo seq
 
 OSSLIBDIR=/usr/lib/oss
 
-CFLAGS=-I../../include -I../libOSSlib
+CFLAGS=-O -I../../include -I../libOSSlib
 
 all: libsalsa.la
 

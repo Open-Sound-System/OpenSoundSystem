@@ -1,7 +1,7 @@
 OBJS=guslib.o opl3lib.o libmain.o midiparser.o play_event.o
 INSTALLLIB=/lib
 LDFLAGS=-shared -fPIC
-CFLAGS=-fPIC
+CFLAGS=-O -fPIC
 #LDFLAGS=-Bdynamic
 AROPTS=rc
 AR=ar

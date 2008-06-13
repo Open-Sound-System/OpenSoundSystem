@@ -46,8 +46,8 @@ uncompress_wave (short *outbuf)
 
   int channels = 1;
   int p = 12, outp = 0;
-  int nBlockAlign;
-  int wSamplesPerBlock, wNumCoeff;
+  int nBlockAlign = 2048;
+  int wSamplesPerBlock = 2036, wNumCoeff = 7;
   int nib;
   int ppp;
 

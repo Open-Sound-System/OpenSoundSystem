@@ -725,7 +725,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   fprintf (f, "THISOS=%s\n", this_os);
 
-  if (conf.mode != MD_USERLAND && conf.mode != MD_SBIN)
+  if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
       fprintf (f, "CFLAGS=-D_KERNEL\n");
 #ifdef sun
@@ -764,6 +764,11 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #endif
 
     }
+  else
+    {
+      fprintf (f, "CFLAGS=-O\n");
+    }
+
 #if !defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
     fprintf (f, "CFLAGS += %s\n", conf.cflags);
