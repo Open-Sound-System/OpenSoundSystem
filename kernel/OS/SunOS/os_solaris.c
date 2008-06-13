@@ -1136,11 +1136,11 @@ memcpy (void *t, const void *s, size_t l)
 #ifdef MEMDEBUG
 void *
 oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
-		   oss_native_word * phaddr, char *file, int line)
+		   oss_native_word * phaddr, oss_dma_handle_t *dma_handle, char *file, int line)
 #else
 void *
 oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
-		   oss_native_word * phaddr)
+		   oss_native_word * phaddr, oss_dma_handle_t *dma_handle)
 #endif
 {
 /*
@@ -1192,6 +1192,9 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
       cmn_err (CE_WARN, "Failed to allocate pci DMA handle (%d)\n", err);
       return NULL;
     }
+
+  if (dma_handle != NULL)
+     *dma_handle = desc->dhandle;
 
 #ifndef IOMEM_DATA_UNCACHED
 #define IOMEM_DATA_UNCACHED 0	// Fix for Solaris 10
@@ -1824,7 +1827,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 				   &dma_attr,
 				   DDI_DMA_SLEEP,
 				   NULL,
-				   &dmap->dma_parms.dhandle)) != DDI_SUCCESS)
+				   &dmap->dmabuf_dma_handle)) != DDI_SUCCESS)
     {
       cmn_err (CE_WARN, "Failed to allocate DMA handle (error %d)\n", err);
       return -ENOMEM;
@@ -1846,7 +1849,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 				(caddr_t *) & dmap->dmabuf,
 				(uint_t *) & len)) != DDI_SUCCESS)
 #else
-      if ((err = ddi_dma_mem_alloc (dmap->dma_parms.dhandle,
+      if ((err = ddi_dma_mem_alloc (dmap->dmabuf_dma_handle,
 				    dmap->buffsize,
 				    acc_attr,
 				    flags,
@@ -1870,7 +1873,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if (dmap->dmabuf == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate a DMA buffer for device %d\n", dev);
-      ddi_dma_free_handle (&dmap->dma_parms.dhandle);
+      ddi_dma_free_handle (&dmap->dmabuf_dma_handle);
       return -ENOMEM;
     }
 
@@ -1879,7 +1882,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 
   dmap->dma_parms.orig_buf = (caddr_t) dmap->dmabuf;
 
-  if ((err = ddi_dma_addr_bind_handle (dmap->dma_parms.dhandle,
+  if ((err = ddi_dma_addr_bind_handle (dmap->dmabuf_dma_handle,
 				       NULL,
 				       (char *) dmap->dmabuf,
 				       dmap->buffsize,
@@ -1927,14 +1930,14 @@ oss_free_dmabuf (int dev, dmap_p dmap)
   if (dmap->dmabuf == NULL)
     return;
 
-  if ((err = ddi_dma_unbind_handle (dmap->dma_parms.dhandle)) != DDI_SUCCESS)
+  if ((err = ddi_dma_unbind_handle (dmap->dmabuf_dma_handle)) != DDI_SUCCESS)
     cmn_err (CE_WARN, "Failed to free DMA handle (%d)\n", err);
 #if defined(sparc)
   ddi_mem_free (dmap->dma_parms.orig_buf);
 #else
   ddi_dma_mem_free (&dmap->dma_parms.dma_acc_handle);
 #endif
-  ddi_dma_free_handle (&dmap->dma_parms.dhandle);
+  ddi_dma_free_handle (&dmap->dmabuf_dma_handle);
 
   dmap->dmabuf = NULL;
   dmap->dmabuf_phys = 0;

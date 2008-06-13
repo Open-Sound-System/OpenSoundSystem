@@ -215,7 +215,7 @@ ymhusb_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
 
   midic->tmpbuf =
-    CONTIG_MALLOC (midic->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr, midic->tmpbf_dma_handle);
+    CONTIG_MALLOC (midic->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr, midic->tmpbuf_dma_handle);
   memset (midic->tmpbuf, 0, TMPBUF_SIZE);
 
   if ((midic->endpoint_handle =

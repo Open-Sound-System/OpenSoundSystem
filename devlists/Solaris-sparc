@@ -1,6 +1,4 @@
 oss_ali5455	pci10b9,5455	ALI M5455
-oss_als3xx	pci4005,300	Avance Logic ALS300
-oss_als3xx	pci4005,308	Avance Logic ALS300+
 oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audiocs	SUNW,CS4231	Sun UltraSparc workstation audio (CS4231)
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
@@ -19,9 +17,6 @@ oss_cs461x	pcs153b,112e	Terratec DMX Xfire 1024
 oss_cs461x	pcs1681,50	Hercules Game Theater XP
 oss_cs461x	pcs1681,51	Hercules Game Theater XP+
 oss_cs461x	pcs5053,3357	TurtleBeach SantaCruz / VideoLogic SonicFury
-oss_digi32	pciea60,9896	RME Digi32
-oss_digi32	pciea60,9897	RME Digi32 Pro
-oss_digi32	pciea60,9898	RME Digi32/8
 oss_digi96	pci10ee,3fc0	RME Digi96
 oss_digi96	pci10ee,3fc1	RME Digi96/8
 oss_digi96	pci10ee,3fc2	RME Digi96/8 PRO
@@ -55,9 +50,35 @@ oss_trident	pci1023,2001	Trident 4DWave-NX
 oss_trident	pci1023,2002	Trident 4DWave-CX
 oss_trident	pci1039,7018	SiS 7018 
 oss_trident	pci10b9,5451	ALI M5451
-oss_vortex	AU8810		Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
-oss_vortex	pci12eb,1	Aureal Vortex (AU8820)
-oss_vortex	pci12eb,2	Aureal Vortex2 (AU8830)
+oss_usb	usb499,1009	Yamaha UX16 USB MIDI interface (BETA)
+oss_usb	usb499,101e	Yamaha PSR-1K USB MIDI Keyboard (BETA)
+oss_usb	usb763,1001	M Audio USB MIDISPORT 2x2 (BETA)
+oss_usb	usb763,1002	M Audio USB MIDISPORT 2x2 (BETA)
+oss_usb	usb763,1010	M Audio USB MIDISPORT 1x1 (BETA)
+oss_usb	usb763,1011	M Audio USB MIDISPORT 1x1 (BETA)
+oss_usb	usb763,1014	M Audio Oygen8 MIDI keyboard
+oss_usb	usb763,1015	M Audio Oygen8 MIDI keyboard
+oss_usb	usb763,1031	M Audio USB MIDISPORT 8x8 (BETA)
+oss_usb	usbif,class1	Generic USB audio/MIDI device (BETA)
+oss_usb	usbif41e,3000	Creative Sound Blaster Extigy (BETA)
+oss_usb	usbif41e,3010	Creative Sound Blaster MP3+ USB
+oss_usb	usbif41e,3020	Creative Audigy2 NX USB (BETA)
+oss_usb	usbif46d,8b2	Logitec Quickcam Pro 4000 (mic) (BETA)
+oss_usb	usbif46d,a01	Logitec USB Headset
+oss_usb	usbif471,311	Philips ToUcam Pro (mic) (BETA)
+oss_usb	usbif672,1041	Labtec LCS1040 Speaker System (BETA)
+oss_usb	usbif6f8,c000	Hercules Gamesurround MUSE Pocket (BETA)
+oss_usb	usbif763,2001	M Audio USB AudioSport Quatro (BETA)
+oss_usb	usbif763,2002	M Audio USB AudioSport Duo (BETA)
+oss_usb	usbif763,2007	M Audio Sonica Theater USB (BETA)
+oss_usb	usbif763,200d	M Audio OmniStudio USB (BETA)
+oss_usb	usbif763,2805	M Audio Sonica USB (BETA)
+oss_usb	usbif763,classff	Generic M Audio USB MIDI interface (BETA)
+oss_usb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
+oss_usb	usbifd8c,102	C-Media USB 2/4/6/8ch audio adapter
+oss_usb	usbifd8c,103	C-Media USB audio adapter - model2
+oss_usb	usbifd8c,c	C-Media USB audio adapter - model1
+oss_userdev	USERDEV	OSS user space audio driver I/O module
 oss_ymf7xx	pci1073,10	Yamaha DS-XG YMF744 
 oss_ymf7xx	pci1073,12	Yamaha DS-XG YMF754
 oss_ymf7xx	pci1073,4	Yamaha DS-XG YMF724

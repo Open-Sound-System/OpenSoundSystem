@@ -2584,7 +2584,7 @@ init_emu10k1 (sblive_devc * devc)
   devc->synth_memptr = devc->synth_membase;
 
   devc->silent_page =
-    (int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->silentpage_dma_handle);
+    (int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->silent_page_dma_handle);
   if (devc->silent_page == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate a silent page\n");

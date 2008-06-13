@@ -76,7 +76,7 @@ typedef struct ALI_devc
   char *bdlBuffer;
   bdl_t *playBDL, *recBDL, *spdifBDL;
   oss_native_word playBDL_phys, recBDL_phys, spdifBDL_phys;
-  oss_dma_handle_t bld_dma_handle;
+  oss_dma_handle_t bdl_dma_handle;
 
   int play_currbuf, play_currfrag;
   int spdif_currbuf, spdif_currfrag;

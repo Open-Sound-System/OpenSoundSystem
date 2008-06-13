@@ -324,10 +324,12 @@ extern void oss_kmem_free (void *addr);
 #define KERNEL_FREE(addr)	oss_kmem_free(addr)
 extern void *oss_contig_malloc (oss_device_t * osdev, int sz,
 				oss_uint64_t memlimit,
-				oss_native_word *phaddr, char * file, int line);
+				oss_native_word *phaddr, 
+				oss_dma_handle_t *dma_handle,
+				char * file, int line);
 extern void oss_contig_free (oss_device_t * osdev, void *p, int sz);
-#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr, __FILE__, __LINE__)
-#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz, handle)
+#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr, &handle, __FILE__, __LINE__)
+#define CONTIG_FREE(osdev, p, sz, handle)	oss_contig_free(osdev, p, sz, handle)
 #else
 extern void *oss_kmem_alloc (size_t size, int flags);
 extern void oss_kmem_free (void *addr);
@@ -335,10 +337,11 @@ extern void oss_kmem_free (void *addr);
 #define KERNEL_FREE(addr)	oss_kmem_free(addr)
 extern void *oss_contig_malloc (oss_device_t * osdev, int sz,
 				oss_uint64_t memlimit,
-				oss_native_word * phaddr);
+				oss_native_word * phaddr,
+				oss_dma_handle_t *dma_handle);
 extern void oss_contig_free (oss_device_t * osdev, void *p, int sz);
-#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr)
-#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz, handle)
+#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr, &handle)
+#define CONTIG_FREE(osdev, p, sz, handle)	oss_contig_free(osdev, p, sz)
 #endif
 
 /*
@@ -354,13 +357,16 @@ typedef void (*timeout_func_t) (void *);
 #define ACTIVATE_TIMER(name, proc, time) \
 	name=timeout((timeout_func_t)proc, (void*)&name, time)
 
+#define OSS_DMA_SYNC_INBOUND	DDI_DMA_SYNC_FORCPU
+#define OSS_DMA_SYNC_OUTBOUND	DDI_DMA_SYNC_FORDEV
+#define OSS_DMA_SYNC(handle, offs, len, direc) (ddi_dma_sync(handle, offs, len, direc)==DDI_SUCCESS)
+
 #ifdef _KERNEL
 struct os_dma_params
 {
   int state;			/* 0=unavail, 1=avail, 2=busy */
   oss_device_t *osdev;
   ddi_dma_handle_t handle;
-  ddi_dma_handle_t dhandle;
   ddi_acc_handle_t dma_acc_handle;
   ddi_dma_cookie_t cookie;
   ddi_dma_win_t win;

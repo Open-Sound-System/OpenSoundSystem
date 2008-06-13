@@ -94,6 +94,7 @@ struct _dmap_t
   adev_t *adev;
   unsigned char *dmabuf;
   oss_native_word dmabuf_phys;
+  oss_dma_handle_t dmabuf_dma_handle;
   int buffsize;
   int buffer_protected;		/* Buffer is shared - don't modify/clear */
   unsigned char *tmpbuf1, *tmpbuf2;

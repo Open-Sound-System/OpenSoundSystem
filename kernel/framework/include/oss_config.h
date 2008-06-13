@@ -339,6 +339,16 @@ extern void oss_audio_set_error (int dev, int mode, int err, int parm);
 #define OSSERR(cntx, msg) cntx
 
 /*
+ * DMA/cache syncronization macros (should be defined in os.h if they
+ * are necessary for the OS/arch.
+ */
+#ifndef OSS_DMA_SYNC
+//#  define OSS_DMA_SYNC_INBOUND	For direction device to CPU
+//#  define OSS_DMA_SYNC_OUTBOUND	For direction CPU to device
+#  define OSS_DMA_SYNC(handle, offs, len, direc)
+#endif
+
+/*
  * Ensure that various obsolete OSS 3.x features are not used any more
  * in the drivers.
  */
