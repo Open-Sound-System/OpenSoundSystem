@@ -1,4 +1,4 @@
-/*
+	/*
  * Purpose: Operating system abstraction functions for Solaris
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.

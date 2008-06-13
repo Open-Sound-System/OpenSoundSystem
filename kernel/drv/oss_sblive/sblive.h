@@ -367,6 +367,7 @@ typedef struct sblive_devc
 
   int *page_map;		/* Table for up to 8k pointers to pages of 4k */
   unsigned char **vpage_map;	/* Virtual address map */
+  oss_dma_handle_t page_map_dma_handle;
   int emu_page_shift;
   int max_mem, max_pages, nr_pages;
   unsigned int subvendor;
@@ -392,6 +393,7 @@ typedef struct sblive_devc
   int min_audiodevs;
   int audio_memptr;
   int *silent_page;
+  oss_dma_handle_t silent_page_dma_handle;
   oss_native_word silent_page_phys;
 
   sblive_portc portc[MAX_ADEV + 2];

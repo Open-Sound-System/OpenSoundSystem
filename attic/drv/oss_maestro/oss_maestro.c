@@ -1797,7 +1797,7 @@ allocate_maestro_bufs (maestro_devc * devc)
 
   rawbuf =
     (void *) CONTIG_MALLOC (devc->osdev, devc->dmalen, MEMLIMIT_28BITS,
-			    &phaddr);
+			    &phaddr, TODO);
 
   if (!rawbuf)
     return 1;
@@ -1807,7 +1807,7 @@ allocate_maestro_bufs (maestro_devc * devc)
   if ((phaddr + size - 1) & ~((1 << 28) - 1))
     {
       cmn_err (CE_WARN, "DMA buffer beyond 256MB\n");
-      CONTIG_FREE (devc->osdev, rawbuf, size + extra);
+      CONTIG_FREE (devc->osdev, rawbuf, size + extra, TODO);
       return 1;
     }
 
@@ -2376,7 +2376,7 @@ oss_maestro_detach (oss_device_t * osdev)
 
   oss_unregister_interrupts (devc->osdev);
   if (devc->dmapages != NULL)
-    CONTIG_FREE (devc->osdev, devc->dmapages, devc->dmalen);
+    CONTIG_FREE (devc->osdev, devc->dmapages, devc->dmalen, TODO);
 
   MUTEX_CLEANUP (devc->lock);
   MUTEX_CLEANUP (devc->low_lock);

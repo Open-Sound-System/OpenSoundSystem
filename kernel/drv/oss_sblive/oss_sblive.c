@@ -2541,7 +2541,7 @@ init_emu10k1 (sblive_devc * devc)
     devc->max_pages = 1024;
   devc->page_map =
     (int *) CONTIG_MALLOC (devc->osdev, devc->max_pages * 4, MEMLIMIT_32BITS,
-			   &phaddr);
+			   &phaddr, devc->page_map_dma_handle);
   devc->vpage_map =
     KERNEL_MALLOC (devc->max_pages * sizeof (unsigned char *));
   if (devc->page_map == NULL || devc->vpage_map == NULL)
@@ -2584,7 +2584,7 @@ init_emu10k1 (sblive_devc * devc)
   devc->synth_memptr = devc->synth_membase;
 
   devc->silent_page =
-    (int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr);
+    (int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->silentpage_dma_handle);
   if (devc->silent_page == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate a silent page\n");
@@ -3940,11 +3940,11 @@ oss_sblive_detach (oss_device_t * osdev)
   sblive_remove_synth (devc);
 #endif
   if (devc->page_map != NULL)
-    CONTIG_FREE (devc->osdev, devc->page_map, devc->max_pages * 4);
+    CONTIG_FREE (devc->osdev, devc->page_map, devc->max_pages * 4, devc->page_map_dma_handle);
   if (devc->vpage_map != NULL)
     KERNEL_FREE (devc->vpage_map);
   if (devc->silent_page != NULL)
-    CONTIG_FREE (devc->osdev, devc->silent_page, 4096);
+    CONTIG_FREE (devc->osdev, devc->silent_page, 4096, devc->silent_page_dma_handle);
   devc->max_pages = 0;
   devc->max_mem = 0;
   devc->page_map = NULL;

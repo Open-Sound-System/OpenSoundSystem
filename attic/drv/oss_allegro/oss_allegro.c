@@ -649,7 +649,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
 	  void *rawbuf;
 	  rawbuf =
 	    (void *) CONTIG_MALLOC (devc->osdev, db->dmasize,
-				    MEMLIMIT_32BITS, &phaddr);
+				    MEMLIMIT_32BITS, &phaddr, TODO);
 
 	  if (!rawbuf)
 	    break;
@@ -663,7 +663,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
 	    {
 	      if (rejected == MAX_REJECTED)
 		{
-		  CONTIG_FREE (devc->osdev, rawbuf, db->dmasize);
+		  CONTIG_FREE (devc->osdev, rawbuf, db->dmasize, TODO);
 		  break;
 		}
 	      rejectedPA[rejected] = (oss_native_word) rawbuf;
@@ -674,7 +674,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
       while (rejected--)
 	{
 	  CONTIG_FREE (devc->osdev, (char *) rejectedPA[rejected],
-		       db->dmasize);
+		       db->dmasize, TODO);
 	}
 
       if (!db->rawbuf)
@@ -709,7 +709,7 @@ free_dmabuf (allegro_devc * devc, unsigned direction)
 			   (oss_native_word) db->rawbuf + (PAGE_SIZE << 2) -
 			   1);
 #endif
-      CONTIG_FREE (devc->osdev, db->rawbuf, db->dmasize);
+      CONTIG_FREE (devc->osdev, db->rawbuf, db->dmasize, TODO);
       db->rawbuf = NULL;
       return 0;
     }

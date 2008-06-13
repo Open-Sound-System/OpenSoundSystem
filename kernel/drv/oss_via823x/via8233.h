@@ -36,6 +36,7 @@ struct via8233_portc;
 typedef struct
 {
   int sgd_num, base;
+  oss_dma_handle_t sgd_dma_handle;
   int mode;
   SGD_entry *sgd;
   oss_native_word sgd_phys;

@@ -60,6 +60,7 @@ typedef struct
 
   PRD_rec *prdin, *prdout;
   unsigned long prdin_phys, prdout_phys;
+  oss_dma_handle_t prdin_dma_handle, prdout_dma_handle;
 }
 geode_devc;
 
@@ -682,7 +683,7 @@ init_geode (geode_devc * devc)
   /* Allocate the buffers for the prdin/prdout tables */
   devc->prdin =
     (PRD_rec *) CONTIG_MALLOC (devc->osdev, 512 * sizeof (PRD_rec),
-			       MEMLIMIT_32BITS, &phaddr);
+			       MEMLIMIT_32BITS, &phaddr, devc->prdin_dma_handle);
   if (devc->prdin == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate memory for PRD input tables\n");
@@ -693,7 +694,7 @@ init_geode (geode_devc * devc)
 
   devc->prdout =
     (PRD_rec *) CONTIG_MALLOC (devc->osdev, 512 * sizeof (PRD_rec),
-			       MEMLIMIT_32BITS, &phaddr);
+			       MEMLIMIT_32BITS, &phaddr, devc->prdout_dma_handle);
   if (devc->prdout == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate memory for PRD output tables\n");
@@ -884,9 +885,9 @@ oss_geode_detach (oss_device_t * osdev)
   UNMAP_PCI_MEM (devc->osdev, 0, devc->physaddr, devc->linaddr, 0x60000);
 
   if (devc->prdin != NULL)
-    CONTIG_FREE (devc->osdev, devc->prdin, 512 * sizeof (PRD_rec));
+    CONTIG_FREE (devc->osdev, devc->prdin, 512 * sizeof (PRD_rec), devc->prdin_dma_handle);
   if (devc->prdout != NULL)
-    CONTIG_FREE (devc->osdev, devc->prdout, 512 * sizeof (PRD_rec));
+    CONTIG_FREE (devc->osdev, devc->prdout, 512 * sizeof (PRD_rec), devc->prdout_dma_handle);
 
   devc->prdin = devc->prdout = NULL;
   oss_unregister_device (devc->osdev);

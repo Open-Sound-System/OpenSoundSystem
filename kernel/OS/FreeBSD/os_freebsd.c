@@ -79,7 +79,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if ((alloc_flags & DMABUF_SIZE_16BITS) && size > 32 * 1024)
     size = 32 * 1024;
 
-  tmpbuf = CONTIG_MALLOC (dmap->osdev, size, maxaddr, &phaddr);
+  tmpbuf = CONTIG_MALLOC (dmap->osdev, size, maxaddr, &phaddr, NULL);
   if (tmpbuf == NULL)
     return -ENOMEM;
   dmap->dmabuf = tmpbuf;
@@ -95,7 +95,7 @@ oss_free_dmabuf (int dev, dmap_p dmap)
   if (dmap->dmabuf == NULL)
     return;
 
-  CONTIG_FREE (dmap->osdev, dmap->dmabuf, dmap->buffsize);
+  CONTIG_FREE (dmap->osdev, dmap->dmabuf, dmap->buffsize, NULL);
   dmap->dmabuf = NULL;
   dmap->buffsize = 0;
   dmap->dmabuf_phys = 0;

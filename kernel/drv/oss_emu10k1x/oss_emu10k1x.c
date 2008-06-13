@@ -82,6 +82,8 @@ typedef struct
   unsigned char *playbuf, *recbuf;
   oss_native_word playbuf_phys, recbuf_phys;
 
+  oss_dma_handle_t playbuf_dma_handle, recbuf_dma_handle;
+
   int play_cfrag, play_chalf, rec_cfrag, rec_chalf;
 }
 emu10k1x_portc;
@@ -565,7 +567,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
       if (portc->port_number == 0)
 	{
 	  portc->recbuf =
-	    CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr);
+	    CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->recbuf_dma_handle);
 	  if (portc->recbuf == NULL)
 	    return -ENOMEM;
 	  portc->recbuf_phys = phaddr;
@@ -574,7 +576,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
   else
     {
       portc->playbuf =
-	CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->playbuf_dma_handle);
       if (portc->playbuf == NULL)
 	return -ENOMEM;
       portc->playbuf_phys = phaddr;
@@ -593,13 +595,13 @@ emu10k1x_free_buffer (int dev, dmap_t * dmap, int direction)
 
   if (portc->playbuf != NULL)
     {
-      CONTIG_FREE (devc->osdev, portc->playbuf, BUFSIZE);
+      CONTIG_FREE (devc->osdev, portc->playbuf, BUFSIZE, portc->playbuf_dma_handle);
       portc->playbuf = NULL;
     }
 
   if (portc->recbuf != NULL)
     {
-      CONTIG_FREE (devc->osdev, portc->recbuf, BUFSIZE);
+      CONTIG_FREE (devc->osdev, portc->recbuf, BUFSIZE, portc->recbuf_dma_handle);
       portc->recbuf = NULL;
     }
 

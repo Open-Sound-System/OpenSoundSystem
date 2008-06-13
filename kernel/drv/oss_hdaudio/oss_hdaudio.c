@@ -61,6 +61,7 @@ typedef struct
   int busy;
   bdl_t *bdl;
   oss_uint64_t bdl_phys;
+  oss_dma_handle_t bdl_dma_handle;
   int bdl_size, bdl_max;
   unsigned char *base;
   unsigned int intrmask;
@@ -109,6 +110,8 @@ typedef struct hda_devc_t
   int rirb_rp;
   unsigned int rirb_upper, rirb_lower;
   volatile int rirb_empty;
+
+  oss_dma_handle_t corb_dma_handle;
 
   /* Mixer */
   unsigned short codecmask;
@@ -1121,7 +1124,7 @@ setup_controller (hda_devc_t * devc)
     }
 
   if ((devc->corb =
-       CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr)) == NULL)
+       CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->corb_dma_handle)) == NULL)
     {
       cmn_err (CE_WARN, "Out of memory (CORB)\n");
       return 0;
@@ -1221,7 +1224,7 @@ setup_engines (hda_devc_t * devc)
       hda_engine_t *engine = &devc->outengines[i];
 
       engine->bdl =
-	CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, engine->bdl_dma_handle);
       if (engine->bdl == NULL)
 	{
 	  cmn_err (CE_WARN, "Out of memory\n");
@@ -1244,7 +1247,7 @@ setup_engines (hda_devc_t * devc)
       hda_engine_t *engine = &devc->inengines[i];
 
       engine->bdl =
-	CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, engine->bdl_dma_handle);
       if (engine->bdl == NULL)
 	{
 	  cmn_err (CE_WARN, "Out of memory\n");
@@ -1859,7 +1862,7 @@ oss_hdaudio_detach (oss_device_t * osdev)
   MUTEX_CLEANUP (devc->low_mutex);
 
   if (devc->corb != NULL)
-    CONTIG_FREE (devc->osdev, devc->corb, 4096);
+    CONTIG_FREE (devc->osdev, devc->corb, 4096, devc->corb_dma_handle);
 
   devc->corb = NULL;
 
@@ -1869,7 +1872,7 @@ oss_hdaudio_detach (oss_device_t * osdev)
 
       if (engine->bdl == NULL)
 	continue;
-      CONTIG_FREE (devc->osdev, engine->bdl, 4096);
+      CONTIG_FREE (devc->osdev, engine->bdl, 4096, engine->bdl_dma_handle);
     }
 
   for (j = 0; j < devc->num_inengines; j++)
@@ -1878,7 +1881,7 @@ oss_hdaudio_detach (oss_device_t * osdev)
 
       if (engine->bdl == NULL)
 	continue;
-      CONTIG_FREE (devc->osdev, engine->bdl, 4096);
+      CONTIG_FREE (devc->osdev, engine->bdl, 4096, engine->bdl_dma_handle);
     }
 
   if (devc->membar_addr != 0)

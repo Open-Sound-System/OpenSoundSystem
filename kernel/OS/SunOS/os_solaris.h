@@ -306,11 +306,7 @@ extern void oss_mem_put32 (ddi_acc_handle_t handle, uint32_t * add,
 #define PCI_READB(osdev, addr)		ddi_mem_get8((osdev)->acc_handle[0], addr)
 #define PCI_WRITEB(osdev, addr, data)	ddi_mem_put8((osdev)->acc_handle[0], addr, data)
 
-/*
- * When a error (such as EINVAL) is returned by a function,
- * the following macro is used. The driver assumes that a
- * error is signalled by returning a negative value.
- */
+typedef ddi_dma_handle_t oss_dma_handle_t;
 
 /* 
    KERNEL_MALLOC() allocates requested number of memory  and 
@@ -330,8 +326,8 @@ extern void *oss_contig_malloc (oss_device_t * osdev, int sz,
 				oss_uint64_t memlimit,
 				oss_native_word *phaddr, char * file, int line);
 extern void oss_contig_free (oss_device_t * osdev, void *p, int sz);
-#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr)	oss_contig_malloc(osdev, sz, memlimit, phaddr, __FILE__, __LINE__)
-#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz)
+#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr, __FILE__, __LINE__)
+#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz, handle)
 #else
 extern void *oss_kmem_alloc (size_t size, int flags);
 extern void oss_kmem_free (void *addr);
@@ -341,8 +337,8 @@ extern void *oss_contig_malloc (oss_device_t * osdev, int sz,
 				oss_uint64_t memlimit,
 				oss_native_word * phaddr);
 extern void oss_contig_free (oss_device_t * osdev, void *p, int sz);
-#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr)	oss_contig_malloc(osdev, sz, memlimit, phaddr)
-#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz)
+#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr)
+#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(osdev, p, sz, handle)
 #endif
 
 /*

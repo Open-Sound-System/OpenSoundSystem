@@ -38,6 +38,7 @@ typedef struct
   int max_out_blocks;		/* Num of 4(3) byte blocks allowed in single message */
 
   playbuf_t *playbuf;		/* QUEUE_SIZE */
+  oss_dma_handle_t playbuf_dma_handle;
   int playbuf_h, playbuf_t;
 
   unsigned char *out_ep_desc;
@@ -83,6 +84,7 @@ struct midisport_devc
   midisport_midic out_midic[MAX_PORTS];
 
   unsigned char *recbuf;
+  oss_dma_handle_t recbuf_dma_handle;
   udi_usb_request_t *input_pipe;
   udi_endpoint_handle_t *input_endpoint_handle;
 
@@ -325,7 +327,7 @@ midisport_close_input (int dev, int mode)
       udi_usb_free_request (devc->input_pipe);
       udi_close_endpoint (devc->input_endpoint_handle);
       if (devc->recbuf != NULL)
-	CONTIG_FREE (midic->osdev, devc->recbuf, RECBUF_SIZE);
+	CONTIG_FREE (midic->osdev, devc->recbuf, RECBUF_SIZE, devc->recbuf_dma_handle);
     }
 
   MUTEX_ENTER_IRQDISABLE (midic->mutex, flags);
@@ -371,7 +373,7 @@ midisport_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       int err;
 
       devc->recbuf =
-	CONTIG_MALLOC (devc->osdev, RECBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, RECBUF_SIZE, MEMLIMIT_32BITS, &phaddr, devc->recbuf_dma_handle);
       if (devc->recbuf == NULL)
 	{
 	  cmn_err (CE_CONT, "Failed to allocate the recording buffer\n");
@@ -434,7 +436,7 @@ open_output_queue (midisport_devc * devc, int queue_ix)
     {
       if ((q->playbuf =
 	   CONTIG_MALLOC (devc->osdev, QUEUE_SIZE, MEMLIMIT_32BITS,
-			  &phaddr)) == NULL)
+			  &phaddr, q->playbuf_dma_handle)) == NULL)
 	{
 	  cmn_err (CE_WARN, "Failed to allocate output buffer (%d bytes)\n",
 		   QUEUE_SIZE);
@@ -490,7 +492,7 @@ close_output_queue (midisport_devc * devc, int queue_ix)
       udi_usb_free_request (q->output_pipe);
       udi_close_endpoint (q->output_endpoint_handle);
       if (q->playbuf != NULL)
-	CONTIG_FREE (devc->osdev, q->playbuf, QUEUE_SIZE);
+	CONTIG_FREE (devc->osdev, q->playbuf, QUEUE_SIZE, q->playbuf_dma_handle);
     }
 }
 

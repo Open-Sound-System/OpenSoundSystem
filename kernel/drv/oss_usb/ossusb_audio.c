@@ -659,7 +659,7 @@ usbaudio_open (int dev, int mode, int open_flags)
 
     for (i = 0; i < 2; i++)
       portc->tmp_buf[i] =
-	CONTIG_MALLOC (devc->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr, portc->tmpbuf_dma_handle[i]);
   }
 
   if ((err =
@@ -721,7 +721,7 @@ usbaudio_close (int dev, int mode)
 
       if (portc->tmp_buf[i] != NULL)
 	{
-	  CONTIG_FREE (devc->osdev, portc->tmp_buf[i], TMPBUF_SIZE);
+	  CONTIG_FREE (devc->osdev, portc->tmp_buf[i], TMPBUF_SIZE, portc->tmpbuf_dma_handle[i]);
 	  portc->tmp_buf[i] = NULL;
 	}
     }

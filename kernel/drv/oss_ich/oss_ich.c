@@ -93,6 +93,7 @@ typedef struct ich_devc
   char *bdlBuffer;
   bdl_t *playBDL, *recBDL, *spdifBDL;
   oss_native_word playBDL_phys, recBDL_phys, spdifBDL_phys;
+  oss_dma_handle_t bldbuf_dma_handle;
 
   int play_currbuf, play_currfrag;
   int spdif_currbuf, spdif_currfrag;
@@ -994,7 +995,7 @@ ich_init (ich_devc * devc)
   ich_OUTB (devc, 0x00, CTL_BASE, 0x7b);
 
   devc->bdlBuffer =
-    CONTIG_MALLOC (devc->osdev, 4 * 32 * 32, MEMLIMIT_32BITS, &phaddr);
+    CONTIG_MALLOC (devc->osdev, 4 * 32 * 32, MEMLIMIT_32BITS, &phaddr, devc->bldbuf_dma_handle);
   if (devc->bdlBuffer == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate BDL\n");
@@ -1372,7 +1373,7 @@ oss_ich_detach (oss_device_t * osdev)
     ac97_spdifout_ctl (devc->mixer_dev, SPDIFOUT_ENABLE, SNDCTL_MIX_WRITE, 0);
 
   if (devc->bdlBuffer)
-    CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32);
+    CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32, devc->bldbuf_dma_handle);
   devc->bdlBuffer = NULL;
 
   MUTEX_CLEANUP (devc->mutex);

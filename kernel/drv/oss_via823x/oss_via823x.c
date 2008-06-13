@@ -735,7 +735,7 @@ via8233_alloc_engines (via8233_devc * devc)
       if (eng->sgd == NULL)
 	{
 	  eng->sgd =
-	    CONTIG_MALLOC (devc->osdev, SGD_ALLOC, MEMLIMIT_32BITS, &phaddr);
+	    CONTIG_MALLOC (devc->osdev, SGD_ALLOC, MEMLIMIT_32BITS, &phaddr, eng->sgd_dma_handle);
 
 	  if (eng->sgd == NULL)
 	    {
@@ -985,7 +985,7 @@ oss_via823x_detach (oss_device_t * osdev)
       eng = &devc->engines[i];
       if (eng->sgd != NULL)
 	{
-	  CONTIG_FREE (devc->osdev, eng->sgd, SGD_ALLOC);
+	  CONTIG_FREE (devc->osdev, eng->sgd, SGD_ALLOC, eng->sgd_dma_handle);
 	  eng->sgd = NULL;
 	}
     }

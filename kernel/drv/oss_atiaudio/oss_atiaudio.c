@@ -57,6 +57,7 @@ typedef struct
   char *bdlBuffer;
   bdl_t *playBDL, *recBDL, *spdifBDL;
   oss_native_word playBDL_phys, recBDL_phys, spdifBDL_phys;
+  oss_dma_handle_t bldbuf_dma_handle;
 
   int play_currbuf, play_currfrag;
   int rec_currbuf, rec_currfrag;
@@ -877,7 +878,7 @@ init_ATI (ATI_devc * devc)
   WRITEL (devc->osdev, 0x22, 0x04);	/* enable audio+spdif interrupts */
   devc->bdlBuffer =
     CONTIG_MALLOC (devc->osdev, MAX_PORTC * BDL_SIZE * sizeof (bdl_t),
-		   MEMLIMIT_32BITS, &phaddr);
+		   MEMLIMIT_32BITS, &phaddr, devc->bldbuf_dma_handle);
   if (devc->bdlBuffer == NULL)
     {
       cmn_err (CE_WARN, "OSS Failed to allocate BDL\n");
@@ -1103,7 +1104,7 @@ oss_atiaudio_detach (oss_device_t * osdev)
 
   if (devc->bdlBuffer)
     CONTIG_FREE (devc->osdev, devc->bdlBuffer,
-		 MAX_PORTC * BDL_SIZE * sizeof (bdl_t));
+		 MAX_PORTC * BDL_SIZE * sizeof (bdl_t), devc->bldbuf_dma_handle);
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);

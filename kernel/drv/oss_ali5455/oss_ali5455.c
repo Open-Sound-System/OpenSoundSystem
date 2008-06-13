@@ -76,6 +76,7 @@ typedef struct ALI_devc
   char *bdlBuffer;
   bdl_t *playBDL, *recBDL, *spdifBDL;
   oss_native_word playBDL_phys, recBDL_phys, spdifBDL_phys;
+  oss_dma_handle_t bld_dma_handle;
 
   int play_currbuf, play_currfrag;
   int spdif_currbuf, spdif_currfrag;
@@ -758,7 +759,7 @@ init_ALI (ALI_devc * devc)
   OUTL (devc->osdev, 0x00, devc->base + 0x18);
 
   devc->bdlBuffer =
-    CONTIG_MALLOC (devc->osdev, 4 * 32 * 32, MEMLIMIT_32BITS, &phaddr);
+    CONTIG_MALLOC (devc->osdev, 4 * 32 * 32, MEMLIMIT_32BITS, &phaddr, devc->bdl_dma_handle);
   if (devc->bdlBuffer == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate BDL\n");
@@ -956,7 +957,7 @@ oss_ali5455_detach (oss_device_t * osdev)
 
   if (devc->bdlBuffer)
     {
-      CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32);
+      CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32, devc->bld_dma_handle);
       devc->bdlBuffer = NULL;
     }
 

@@ -188,6 +188,7 @@ typedef struct
   unsigned char *playbuf, *recbuf;
   int playbuffsize, recbuffsize;
   oss_native_word playbuf_phys, recbuf_phys;
+  oss_dma_handle_t playbuf_dma_handle, recbuf_dma_handle;
   int hw_rfragsize, hw_pfragsize, hw_fragsamples, hw_nfrags;
   volatile int hw_playfrag, hw_recfrag;
   volatile int active_inputs, active_outputs;

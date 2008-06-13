@@ -227,7 +227,7 @@ AllocateBuffers (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
       portc->pdwPlayLBuffer = CONTIG_MALLOC (devc->osdev,
 					     portc->dwPlayLBufferSize,
 					     MEMLIMIT_32BITS,
-					     &portc->dwPlayLPhysAddx);
+					     &portc->dwPlayLPhysAddx, portc->playl_dma_handle);
 
       if (portc->pdwPlayLBuffer == NULL)
 	ctStatus = CTSTATUS_NOMEMORY;
@@ -237,7 +237,7 @@ AllocateBuffers (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 	  portc->pdwPlayRBuffer = CONTIG_MALLOC (devc->osdev,
 						 portc->dwPlayRBufferSize,
 						 MEMLIMIT_32BITS,
-						 &portc->dwPlayLPhysAddx);
+						 &portc->dwPlayLPhysAddx,portc->playr_dma_handle);
 
 	  if (portc->pdwPlayRBuffer == NULL)
 	    ctStatus = CTSTATUS_NOMEMORY;
@@ -249,7 +249,7 @@ AllocateBuffers (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 						       dwRecordLBufferSize,
 						       MEMLIMIT_32BITS,
 						       &portc->
-						       dwRecordLPhysAddx);
+						       dwRecordLPhysAddx, portc->recl_dma_handle);
 
 	      if (portc->pdwRecordLBuffer == NULL)
 		ctStatus = CTSTATUS_NOMEMORY;
@@ -261,7 +261,7 @@ AllocateBuffers (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
 							   dwRecordRBufferSize,
 							   MEMLIMIT_32BITS,
 							   &portc->
-							   dwRecordRPhysAddx);
+							   dwRecordRPhysAddx, portc->recr_dma_handle);
 		  if (portc->pdwRecordRBuffer == NULL)
 		    ctStatus = CTSTATUS_NOMEMORY;
 		}
@@ -283,28 +283,28 @@ FreeBuffers (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
   if (portc->pdwRecordLBuffer != NULL)
     {
       CONTIG_FREE (devc->osdev, portc->pdwRecordLBuffer,
-		   portc->dwRecordLBufferSize);
+		   portc->dwRecordLBufferSize, portc->recl_dma_handle);
       portc->pdwRecordLBuffer = NULL;
     }
 
   if (portc->pdwRecordRBuffer != NULL)
     {
       CONTIG_FREE (devc->osdev, portc->pdwRecordRBuffer,
-		   portc->dwRecordRBufferSize);
+		   portc->dwRecordRBufferSize, portc->recr_dma_handle);
       portc->pdwRecordRBuffer = NULL;
     }
 
   if (portc->pdwPlayLBuffer != NULL)
     {
       CONTIG_FREE (devc->osdev, portc->pdwPlayLBuffer,
-		   portc->dwPlayLBufferSize);
+		   portc->dwPlayLBufferSize, portc->playl_dma_handle);
       portc->pdwPlayLBuffer = NULL;
     }
 
   if (portc->pdwPlayRBuffer != NULL)
     {
       CONTIG_FREE (devc->osdev, portc->pdwPlayRBuffer,
-		   portc->dwPlayRBufferSize);
+		   portc->dwPlayRBufferSize, portc->playr_dma_handle);
       portc->pdwPlayRBuffer = NULL;
     }
 #endif

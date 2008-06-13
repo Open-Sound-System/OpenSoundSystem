@@ -97,18 +97,22 @@ typedef struct ymf7xx_devc
   oss_native_word play_table;
   oss_native_word play_table_virt;
   unsigned char *dmabuf1;
+  oss_dma_handle_t dmabuf1_dma_handle;
 
   /* Effect Table */
   volatile unsigned int *effecttab;
   oss_native_word effect_table;
   oss_native_word effect_table_virt, eff_buf_phys;
   unsigned char *dmabuf2, *eff_buf;
+  oss_dma_handle_t dmabuf2_dma_handle;
+  oss_dma_handle_t eff_buf_dma_handle;
 
   /* Recording Table */
   volatile unsigned int *rectab;
   oss_native_word rec_table;
   oss_native_word rec_table_virt;
   unsigned char *dmabuf3;
+  oss_dma_handle_t dmabuf3_dma_handle;
   int spdif_in;
 }
 ymf7xx_devc;
@@ -1240,24 +1244,24 @@ init_ymf7xx (ymf7xx_devc * devc)
       /* Allocate the Play Table */
       oss_native_word phaddr;
       devc->dmabuf1 =
-	CONTIG_MALLOC (devc->osdev, 0x1000, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 0x1000, MEMLIMIT_32BITS, &phaddr, devc->dmabuf1_dma_handle);
       devc->play_table_virt = (oss_native_word) devc->dmabuf1;
       devc->play_table = phaddr;
 
       /* Allocate Effect Table */
       devc->dmabuf2 =
-	CONTIG_MALLOC (devc->osdev, 1024, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 1024, MEMLIMIT_32BITS, &phaddr, devc->dmabuf2_dma_handle);
       devc->effect_table_virt = (oss_native_word) devc->dmabuf2;
       devc->effect_table = phaddr;
 
       /* Allocate Effect Scratch Buffer */
       devc->eff_buf =
-	CONTIG_MALLOC (devc->osdev, 2 * 8192, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 2 * 8192, MEMLIMIT_32BITS, &phaddr, devc->eff_buf_dma_handle);
       devc->eff_buf_phys = phaddr;
 
       /* Allocate the Record Table */
       devc->dmabuf3 =
-	CONTIG_MALLOC (devc->osdev, 1024, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, 1024, MEMLIMIT_32BITS, &phaddr, devc->dmabuf3_dma_handle);
       devc->rec_table_virt = (oss_native_word) devc->dmabuf3;
       devc->rec_table = phaddr;
 
@@ -1562,25 +1566,25 @@ oss_ymf7xx_detach (oss_device_t * osdev)
 
   if (devc->dmabuf1)
     {
-      CONTIG_FREE (devc->osdev, devc->dmabuf1, 0x1000);
+      CONTIG_FREE (devc->osdev, devc->dmabuf1, 0x1000, devc->dmabuf1_dma_handle);
       devc->dmabuf1 = 0;
     }
 
   if (devc->dmabuf2)
     {
-      CONTIG_FREE (devc->osdev, devc->dmabuf2, 1024);
+      CONTIG_FREE (devc->osdev, devc->dmabuf2, 1024, devc->dmabuf2_dma_handle);
       devc->dmabuf2 = 0;
     }
 
   if (devc->eff_buf)
     {
-      CONTIG_FREE (devc->osdev, devc->eff_buf, 16 * 1024);
+      CONTIG_FREE (devc->osdev, devc->eff_buf, 16 * 1024, devc->eff_buf_dma_handle);
       devc->eff_buf = 0;
     }
 
   if (devc->dmabuf3)
     {
-      CONTIG_FREE (devc->osdev, devc->dmabuf3, 1024);
+      CONTIG_FREE (devc->osdev, devc->dmabuf3, 1024, devc->dmabuf3_dma_handle);
       devc->dmabuf3 = 0;
     }
 

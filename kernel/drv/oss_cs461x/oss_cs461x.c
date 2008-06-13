@@ -71,6 +71,7 @@ typedef struct cs461x_devc
   int dual_codec;
   unsigned int *play_sgbuf;
   unsigned int play_sgbuf_phys;
+  oss_dma_handle_t play_sgbuf_dma_handle;
 
   /* Mutex */
   oss_mutex_t mutex;
@@ -1187,7 +1188,7 @@ cs461x_alloc_buffer (int dev, dmap_t * dmap, int direction)
     }
 #else
   dmap->dmabuf =
-    (void *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr);
+    (void *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, dmap->dmabuf_dma_handle);
   dmap->dmabuf_phys = phaddr;
 # ifdef linux
   oss_reserve_pages (dmap->dmabuf, dmap->dmabuf + 4096 - 1);
@@ -1210,7 +1211,7 @@ cs461x_free_buffer (int dev, dmap_t * dmap, int direction)
 #else
   if (dmap->dmabuf == NULL)
     return 0;
-  CONTIG_FREE (devc->osdev, dmap->dmabuf, 4096);
+  CONTIG_FREE (devc->osdev, dmap->dmabuf, 4096, dmap->dmabuf_dma_handle);
 # ifdef linux
   oss_unreserve_pages (dmap->dmabuf, dmap->dmabuf + 4096 - 1);
 # endif
@@ -1684,7 +1685,7 @@ init_cs461x (cs461x_devc * devc)
 #ifdef USE_SG
   devc->play_sgbuf =
     (unsigned int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS,
-				    &phaddr);
+				    &phaddr, devc->play_sgbuf_dma_handle);
   if (devc->play_sgbuf == NULL)
     {
       cmn_err (CE_WARN,
@@ -1903,7 +1904,7 @@ oss_cs461x_detach (oss_device_t * osdev)
   PokeBA0 (devc, BA0_HICR, 0x02);	/*enable intena */
   cs461x_reset_processor (devc);
 #ifdef USE_SG
-  CONTIG_FREE (devc->osdev, devc->play_sgbuf, 4096);
+  CONTIG_FREE (devc->osdev, devc->play_sgbuf, 4096, devc->play_sgbuf_dma_handle);
 #endif
 
   oss_unregister_interrupts (devc->osdev);

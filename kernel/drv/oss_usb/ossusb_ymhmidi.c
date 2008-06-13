@@ -35,6 +35,7 @@ typedef struct
 
   oss_midi_inputbyte_t midi_input_intr;
   unsigned char *tmpbuf;
+  oss_dma_handle_t tmpbuf_dma_handle;
   int tmp_len;
   midiparser_common_p parser;
 
@@ -42,6 +43,7 @@ typedef struct
 
   /* Output buffer */
   tmpbuf_slot_t *outbuf;
+  oss_dma_handle_t outbuf_dma_handle;
   int buf_t, buf_h;
 } ymhusb_midic;
 
@@ -185,7 +187,7 @@ ymhusb_close_input (int dev, int mode)
   udi_usb_free_request (midic->datapipe);
   udi_close_endpoint (midic->endpoint_handle);
   if (midic->tmpbuf != NULL)
-    CONTIG_FREE (midic->osdev, midic->tmpbuf, TMPBUF_SIZE);
+    CONTIG_FREE (midic->osdev, midic->tmpbuf, TMPBUF_SIZE, midic->tmpbuf_dma_handle);
   MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
 }
 
@@ -213,7 +215,7 @@ ymhusb_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
 
   midic->tmpbuf =
-    CONTIG_MALLOC (midic->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+    CONTIG_MALLOC (midic->osdev, TMPBUF_SIZE, MEMLIMIT_32BITS, &phaddr, midic->tmpbf_dma_handle);
   memset (midic->tmpbuf, 0, TMPBUF_SIZE);
 
   if ((midic->endpoint_handle =
@@ -290,7 +292,7 @@ ymhusb_close_output (int dev, int mode)
   udi_usb_free_request (midic->datapipe);
   udi_close_endpoint (midic->endpoint_handle);
   if (midic->outbuf != NULL)
-    CONTIG_FREE (midic->osdev, midic->outbuf, OUTBUF_SIZE);
+    CONTIG_FREE (midic->osdev, midic->outbuf, OUTBUF_SIZE, midic->outbuf_dma_handle);
   if (midic->tmpbuf != NULL)
     KERNEL_FREE (midic->tmpbuf);
   midiparser_unalloc (midic->parser);
@@ -436,7 +438,7 @@ ymhusb_open_output (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   midic->tmpbuf = KERNEL_MALLOC (TMPBUF_SIZE);
   memset (midic->tmpbuf, 0, TMPBUF_SIZE);
   midic->outbuf =
-    CONTIG_MALLOC (midic->osdev, OUTBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+    CONTIG_MALLOC (midic->osdev, OUTBUF_SIZE, MEMLIMIT_32BITS, &phaddr, midic->outbuf_dma_handle);
   midic->tmp_len = 0;
   midic->buf_h = midic->buf_t = 0;	/* Empty buffer */
   memset (midic->outbuf, 0, OUTBUF_SIZE);

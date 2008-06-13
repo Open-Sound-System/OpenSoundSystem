@@ -3687,7 +3687,7 @@ envy24_init (envy24_devc * devc)
   devc->hw_recfrag = 0;
 
   devc->playbuf =
-    CONTIG_MALLOC (devc->osdev, HW_ALLOCSIZE, MEMLIMIT_28BITS, &phaddr);
+    CONTIG_MALLOC (devc->osdev, HW_ALLOCSIZE, MEMLIMIT_28BITS, &phaddr, devc->playbuf_dma_handle);
   if (devc->playbuf == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate %d bytes of DMA buffer\n",
@@ -3706,7 +3706,7 @@ envy24_init (envy24_devc * devc)
   OUTL (devc->osdev, devc->playbuf_phys, devc->mt_base + 0x10);	/* Play base */
 
   devc->recbuf =
-    CONTIG_MALLOC (devc->osdev, HW_ALLOCSIZE, MEMLIMIT_28BITS, &phaddr);
+    CONTIG_MALLOC (devc->osdev, HW_ALLOCSIZE, MEMLIMIT_28BITS, &phaddr, devc->recbuf_dma_handle);
   if (devc->recbuf == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate %d bytes of DMA buffer\n",
@@ -4011,10 +4011,10 @@ oss_envy24_detach (oss_device_t * osdev)
   UNMAP_PCI_IOADDR (devc->osdev, 3);
 
   if (devc->playbuf != NULL)
-    CONTIG_FREE (devc->osdev, devc->playbuf, HW_ALLOCSIZE);
+    CONTIG_FREE (devc->osdev, devc->playbuf, HW_ALLOCSIZE, devc->playbuf_dma_handle);
 
   if (devc->recbuf != NULL)
-    CONTIG_FREE (devc->osdev, devc->recbuf, HW_ALLOCSIZE);
+    CONTIG_FREE (devc->osdev, devc->recbuf, HW_ALLOCSIZE, devc->recbuf_dma_handle);
   devc->playbuf = devc->recbuf = NULL;
 
   oss_unregister_device (osdev);

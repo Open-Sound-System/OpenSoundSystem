@@ -71,6 +71,7 @@ typedef struct via97_devc
   SGD_entry *SGD_table;
   oss_native_word SGD_table_phys;
   int play_sgd_ptr, rec_sgd_ptr;
+  oss_dma_handle_t sgd_dma_handle;
   unsigned int play_sgd_phys, rec_sgd_phys;
 }
 via97_devc;
@@ -680,7 +681,7 @@ init_via97 (via97_devc * devc)
   if (devc->SGD_table == NULL)
     {
       devc->SGD_table =
-	CONTIG_MALLOC (devc->osdev, SGD_ALLOC, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, SGD_ALLOC, MEMLIMIT_32BITS, &phaddr, devc->sgd_dma_handle);
 
       if (devc->SGD_table == NULL)
 	return -ENOSPC;
@@ -921,7 +922,7 @@ oss_via97_detach (oss_device_t * osdev)
 
   if (devc->SGD_table != NULL)
     {
-      CONTIG_FREE (devc->osdev, devc->SGD_table, SGD_ALLOC);
+      CONTIG_FREE (devc->osdev, devc->SGD_table, SGD_ALLOC, devc->sgd_dma_handle);
       devc->SGD_table = NULL;
     }
 

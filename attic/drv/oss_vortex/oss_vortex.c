@@ -1318,7 +1318,7 @@ vortex_free_buffer (int dev, dmap_t * dmap, int direction)
   if (dmap->dmabuf == NULL)
     return 0;
 #if 1
-  CONTIG_FREE (devc->osdev, dmap->dmabuf, dmap->buffsize);
+  CONTIG_FREE (devc->osdev, dmap->dmabuf, dmap->buffsize, TODO);
 #ifdef linux
   oss_unreserve_pages ((oss_native_word) dmap->dmabuf,
 		       (oss_native_word) dmap->dmabuf + 4 * 4096 - 1);
@@ -1344,7 +1344,7 @@ vortex_alloc_buffer (int dev, dmap_t * dmap, int direction)
 #if 1
   dmap->buffsize = 4 * 4096;	/* 4 subbuffers */
   dmap->dmabuf =
-    CONTIG_MALLOC (devc->osdev, dmap->buffsize, MEMLIMIT_32BITS, &phaddr);
+    CONTIG_MALLOC (devc->osdev, dmap->buffsize, MEMLIMIT_32BITS, &phaddr, TODO);
   dmap->dmabuf_phys = phaddr;
 #ifdef linux
   oss_reserve_pages ((oss_native_word) dmap->dmabuf,

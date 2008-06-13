@@ -121,6 +121,7 @@ typedef struct
   oss_native_word dwPTBPhysAddx;
   unsigned int *pdwPageTable;
   unsigned int dwPageTableSize;
+  oss_dma_handle_t pgtable_dma_handle;
   int next_pg;	/* Next free index in the page table */
 
   sbxfi_portc_t play_portc[MAX_OUTPUTDEVS];

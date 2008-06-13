@@ -165,11 +165,7 @@ do { \
 #define PCI_WRITEW(osp, addr, data)     writew(addr, data)
 #define PCI_WRITEB(osp, addr, data)     writeb(addr, data)
 
-/*
- * When a error (such as EINVAL) is returned by a function,
- * the following macro is used. The driver assumes that a
- * error is signalled by returning a negative value.
- */
+typedef void *oss_dma_handle_t;
 
 /* 
    KERNEL_MALLOC() allocates requested number of memory  and 
@@ -183,8 +179,8 @@ do { \
 #define	KERNEL_MALLOC(nbytes)	malloc(nbytes, M_DEVBUF, M_NOWAIT|M_ZERO)
 #define	KERNEL_FREE(addr)	{if (addr)free(addr, M_DEVBUF);addr=NULL;}
 
-#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr)	oss_contig_malloc(sz, memlimit, phaddr)
-#define CONTIG_FREE(osdev, p, sz)	oss_contig_free(p, sz)
+#define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(sz, memlimit, phaddr)
+#define CONTIG_FREE(osdev, p, sz, handle)	oss_contig_free(p, sz)
 
 /*
  * Timer macros

@@ -134,6 +134,7 @@ typedef struct
   int pipeline_delay;
   unsigned char *tmp_buf[2];
   int use_tmpbuf;
+  oss_dma_handle_t tmpbuf_dma_handle[2];
 } ossusb_portc;
 
 typedef struct
@@ -202,6 +203,7 @@ struct ossusb_devc
   ossusb_midic midic[MAX_MIDIC];
 
   unsigned char *playbuf;
+  oss_dma_handle_t playbuf_dma_handle;
   udi_usb_request_t *output_pipe;
   int output_busy;
 #define Q_MAX 4096
@@ -209,6 +211,7 @@ struct ossusb_devc
   int q_nbytes;
 
   unsigned char *recbuf;
+  oss_dma_handle_t recbuf_dma_handle;
   udi_usb_request_t *input_pipe;
   udi_endpoint_handle_t *input_endpoint_handle;
 };

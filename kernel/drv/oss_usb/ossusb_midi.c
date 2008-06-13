@@ -144,10 +144,10 @@ usb_midi_close (int dev, int mode)
       devc->input_pipe = NULL;
 
       if (devc->recbuf != NULL)
-	CONTIG_FREE (devc->osdev, devc->recbuf, RECBUF_SIZE);
+	CONTIG_FREE (devc->osdev, devc->recbuf, RECBUF_SIZE, devc->recbuf_dma_handle);
       devc->recbuf = NULL;
       if (devc->playbuf != NULL)
-	CONTIG_FREE (devc->osdev, devc->playbuf, PLAYBUF_SIZE);
+	CONTIG_FREE (devc->osdev, devc->playbuf, PLAYBUF_SIZE, devc->playbuf_dma_handle);
       devc->playbuf = NULL;
       udi_close_endpoint (midic->in_endpoint_handle);
     }
@@ -201,7 +201,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	}
 
       devc->playbuf =
-	CONTIG_MALLOC (devc->osdev, PLAYBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, PLAYBUF_SIZE, MEMLIMIT_32BITS, &phaddr, devc->playbuf_dma_handle);
 
       devc->output_busy = 0;
       devc->q_nbytes = 0;
@@ -226,7 +226,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	  cmn_err (CE_WARN, "usbmidi: Failed to allocate input pipe\n");
 	}
       devc->recbuf =
-	CONTIG_MALLOC (devc->osdev, RECBUF_SIZE, MEMLIMIT_32BITS, &phaddr);
+	CONTIG_MALLOC (devc->osdev, RECBUF_SIZE, MEMLIMIT_32BITS, &phaddr, devc->recbuf_dma_handle);
 
       if ((err = usb_midi_start_input (devc, midic)) < 0)
 	{
