@@ -4642,14 +4642,6 @@ move_wrpointer (adev_p adev, dmap_p dmap, int len)
   MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
   dmap->underrun_flag = 0;
 
-  if ((dmap->user_counter + len - dmap->byte_counter) > dmap->bytes_in_use)
-    {
-      cmn_err (CE_WARN, "Buffer overflow %lld+%d, %lld\n", dmap->user_counter,
-	       len, dmap->byte_counter);
-      MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-      return -EIO;
-    }
-
   dmap->user_counter += len;
 #ifdef DO_TIMINGS
   oss_timing_printf ("  User=%lld", dmap->user_counter);

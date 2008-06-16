@@ -40,7 +40,7 @@ enum {
 #define AFMT_EXP_DELTA	-(AFMT_U8 | 0x20000000)
 
 typedef struct fmt_struct {
-  const char const * name;
+  const char * name;
   const int fmt;
   const int may_conv;
 }
