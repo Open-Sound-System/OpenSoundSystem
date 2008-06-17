@@ -5417,7 +5417,7 @@ do_inputintr (int dev, int intr_flags)
     }
   dmap->fragment_counter = (dmap->fragment_counter + 1) % dmap->nfrags;
 
-  if (dmap->dmabuf_dma_handle != NULL)
+  if (dmap->dmabuf_dma_handle != NULL) /* Some drivers don't use DMA */
      OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_INBOUND);
 
 #ifdef DO_TIMINGS
@@ -5489,7 +5489,7 @@ audio_inputintr (int dev, int intr_flags)
 static void
 finish_output_interrupt (adev_p adev, dmap_p dmap)
 {
-  if (dmap->dmabuf_dma_handle != NULL)
+  if (dmap->dmabuf_dma_handle != NULL) /* Some drivers don't use DMA */
      OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_OUTBOUND);
 
 #ifdef CONFIG_OSSD
