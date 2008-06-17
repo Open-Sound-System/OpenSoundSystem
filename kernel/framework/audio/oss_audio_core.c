@@ -5417,7 +5417,8 @@ do_inputintr (int dev, int intr_flags)
     }
   dmap->fragment_counter = (dmap->fragment_counter + 1) % dmap->nfrags;
 
-  OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_INBOUND);
+  if (dmap->dmabuf_dma_handle != NULL)
+     OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_INBOUND);
 
 #ifdef DO_TIMINGS
   oss_do_timing ("Wake up (in)");
@@ -5488,7 +5489,8 @@ audio_inputintr (int dev, int intr_flags)
 static void
 finish_output_interrupt (adev_p adev, dmap_p dmap)
 {
-  OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_OUTBOUND);
+  if (dmap->dmabuf_dma_handle != NULL)
+     OSS_DMA_SYNC(dmap->dmabuf_dma_handle, 0, dmap->bytes_in_use, OSS_DMA_SYNC_OUTBOUND);
 
 #ifdef CONFIG_OSSD
   ossd_event (adev->engine_num, OSSD_EV_UPDATE_OUTPUT);
