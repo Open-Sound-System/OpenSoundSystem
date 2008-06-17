@@ -545,41 +545,41 @@ main (int argc, char *argv[])
   int flags = 0;
   int status = 0;
   int dev = -1;
+  extern int optind;
 
 /*
  * Simple command line switch handling.
  */
 
-  for (i = 1; i < argc; i++)
+  while ((i = getopt (argc, argv, "CVfs")) != EOF)
     {
-      if (argv[i][0] == '-')
-	{
-	  switch (argv[i][1])
-	    {
-	    case 'V':
-	      flags |= TF_VIRTUAL;
-	      break;
-	    case 's':
-	      flags |= TF_SYSTEST;
-	      break;
-	    case 'C':
-	      flags |= TF_SNDCONF;
-	      break;
-	    case 'q':
-	      flags |= TF_QUICK;
-	      break;
-	    }
-	}
-      else
-	{
-	  if (sscanf (argv[i], "%d", &dev) != 1)
-	    {
-
-	      fprintf (stderr, "Bad device number %s\n", argv[i]);
-	      exit (-1);
-	    }
-	}
+      switch (i)
+        {
+          case 'V':
+            flags |= TF_VIRTUAL;
+            break;
+          case 's':
+            flags |= TF_SYSTEST;
+            break;
+          case 'C':
+            flags |= TF_SNDCONF;
+            break;
+          case 'f':
+            flags |= TF_QUICK;
+            break;
+          default:
+            printf ("Usage: osstest [options...] [device number]\n"
+                    "	-V	Test virtual mixer devices as well\n"
+                    "	-f	Faster test\n");
+            exit (-1);
+        }
     }
+
+   if ((optind < argc) && (sscanf (argv[optind], "%d", &dev) != 1))
+      {
+        fprintf (stderr, "Bad device number %s\n", argv[optind]);
+        exit (-1);
+      }
 
   if (flags & TF_SYSTEST)
     {
