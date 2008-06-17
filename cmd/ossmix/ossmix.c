@@ -42,7 +42,7 @@ static void usage (void);
 static void verbose_devinfo (int);
 #ifdef CONFIG_OSS_MIDI
 static void midi_set (int, int, int);
-static void midi_mixer (int, char *, char *, int, int);
+static void midi_mixer (int, char *, char **, int, int);
 static void smurf (int, int);
 #endif
 
