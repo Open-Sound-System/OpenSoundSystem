@@ -1,12 +1,4 @@
 oss_ali5455	pci10b9,5455	ALI M5455
-oss_allegro	pci125d,1988	ESS Allegro ES1988
-oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
-oss_allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
-oss_allegro	pci125d,1998	ESS Maestro3 ES1998
-oss_allegro	pci125d,199a	ESS Maestro3 ES199A
-oss_als3xx	pci4005,300	Avance Logic ALS300
-oss_als3xx	pci4005,308	Avance Logic ALS300+
-oss_als4k	pci4005,4000	Avance Logic ALS4000
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
@@ -27,9 +19,6 @@ oss_cs461x	pcs153b,112e	Terratec DMX Xfire 1024
 oss_cs461x	pcs1681,50	Hercules Game Theater XP
 oss_cs461x	pcs1681,51	Hercules Game Theater XP+
 oss_cs461x	pcs5053,3357	TurtleBeach SantaCruz / VideoLogic SonicFury
-oss_digi32	pciea60,9896	RME Digi32
-oss_digi32	pciea60,9897	RME Digi32 Pro
-oss_digi32	pciea60,9898	RME Digi32/8
 oss_digi96	pci10ee,3fc0	RME Digi96
 oss_digi96	pci10ee,3fc1	RME Digi96/8
 oss_digi96	pci10ee,3fc2	RME Digi96/8 PRO
@@ -101,12 +90,7 @@ oss_ich	pci8086,266e	Intel AC97 (ICH6)
 oss_ich	pci8086,27de	Intel AC97 (ICH7)
 oss_ich	pci8086,7195	Intel 440MX (440MX)
 oss_imux	IMUX	OSS Input Multiplexer 
-oss_maestro	pci125d,1968	ESS Maestro-2 
-oss_maestro	pci125d,1978	ESS Maestro-2E 
-oss_maestro	pci1285,100	ESS Maestro-1 
 oss_midiloop	MIDILOOP	OSS MIDI Loopback driver
-oss_neomagic	pci10c8,8005	Neomagic NM2200AV
-oss_s3vibes	pci5333,ca00	S3 Sonic Vibes
 oss_sadasupport	OSSAUDIOS	SADA emulation layer for OSS
 oss_sblive	pci1102,2	Creative Sound Blaster Live 
 oss_sblive	pcs1102,8040	Creative Sound Blaster Live 1024/Platinum
@@ -162,9 +146,6 @@ oss_via823x	pci1106,7059	VIA VT8233A
 oss_via823x	pcs1462,3800	MSI K7T266
 oss_via823x	pcs1462,4720	MSI KT3 Ultra 
 oss_via97	pci1106,3058	VIA VT82C686 
-oss_vortex	pci12eb,1	Aureal Vortex (AU8820)
-oss_vortex	pci12eb,2	Aureal Vortex2 (AU8830)
-oss_vortex	AU8810		Aureal Vortex Advantage (AU8810)  *** NOT SUPPORTED ***
 oss_ymf7xx	pci1073,10	Yamaha DS-XG YMF744 
 oss_ymf7xx	pci1073,12	Yamaha DS-XG YMF754
 oss_ymf7xx	pci1073,4	Yamaha DS-XG YMF724
