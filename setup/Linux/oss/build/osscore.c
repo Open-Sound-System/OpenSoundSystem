@@ -2174,6 +2174,11 @@ EXPORT_FUNC (oss_memblk_unalloc);
 EXPORT_DATA (oss_global_memblk);
 EXPORT_SYMBOL (oss_get_procinfo);
 
+#ifdef CONFIG_OSS_MIDI
+EXPORT_FUNC (oss_midi_ioctl);
+EXPORT_FUNC (oss_midi_copy_timer);
+#endif
+
 extern void *oss_adev_pointer;
 EXPORT_SYMBOL (oss_adev_pointer);
 

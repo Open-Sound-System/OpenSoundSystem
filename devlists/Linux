@@ -9,22 +9,22 @@ ATI IXP300
 ATI IXP400
 Audiotrak Prodigy 7.1
 C-Media CM8338A
-CMedia CM8338B
-CMedia CM8738/CM8768
-CMedia CMI8788
 C-Media USB 2/4/6/8ch audio adapter
 C-Media USB audio adapter - model1
 C-Media USB audio adapter - model2
+CMedia CM8338B
+CMedia CM8738/CM8768
+CMedia CMI8788
 Creative Audigy2 NX USB (BETA)
-Creative AudioPCI97 (ES1371/ES1373)
 Creative AudioPCI (ES1370)
+Creative AudioPCI97 (ES1371/ES1373)
 Creative Ectiva EV1938
 Creative SB X-Fi *EARLY BETA*
 Creative Sound Blaster 5.1 (Dell)
+Creative Sound Blaster Audigy Platinum
+Creative Sound Blaster Audigy/Audigy2
 Creative Sound Blaster Audigy2 Value/Audigy4
 Creative Sound Blaster Audigy2 ZS PCMCIA
-Creative Sound Blaster Audigy/Audigy2
-Creative Sound Blaster Audigy Platinum
 Creative Sound Blaster Extigy (BETA)
 Creative Sound Blaster Live 
 Creative Sound Blaster Live 1024/Platinum
@@ -37,9 +37,9 @@ Crystal CS4280
 Crystal CS4281
 Crystal CS4610
 Crystal CS4615
-Ego Systems Juli@ *BETA*
 EGO SYStems RoMI/O USB MIDI interface (BETA)
 ESS Solo-1 
+Ego Systems Juli@ *BETA*
 ForteMedia FM 801
 Generic ENVY24 based device
 Generic ENVY24HT based sound card
@@ -47,9 +47,9 @@ Generic M Audio USB MIDI interface (BETA)
 Generic USB audio/MIDI device (BETA)
 Genius Sound Maker Live
 Guillemot Maxi Sound MUSE
-Hercules Gamesurround MUSE Pocket (BETA)
 Hercules Game Theater XP
 Hercules Game Theater XP+
+Hercules Gamesurround MUSE Pocket (BETA)
 Intel 440MX (440MX)
 Intel AC97 (ESB)
 Intel AC97 (ICH)
@@ -69,6 +69,13 @@ Intel High Definition Audio (P35)
 Labtec LCS1040 Speaker System (BETA)
 Logitec Quickcam Pro 4000 (mic) (BETA)
 Logitec USB Headset
+Lynx AES16 Studio Interface
+Lynx AES16-SRC Studio Interface
+Lynx-L22 Studio Interface
+LynxONE Studio Interface
+LynxTWO-A Studio Interface
+LynxTWO-B Studio Interface
+LynxTWO-C Studio Interface
 M Audio Audiophile 192
 M Audio Audiophile 2496
 M Audio Delta 1010
@@ -108,8 +115,8 @@ Nvidia nForce2
 Nvidia nForce3
 Nvidia nForce4
 OSS Input Multiplexer 
-OSS loopback audio driver
 OSS MIDI Loopback driver
+OSS loopback audio driver
 OSS user space audio driver I/O module
 Philips ToUcam Pro (mic) (BETA)
 RME Digi96
