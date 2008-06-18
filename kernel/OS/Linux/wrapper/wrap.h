@@ -57,6 +57,8 @@ struct module;
 struct _oss_device_t;
 struct pci_dev;
 
+typedef void *oss_dma_handle_t;
+
 /*
  * Sleep/wakeup/poll support. These definitions are duplicates from
  * oss_config.h which is the official place. Both definitions must match.

@@ -198,7 +198,7 @@ ATIIXPintr (oss_device_t * osdev)
 	    && (portc->port_type == DF_ANALOG))
 	  {
 	    dmap_t *dmap = audio_engines[portc->audiodev]->dmap_out;
-	    int ptr, n = 0;
+	    int ptr=0, n = 0;
 	    int timeout = 1000;
 	    serviced = 1;
 	    while (timeout--)
@@ -242,7 +242,7 @@ ATIIXPintr (oss_device_t * osdev)
 	    && (portc->port_type == DF_ANALOG))
 	  {
 	    dmap_t *dmap = audio_engines[portc->audiodev]->dmap_in;
-	    int ptr, n = 0;
+	    int ptr=0, n = 0;
 	    int timeout = 1000;
 	    serviced = 1;
 
@@ -286,7 +286,7 @@ ATIIXPintr (oss_device_t * osdev)
 	  && (portc->port_type == DF_SPDIF))
 	{
 	  dmap_t *dmap = audio_engines[portc->audiodev]->dmap_out;
-	  int ptr, n = 0;
+	  int ptr=0, n = 0;
 	  int timeout = 1000;
 	  serviced = 1;
 

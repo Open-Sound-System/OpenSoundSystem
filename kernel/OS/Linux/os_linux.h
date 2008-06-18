@@ -168,8 +168,6 @@ __outl (unsigned int value, unsigned short port)
 #define PCI_READB(osdev, p)  (*(volatile unsigned char *) (p))
 #define PCI_WRITEB(osdev, addr, data) (*(volatile unsigned char *) (addr) = (data))
 
-typedef void *oss_dma_handle_t;
-
 /* 
    KERNEL_MALLOC() allocates requested number of memory  and 
    KERNEL_FREE is used to free it. 
