@@ -72,6 +72,12 @@ init_status (void)
   oss_print_license (put_status, put_status_int);
 #endif
 
+#ifdef OSS_HG_INFO
+  put_status ("\nDetailed version info:\n");
+  put_status (OSS_HG_INFO);
+  put_status ("\n");
+#endif
+
   if (nmessages > 0)
     {
       put_status ("\n");
