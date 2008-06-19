@@ -63,6 +63,8 @@ print_global_info (void)
   printf ("Version info: %s %s (0x%08X) %s\n",
 	  sysinfo.product, sysinfo.version, sysinfo.versionnum,
 	  sysinfo.license);
+  if (sysinfo.revision_info[0] != 0)
+	  printf ("Hg revision: %s\n", sysinfo.revision_info);
   if (uname (&un) != -1)
     printf ("Platform: %s/%s %s %s (%s)\n", un.sysname, un.machine,
 	    un.release, un.version, un.nodename);

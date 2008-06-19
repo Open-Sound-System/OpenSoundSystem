@@ -1732,7 +1732,8 @@ typedef struct oss_sysinfo
   int numcards;			/* Number of sound cards in the system */
   int numaudioengines;		/* Number of audio engines in the system */
   char license[16];		/* For example "GPL" or "CDDL" */
-  int filler[236];		/* For future expansion */
+  char revision_info[256];	/* For internal use */
+  int filler[172];		/* For future expansion */
 } oss_sysinfo;
 
 typedef struct oss_mixext

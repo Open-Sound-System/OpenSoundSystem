@@ -1561,6 +1561,13 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 		 sizeof (info->version) - 1);
 	strcpy (info->license, OSS_LICENSE);
 	info->versionnum = OSS_VERSION;
+
+#ifdef OSS_HG_INFO
+	/* Detailed Mercurial version */
+	strncpy (info->revision_info, OSS_HG_INFO, sizeof(info->revision_info)-1);
+	info->revision_info[sizeof(info->revision_info)-1]=0;
+#endif
+
 	memset (info->options, 0, sizeof (info->options));
 
 	info->numaudios = num_audio_devfiles;
