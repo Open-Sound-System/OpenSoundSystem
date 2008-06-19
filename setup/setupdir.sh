@@ -102,13 +102,13 @@ HGID=`(cd $SRCDIR && hg tip|grep changeset) 2>/dev/null`
 
 if test "$HGID " != " "
 then
-	echo '#define' OSS_HG_INFO \"$HGID\\n\" \\ >> kernel/framework/include/local_config.h
+	echo '#define' OSS_HG_INFO \"$HGID  \" \\ >> kernel/framework/include/local_config.h
 
 	HGID=`(cd $SRCDIR && hg tip|grep tag) 2>/dev/null`
-	echo '                   ' \"$HGID\\n\" \\ >> kernel/framework/include/local_config.h
+	echo '                   ' \"$HGID  \" \\ >> kernel/framework/include/local_config.h
 
 	HGID=`(cd $SRCDIR && hg tip|grep date) 2>/dev/null`
-	echo '                   ' \"$HGID\\n\" \\ >> kernel/framework/include/local_config.h
+	echo '                   ' \"$HGID  \" \\ >> kernel/framework/include/local_config.h
 
 	HGID=`(cd $SRCDIR && hg tip|grep summary) 2>/dev/null`
 	echo '                   ' \"$HGID\" >> kernel/framework/include/local_config.h
