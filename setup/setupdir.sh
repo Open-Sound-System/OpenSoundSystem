@@ -113,7 +113,7 @@ then
   	echo '                   ' \"$HGID, \" \\ >> kernel/framework/include/local_config.h
   
   	HGID=`(cd $SRCDIR && hg tip|grep summary) 2>/dev/null`
-  	echo '                   ' \"$HGID \" \\ >> kernel/framework/include/local_config.h
+  	echo '                   ' \"$HGID\" >> kernel/framework/include/local_config.h
   fi
 fi
 
