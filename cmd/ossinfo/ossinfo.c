@@ -70,9 +70,6 @@ print_global_info (void)
 	    un.release, un.version, un.nodename);
   printf ("\n");
 
-  if (verbose < 0)
-    return;
-
   printf ("Number of audio devices:	%d\n", sysinfo.numaudios);
   printf ("Number of audio engines:	%d\n", sysinfo.numaudioengines);
 #ifdef CONFIG_OSS_MIDI

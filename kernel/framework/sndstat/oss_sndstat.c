@@ -73,7 +73,7 @@ init_status (void)
 #endif
 
 #ifdef OSS_HG_INFO
-  put_status ("\nDetailed version info:\n");
+  put_status ("\nHg revision: ");
   put_status (OSS_HG_INFO);
   put_status ("\n");
 #endif
