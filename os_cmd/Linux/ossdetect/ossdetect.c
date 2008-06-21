@@ -448,11 +448,15 @@ main (int argc, char *argv[])
 	  break;
 
 	case 'i':
-	  add_drv ("IMUX", PSEUDO_PASS);
+	  add_drv ("oss_imux", PSEUDO_PASS);
 	  break;
 
 	case 'u':
-	  add_drv ("USERDEV", PSEUDO_PASS);
+	  add_drv ("oss_userdev", PSEUDO_PASS);
+	  break;
+
+	case 'a':
+	  add_drv (argv[i]+2, PSEUDO_PASS);
 	  break;
 
 	case 'l':
