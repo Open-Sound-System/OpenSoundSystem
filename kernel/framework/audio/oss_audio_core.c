@@ -353,7 +353,12 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
   if ((fmt_info = oss_find_format (fmt)) != NULL)
     {
       if (fmt_info->no_convert)	/* Cannot convert this format */
+      {
+	if (fmt == AFMT_AC3)
+	   return -EIO;
+
 	return ret;
+      }
     }
 
   if ((fmt_info = oss_find_format (ret)) == NULL)
