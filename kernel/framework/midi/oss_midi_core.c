@@ -595,9 +595,11 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
   if (midi_devs[dev]->unloaded)
     return -ENXIO;
 
-  MUTEX_ENTER_IRQDISABLE (midi_mutex, flags);
-
   client = oss_midi_clients[dev];
+  if (client == NULL)
+     return -ENXIO;
+
+  MUTEX_ENTER_IRQDISABLE (midi_mutex, flags);
 
   ok = 1;
   if (client->open_mode != 0)	/* Client busy */
