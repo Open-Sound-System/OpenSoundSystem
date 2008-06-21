@@ -119,13 +119,11 @@ copy_tree (char *fromdir, char *tgtdir, int native_make)
 	      sprintf (tmp, "%s/.nativemake", sname);
 	      if (stat (tmp, &st2) != -1)
 		is_native = 1;
-	      printf ("DIR %s->%s\n", sname, tname);
 	      copy_tree (sname, tname, is_native);
 	    }
 	}
       else
 	{
-	  printf ("FLE %s->%s\n", sname, tname);
 	  copy_file (sname, tname, de->d_name, native_make);
 	}
     }

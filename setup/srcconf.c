@@ -370,25 +370,21 @@ parse_config (FILE * f, conf_t * conf)
 
   if (conf->os_bad)
     {
-      printf ("\tIncompatible OS - directory skipped\n");
       return 0;
     }
 
   if (conf->check_os && !conf->os_ok)
     {
-      printf ("\tIncompatible OS - directory skipped\n");
       return 0;
     }
 
   if (conf->cpu_bad)
     {
-      printf ("\tIncompatible CPU/arch - directory skipped\n");
       return 0;
     }
 
   if (conf->check_cpu && !conf->cpu_ok)
     {
-      printf ("\tIncompatible CPU/arch - directory skipped\n");
       return 0;
     }
 
@@ -510,8 +506,6 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   sprintf (tmp, "%s/.makefile", path);
   if (stat (tmp, &st) != -1)
     include_local_makefile = 1;
-
-  printf ("Scanning %s\n", path);
 
   if (kernelonly)
     if (conf.mode == MD_USERLAND || conf.mode == MD_SBIN)
@@ -739,13 +733,11 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 # else
       if (getenv ("NO_REGPARM") == NULL)
 	{
-	  printf ("Compiling with USE_REGPARM\n");
 	  fprintf (f,
 		   "CFLAGS += -O6 -fno-common -mregparm=3 -DUSE_REGPARM\n");
 	}
       else
 	{
-	  printf ("Compiling with NO_REGPARM\n");
 	  fprintf (f, "CFLAGS += -O6 -fno-common -DNO_REGPARM\n");
 	}
 # endif

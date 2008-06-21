@@ -61,8 +61,8 @@ else
 	exit 2
 fi
 
-# Copy the ".devices" files for all drivers to devices.list
-cat `find $SRCDIR/kernel/drv -name .devices`|grep -v '^#' > devices.list
+## Copy the ".devices" files for all drivers to devices.list
+#cat `find $SRCDIR/kernel/drv -name .devices`|grep -v '^#' > devices.list
 
 if test -d $SRCDIR/kernel/nonfree/drv
 then
@@ -89,6 +89,11 @@ fi
 
 rm -f dirsetup
 
+if test "$CLOSED_SOURCE " != "YES "
+then
+	rm -rf kernel/nonfree
+fi
+
 cc -D`uname -s` -o srcconf $SRCDIR/setup/srcconf.c
 
 if ./srcconf $*
@@ -98,7 +103,7 @@ else
 	echo Source configuration failed
 fi
 
-if test -d $SRCDIR/.hg
+if test "$CLOSED_SOURCE " != "YES " && test -d $SRCDIR/.hg
 then
   HGID=`(cd $SRCDIR && hg tip|grep changeset) 2>/dev/null`
   
@@ -143,9 +148,9 @@ else
 	exit 254
 fi
 
-if test -f $SRCDIR/kernel/nonfree/include/license.h
+if test "$CLOSED_SOURCE " = "YES "
 then
-	echo "#define LICENSED_VERSION" >> kernel/framework/include/timestamp.h
+	echo "#define LICENSED_VERSION" >> kernel/framework/include/local_config.h
 fi
 
 if test -f $SRCDIR/buildid.dat

@@ -67,6 +67,11 @@ do
 		COPY_OPTIONS="-c"
 		;;
 
+	"--include-closed-source")
+		CLOSED_SOURCE=YES
+		export CLOSED_SOURCE
+		;;
+
 	"--enable-timings")
 		# This is option is undocumented and unsupported. It is only
 		# for internal testing by 4Front Technologies and not useful
