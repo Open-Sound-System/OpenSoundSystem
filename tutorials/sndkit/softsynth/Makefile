@@ -2,7 +2,7 @@ include /etc/oss.conf
 
 BINDIR=/usr/local/bin
 
-OSSINCLUDES=-I$(OSSLIBDIR)/include/sys -I$(OSSLIBDIR)/sndkit/OSSlib
+OSSINCLUDES=-I$(OSSLIBDIR)/include/sys -I$(OSSLIBDIR)/include -L/usr/lib/oss/lib
 CFLAGS=-lm -O6
 
 all: softsynth softsynth_gtk

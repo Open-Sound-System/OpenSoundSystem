@@ -251,6 +251,25 @@ then
   fi
 fi
 
+# Setup libOSSlib.so
+if test -f $OSSLIBDIR/lib/libOSSlib.so
+then
+   if test "`uname -m` " = "x86_64 "
+   then
+     ln -sf $OSSLIBDIR/lib/libOSSlib.so /usr/lib64
+   else
+     if test -s /lib/libasound.so.2
+     then
+       ln -sf $OSSLIBDIR/lib/libOSSlib.so /lib
+     fi
+
+     if test -s /usr/lib/libasound.so.2
+     then
+       ln -sf $OSSLIBDIR/lib/libOSSlib.so /usr/lib
+     fi
+   fi
+fi
+
 # Setup Flash 9 audio support plugin for OSS
 
 if test -f $OSSLIBDIR/lib/libflashsupport.so
