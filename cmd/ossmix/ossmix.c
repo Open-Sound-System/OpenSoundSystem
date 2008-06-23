@@ -34,6 +34,7 @@ static void dump_devinfo (int);
 static int findenum (char *, oss_mixext *, char *);
 static int find_name (char *);
 static void load_devinfo (int);
+static void print_description (char *);
 static void show_devinfo (int);
 static void show_level (int, char *);
 static char * showchoices (char *, oss_mixext *);
@@ -131,13 +132,17 @@ verbose_devinfo (int dev)
 {
   int i;
   oss_mixext *thisrec;
+  oss_mixer_value val;
+  val.dev = dev;
 
   for (i = 0; i < nrext; i++)
     {
-      oss_mixer_value val;
-
       thisrec = &extrec[i];
       printf ("%2d: ", i);
+
+      val.ctrl = i;
+      val.timestamp = thisrec->timestamp;
+      val.value = -1;
 
       switch (thisrec->type)
 	{
@@ -154,9 +159,6 @@ verbose_devinfo (int dev)
 	  printf ("Stereo slider: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo)");
 	  printf ("  Current value=0x%04x\n", val.value);
@@ -166,9 +168,6 @@ verbose_devinfo (int dev)
 	  printf ("Stereo slider: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo)");
 	  printf ("  Current value=0x%08x\n", val.value);
@@ -178,9 +177,6 @@ verbose_devinfo (int dev)
 	  printf ("3D control: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo)");
 	  printf ("  Current value=0x%08x\n", val.value);
@@ -191,9 +187,6 @@ verbose_devinfo (int dev)
 	  printf ("Stereo peak meter: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo)");
 	  printf ("  Current value=0x%04x\n", val.value);
@@ -206,9 +199,6 @@ verbose_devinfo (int dev)
 	  printf ("Mono slider: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono)");
 	  printf ("  Current value=0x%04x\n", val.value);
@@ -218,9 +208,6 @@ verbose_devinfo (int dev)
 	  printf ("Mono peak meter: '%s' (%s), parent=%d, max=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->maxvalue, thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(monopeak)");
 	  printf ("  Current value=0x%04x\n", val.value);
@@ -231,9 +218,6 @@ verbose_devinfo (int dev)
 	  printf ("On/off switch: '%s' (%s), parent=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(onoff)");
 	  printf ("  Current value=%x (%s)\n", val.value,
@@ -245,9 +229,6 @@ verbose_devinfo (int dev)
 	    ("Enumerated control: '%s' (%s), parent=%d, flags=%x, mask=%02x%02x",
 	     thisrec->id, thisrec->extname, thisrec->parent, thisrec->flags,
 	     thisrec->enum_present[1], thisrec->enum_present[0]);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(enum)");
 	  printf ("  Current value=%x\n", val.value);
@@ -257,9 +238,6 @@ verbose_devinfo (int dev)
 	  printf ("Decimal value: '%s' (%s), parent=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(value)");
 	  printf ("  Current value=%d\n", val.value);
@@ -269,9 +247,6 @@ verbose_devinfo (int dev)
 	  printf ("Hexadecimal value: '%s' (%s), parent=%d, flags=%x",
 		  thisrec->id, thisrec->extname, thisrec->parent,
 		  thisrec->flags);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(hex)");
 	  printf ("  Current value=%x\n", val.value);
@@ -412,7 +387,7 @@ findenum (char *extname, oss_mixext * rec, char *arg)
 }
 
 static void
-print_description(char *descr)
+print_description (char *descr)
 {
 	/*
 	 * Print the description string. If verbose==1 then print only the 
@@ -443,15 +418,19 @@ show_devinfo (int dev)
 {
   int i, vl, vr, rflag;
   oss_mixext *thisrec;
+  oss_mixer_value val;
 
+  val.dev = dev;
   printf ("Selected mixer %d/%s\n", dev, root->name);
   printf ("Known controls are:\n");
   for (i = 0; i < nrext; i++)
     {
-      oss_mixer_value val;
 
       thisrec = &extrec[i];
       rflag = 1;
+      val.ctrl = i;
+      val.timestamp = thisrec->timestamp;
+      val.value = -1;
 
 #if 0
       if (thisrec->id[0] == '-')
@@ -470,9 +449,6 @@ show_devinfo (int dev)
 	case MIXT_STEREOSLIDER:
 	case MIXT_STEREODB:
 	  printf ("%s [<leftvol>:<rightvol>]", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  printf (" (currently %d:%d)", val.value & 0xff,
@@ -481,9 +457,6 @@ show_devinfo (int dev)
 
 	case MIXT_STEREOSLIDER16:
 	  printf ("%s [<leftvol>:<rightvol>]", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  if (thisrec->flags & MIXF_CENTIBEL)
@@ -500,9 +473,6 @@ show_devinfo (int dev)
 
 	case MIXT_3D:
 	  printf ("%s <distance:vol:angle>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  printf (" (currently %d:%d:%d)", (val.value >> 8) & 0xff,
@@ -512,9 +482,6 @@ show_devinfo (int dev)
 	case MIXT_STEREOVU:
 	case MIXT_STEREOPEAK:
 	  printf ("%s [<leftVU>:<rightVU>]", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  printf (" (currently %d:%d)", val.value & 0xff,
@@ -524,9 +491,6 @@ show_devinfo (int dev)
 	case MIXT_ENUM:
 	  printf ("%s <%s>", thisrec->extname,
 		  showchoices (thisrec->extname, thisrec));
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(enum2)");
 	  printf (" (currently %s)",
@@ -536,9 +500,6 @@ show_devinfo (int dev)
 	case MIXT_MONOSLIDER:
 	case MIXT_MONODB:
 	  printf ("%s <monovol>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf (" (currently %d)", val.value & 0xff);
@@ -546,9 +507,6 @@ show_devinfo (int dev)
 
 	case MIXT_SLIDER:
 	  printf ("%s <monovol>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf (" (currently %d)", val.value);
@@ -556,9 +514,6 @@ show_devinfo (int dev)
 
 	case MIXT_MONOSLIDER16:
 	  printf ("%s <monovol>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  if (thisrec->flags & MIXF_CENTIBEL)
@@ -572,9 +527,6 @@ show_devinfo (int dev)
 
 	case MIXT_MONOVU:
 	  printf ("%s <monoVU>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf (" (currently %d)", val.value & 0xff);
@@ -582,9 +534,6 @@ show_devinfo (int dev)
 
 	case MIXT_VALUE:
 	  printf ("%s <decimal value>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(value2)");
 	  printf (" (currently %d)", val.value);
@@ -592,9 +541,6 @@ show_devinfo (int dev)
 
 	case MIXT_HEXVALUE:
 	  printf ("%s <hexadecimal value>", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(hex2)");
 	  printf (" (currently %x)", val.value);
@@ -603,9 +549,6 @@ show_devinfo (int dev)
 	case MIXT_ONOFF:
 	case MIXT_MUTE:
 	  printf ("%s ON|OFF", thisrec->extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(onoff)");
 	  printf (" (currently %s)", val.value ? "ON" : "OFF");
@@ -631,7 +574,7 @@ show_devinfo (int dev)
 		  continue;
 		}
 
-              print_description(ei.strings);
+              print_description (ei.strings);
   	    }
 	}
     }
@@ -640,17 +583,21 @@ show_devinfo (int dev)
 static void
 dump_devinfo (int dev)
 {
+  char ossmix[256];
   int i, enabled = 0;
   oss_mixext *thisrec;
-  char ossmix[256];
+  oss_mixer_value val;
 
-  sprintf (ossmix, "!ossmix -d%d", dev);
+  val.dev = dev;
+  snprintf (ossmix, sizeof (ossmix), "!ossmix -d%d", dev);
 
   for (i = 0; i < nrext; i++)
     {
-      oss_mixer_value val;
-
       thisrec = &extrec[i];
+
+      val.ctrl = i;
+      val.timestamp = thisrec->timestamp;
+      val.value = -1;
 
       if (!enabled)
 	{
@@ -676,9 +623,6 @@ dump_devinfo (int dev)
 	case MIXT_STEREOSLIDER:
 	case MIXT_STEREODB:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  printf ("%d:%d\n", val.value & 0xff, (val.value >> 8) & 0xff);
@@ -686,9 +630,6 @@ dump_devinfo (int dev)
 
 	case MIXT_STEREOSLIDER16:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  printf ("%d:%d\n", val.value & 0xffff, (val.value >> 16) & 0xffff);
@@ -696,9 +637,6 @@ dump_devinfo (int dev)
 
 	case MIXT_3D:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(3D)");
 	  printf ("%d:%d:%d\n",
@@ -712,9 +650,6 @@ dump_devinfo (int dev)
 
 	case MIXT_ENUM:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(enum2)");
 	  printf ("%s\n",
@@ -724,9 +659,6 @@ dump_devinfo (int dev)
 	case MIXT_MONOSLIDER:
 	case MIXT_MONODB:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf ("%d\n", val.value & 0xff);
@@ -734,9 +666,6 @@ dump_devinfo (int dev)
 
 	case MIXT_SLIDER:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf ("%d\n", val.value);
@@ -744,9 +673,6 @@ dump_devinfo (int dev)
 
 	case MIXT_MONOSLIDER16:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
 	  printf ("%d\n", val.value & 0xffff);
@@ -757,9 +683,6 @@ dump_devinfo (int dev)
 
 	case MIXT_VALUE:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(value2)");
 	  printf ("%d\n", val.value);
@@ -767,9 +690,6 @@ dump_devinfo (int dev)
 
 	case MIXT_HEXVALUE:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(hex2)");
 	  printf ("%x\n", val.value);
@@ -778,9 +698,6 @@ dump_devinfo (int dev)
 	case MIXT_ONOFF:
 	case MIXT_MUTE:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  val.dev = dev;
-	  val.ctrl = i;
-	  val.timestamp = thisrec->timestamp;
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(onoff)");
 	  printf ("%s\n", val.value ? "ON" : "OFF");

@@ -1,7 +1,15 @@
+#ifndef CHARLIST_H
+#define CHARLIST_H
 
+#define INT_LETTERS 1
 
 static const char Chars[] =
+#ifdef INT_LETTERS
   "abcdefghijklmnopqrstuvwxyz0123456789?.,:והצü£)/=";
+#else
+  "abcdefghijklmnopqrstuvwxyz0123456789?.,:)/=";
+#endif
+
 static const char *Codes[] =
   { ".-", "-...", "-.-.", "-..", ".", "..-.", "--.",
   "....", "..", ".---", "-.-", ".-..", "--", "-.", "---",
@@ -13,7 +21,9 @@ static const char *Codes[] =
 
   "..--..", ".-.-.-", "--..--", "---...",	/*  ?|.,: */
 
+#ifdef INT_LETTERS
   ".--.-", ".-.-", "---.", "..--",	/* International letters */
+#endif
   "........",			/* Error */
   "-.--.-",			/* () */
   "-..-.",			/* / */
@@ -37,8 +47,10 @@ parse_charlist (char *ch)
     return parse_charlist ("bqvy");
   if (strcmp (ch, "-6") == 0)
     return parse_charlist ("jvxz");
+#ifdef INT_LETTERS
   if (strcmp (ch, "-7") == 0)
     return parse_charlist ("הצו");
+#endif
   if (strcmp (ch, "-8") == 0)
     return parse_charlist ("50146");
   if (strcmp (ch, "-9") == 0)
@@ -47,10 +59,12 @@ parse_charlist (char *ch)
     return parse_charlist ("/=?");
   if (strcmp (ch, "-11") == 0)
     return parse_charlist (").,-");
+#ifdef INT_LETTERS
   if (strcmp (ch, "-a") == 0)	/* Finnish CWH module */
     return parse_charlist ("a-zוהצ0-9/=?");
   if (strcmp (ch, "-d") == 0)	/* Some very difficult characters */
     return parse_charlist ("1j/l4bh569צ");
+#endif
 
   for (i = 0; i < strlen (ch); i++)
     if (ch[i] == '-')
@@ -78,3 +92,5 @@ parse_charlist (char *ch)
 
   return 0;
 }
+
+#endif

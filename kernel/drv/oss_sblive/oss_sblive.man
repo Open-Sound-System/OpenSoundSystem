@@ -38,16 +38,15 @@ o Noisy analog center/LFE output. The orange combo jack at the rear plate
   center/LFE (subwoofer) speakers connected then you need to turn off the
   sblive_digital_din (or audigy_digital_din) option. 
 
-o There is a new configuration option to enable/disable
-  the "digital DIN" output. By default the digital DIN interface is enabled 
-  which disables the center/LFE analog output (uses the same combo jack). By
-  setting the sblive_digital_din (or audigy_digital_din) option to 0 you can enable the analog C/LFE
-  output feature. When digital DIN is disabled you can still get S/PDIF 
-  (or AC3) output from the digital (optical/coax) outputs of the optional 
-  livedrive unit.
+o There is a new configuration option to enable/disable the "digital DIN"
+  output. By default the digital DIN interface is enabled which disables the
+  center/LFE analog output (uses the same combo jack). By setting the
+  sblive_digital_din (or audigy_digital_din) option to 0 you can enable the
+  analog C/LFE output feature. When digital DIN is disabled you can still get
+  S/PDIF (or AC3) output from the digital (optical/coax) outputs of the
+  optional livedrive unit.
 
  SBLIVE MIXER
-
 SB Live cards have actually two mixer chips. In OSS both of them are 
 controlled together. However only limited set of features can be controlled
 using ordinary mixer programs (such as the mixer applet included in OSS).
@@ -71,7 +70,6 @@ microphone recording level.
 
 
  SBLIVE MASTER MIXER
-
 Other mixer functions are handled by the DSP engine of the EMU 10k1 chip.
 Most input signals (including all digital signals and LiveDrive inputs).
 
@@ -111,7 +109,6 @@ o The front rear, and record sections: These three identical sections control
   The CD Analog audio will only be heard from the FRONT speakers.
 
  SBLIVE RECORDING
-
 Before recording anything you need to set the volumes in the recording
 section properly. To enable recording from the AC97 connected inputs
 (mic, line in and analog CD) use the AC97 mixer to select the desired input
@@ -135,7 +132,6 @@ o To stop recording press <Ctrl-c> and then you can play back the test.wav
 
 
   RECORDING ISSUES:
-
 In most cases noise is caused by the microphone input or some other
 (unused) input. Use the ossxmix program to turn off all unused inputs and
 finally save the current mixer settings (see below).
@@ -150,16 +146,18 @@ to raise the volume prior doing any recording. After that decrease
 the volumes again if necessary.
 
 
- SBLIVE DEVICE USAGE
-
-You can use /dev/dsp0-/dev/dsp7 to play multiple audio programs.
+ SBLIVE HARDWARE MIXING
+You can use /dev/oss/oss_sblive0/ pcm0-pcm7 to play multiple audio programs
+using the hardware mixing.
 Simply specify the device name with the application. A simple test is
 to do the following:
-   play -d/dev/dsp0 <file1.wav> &
-   play -d/dev/dsp1 <file2.wav> &
-   play -d/dev/dsp2 <file3.wav> &
+   ossplay -d/dev/oss/oss_sblive0/pcm0 <file1.wav> &
+   ossplay -d/dev/oss/oss_sblive0/pcm1 <file2.wav> &
+   ossplay -d/dev/oss/oss_sblive0/pcm2 <file3.wav> &
 
 You should hear all three wav files playing simultaneously.
+
+NOTE: Some apps may desire the old /dev/dspN names. e.g. /dev/dsp0 - /dev/dsp7.
 
 NOTE: You can increase the number of output devices from the standard 8 devices
 to 32 device. For this, run soundconf, select Set configuration options and 
@@ -169,7 +167,6 @@ oss_sblive.conf and inserting sblive_devices=XX entry,
   e.g.: sblive_devices=27 
 
  CDROM CONNNECTIONS
-
 There are two alternative ways to connect audio signal from a CD-ROM drive tor
 the SB Live soundcard. You can use a (three wire) analog cable or a (2 wire)
 digital cable. OSS now supports both of these choices. Note that there are
@@ -201,17 +198,16 @@ results when transferring digital data (such as AC3/DTS) using the S/PDIF
 the interface.
 
 CONFIGURATION OPTIONS
-
-o sblive_digital_din=<0|1> - This option is to enable/disable
-  the "digital DIN" output of SB Live. By default the digital DIN interface is enabled 
-  which disables the center/LFE analog output (uses the same combo jack). By
+o sblive_digital_din=<0|1> - This option is to enable/disable the "digital DIN"
+  output of SB Live. By default the digital DIN interface is disabled which
+  enables the center/LFE analog output (uses the same combo jack). By
   setting the sblive_digital_din option to 0 you can enable the analog 
   Center/LFE output feature. When digital DIN is disabled you can still
   get S/PDIF (or AC3) output from the digital (optical/coax) outputs of the
-  optional livedrive unit.
+  optional livedrive unit. Default: 0=analog output.
 
 o audigy_digital_din=<0|1> - same as "sblive_digital_din" option except for
-  the Audigy soundcards.
+  the Audigy soundcards. Default: 1=digital output.
 
 o sblive_devices=<1..32> - Number of audio devices to be configured.
 

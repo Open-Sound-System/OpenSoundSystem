@@ -241,7 +241,7 @@ main (int argc, char *argv[])
     }
 
   parm = AFMT_S16_LE;
-  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &parm) == -1)
     {
       perror ("SETFMT");
       close (audiofd);
@@ -258,7 +258,7 @@ main (int argc, char *argv[])
     }
 
   parm = SRATE;
-  if (ioctl (audiofd, SNDCTL_DSP_SPEED, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SPEED, &parm) == -1)
     {
       perror ("SPEED");
       close (audiofd);

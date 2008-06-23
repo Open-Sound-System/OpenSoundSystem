@@ -49,7 +49,7 @@ static int ncodes;
 static int playc;
 static int terminal_fd = 0;
 static struct termios ti, saved_ti;
-static int totalchars = 0, totalerrors = 0;
+static int totalchars = 0, totalerrors = 0, errors = 0;
 static time_t t0;
 
 double a, step;
@@ -58,7 +58,7 @@ double a, step;
 static void
 terminate (int sig)
 {
-  int t;
+  time_t t;
 
   t = time (0) - t0;
 
@@ -74,11 +74,16 @@ terminate (int sig)
   printf ("\n\nTotal characters: %d\n", totalchars);
   printf ("Errors: %d\n", totalerrors);
   printf ("Elapsed time: %d seconds\n", t);
-  totalchars -= totalerrors;
-  totalchars += totalchars / 5;
+  if (errors == 0) totalchars--;
+  if (totalchars <= totalerrors) totalchars = 0;
+  else
+    {
+      totalchars -= totalerrors;
+      totalchars += totalchars / 5;
+    }
 
   printf ("Characters per minute: %g\n",
-	  (float) totalchars / (float) t * 60.0);
+	  t > 0?(float) totalchars / (float) t * 60.0:0);
   exit (sig);
 }
 
@@ -320,7 +325,6 @@ main (int argc, char *argv[])
   char line[1024];
   int i, parm;
   int l, speed, wpm = 12;
-  int errors = 0;
 
   fd_set readfds, writefds;
 
@@ -395,7 +399,7 @@ main (int argc, char *argv[])
   ioctl (audiofd, SNDCTL_DSP_SETFRAGMENT, &parm);
 
   parm = AFMT_S16_LE;
-  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &parm) == -1)
     {
       perror ("SETFMT");
       close (audiofd);
@@ -412,7 +416,7 @@ main (int argc, char *argv[])
     }
 
   parm = SRATE;
-  if (ioctl (audiofd, SNDCTL_DSP_SPEED, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SPEED, &parm) == -1)
     {
       perror ("SPEED");
       close (audiofd);
@@ -534,7 +538,7 @@ main (int argc, char *argv[])
 			break;
 		      }
 		  playerror ();
-		  if (errors++ > 3)
+		  if (++errors > 3)
 		    {
 		      printf ("It is '%c' not '%c'\r\n", playc, *line);
 		      fflush (stdout);

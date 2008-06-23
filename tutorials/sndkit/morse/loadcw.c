@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#define TESTFILE "/usr/local/lib/Vvcw"
+#define TESTFILE "Vvcw"
 
 static int ngroups = 0;
 

@@ -99,7 +99,7 @@ check_results (void)
 static void
 terminate (int sig)
 {
-  int t;
+  time_t t;
 
   t = time (0) - t0;
 
@@ -116,7 +116,7 @@ terminate (int sig)
   printf ("Elapsed time: %d seconds\n", t);
 
   printf ("Characters per minute: %g\n",
-	  (float) totalchars / (float) t * 60.0);
+	  t > 0?(float) totalchars / (float) t * 60.0:0);
   printf ("\n");
   check_results ();
   exit (sig);
@@ -444,7 +444,7 @@ main (int argc, char *argv[])
   ioctl (audiofd, SNDCTL_DSP_SETFRAGMENT, &parm);
 
   parm = AFMT_S16_LE;
-  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SETFMT, &parm) == -1)
     {
       perror ("SETFMT");
       close (audiofd);
@@ -461,7 +461,7 @@ main (int argc, char *argv[])
     }
 
   parm = SRATE;
-  if (ioctl (audiofd, SNDCTL_DSP_SPEED, (int) &parm) == -1)
+  if (ioctl (audiofd, SNDCTL_DSP_SPEED, &parm) == -1)
     {
       perror ("SPEED");
       close (audiofd);
