@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+
+#include <sys/soundcard.h>
+#ifdef USERLAND
 #define oss_native_word unsigned long
 #define oss_mutex_t unsigned long
 #define oss_device_t unsigned long
@@ -15,8 +18,11 @@
 #define oss_midi_inputbyte_t char
 #define uart401_devc unsigned long
 typedef int oss_mutex;
-#include <sys/soundcard.h>
-#include "../../../kernel/drv/sblive/sblive.h"
+typedef void *oss_dma_handle_t;
+#else
+#include "../../../kernel/framework/include/os.h"
+#endif /* USERLAND */
+#include "../../../kernel/drv/oss_sblive/sblive.h"
 
 #define MAX_NAME 64
 #define MAX_SYMBOLS	1024
@@ -1070,12 +1076,12 @@ produce_output (char *fname)
   if (is_audigy)
     {
       fle.magic = EMU10K2_MAGIC;
-      fle.card_type = SB_AUDIGY;
+      fle.feature_mask = SB_AUDIGY;
     }
   else
     {
       fle.magic = EMU10K1_MAGIC;
-      fle.card_type = SB_LIVE;
+      fle.feature_mask = SB_LIVE;
     }
   fle.size = pc;
   fprintf (stderr, "%d instructions out of 512 produced\n", pc);

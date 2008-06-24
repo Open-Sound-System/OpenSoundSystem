@@ -4,6 +4,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
+
+#include <sys/soundcard.h>
+#ifdef USERLAND
 #define oss_native_word unsigned long
 #define oss_mutex_t unsigned long
 #define oss_device_t unsigned long
@@ -11,8 +14,11 @@
 #define oss_midi_inputbyte_t char
 #define uart401_devc unsigned long
 typedef int oss_mutex;
-#include <sys/soundcard.h>
-#include "../../../kernel/drv/sblive/sblive.h"
+typedef void *oss_dma_handle_t;
+#else
+#include "../../../kernel/framework/include/os.h"
+#endif /* USERLAND */
+#include "../../../kernel/drv/oss_sblive/sblive.h"
 
 int work_done = 0;
 int ossfd;
@@ -64,10 +70,10 @@ do_download (void)
       return;
     }
 
-  if (card_type != fle.card_type)
+  if (card_type != fle.feature_mask)
     {
       fprintf (stderr, "Device/file incompatibility (%x/%x)\n", card_type,
-	       fle.card_type);
+	       fle.feature_mask);
       return;
     }
 

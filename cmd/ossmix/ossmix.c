@@ -1087,18 +1087,17 @@ midi_mixer (int dev, char *mididev, char *argv[], int argp, int argc)
 static void
 dump_all (void)
 {
-  int dev;
-  oss_sysinfo info;
+  int dev, nummixers;
 
-  if (ioctl (mixerfd, SNDCTL_SYSINFO, &info) == -1)
+  if (ioctl (mixerfd, SNDCTL_MIX_NRMIX, &nummixers) == -1)
     {
-      perror ("SNDCTL_SYSINFO");
+      perror ("SNDCTL_MIX_NRMIX");
       if (errno == EINVAL)
 	fprintf (stderr, "Error: OSS version 4.0 or later is required\n");
       exit (-1);
     }
 
-  for (dev = 0; dev < info.nummixers; dev++)
+  for (dev = 0; dev < nummixers; dev++)
     {
       load_devinfo (dev);
       dump_devinfo (dev);

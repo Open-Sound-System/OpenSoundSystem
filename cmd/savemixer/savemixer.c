@@ -10,14 +10,14 @@
 #include <oss_config.h>
 #include <sys/ioctl.h>
 
-static void change_mixer (char *);
-static int find_mixerdev (char *);
+static void change_mixer (const char *, char *);
+static int find_mixerdev (const char *);
 static char * get_mapname (void);
 #ifdef APPLIST_SUPPORT
 static void load_applist (void);
 #endif
-static void load_config (char *);
-static void open_device (char *, int);
+static void load_config (const char *);
+static void open_device (const char *, int);
 #ifdef MANAGE_DEV_DSP
 static void reorder_dspdevs (void);
 #endif
@@ -28,10 +28,9 @@ static void reorder_dspdevs (void);
 
 static char ossetcdir[ETCDIRLEN] = "/usr/lib/oss/etc";
 	/* This is the usual place */
-static oss_sysinfo sysinfo;
 static oss_mixerinfo mixerinfo;
 static oss_mixext *mixerdefs = NULL;
-static int fd, load_settings = 0, verbose = 0;
+static int fd, load_settings = 0, nummixers, verbose = 0;
 
 #ifdef MANAGE_DEV_DSP
 static void
@@ -316,7 +315,7 @@ oexit:
 }
 
 static int
-find_mixerdev (char *handle)
+find_mixerdev (const char *handle)
 {
 /*
  * Find the mixer device (number) which matches the given handle.
@@ -328,7 +327,7 @@ find_mixerdev (char *handle)
     free (mixerdefs);
   mixerdefs = NULL;
 
-  for (i = 0; i < sysinfo.nummixers; i++)
+  for (i = 0; i < nummixers; i++)
     {
       int j;
 
@@ -371,14 +370,14 @@ find_mixerdev (char *handle)
 }
 
 static void
-change_mixer (char *line)
+change_mixer (const char *fname, char *line)
 {
   int value, i;
   char name[SLINELEN];
 
   if (sscanf (line, "%s %x", name, &value) != 2)
     {
-      fprintf (stderr, "Bad line in mixer.save\n");
+      fprintf (stderr, "Bad line in %s\n", fname);
       fprintf (stderr, "%s\n", line);
     }
 
@@ -417,7 +416,7 @@ change_mixer (char *line)
 }
 
 static void
-load_config (char *name)
+load_config (const char *name)
 {
   FILE *f;
   char line[SLINELEN], *s;
@@ -441,11 +440,11 @@ load_config (char *name)
   while (fgets (line, sizeof (line), f) != NULL)
     {
 
-      if ((*line == '\0') || (*line == '#'))
-	continue;
-
       if ((s = strchr (line, '\n')) != NULL)
 	*s = '\0';
+
+      if ((*line == '\0') || (*line == '#'))
+	continue;
 
       if (*line == '$')
 	{
@@ -470,14 +469,14 @@ load_config (char *name)
       if (dev < 0)		/* Unknown mixer device? */
 	continue;
 
-      change_mixer (line);
+      change_mixer (name, line);
     }
 
   fclose (f);
 }
 
 static void
-open_device (char * dev_name, int mode)
+open_device (const char * dev_name, int mode)
 {
   if ((fd = open (dev_name, mode, 0)) == -1)
     {
@@ -486,14 +485,14 @@ open_device (char * dev_name, int mode)
       exit (-1);
     }
 
-  if (ioctl (fd, SNDCTL_SYSINFO, &sysinfo) == -1)
+  if (ioctl (fd, SNDCTL_MIX_NRMIX, &nummixers) == -1)
     {
-      perror ("SNDCTL_SYSINFO");
+      perror ("SNDCTL_MIX_NRMIX");
       fprintf (stderr, "Possibly incompatible OSS version\n");
       exit (-1);
     }
 
-  if (sysinfo.nummixers < 1)
+  if (nummixers < 1)
     {
       fprintf (stderr, "No mixers in the system\n");
       exit (0);
@@ -562,7 +561,7 @@ main (int argc, char *argv[])
 
   if (verbose) fprintf (stdout, "Saving mixer settings to %s\n", mapname);
 
-  for (dev = 0; dev < sysinfo.nummixers; dev++)
+  for (dev = 0; dev < nummixers; dev++)
     {
       mixerinfo.dev = dev;
 

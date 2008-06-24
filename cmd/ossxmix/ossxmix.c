@@ -97,7 +97,7 @@ static guint poll_tag_list[4] = { 0 };
 #define VALUE_POLL_INTERVAL	5000
 #define MIXER_POLL_INTERVAL	100
 #define MIXNUM_POLL_INTERVAL	5000
-static int mixer_num = 1;
+static int mixer_num;
 
 #ifndef EIDRM
 #define EIDRM EFAULT
@@ -147,6 +147,7 @@ static void * _ossxmix_calloc (size_t, size_t);
 static gint add_timeout (gpointer);
 static void change_enum (GtkToggleButton *, gpointer);
 static void change_on_off (GtkToggleButton *, gpointer);
+static void check_tooltip (oss_mixext *, GtkWidget *);
 static void cleanup (void);
 static gint close_request (GtkWidget *, gpointer);
 static void connect_enum (oss_mixext *, GtkObject *);
@@ -192,7 +193,7 @@ static GtkStatusIcon *status_icon = NULL;
 #endif /* STATUSICON */
 
 static void
-check_tooltip(oss_mixext *rec, GtkWidget *wid)
+check_tooltip (oss_mixext * rec, GtkWidget * wid)
 {
   oss_mixer_enuminfo ei;
   char *p;
@@ -771,21 +772,22 @@ connect_onoff (oss_mixext * thisrec, GtkObject * entry)
 static GtkWidget *
 load_multiple_devs (void)
 {
-  oss_sysinfo si;
   int i;
   GtkWidget *notebook, *mixer_page, *label, *vbox, *hbox;
 
-  ioctl (mixer_fd, OSS_SYSINFO, &si);
+  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &mixer_num) == -1)
+    {
+      perror ("SNDCTL_MIX_NRMIX");
+      exit (-1);
+    }
 
-  if (si.nummixers > MAX_DEVS) si.nummixers = MAX_DEVS;
-
-  mixer_num = si.nummixers;
+  if (mixer_num > MAX_DEVS) mixer_num = MAX_DEVS;
 
   /* This can happen when ossxmix is restarted by {get/set}_value */
-  if (dev > si.nummixers - 1) dev = find_default_mixer ();
+  if (dev > mixer_num - 1) dev = find_default_mixer ();
 
   notebook = gtk_notebook_new ();
-  for (i = 0; i < si.nummixers; i++)
+  for (i = 0; i < mixer_num; i++)
     {
       mixer_page = load_devinfo (i);
       if (mixer_page == NULL) continue;
@@ -833,21 +835,21 @@ load_multiple_devs (void)
 static GtkWidget *
 load_devinfo (int dev)
 {
-  char tmp[1024], *name;
+  char tmp[1024], *name = '\0';
   char ** extnames;
   int i, n, val, left, right, mx, g, mask, shift;
   int angle, vol;
   int width;
   int ngroups = 0;
-  int parent;
+  int parent = 0;
   int change_color;
   oss_mixext *thisrec;
   oss_mixerinfo mi;
   GdkColor color;
-  GtkWidget *wid, *wid2, *gang, *rootwid = NULL, *pw, *frame, *box;
-  GtkWidget *widgets[256] = { NULL };
+  GtkWidget *wid, *wid2, *gang, *rootwid = NULL, *pw = NULL, *frame, *box;
+  GtkWidget **widgets;
   GtkObject *adjust, *adjust2;
-  gboolean change_orient = TRUE, ori, orient[256] = { FALSE };
+  gboolean change_orient = TRUE, ori, * orient;
   gboolean expand, use_layout_b = FALSE;
 
   mi.dev = dev;
@@ -876,6 +878,8 @@ load_devinfo (int dev)
     }
   extrec[dev] = ossxmix_calloc (n+1, sizeof (oss_mixext));
   extnames = ossxmix_malloc ((n+1) * sizeof (char *));
+  widgets = ossxmix_calloc (n, sizeof (GtkWidget *));
+  orient = ossxmix_calloc (n, sizeof (gboolean));
 
   for (i = 0; i < n; i++)
     {
@@ -906,6 +910,19 @@ load_devinfo (int dev)
 	  mask = 0xffff;
 	  shift = 16;
 	}
+
+      if ((thisrec->type != MIXT_DEVROOT) && (thisrec->type != MIXT_MARKER))
+        {
+          parent = thisrec->parent;
+          name = cut_name (thisrec->id);
+          if ((thisrec->type == MIXT_GROUP) && !change_orient && (parent == 0))
+            pw = rootwid;
+          else
+            pw = widgets[parent];
+          if (pw == NULL)
+	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
+                     thisrec->extname, parent);
+        }
 
 #if OSS_VERSION >= 0x040004
       if (thisrec->rgbcolor != 0)
@@ -939,22 +956,13 @@ load_devinfo (int dev)
 	  if (!show_all)
 	    break;
 
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*extnames[parent] == '\0')
 	    strcpy (tmp, name);
 	  else
             snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	  store_name (dev, i, tmp, extnames);
-	  if (!change_orient && (parent == 0))
-	    pw = rootwid;
-	  else
-	    pw = widgets[parent];
 	  if (thisrec->flags & MIXF_FLAT)	/* Group contains only ENUM controls */
 	    expand = FALSE;
-	  if (pw == NULL)
-	    fprintf (stderr, "Root group %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  ori = !orient[parent];
 	  if (change_orient)
 	    ori = !ori;
@@ -996,8 +1004,6 @@ load_devinfo (int dev)
 	case MIXT_VALUE:
 	  if (!show_all)
 	    break;
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1006,10 +1012,6 @@ load_devinfo (int dev)
 	      store_name (dev, i, tmp, extnames);
 	    }
 	  val = get_value (thisrec);
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 
 	  wid = gtk_label_new ("????");
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
@@ -1027,8 +1029,6 @@ load_devinfo (int dev)
 	case MIXT_MONODB:
 	  if (!show_all)
 	    break;
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1036,10 +1036,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  wid = gtk_button_new_with_label (extnames[i]);
 	  gtk_box_pack_start (GTK_BOX (pw), wid, FALSE, TRUE, 0);
 	  gtk_widget_set_name (wid, extnames[i]);
@@ -1053,9 +1049,7 @@ load_devinfo (int dev)
 #endif /* MIXT_MUTE */
 	  if (!show_all)
 	    break;
-	  parent = thisrec->parent;
 	  val = get_value (thisrec) & 0x01;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1063,10 +1057,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
           wid = gtk_check_button_new_with_label (extnames[i]);
 #ifndef GTK1_ONLY
 	  if (change_color)
@@ -1089,8 +1079,6 @@ load_devinfo (int dev)
 	  mx = thisrec->maxvalue;
 	  left = mx - (val & 0xff);
 	  right = mx - ((val >> 8) & 0xff);
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1098,10 +1086,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  wid = gtk_vu_new ();
 	  wid2 = gtk_vu_new ();
 	  check_tooltip(thisrec, wid);
@@ -1138,8 +1122,6 @@ load_devinfo (int dev)
 	  val = get_value (thisrec);
 	  mx = thisrec->maxvalue;
 	  left = mx - (val & 0xff);
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1147,10 +1129,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  wid = gtk_vu_new ();
 	  check_tooltip(thisrec, wid);
 
@@ -1188,8 +1166,6 @@ load_devinfo (int dev)
 	  mx = thisrec->maxvalue;
 	  left = mx - (val & mask);
 	  right = mx - ((val >> shift) & mask);
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1197,10 +1173,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  adjust = gtk_adjustment_new (left, 0, mx, 1, 5, 0);
 	  adjust2 = gtk_adjustment_new (right, 0, mx, 1, 5, 0);
 	  gang = gtk_check_button_new ();
@@ -1265,8 +1237,6 @@ load_devinfo (int dev)
 	  if (!show_all)
 	    break;
 	  val = get_value (thisrec);
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1274,10 +1244,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  wid = gtk_joy_new ();
 	  check_tooltip(thisrec, wid);
 	  create_update (NULL, NULL, NULL, wid, thisrec, WHAT_UPDATE, 0);
@@ -1308,8 +1274,6 @@ load_devinfo (int dev)
 	  mx = thisrec->maxvalue;
 	  vol = 100 - (val & 0x00ff);
 	  angle = 360 - ((val >> 16) & 0xffff);
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1317,10 +1281,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  adjust = gtk_adjustment_new (vol, 0, 100, 1, 5, 0);
 	  adjust2 = gtk_adjustment_new (angle, 0, 360, 1, 5, 0);
 	  connect_scrollers (thisrec, adjust, adjust2, NULL);
@@ -1359,8 +1319,6 @@ load_devinfo (int dev)
 	case MIXT_SLIDER:
 	  if (!show_all)
 	    break;
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  val = get_value (thisrec);
 	  mx = thisrec->maxvalue;
 
@@ -1377,10 +1335,6 @@ load_devinfo (int dev)
 	      snprintf (tmp, sizeof(tmp), "%s.%s", extnames[parent], name);
 	      store_name (dev, i, tmp, extnames);
 	    }
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 	  adjust = gtk_adjustment_new (val, 0, mx, 1, 5, 0);
 	  connect_scrollers (thisrec, adjust, NULL, NULL);
 	  create_update (NULL, adjust, NULL, NULL, thisrec, WHAT_UPDATE, 0);
@@ -1415,8 +1369,6 @@ load_devinfo (int dev)
 
 	  if (!show_all)
 	    break;
-	  parent = thisrec->parent;
-	  name = cut_name (thisrec->id);
 	  if (*thisrec->id == 0)
 	    extnames[i] = extnames[parent];
 	  else
@@ -1425,10 +1377,6 @@ load_devinfo (int dev)
 	      store_name (dev, i, tmp, extnames);
 	    }
 	  val = get_value (thisrec) & 0xff;
-	  pw = widgets[parent];
-	  if (pw == NULL)
-	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
-		     extnames[i], parent);
 
 	  wid = gtk_combo_new ();
 	  check_tooltip(thisrec, wid);
@@ -1475,6 +1423,8 @@ load_devinfo (int dev)
     }
 
   free (extnames);
+  free (widgets);
+  free (orient);
   return rootwid;
 }
 
@@ -1733,6 +1683,11 @@ poll_all (gpointer data)
       perror ("SNDCTL_MIXERINFO");
       exit (-1);
     }
+  if (!inf.enabled)
+    {
+      reload_gui ();
+      return TRUE;
+    }
 
 /*
  * Compare the modify counter.
@@ -1888,18 +1843,16 @@ poll_values (gpointer data)
 static gint
 poll_mixnum (gpointer data)
 {
-  oss_sysinfo si;
+  int c_mixer_num;
 
-  if (ioctl (mixer_fd, SNDCTL_SYSINFO, &si) == -1)
+  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &c_mixer_num) == -1)
     {
-      perror ("SNDCTL_SYSINFO");
-      if (errno == EINVAL)
-	fprintf (stderr, "Error: OSS version 4.0 or later is required\n");
+      perror ("SNDCTL_MIX_NRMIX");
       exit (-1);
     }
 
-  if (si.nummixers > MAX_DEVS) si.nummixers = MAX_DEVS;
-  if (si.nummixers != mixer_num) reload_gui ();
+  if (c_mixer_num > MAX_DEVS) c_mixer_num = MAX_DEVS;
+  if (c_mixer_num != mixer_num) reload_gui ();
 
   return TRUE;
 }
@@ -1907,25 +1860,24 @@ poll_mixnum (gpointer data)
 static int
 find_default_mixer (void)
 {
-  oss_sysinfo si;
   oss_mixerinfo mi;
-  int i, best = -1, bestpri = 0;
+  int i, best = -1, bestpri = 0, mix_num;
 
-  if (ioctl (mixer_fd, SNDCTL_SYSINFO, &si) == -1)
+  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &mix_num) == -1)
     {
-      perror ("SNDCTL_SYSINFO");
+      perror ("SNDCTL_MIX_NRMIX");
       if (errno == EINVAL)
 	fprintf (stderr, "Error: OSS version 4.0 or later is required\n");
       exit (-1);
     }
 
-  if (si.nummixers == 0)
+  if (mix_num == 0)
     {
       fprintf (stderr, "No mixers are available\n");
       exit (-1);
     }
 
-  for (i = 0; i < si.nummixers; i++)
+  for (i = 0; i < mix_num; i++)
     {
       mi.dev = i;
 

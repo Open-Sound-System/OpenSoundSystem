@@ -2,7 +2,7 @@ TOPDIR=../..
 
 include $(TOPDIR)/make.defs
 
-SUBDIRS=dsp morse samples softsynth userdev_demo
+SUBDIRS=dsp morse tests samples sblive softsynth userdev_demo
 
 all: subdirs
 

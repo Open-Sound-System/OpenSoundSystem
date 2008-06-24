@@ -125,8 +125,8 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  parm = AFMT_S16_LE;
-  if (ioctl (fd, SNDCTL_DSP_SETFMT, (int) &parm) == -1)
+  parm = AFMT_S16_NE;
+  if (ioctl (fd, SNDCTL_DSP_SETFMT, &parm) == -1)
     {
       perror ("SETFMT");
       close (fd);
@@ -136,14 +136,14 @@ main (int argc, char *argv[])
   if (parm != AFMT_S16_NE)
     {
       printf
-	("Error: 32/24 bit sample format is not supported by the device\n");
+	("Error: 16 bit sample format is not supported by the device\n");
       printf ("%08x/%08x\n", parm, AFMT_S16_LE);
       close (fd);
       exit (-1);
     }
 
   parm = CHANNELS;
-  if (ioctl (fd, SNDCTL_DSP_CHANNELS, (int) &parm) == -1)
+  if (ioctl (fd, SNDCTL_DSP_CHANNELS, &parm) == -1)
     {
       perror ("CHANNELS");
       close (fd);
@@ -151,7 +151,7 @@ main (int argc, char *argv[])
     }
 
   parm = RATE;
-  if (ioctl (fd, SNDCTL_DSP_SPEED, (int) &parm) == -1)
+  if (ioctl (fd, SNDCTL_DSP_SPEED, &parm) == -1)
     {
       perror ("SPEED");
       close (fd);
