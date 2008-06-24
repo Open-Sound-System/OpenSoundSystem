@@ -1415,24 +1415,18 @@ ac97_spdif_setup (int dev, int speed, int bits)
 
   val = ac97_spdifout_ctl (dev, SPDIFOUT_RATE, SNDCTL_MIX_READ, 0);
 
+  mixer_devs[dev]->modify_counter++;
+
   switch (speed)
     {
     case 48000:
       if (val != 0)
 	ac97_spdifout_ctl (dev, SPDIFOUT_RATE, SNDCTL_MIX_WRITE, 0);
-      if (bits == AFMT_AC3)
-	ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 1);
-      else
-	ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 0);
       break;
 
     case 44100:
       if (val != 1)
 	ac97_spdifout_ctl (dev, SPDIFOUT_RATE, SNDCTL_MIX_WRITE, 1);
-      if (bits == AFMT_AC3)
-	ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 1);
-      else
-	ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 0);
       break;
 
     case 32000:
@@ -1443,4 +1437,9 @@ ac97_spdif_setup (int dev, int speed, int bits)
     default:
       break;
     }
+
+  if (bits == AFMT_AC3)
+     ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 1);
+  else
+     ac97_spdifout_ctl (dev, SPDIFOUT_AUDIO, SNDCTL_MIX_WRITE, 0);
 }
