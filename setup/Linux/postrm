@@ -1,4 +1,4 @@
 #!/bin/sh
-rm -rf /usr/lib/oss/*
+if [ -e /tmp/OSS_UPGRADE ]; then echo "Upgrading OSS - will not purge /usr/lib/oss."; else rm -rf /usr/lib/oss/*; fi
 rm -f /usr/lib/libflashsupport.so
 if [ -x /usr/bin/update-menus ]; then /usr/bin/update-menus; fi

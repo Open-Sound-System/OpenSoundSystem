@@ -1,8 +1,12 @@
 #!/bin/sh
+if [ -e /tmp/OSS_UPGRADE ]; then rm /tmp/OSS_UPGRADE; fi
+if [ -e /etc/oss.conf ]; then true; else echo "OSSLIBDIR=/usr/lib/oss" > /etc/oss.conf; fi
 echo "Building OSS Modules for Linux-`uname -p` `uname -r`"
 cd /usr/lib/oss/build
 sh install.sh
 if [ -x /usr/bin/update-menus ]; then /usr/bin/update-menus; fi
+echo "Forcing re-detection of installed soundcards"
+ossdetect
 echo "Starting Open Sound System"
 sync
 /usr/sbin/soundoff >> /dev/null 2>&1
