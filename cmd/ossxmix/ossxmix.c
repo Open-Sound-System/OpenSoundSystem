@@ -387,7 +387,7 @@ get_value (oss_mixext * thisrec)
 	{
 	  fprintf (stderr,
 		   "ossxmix: Mixer device disconnected from the system\n");
-	  exit (-1);
+	  return 0;
 	}
 
       if (errno == EIDRM)

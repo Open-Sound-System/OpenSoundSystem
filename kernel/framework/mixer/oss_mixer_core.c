@@ -45,6 +45,8 @@ get_mixer_info (int dev, ioctl_arg arg)
 {
   mixer_info *info = (mixer_info *) arg;
 
+  memset(info, 0, sizeof(*info));
+
   if (dev < 0 || dev >= num_mixers)
     return -ENXIO;
 
@@ -52,9 +54,6 @@ get_mixer_info (int dev, ioctl_arg arg)
   strncpy (info->name, mixer_devs[dev]->name, 31);
   info->name[31] = 0;
   info->modify_counter = mixer_devs[dev]->modify_counter;
-  info->card_number = mixer_devs[dev]->card_number;
-  info->port_number = mixer_devs[dev]->port_number;
-  strcpy (info->handle, mixer_devs[dev]->handle);
 
   return 0;
 }
@@ -89,11 +88,11 @@ oss_legacy_mixer_ioctl (int mixdev, int audiodev, unsigned int cmd,
       return -EIO;
     }
 
-  if (!mixer_devs[mixdev]->enabled || mixer_devs[mixdev]->unloaded)
-    return -ENXIO;
-
   if (cmd == SOUND_MIXER_INFO)
     return get_mixer_info (mixdev, arg);
+
+  if (!mixer_devs[mixdev]->enabled || mixer_devs[mixdev]->unloaded)
+    return -ENXIO;
 
   if (mixer_devs[mixdev]->d->ioctl == NULL)
     return -EINVAL;

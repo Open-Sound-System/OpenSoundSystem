@@ -1635,9 +1635,7 @@ typedef struct mixer_info	/* OBSOLETE */
   char id[16];
   char name[32];
   int modify_counter;
-  int card_number;
-  int port_number;
-  char handle[32];
+  int fillers[10];
 } mixer_info;
 
 /* SOUND_MIXER_INFO is obsolete - use SNDCTL_MIXERINFO instead */
