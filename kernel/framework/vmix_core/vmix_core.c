@@ -77,6 +77,10 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	  return vol;
 	  break;
 
+	case 510:		/* Enable/disable */
+	  return !mixer->disabled;
+	  break;
+
 	case 511:		/* Multi channel enable */
 	  return mixer->multich_enable;
 	  break;
@@ -103,6 +107,11 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 
 	  mixer_devs[dev]->modify_counter++;
 	  return vol | (vol << 16);
+	  break;
+
+	case 510:		/* Enable/disable */
+	  mixer->disabled = !value;
+	  return !!value;
 	  break;
 
 	case 511:		/* Multich enable */
@@ -285,6 +294,13 @@ create_output_controls (int mixer_dev)
   /*
    * Misc vmix related mixer settings.
    */
+      sprintf (tmp, "vmix%d-enable", mixer->instance_num);
+      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 510, vmix_outvol,
+					   MIXT_ONOFF,
+					   tmp, 2,
+					   MIXF_READABLE | MIXF_WRITEABLE)) <
+	  0)
+	return ctl;
 
       if (mixer->max_channels>2)
 	 {
@@ -1929,6 +1945,9 @@ vmix_create_client(void *mixer_)
   oss_native_word flags;
   vmix_portc_t *portc;
   vmix_mixer_t *mixer = mixer_;
+
+  if (mixer->disabled) /* Vmix is disabled for the time being */
+     return -ENXIO;
 
 /*
  * First check if any of the already created engines is free and available for use.

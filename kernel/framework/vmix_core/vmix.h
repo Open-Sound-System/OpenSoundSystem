@@ -104,6 +104,7 @@ struct _vmix_mixer_t		/* Instance specific data */
 {
   vmix_mixer_t *next;		/* Pointer to the next vmix instance */
   int instance_num;
+  int disabled;
   oss_device_t *osdev;
   oss_device_t *master_osdev;
   oss_mutex_t mutex;
