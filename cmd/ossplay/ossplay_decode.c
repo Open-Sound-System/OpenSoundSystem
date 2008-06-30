@@ -4,7 +4,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
 #include "ossplay.h"
-#include "decode.h"
+#include "ossplay_decode.h"
 
 typedef unsigned int (decfunc_t) (unsigned char **, unsigned char *,
                                   const unsigned int, void *);

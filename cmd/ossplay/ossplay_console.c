@@ -7,7 +7,7 @@ extern int quiet, quitflag, exitstatus, loop, from_stdin;
 extern char current_songname[64];
 
 #include "ossplay.h"
-#include "parser.h"
+#include "ossplay_parser.h"
 
 void perror_msg (const char * s)
 {

@@ -12,8 +12,8 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
 #include "ossplay.h"
-#include "decode.h"
-#include "parser.h"
+#include "ossplay_decode.h"
+#include "ossplay_parser.h"
 
 #include <signal.h>
 
