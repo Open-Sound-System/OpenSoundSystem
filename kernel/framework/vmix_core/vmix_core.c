@@ -12,6 +12,7 @@
 #include "vmix.h"
 
 extern int vmix_disabled;	/* Configuration option (osscore.conf) */
+extern int vmix_loopdevs;	/* Configuration option (osscore.conf) */
 static vmix_mixer_t *mixer_list = NULL; /* List of all currently installed mixer instances */
 static int instance_num = 0;
 
@@ -1594,7 +1595,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
 
   return portc->audio_dev;
 }
-#if 0
+
 static void
 create_loopdev (vmix_mixer_t * mixer)
 {
@@ -1658,7 +1659,6 @@ create_loopdev (vmix_mixer_t * mixer)
   portc->volume[0] = DB_SIZE * 5;
   portc->volume[1] = DB_SIZE * 5;
 }
-#endif
 
 static int
 check_masterdev (void *mx)
@@ -1778,7 +1778,9 @@ check_masterdev (void *mx)
   	    mixer->client_portc[cl]->open_pending = 0; /* Mark this free engine to be free for use */
      }
 
-  //create_loopdev (mixer); // TODO: Make this configurable.
+  if (vmix_loopdevs>0)
+     for (i=0;i<vmix_loopdevs;i++)
+         create_loopdev (mixer);
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 

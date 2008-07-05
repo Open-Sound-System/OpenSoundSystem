@@ -230,6 +230,7 @@ extern int detect_trace;
 extern int src_quality;
 extern int flat_device_model;
 extern int vmix_disabled;
+extern int vmix_loopdevs;
 
 module_param (oss_hz, int, S_IRUGO);
 module_param (max_intrate, int, S_IRUGO);
@@ -237,6 +238,7 @@ module_param (detect_trace, int, S_IRUGO);
 module_param (src_quality, int, S_IRUGO);
 module_param (flat_device_model, int, S_IRUGO);
 module_param (vmix_disabled, int, S_IRUGO);
+module_param (vmix_loopdevs, int, S_IRUGO);
 
 static struct proc_dir_entry *oss_proc_root = NULL;
 static struct proc_dir_entry *oss_proc_devfiles = NULL;
