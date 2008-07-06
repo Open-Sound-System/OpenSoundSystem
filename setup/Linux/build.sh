@@ -184,6 +184,12 @@ rm -f prototype/usr/share/man/man8/ossdetect.8
 $SRCDIR/setup/txt2man -t "ossdetect" -v "User Commands" -s 8 os_cmd/Linux/ossdetect/ossdetect.man|gzip -9 > prototype/usr/share/man/man8/ossdetect.8.gz
 echo done ossdetect
 
+# Hal 0.50+ hotplug
+mkdir -p prototype/usr/lib/hal/scripts
+ln -s /usr/lib/oss/scripts/oss_usb-create-devices prototype/usr/lib/hal/scripts/
+mkdir -p prototype/usr/share/hal/fdi/policy/20thirdparty/
+ln -s /usr/lib/oss/scripts/90-oss_usb-create-device.fdi prototype/usr/share/hal/fdi/policy/20thirdparty/
+
 # Licensing stuff
 if test -f $SRCDIR/4front-private/osslic.c
 then
