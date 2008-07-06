@@ -72,6 +72,10 @@ do
 		export CLOSED_SOURCE
 		;;
 
+	"--enable-libsalsa=NO")
+		NOALSA=1
+		;;
+
 	"--enable-timings")
 		# This is option is undocumented and unsupported. It is only
 		# for internal testing by 4Front Technologies and not useful
@@ -91,9 +95,10 @@ do
 		case `uname -s` in
 
 		Linux)
-			echo "   --target=uclinux-blackfin      - Configure for uClinux/Blackfin target (EXPERIMENTAL)"
-			echo "   --regparm      - Configure for CONFIG_REGPARM kernels"
-			echo "   --no-regparm   - Configure for kernels without CONFIG_REGPARM option."
+			echo "   --enable-libsalsa=YES|NO	- Enable/Disable libsalsa."
+			echo "   --target=uclinux-blackfin	- Configure for uClinux/Blackfin target (EXPERIMENTAL)"
+			echo "   --regparm			- Configure for CONFIG_REGPARM kernels"
+			echo "   --no-regparm			- Configure for kernels without CONFIG_REGPARM option."
 			echo "NOTE! --regparm/--no-regparm is normally detected"
 			echo "      automatically and these swhiches should NOT be used."
 			echo
@@ -165,10 +170,13 @@ case `uname` in
 
 "Linux")
 
-	if test -d /usr/include/alsa || test -d /usr/local/include/alsa
+	if test "$NOALSA" != "1"
 	then
-		echo Compiling libsalsa library
-		export HAVE_ALSA=1
+		if test -d /usr/include/alsa || test -d /usr/local/include/alsa
+		then
+			echo Compiling libsalsa library
+			export HAVE_ALSA=1
+		fi
 	fi
 	
 	if test "$USE_REGPARM " != "1 " && test "$NO_REGPARM " != "1 "
