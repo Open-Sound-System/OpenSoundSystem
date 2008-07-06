@@ -110,8 +110,11 @@ fi
 
 cp devlist.txt prototype/usr/lib/oss/etc/devices.list
 
-#sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/OSR6
-cp devlist.txt $SRCDIR/devlists/SCO
+if test -d $SRCDIR/kernel/nonfree
+then
+	sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/OSR6
+	#cp devlist.txt $SRCDIR/devlists/SCO
+fi
 
 # Generate Man pages for commands
 for i in target/bin/*

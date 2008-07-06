@@ -4,7 +4,8 @@
  *
  * Description:
  * This program reads stdin and plays the input to an audio device using morse
- * code.
+ * code. The stdin input is supposed to be originated from a file. This
+ * program is not capable to play live keyboard input.
  *
  * This is a great OSS programming example because it shows how simple
  * audio programming can be with OSS.
