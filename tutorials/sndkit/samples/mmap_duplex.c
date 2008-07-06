@@ -71,7 +71,7 @@ main (int argc, char *argv[])
 
   struct audio_buf_info info;
 
-  int frag = 0xffff0008;	/* 32 fragments of 2^8=256 bytes */
+  int frag = 0x00200008;	/* 32 fragments of 2^8=256 bytes */
 
   fd_set reads, writes;
 

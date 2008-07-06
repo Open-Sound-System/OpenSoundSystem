@@ -19,9 +19,8 @@ testgen: testgen.o
 		$(CC) $(LDFLAGS) -o testgen testgen.o -lm
 
 install: $(TARGETS)
-		cp -f $(TARGETS) randomcw $(INSTALLDIR)
+		cp -f $(TARGETS) randomcw Vvcw $(INSTALLDIR)
 		chmod 755 $(INSTALLDIR)/randomcw
-		cp -f Vvcw /usr/local/lib
 
 clean:
 		rm -f *.o $(TARGETS) core core.* x y z *~

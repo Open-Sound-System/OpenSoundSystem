@@ -52,7 +52,7 @@ main (int argc, char *argv[])
   if (argc == 2)
     {
       for (i = 0; i < ei.nvalues; i++)
-	printf ("Rec source #%d = '%s'\n", i, ei.strings + ei.strindex[i]);
+	printf ("Play target #%d = '%s'\n", i, ei.strings + ei.strindex[i]);
       exit (0);
     }
 
@@ -64,8 +64,8 @@ main (int argc, char *argv[])
 	  exit (-1);
 	}
 
-      printf ("Current recording source is #%d\n", src);
-      printf ("Current recording source is #%d (%s)\n",
+      printf ("Current play target is #%d\n", src);
+      printf ("Current play target is #%d (%s)\n",
 	      src, ei.strings + ei.strindex[src]);
       exit (0);
     }

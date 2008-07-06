@@ -110,6 +110,8 @@ main (int argc, char *argv[])
 
       if (freq < (double) speed / 2.1)
 	freq *= 1.000002;
+      else
+	break;
     }
 
   fprintf (stderr, "\n");

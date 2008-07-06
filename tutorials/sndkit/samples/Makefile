@@ -18,7 +18,7 @@ CFLAGS=-I../../../include
 # Note2! Not all programs are included in TARGET. The missing programs are
 #        used to demonstrate OSS features that are not recommended.
 
-TARGETS=audiolevel dsp_geterror_demo fulldup mixer_applet mixext playtgt recsrc singen
+TARGETS=audiolevel dsp_geterror_demo fulldup midi midiin mixer_applet mixext mmap_duplex mmap_test playtgt recsrc singen
 
 all: $(TARGETS)
 
