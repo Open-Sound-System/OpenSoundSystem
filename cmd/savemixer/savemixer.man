@@ -28,7 +28,7 @@ soundoff(1), soundon(1), ossdetect(1), ossdevlinks(1), ossmix(1), ossxmix(1)
 
 FILES
 /etc/oss.conf
-/usr/bin/savemixer
+/usr/sbin/savemixer
 /usr/lib/oss/etc/mixer.save
 /usr/lib/oss/etc/dspdevs.map
 /usr/lib/oss/etc/applist.conf
