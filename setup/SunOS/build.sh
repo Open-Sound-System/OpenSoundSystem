@@ -203,7 +203,7 @@ fi
 
 cp devlist.txt prototype/etc/oss/devices.list
 
-if test -d $SRCDIR/kernel/nonfree
+if test -d $KERNEL32/kernel/nonfree
 then
 	cp -f devlist.txt $KERNEL32/origdir/devlists/Solaris-`uname -p`
 fi

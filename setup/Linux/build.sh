@@ -159,7 +159,7 @@ fi
 
 cp devlist.txt prototype/usr/lib/oss/etc/devices.list
 
-if test -d $SRCDIR/kernel/nonfree
+if test -d kernel/nonfree
 then
 	sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/Linux
 	#cp devlist.txt $SRCDIR/devlists/Linux

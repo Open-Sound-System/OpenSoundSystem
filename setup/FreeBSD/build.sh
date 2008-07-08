@@ -55,7 +55,7 @@ cp lib/libOSSlib/libOSSlib.so prototype/usr/lib/oss/lib
 
 cp devlist.txt prototype/usr/lib/oss/etc/devices.list
 
-if test -d $SRCDIR/kernel/nonfree
+if test -d kernel/nonfree
 then
 	rm -f $SRCDIR/devlists/FreeBSD
 	cp devlist.txt $SRCDIR/devlists/FreeBSD
