@@ -1779,8 +1779,12 @@ check_masterdev (void *mx)
      }
 
   if (vmix_loopdevs>0)
+  {
+     int i;
+
      for (i=0;i<vmix_loopdevs;i++)
          create_loopdev (mixer);
+  }
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 
