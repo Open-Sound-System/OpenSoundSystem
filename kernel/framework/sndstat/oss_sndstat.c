@@ -72,6 +72,12 @@ init_status (void)
   oss_print_license (put_status, put_status_int);
 #endif
 
+#ifdef OSS_CONFIG_OPTIONS
+  put_status ("\nSource configration options: ");
+  put_status (OSS_CONFIG_OPTIONS);
+  put_status ("\n");
+#endif
+
 #ifdef OSS_HG_INFO
   put_status ("\nHg revision: ");
   put_status (OSS_HG_INFO);

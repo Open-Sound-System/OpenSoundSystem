@@ -3,6 +3,9 @@
 CONFIGURE=YES
 COPY_OPTIONS=
 
+OSS_CONFIG_OPTIONS="$*"
+export OSS_CONFIG_OPTIONS
+
 # MIDI support is disabled by default. Use --config-midi=YES to enable
 CONFIG_MIDI=DISABLED
 

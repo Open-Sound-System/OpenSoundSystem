@@ -120,6 +120,12 @@ then
   	HGID=`(cd $SRCDIR && hg tip|grep summary) 2>/dev/null`
   	echo '                   ' \"$HGID\" >> kernel/framework/include/local_config.h
   fi
+
+fi
+
+if test ! "$OSS_CONFIG_OPTIONS " = " " && test ! "$OSS_CONFIG_OPTIONS " = "--include-closed-source "
+then
+	echo '#define OSS_CONFIG_OPTIONS '\"$OSS_CONFIG_OPTIONS\" >> kernel/framework/include/local_config.h
 fi
 
 if test ! -d target
