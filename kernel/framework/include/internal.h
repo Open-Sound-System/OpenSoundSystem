@@ -79,6 +79,26 @@ extern int oss_applist_size;
 #define OSSCTL_RENUM_MIXERDEVS	__SIOW ('X', 203, oss_renumber_t)
 #define OSSCTL_RENUM_MIDIDEVS	__SIOW ('X', 204, oss_renumber_t)
 
+/*
+ * vmixctl related ioctl calls
+ */
+
+typedef struct
+{
+	int masterdev;
+	int inputdev;
+} vmixctl_attach_t;
+
+typedef struct
+{
+	int masterdev;
+	int rate;
+} vmixctl_rate_t;
+
+#define VMIXCTL_ATTACH		__SIOW ('X', 220, vmixctl_attach_t)
+#define VMIXCTL_DETACH		__SIOW ('X', 221, vmixctl_attach_t)
+#define VMIXCTL_RATE		__SIOW ('X', 222, vmixctl_rate_t)
+
 #ifdef DO_TIMINGS
 #define DFLAG_ALL		0x00000001
 #define DFLAG_PROFILE		0x00000002

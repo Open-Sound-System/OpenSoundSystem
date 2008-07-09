@@ -1536,6 +1536,31 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
   return 0;
 }
 
+#ifdef CONFIG_OSS_VMIX
+static int
+vmixctl_attach(vmixctl_attach_t *att)
+{
+	int err;
+	oss_device_t *osdev;
+
+cmn_err(CE_NOTE, "VMIXCTL_ATTACH(%d, %d)\n", att->masterdev, att->inputdev);
+
+	if (att->masterdev<0 || att->masterdev >= num_audio_engines)
+	   return -ENXIO;
+
+	if (att->inputdev != -1)
+	if (att->inputdev<0 || att->inputdev >= num_audio_engines)
+	   return -ENXIO;
+
+	osdev=audio_engines[att->masterdev]->master_osdev;
+
+	if ((err=vmix_attach_audiodev(osdev, att->masterdev, att->inputdev, 0))<0)
+	   return err;
+
+	return 0;
+}
+#endif
+
 int
 oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 {
@@ -1975,6 +2000,16 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       return 0;
       break;
 
+#ifdef CONFIG_OSS_VMIX
+    case VMIXCTL_ATTACH:
+#ifdef GET_PROCESS_UID
+	if (GET_PROCESS_UID () != 0)	/* Not root */
+	  return -EINVAL;
+#endif
+      return vmixctl_attach((vmixctl_attach_t*)arg);
+      break;
+#endif
+
 #if 0
 /*
  * These calls are obsolete and disabled in current OSS version.
@@ -2183,6 +2218,9 @@ oss_mixer_ioctl (int dev, struct fileinfo *bogus,
       case SNDCTL_MIX_ENUMINFO:
       case SNDCTL_MIX_READ:
       case SNDCTL_MIX_WRITE:
+      case VMIXCTL_ATTACH:
+      case VMIXCTL_DETACH:
+      case VMIXCTL_RATE:
          return oss_mixer_ext (dev, OSS_DEV_MIXER, cmd, arg);
          break;
   }

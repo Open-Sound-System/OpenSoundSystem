@@ -1667,7 +1667,7 @@ check_masterdev (void *mx)
   adev_t *adev;
 
   if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
-    return 0;
+    return -ENXIO;
 
   adev = audio_engines[mixer->masterdev];
   DDB (cmn_err
@@ -1676,22 +1676,29 @@ check_masterdev (void *mx)
 
   /* Don't accept virtual devices other than loopback ones */
   if (adev->flags & ADEV_VIRTUAL && !(adev->flags & ADEV_LOOP))
-    return 0;
+    return -EIO;
+
+  if (adev->vmix_mixer != NULL) /* Already attached */
+     return -EBUSY;
 
   if (adev->flags & ADEV_NOOUTPUT)
-    return 0;
+    return -EIO;
 
   if (adev->flags & ADEV_DISABLE_VIRTUAL)	/* Not compatible */
-    return 0;
+    return -EIO;
 
   if (adev->vmix_flags & VMIX_DISABLED)	/* Not compatible */
-    return 0;
+    return -EIO;
 
   if (adev->max_channels < 2)
-    return 0;
+    return -EIO;
 
   if (!(adev->oformat_mask & SUPPORTED_FORMATS))
-    return 0;
+    return -EIO;
+
+  if (mixer->inputdev != -1 && mixer->inputdev != mixer->masterdev)
+     if (audio_engines[mixer->inputdev]->vmix_mixer != NULL) /* Input master already driven */
+	return -EBUSY;
 
 /*
  * Good. Initialize all per-mixer variables
@@ -1738,6 +1745,9 @@ check_masterdev (void *mx)
   if (mixer->inputdev != -1 && mixer->inputdev != mixer->masterdev)
     {
       adev = audio_engines[mixer->inputdev];
+
+      adev->vmix_mixer = mixer;
+
       if (adev->mixer_dev != -1)
 	{
 	  mixer->input_mixer_dev = adev->mixer_dev;
@@ -1788,7 +1798,7 @@ check_masterdev (void *mx)
 
   DDB (cmn_err (CE_CONT, "Master dev %d is OK\n", adev->engine_num));
 
-  return 1;
+  return 0;
 }
 
 int
@@ -1811,7 +1821,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
  */
 
   vmix_mixer_t *mixer;
-
+  int err;
 
   if (vmix_disabled) /* Vmix not available in the system */
      return -EIO;
@@ -1819,7 +1829,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   if ((mixer = PMALLOC (osdev, sizeof (*mixer))) == NULL)
     {
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
-      return -EIO;
+      return -ENOMEM;
     }
 
   memset (mixer, 0, sizeof (*mixer));
@@ -1856,7 +1866,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   DDB (cmn_err (CE_CONT, "\n"));
 
   /*
-   * Insert the newly created mixer to the myxer list.
+   * Insert the newly created mixer to the mixer list.
    */
   mixer->next = mixer_list;
   mixer_list = mixer;
@@ -1865,7 +1875,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
     {
       if (masterdev >= num_audio_engines)
 	{
-	  return -EIO;
+	  return -ENXIO;
 	}
 
       masterdev = mixer->masterdev;
@@ -1876,11 +1886,11 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 	    inputdev = mixer->inputdev = -1;
 	}
 
-      if (!check_masterdev (mixer))
+      if ((err=check_masterdev (mixer))<0)
 	{
-	  cmn_err (CE_CONT, "Vmix instance %d: Invalid master device %d\n",
-		   mixer->instance_num + 1, mixer->masterdev);
-	  return -ENXIO;
+	  cmn_err (CE_CONT, "Vmix instance %d: Invalid master device %d (err=%d)\n",
+		   mixer->instance_num + 1, mixer->masterdev, err);
+	  return err;
 	}
       return 0;
     }

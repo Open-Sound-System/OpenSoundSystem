@@ -499,7 +499,7 @@ extern void *oss_memcpy (void *s1, const void *s2, size_t n);
 	char buf[FM_MAX_CLASS]; \
 	(void) snprintf (buf, FM_MAX_CLASS, "%s.%s", DDI_FM_DEVICE, detail); \
 	ena = fm_ena_generate(0, FM_ENA_FMT1); \
-	if (osdev->fm_capabilities != 0) \
+	if (osdev->dip != NULL && osdev->fm_capabilities != 0) \
 	   ddi_fm_ereport_post(osdev->dip, buf, ena, DDI_NOSLEEP, FM_VERSION, DATA_TYPE_UINT8, FM_EREPORT_VERS0, name, type, value, NULL); \
 }
 
