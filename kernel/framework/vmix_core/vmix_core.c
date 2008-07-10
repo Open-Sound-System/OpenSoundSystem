@@ -78,6 +78,10 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	  return vol;
 	  break;
 
+	case 509:		/* Curren sample rate */
+	  return mixer->rate;
+	  break;
+
 	case 510:		/* Enable/disable */
 	  return !mixer->disabled;
 	  break;
@@ -300,6 +304,14 @@ create_output_controls (int mixer_dev)
 					   MIXT_ONOFF,
 					   tmp, 2,
 					   MIXF_READABLE | MIXF_WRITEABLE)) <
+	  0)
+	return ctl;
+
+      sprintf (tmp, "vmix%d-rate", mixer->instance_num);
+      if ((ctl = mixer_ext_create_control (mixer_dev, 0, 509, vmix_outvol,
+					   MIXT_VALUE,
+					   tmp, 500000,
+					   MIXF_READABLE | MIXF_HZ)) <
 	  0)
 	return ctl;
 
@@ -1856,7 +1868,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 
   mixer->masterdev = masterdev;
   mixer->inputdev = inputdev;
-  mixer->rate = 48000; // TODO: Handle this better
+  mixer->rate = 48000;
   mixer->flags = attach_flags;
 
   DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
@@ -1904,7 +1916,7 @@ vmix_delete_mixer(void * vmix_mixer)
 }
 
 void
-vmix_detach_audiodev(oss_device_t *osdev, int masterdev)
+vmix_detach_audiodev(int masterdev)
 {
 /*
  * Purpose: Detach the vmix subsystem from the audio device.
@@ -1915,13 +1927,42 @@ vmix_detach_audiodev(oss_device_t *osdev, int masterdev)
  *
  * Paramaters:
  *
- * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
 }
 
+int
+vmix_set_master_rate(int masterdev, int rate)
+{
+/*
+ * Purpose: Set the master sampling rate of given vmix instance.
+ *
+ * Paramaters:
+ *
+ * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
+ * rate:		The requested new sampling rate.
+ */
+
+	vmix_mixer_t *mixer;
+
+	if (rate < 4000 || rate > 200000)
+	   return -EDOM;
+
+	if (masterdev<0 || masterdev>=num_audio_engines)
+	   return -ENXIO;
+
+	mixer = audio_engines[masterdev]->vmix_mixer;
+
+	if (mixer==NULL)
+	   return -EPERM;
+
+	mixer->rate = rate;
+
+	return 0;
+}
+
 void
-vmix_unplug_audiodev(oss_device_t *osdev, int masterdev)
+vmix_unplug_audiodev(int masterdev)
 {
 /*
  * Purpose: Temporarily disable the vmix subsystem for an unplugged audio device.
@@ -1932,13 +1973,12 @@ vmix_unplug_audiodev(oss_device_t *osdev, int masterdev)
  *
  * Paramaters:
  *
- * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
 }
 
 void
-vmix_replug_audiodev(oss_device_t *osdev, int masterdev)
+vmix_replug_audiodev(int masterdev)
 {
 /*
  * Purpose: Reactivate vmix subsystem for an audio device that was previously unplugged
@@ -1949,7 +1989,6 @@ vmix_replug_audiodev(oss_device_t *osdev, int masterdev)
  *
  * Paramaters:
  *
- * osdev:		The osdev structure of the actual hardware device.
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
 }

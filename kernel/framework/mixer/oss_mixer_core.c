@@ -1543,8 +1543,6 @@ vmixctl_attach(vmixctl_attach_t *att)
 	int err;
 	oss_device_t *osdev;
 
-cmn_err(CE_NOTE, "VMIXCTL_ATTACH(%d, %d)\n", att->masterdev, att->inputdev);
-
 	if (att->masterdev<0 || att->masterdev >= num_audio_engines)
 	   return -ENXIO;
 
@@ -1555,6 +1553,19 @@ cmn_err(CE_NOTE, "VMIXCTL_ATTACH(%d, %d)\n", att->masterdev, att->inputdev);
 	osdev=audio_engines[att->masterdev]->master_osdev;
 
 	if ((err=vmix_attach_audiodev(osdev, att->masterdev, att->inputdev, 0))<0)
+	   return err;
+
+	return 0;
+}
+static int
+vmixctl_rate(vmixctl_rate_t *rate)
+{
+	int err;
+
+	if (rate->masterdev<0 || rate->masterdev >= num_audio_engines)
+	   return -ENXIO;
+
+	if ((err=vmix_set_master_rate(rate->masterdev, rate->rate))<0)
 	   return err;
 
 	return 0;
@@ -2007,6 +2018,14 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	  return -EINVAL;
 #endif
       return vmixctl_attach((vmixctl_attach_t*)arg);
+      break;
+
+    case VMIXCTL_RATE:
+#ifdef GET_PROCESS_UID
+	if (GET_PROCESS_UID () != 0)	/* Not root */
+	  return -EINVAL;
+#endif
+      return vmixctl_rate((vmixctl_rate_t*)arg);
       break;
 #endif
 

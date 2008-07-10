@@ -97,7 +97,24 @@ vmix_detach(int argc, char **argv)
 static int
 vmix_rate(int argc, char **argv)
 {
-	fprintf (stderr, "rate not implemented.\n");
+	int masterfd;
+	int masterdev;
+
+	vmixctl_rate_t rate;
+
+	masterdev=find_audiodev(argv[2], O_WRONLY, &masterfd);
+
+	rate.masterdev=masterdev;
+	rate.rate=atoi(argv[3]);
+
+	if (ioctl(masterfd, VMIXCTL_RATE, &rate)==-1)
+	{
+		perror("VMIXCTL_RATE");
+		exit(-1);
+	}
+
+	fprintf (stderr, "Virtual mixer rate change requested.\n");
+
 	return 0;
 }
 

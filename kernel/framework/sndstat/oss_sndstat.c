@@ -544,9 +544,10 @@ init_status (void)
       if (!put_status
 	  ("\n\nWARNING! Legacy device numbering in /dev/sndstat is different from actual device numbering\n"))
 	return;
-      put_status ("\n\nNOTICE! Device numbers shown above may be wrong.\n");
-      put_status ("        Use the ossinfo command to find out the correct device names\n");
     }
+
+  put_status ("\n\nNOTICE! Device numbers shown above may be wrong.\n");
+  put_status ("        Use the ossinfo command to find out the correct device names.\n");
 
   sndstat_buf[sndstat_len] = 0;
 }

@@ -553,6 +553,7 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
 
   mixer->play_engine.rate =
     oss_audio_set_rate (mixer->masterdev, mixer->rate);
+  mixer->rate = mixer->play_engine.rate;
 
   if (mixer->play_engine.rate <= 22050)
     frags = 0x7fff0004;		/* Use smaller fragments */
