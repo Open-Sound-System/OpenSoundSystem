@@ -733,7 +733,7 @@ static int
 install_server (audioloop_devc_t * devc, int num)
 {
   audioloop_portc_t *portc;
-  char tmp[64];
+  char tmp[64], devname[16];
   int adev;
 
   int opts =
@@ -757,7 +757,7 @@ install_server (audioloop_devc_t * devc, int num)
 
   devc->server_portc[num] = portc;
 
-  sprintf (tmp, "server%d", num);
+  sprintf (devname, "server%d", num);
 
   sprintf (tmp, "Audio loopback %d server side", num);
 
@@ -768,7 +768,7 @@ install_server (audioloop_devc_t * devc, int num)
 				    &audioloop_server_driver,
 				    sizeof (audiodrv_t),
 				    opts, SUPPORTED_FORMATS, devc, -1,
-				    tmp)) < 0)
+				    devname)) < 0)
     {
       return adev;
     }
@@ -778,7 +778,7 @@ install_server (audioloop_devc_t * devc, int num)
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->caps |= PCM_CAP_HIDDEN;
-  audio_engines[adev]->max_channels = MAX_CHANNELS;;
+  audio_engines[adev]->max_channels = MAX_CHANNELS;
 
   portc->audio_dev = adev;
   portc->rate = 48000;
@@ -817,7 +817,7 @@ install_client (audioloop_devc_t * devc, int num)
 
   devc->client_portc[num] = portc;
 
-  sprintf (tmp, "Audio loopback %d client side", num);
+  sprintf (tmp, "Audio loopback %d", num);
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
