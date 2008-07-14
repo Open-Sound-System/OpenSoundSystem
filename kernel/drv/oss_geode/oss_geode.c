@@ -9,6 +9,8 @@
 
 #define CYRIX_VENDOR_ID			0x1078
 #define CYRIX_GEODE			0x0103
+#define AMD_VENDOR_ID           	0x1022
+#define AMD_CS5536_ID			0x2094
 #define NATIONAL_VENDOR_ID		0x100b
 #define NATIONAL_SC1200			0x0503
 
@@ -809,6 +811,7 @@ oss_geode_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
   if (vendor != CYRIX_VENDOR_ID || device != CYRIX_GEODE)
     if (vendor != NATIONAL_VENDOR_ID || device != NATIONAL_SC1200)
+       if (vendor != AMD_VENDOR_ID || device != AMD_CS5536_ID)
       return 0;
   pci_read_config_byte (osdev, PCI_REVISION_ID, &pci_revision);
   pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
