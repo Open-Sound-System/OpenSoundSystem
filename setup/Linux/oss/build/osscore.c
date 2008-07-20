@@ -1950,7 +1950,7 @@ EXPORT_FUNC (ac97_mixer_set);
 EXPORT_FUNC (ac97_spdif_setup);
 EXPORT_FUNC (ac97_spdifout_ctl);
 EXPORT_FUNC (ac97_remove_control);
-EXPORT_FUNC (ac97_amplifier);
+EXPORT_SYMBOL (ac97_amplifier);
 EXPORT_FUNC (ac97_disable_spdif);
 EXPORT_FUNC (ac97_enable_spdif);
 EXPORT_FUNC (ac97_mixext_ctl);
