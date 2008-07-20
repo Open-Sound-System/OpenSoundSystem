@@ -7,11 +7,17 @@ else
 
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 	PWD := $(shell pwd)
+endif
 
 default:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-
-endif
+	@#Take generated symbol information and add it to module.inc
+	@echo >> module.inc
+	@echo "static const struct modversion_info ____versions[]" >> module.inc
+	@echo " __attribute__((used))" >> module.inc
+	@echo "__attribute__((section(\"__versions\"))) = {" >> module.inc
+	@sed -e "s:^:{:" -e "s:\t:, \":" -e "s:\t\(.\)*:\"},:" < Module.symvers >> module.inc
+	@echo "};" >> module.inc
 
 clean:
 	rm -f *.o *.ko *.mod.c *.mod.o .*.cmd core core.* x y z

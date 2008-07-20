@@ -169,6 +169,7 @@ cp -f ../objects/osscore.o osscore_mainline.o
 ln -sf ../include/sys/*.h ../include/sys/ossddk .
 
 rm -f Makefile
+cp module.inc module.inc.orig
 ln -s Makefile.osscore Makefile
 
 echo Building module osscore
@@ -226,7 +227,8 @@ do
 	make clean
 done 
 
-rm -f Makefile
+cp module.inc.orig module.inc
+rm -f Makefile module.inc.orig
 
 echo "depmod -a"
 depmod -a
