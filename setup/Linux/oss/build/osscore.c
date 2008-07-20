@@ -231,6 +231,10 @@ extern int src_quality;
 extern int flat_device_model;
 extern int vmix_disabled;
 extern int vmix_loopdevs;
+extern int ac97_amplifier;
+extern int ac97_recselect;
+extern int cooked_enable;
+extern int dma_buffsize;
 
 module_param (oss_hz, int, S_IRUGO);
 module_param (max_intrate, int, S_IRUGO);
@@ -239,6 +243,10 @@ module_param (src_quality, int, S_IRUGO);
 module_param (flat_device_model, int, S_IRUGO);
 module_param (vmix_disabled, int, S_IRUGO);
 module_param (vmix_loopdevs, int, S_IRUGO);
+module_param (ac97_amplifier, int, S_IRUGO);
+module_param (ac97_recselect, int, S_IRUGO);
+module_param (cooked_enable, int, S_IRUGO);
+module_param (dma_buffsize, int, S_IRUGO);
 
 static struct proc_dir_entry *oss_proc_root = NULL;
 static struct proc_dir_entry *oss_proc_devfiles = NULL;
