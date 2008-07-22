@@ -380,7 +380,7 @@ findenum (char *extname, oss_mixext * rec, char *arg)
   if (sscanf (arg, "%d", &n) < 1 || n < 0)
     {
       fprintf (stderr, "Invalid enumerated value '%s'\n", arg);
-      return 0;
+      return -1;
     }
 
   return n;
@@ -562,6 +562,8 @@ show_devinfo (int dev)
 	{
 	  if ((thisrec->flags & MIXF_WRITEABLE) == 0) printf(" (Read-only)");
 	  printf ("\n");
+	}
+
           if (verbose && (thisrec->flags & MIXF_DESCR))
   	    {
               oss_mixer_enuminfo ei;
@@ -576,7 +578,6 @@ show_devinfo (int dev)
 
               print_description (ei.strings);
   	    }
-	}
     }
 }
 
@@ -731,7 +732,8 @@ find_name (char *name)
 static void
 change_level (int dev, char *cname, char *arg)
 {
-  int ctrl, left = 0, right = 0;
+  int ctrl, lefti, righti, dist = 0;
+  float left = -1, right = 0;
   oss_mixer_value val;
   oss_mixext extrec;
 
@@ -740,8 +742,6 @@ change_level (int dev, char *cname, char *arg)
       fprintf (stderr, "Bad mixer control name(1) '%s'\n", cname);
       exit (1);
     }
-
-  val.value = -1;
 
   extrec.dev = dev;
   extrec.ctrl = ctrl;
@@ -761,85 +761,95 @@ change_level (int dev, char *cname, char *arg)
   if (extrec.type == MIXT_ENUM)
     {
       val.value = findenum (cname, &extrec, arg);
-      right = 0;
+      if (val.value < 0) exit (1);
     }
   else if (extrec.type == MIXT_HEXVALUE)
     {
-      if (sscanf (arg, "%x", &val.value) != 1 || val.value < 0)
-	val.value = 0;
+      if (sscanf (arg, "%x", &lefti) != 1)
+	goto argerror;
+      left = lefti;
     }
   else if (extrec.type == MIXT_VALUE)
     {
-      if (sscanf (arg, "%d", &val.value) != 1 || val.value < 0)
-	val.value = 0;
+      if (sscanf (arg, "%f", &left) != 1)
+	goto argerror;
     }
   else if (extrec.type == MIXT_3D)
     {
-      int dist;
-      if (sscanf (arg, "%d:%d:%d", &dist, &left, &right) != 3)
+      if (sscanf (arg, "%d:%f:%f", &dist, &left, &right) != 3)
 	{
 	  fprintf (stderr, "Bad 3D position '%s'\n", arg);
-	  return;
+	  exit (1);
 	}
-      val.value =
-	(left & 0x00ff) | ((right & 0xffff) << 16) | ((dist & 0xff) << 8);
     }
   else if (strcmp (arg, "ON") == 0 || strcmp (arg, "on") == 0)
     left = 1;
   else if (strcmp (arg, "OFF") == 0 || strcmp (arg, "off") == 0)
     left = 0;
-  else if (sscanf (arg, "%d:%d", &left, &right) != 2)
+  else if (sscanf (arg, "%f:%f", &left, &right) != 2)
     {
-      if (sscanf (arg, "%d", &left) != 1)
-	{
-	  fprintf (stderr, "Bad mixer level '%s'\n", arg);
-	  exit (1);
-	}
+      if (sscanf (arg, "%f", &left) != 1)
+	goto argerror;
       else
 	right = left;
     }
 
-  if (extrec.type != MIXT_STEREOSLIDER && extrec.type != MIXT_STEREODB &&
-      extrec.type != MIXT_STEREOVU && extrec.type != MIXT_3D
-      && extrec.type != MIXT_STEREOPEAK && extrec.type != MIXT_STEREOSLIDER16)
+  if (left < 0)
+    left = 0;
+  if (right < 0)
     right = 0;
+  if (extrec.flags & MIXF_CENTIBEL)
+    {
+      lefti = left * 10;
+      righti = right * 10;
+    }
+  else
+    {
+      lefti = left;
+      righti = right;
+    }
 
   val.dev = dev;
   val.ctrl = ctrl;
 
   if (extrec.type == MIXT_STEREOSLIDER16 || extrec.type == MIXT_MONOSLIDER16)
     {
-      if (extrec.flags & MIXF_CENTIBEL)
-	{
-	  left *= 10;
-	  right *= 10;
-	}
+      if (lefti > 0xffff)
+	lefti = 0xffff;
+      if (righti > 0xffff)
+	righti = 0xffff;
 
-      if (left < 0)
-	left = 0;
-      if (left > 0xffff)
-	left = 0xffff;
-      if (right < 0)
-	right = 0;
-      if (right > 0xffff)
-	right = 0xffff;
-
-      if (val.value == -1)
-	val.value = (left & 0xffff) | ((right & 0xffff) << 16);
+      val.value = (lefti & 0xffff) | ((righti & 0xffff) << 16);
     }
   else
     {
-      if (left < 0)
-	left = 0;
-      if (left > 255)
-	left = 255;
-      if (right < 0)
-	right = 0;
-      if (right > 255)
-	right = 255;
+      if (extrec.type == MIXT_MONOSLIDER || extrec.type == MIXT_MONODB ||
+	  extrec.type == MIXT_MONOVU || extrec.type == MIXT_MONOPEAK)
+	{
+	  if (lefti > 255)
+	    lefti = 255;
+	  if (righti > 255)
+	    righti = 255;
+	}
 
-      if (val.value == -1)
-	val.value = (left & 0x00ff) | ((right & 0x00ff) << 8);
+      if (extrec.type == MIXT_3D)
+	{
+	  if (lefti > 255)
+	    lefti = 255;
+	  if (righti > 0xffff)
+	    righti = 0xffff;
+	  if (dist < 0)
+	    dist = 0;
+	  if (dist > 100)
+	    dist = 100;
+
+	  val.value =
+	    (lefti & 0x00ff) | ((righti & 0xffff) << 16) | ((dist & 0xff) << 8);
+	}
+      else if ((extrec.type == MIXT_HEXVALUE) || (extrec.type == MIXT_VALUE))
+	val.value = left;
+      else if (extrec.type != MIXT_ENUM)
+	val.value = (lefti & 0x00ff) | ((righti & 0x00ff) << 8);
     }
 
   val.timestamp = extrec.timestamp;
@@ -853,20 +863,30 @@ change_level (int dev, char *cname, char *arg)
 
   if (extrec.type == MIXT_STEREOSLIDER16 || extrec.type == MIXT_MONOSLIDER16)
     {
-      left = val.value & 0xffff;
-      right = (val.value >> 16) & 0xffff;
-
-      if (extrec.flags & MIXF_CENTIBEL)
-	{
-	  left /= 10;
-	  right /= 10;
-	}
-
+      lefti = val.value & 0xffff;
+      righti = (val.value >> 16) & 0xffff;
+    }
+  else if (extrec.type == MIXT_3D)
+    {
+      lefti = val.value & 0x00ff;
+      dist = (val.value >> 8) & 0xff;
+      righti = (val.value >> 16) & 0xffff;
     }
   else
     {
-      left = val.value & 0xff;
-      right = (val.value >> 8) & 0xff;
+      lefti = val.value & 0xff;
+      righti = (val.value >> 8) & 0xff;
+    }
+
+  if (extrec.flags & MIXF_CENTIBEL)
+    {
+      left = (float)lefti / 10;
+      right = (float)righti / 10;
+    }
+  else
+    {
+      left = lefti;
+      right = righti;
     }
 
   if (extrec.type == MIXT_ONOFF || extrec.type == MIXT_MUTE)
@@ -880,22 +900,23 @@ change_level (int dev, char *cname, char *arg)
 	extrec.type != MIXT_STEREOVU && extrec.type != MIXT_3D
 	&& extrec.type != MIXT_STEREOPEAK
 	&& extrec.type != MIXT_STEREOSLIDER16)
-    printf ("Value of mixer control %s set to %d\n", cname, left);
+    printf ("Value of mixer control %s set to %.1f\n", cname, left);
   else
     {
       if (extrec.type == MIXT_3D)
 	{
-	  int dist;
-	  left = val.value & 0x00ff;
-	  dist = (val.value >> 8) & 0xff;
-	  right = (val.value >> 16) & 0xffff;
-	  printf ("Value of mixer control %s set to %d:%d:%d\n", cname, dist,
-		  left, right);
+	  printf ("Value of mixer control %s set to %d:%.1f:%.1f\n", cname,
+		  dist, left, right);
 	}
       else
-	printf ("Value of mixer control %s set to %d:%d\n",
+	printf ("Value of mixer control %s set to %.1f:%.1f\n",
 		cname, left, right);
     }
+
+  return;
+argerror:
+  fprintf (stderr, "Bad mixer level '%s'\n", arg);
+  exit (1);
 }
 
 static void
