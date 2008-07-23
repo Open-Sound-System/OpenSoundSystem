@@ -6051,7 +6051,7 @@ oss_install_audiodev_with_devname (int vers,
 		      int driver_size,
 		      int flags,
 		      unsigned int format_mask, void *devc, int parent,
-		      char * devfile_name)
+		      const char * devfile_name)
 {
   audiodrv_t *d;
   adev_t *op;
@@ -6276,7 +6276,6 @@ oss_install_audiodev_with_devname (int vers,
 	   * A name was suggested by the low level driver
 	   */
 	  strcpy (tmpl, devfile_name);
-	  *devfile_name = 0;
 	}
       else if (flags & ADEV_NOOUTPUT)
 	sprintf (tmpl, "pcmin%d", osdev->num_audiorec++);

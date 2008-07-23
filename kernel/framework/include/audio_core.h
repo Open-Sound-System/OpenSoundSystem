@@ -353,7 +353,7 @@ int oss_install_audiodev_with_devname (int vers,
 			  int driver_size,
 			  int flags,
 			  unsigned int format_mask, void *devc, int parent,
-			  char *devfile_name);
+			  const char *devfile_name);
 extern void install_vdsp (oss_device_t * osdev);
 extern int *load_mixer_volumes (char *name, int *levels, int present);
 
