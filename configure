@@ -103,7 +103,7 @@ do
 			echo "   --regparm			- Configure for CONFIG_REGPARM kernels"
 			echo "   --no-regparm			- Configure for kernels without CONFIG_REGPARM option."
 			echo "NOTE! --regparm/--no-regparm is normally detected"
-			echo "      automatically and these swhiches should NOT be used."
+			echo "      automatically and these switches should NOT be used."
 			echo
 			;;
 
@@ -121,7 +121,9 @@ do
 	shift
 done
 
-DIR=`dirname $0`
+cd `dirname $0` || exit 1
+DIR=`pwd`
+cd - >/dev/null 2>&1
 SRCDIR=$DIR
 export SRCDIR
 export COPY_OPTIONS

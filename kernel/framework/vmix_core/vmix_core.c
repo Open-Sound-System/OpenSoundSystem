@@ -314,6 +314,8 @@ create_output_controls (int mixer_dev)
 					   MIXF_READABLE | MIXF_HZ)) <
 	  0)
 	return ctl;
+      mixer_ext_set_description(mixer_dev, ctl, "Sample rate currently used by virtual mixer on this device.\n"
+		      "Use vmixctl(1) command to change the rate.");
 
       if (mixer->max_channels>2)
 	 {
