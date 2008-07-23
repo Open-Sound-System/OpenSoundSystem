@@ -3891,8 +3891,10 @@ oss_sblive_attach (oss_device_t * osdev)
 	      else
 		adev->magic = EMU10K2_MAGIC;
 	    }
+#ifdef CONFIG_OSS_VMIX
           if (i == 0)
             vmix_attach_audiodev(devc->osdev, first_dev, -1, 0);
+#endif
 	}
       adev->mixer_dev = devc->mixer_dev;
     }
