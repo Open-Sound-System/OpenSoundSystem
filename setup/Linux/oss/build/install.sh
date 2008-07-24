@@ -201,6 +201,7 @@ fi
 if test -f Module.symvers
 then
 	#Take generated symbol information and add it to module.inc
+	rm -f osscore_symbols.inc
 	echo "static const struct modversion_info ____versions[]" >> osscore_symbols.inc
 	echo " __attribute__((used))" >> osscore_symbols.inc
 	echo "__attribute__((section(\"__versions\"))) = {" >> osscore_symbols.inc
