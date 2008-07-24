@@ -198,6 +198,18 @@ then
 	exit 5
 fi
 
+if test -f Module.symvers
+then
+	#Take generated symbol information and add it to module.inc
+	echo "static const struct modversion_info ____versions[]" >> osscore_symbols.inc
+	echo " __attribute__((used))" >> osscore_symbols.inc
+	echo "__attribute__((section(\"__versions\"))) = {" >> osscore_symbols.inc
+	sed -e "s:^:{:" -e "s:\t:, \":" -e "s:\t\(.\)*:\"},:" < Module.symvers >> osscore_symbols.inc
+	echo "};" >> osscore_symbols.inc
+else
+	echo > osscore_symbols.inc
+fi
+
 #depmod -a
 
 for n in ../modules/*.o

@@ -241,3 +241,5 @@ oss_cmn_err (int level, char *s, ...)
 
   va_end (ap);
 }
+
+#include "osscore_symbols.inc"
