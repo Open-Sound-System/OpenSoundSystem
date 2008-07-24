@@ -106,7 +106,7 @@ static int mixer_num;
 enum uflag {
   WHAT_LABEL,
   WHAT_UPDATE,
-  WHAT_VMIX
+  WHAT_DYNAMIC
 };
 
 typedef enum uflag uflag_t;
@@ -385,8 +385,10 @@ get_value (oss_mixext * thisrec)
     {
       if (errno == EPIPE)
 	{
+#if 0
 	  fprintf (stderr,
 		   "ossxmix: Mixer device disconnected from the system\n");
+#endif
 	  return 0;
 	}
 
@@ -955,6 +957,10 @@ load_devinfo (int dev)
 	case MIXT_GROUP:
 	  if (!show_all)
 	    break;
+#if OSS_VERSION >= 0x040090
+	  if (thisrec->update_counter == 0)
+	    break;
+#endif
 
 	  if (*extnames[parent] == '\0')
 	    strcpy (tmp, name);
@@ -989,15 +995,11 @@ load_devinfo (int dev)
 	  gtk_widget_set_name (wid, extnames[i]);
 	  gtk_widget_show_all (frame);
 	  widgets[i] = wid;
-	  {
-	    int tmp = -1;
-
-            if ((sscanf (extnames[i], "vmix%d-out", &tmp) == 1) &&
-		(tmp >= 0))
-	      {
-		create_update (NULL, NULL, NULL, wid, thisrec, WHAT_VMIX, n);
-	      }
-	  }
+	  if (thisrec->flags & MIXF_DYNAMIC)
+	    {
+		create_update (NULL, NULL, NULL, wid, thisrec, WHAT_DYNAMIC,
+			       thisrec->update_counter);
+	    }
 	  break;
 
 	case MIXT_HEXVALUE:
@@ -1730,31 +1732,29 @@ poll_all (gpointer data)
      	      gtk_frame_set_label (GTK_FRAME (srec->frame), new_label);
 	    }
 	  break;
-	case WHAT_VMIX:
-	  { int i = dev;
+	case WHAT_DYNAMIC:
 /*
- * The aforementioned mixer controls can be create dynamically, so ossxmix
- * needs to poll for this. Handling for this is here
+ * The group can have mixer controls created/removed from under it
+ * (e.g. vmix engines). ossxmix needs to poll for this.
+ * Handling for this is below:
  */
-	  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &i) == -1)
+	  if (ioctl (mixer_fd, SNDCTL_MIX_EXTINFO, srec->mixext) == -1)
 	    {
-	      perror ("SNDCTL_MIX_NREXT");
-	      if (errno == EINVAL)
-		fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
+	      perror ("SNDCTL_MIX_EXTINFO");
 	      exit (-1);
 	    }
-	    if (i != srec->parm)
-	      {
-		srec->parm = i;
+	  if (srec->parm != srec->mixext->update_counter)
+	    {
 /*
- * Since we know the added controls are vmix controls, we should be able to do
+ * Since we know the added controls are under dev, we should be able to do
  * something more graceful here, like reloading only the current device, or
  * even adding the controls directly. This will do for now.
+	      srec->parm = srec->mixext->update_counter;
  */
-		reload_gui ();
-		return TRUE;
-	      }
-	  } break;
+    	      reload_gui ();
+	      return TRUE;
+	    }
+	  break;
 	case WHAT_UPDATE:
 	  if (status_changed)
 	    do_update (srec);

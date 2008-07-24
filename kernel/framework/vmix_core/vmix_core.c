@@ -373,7 +373,7 @@ create_output_controls (int mixer_dev)
      mixer->first_output_mixext = ctl;
 
   sprintf (tmp, "vmix%d-out", mixer->instance_num);
-  if ((mixer->client_mixer_group = mixer_ext_create_group (mixer_dev, 0, tmp)) < 0)
+  if ((mixer->client_mixer_group = mixer_ext_create_group_flags (mixer_dev, 0, tmp, MIXF_DYNAMIC)) < 0)
     return mixer->client_mixer_group;
 
   return 0;

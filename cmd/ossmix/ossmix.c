@@ -151,7 +151,8 @@ verbose_devinfo (int dev)
 	  break;
 
 	case MIXT_GROUP:
-	  printf ("Group: '%s', parent=%d\n", thisrec->id, thisrec->parent);
+	  printf ("Group: '%s', parent=%d, flags=%x\n", thisrec->id,
+                  thisrec->parent, thisrec->flags);
 	  break;
 
 	case MIXT_STEREOSLIDER:
@@ -472,11 +473,11 @@ show_devinfo (int dev)
 	  break;
 
 	case MIXT_3D:
-	  printf ("%s <distance:vol:angle>", thisrec->extname);
+	  printf ("%s <vol:distance:angle>", thisrec->extname);
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
-	  printf (" (currently %d:%d:%d)", (val.value >> 8) & 0xff,
-		  val.value & 0x00ff, (val.value >> 16) & 0xffff);
+	  printf (" (currently %d:%d:%d)", val.value & 0x00ff,
+		  (val.value >> 8) & 0xff, (val.value >> 16) & 0xffff);
 	  break;
 
 	case MIXT_STEREOVU:
@@ -641,8 +642,8 @@ dump_devinfo (int dev)
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(3D)");
 	  printf ("%d:%d:%d\n",
-		  (val.value >> 8) & 0x00ff,
-		  val.value & 0x00ff, (val.value >> 16) & 0xffff);
+		  val.value & 0x00ff, (val.value >> 8) & 0x00ff,
+		  (val.value >> 16) & 0xffff);
 	  break;
 
 	case MIXT_STEREOVU:
@@ -732,7 +733,7 @@ find_name (char *name)
 static void
 change_level (int dev, char *cname, char *arg)
 {
-  int ctrl, lefti, righti, dist = 0;
+  int ctrl, lefti, righti, dist = 0, vol = 0;
   float left = -1, right = 0;
   oss_mixer_value val;
   oss_mixext extrec;
@@ -776,7 +777,7 @@ change_level (int dev, char *cname, char *arg)
     }
   else if (extrec.type == MIXT_3D)
     {
-      if (sscanf (arg, "%d:%f:%f", &dist, &left, &right) != 3)
+      if (sscanf (arg, "%d:%d:%f", &vol, &dist, &right) != 3)
 	{
 	  fprintf (stderr, "Bad 3D position '%s'\n", arg);
 	  exit (1);
@@ -834,17 +835,17 @@ change_level (int dev, char *cname, char *arg)
 
       if (extrec.type == MIXT_3D)
 	{
-	  if (lefti > 255)
-	    lefti = 255;
+	  if (vol > 255)
+	    vol = 255;
 	  if (righti > 0xffff)
 	    righti = 0xffff;
 	  if (dist < 0)
 	    dist = 0;
-	  if (dist > 100)
-	    dist = 100;
+	  if (dist > 255)
+	    dist = 255;
 
 	  val.value =
-	    (lefti & 0x00ff) | ((righti & 0xffff) << 16) | ((dist & 0xff) << 8);
+	    (vol & 0x00ff) | ((righti & 0xffff) << 16) | ((dist & 0xff) << 8);
 	}
       else if ((extrec.type == MIXT_HEXVALUE) || (extrec.type == MIXT_VALUE))
 	val.value = left;
@@ -868,7 +869,7 @@ change_level (int dev, char *cname, char *arg)
     }
   else if (extrec.type == MIXT_3D)
     {
-      lefti = val.value & 0x00ff;
+      vol = val.value & 0x00ff;
       dist = (val.value >> 8) & 0xff;
       righti = (val.value >> 16) & 0xffff;
     }
@@ -905,8 +906,8 @@ change_level (int dev, char *cname, char *arg)
     {
       if (extrec.type == MIXT_3D)
 	{
-	  printf ("Value of mixer control %s set to %d:%.1f:%.1f\n", cname,
-		  dist, left, right);
+	  printf ("Value of mixer control %s set to %d:%d:%.1f\n", cname,
+		  vol, dist, right);
 	}
       else
 	printf ("Value of mixer control %s set to %.1f:%.1f\n",
