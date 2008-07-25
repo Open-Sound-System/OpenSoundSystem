@@ -230,7 +230,7 @@ audigyls_ac97_read (void *devc_, int wAddr)
   if (i == 10000)
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
   dtemp = INW (devc->osdev, devc->base + 0x1c);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
@@ -253,7 +253,7 @@ audigyls_ac97_write (void *devc_, int wAddr, int wData)
   if (i == 10000)
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
   OUTW (devc->osdev, wData, devc->base + 0x1c);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
@@ -424,7 +424,7 @@ audigyls_set_format (int dev, unsigned int arg)
 static int
 audigyls_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void audigyls_trigger (int dev, int state);
@@ -447,13 +447,13 @@ audigyls_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -991,7 +991,7 @@ audigylsuart_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   while (input_avail (devc))
@@ -1060,7 +1060,7 @@ audigylsuart_out (int dev, unsigned char midi_byte)
 static int
 audigylsuart_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t audigyls_midi_driver = {
@@ -1607,7 +1607,7 @@ audigyls_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
   else
     return *arg = 0;
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t audigyls_mixer_driver = {

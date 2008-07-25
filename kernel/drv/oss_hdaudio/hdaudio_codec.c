@@ -24,7 +24,7 @@ hdaudio_mixer_get_outendpoints (hdaudio_mixer_t * mixer,
   if (size != sizeof (hdaudio_endpointinfo_t))
     {
       cmn_err (CE_WARN, "Bad endpoint size\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   *endpoints = (hdaudio_endpointinfo_t *) & mixer->outendpoints;
@@ -53,7 +53,7 @@ hdaudio_mixer_get_inendpoints (hdaudio_mixer_t * mixer,
   if (size != sizeof (hdaudio_endpointinfo_t))
     {
       cmn_err (CE_WARN, "Bad endpoint size\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   *endpoints = (hdaudio_endpointinfo_t *) & mixer->inendpoints;
@@ -82,7 +82,7 @@ hda_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
       cmd == SOUND_MIXER_READ_STEREODEVS)
     return *arg = 0;
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t hda_mixer_driver = {
@@ -311,10 +311,10 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
   cad = (ctrl >> 24) & 0xff;
 
   if (cad >= mixer->ncodecs)
-    return -EIO;
+    return OSS_EIO;
 
   if (wid >= mixer->codecs[cad]->nwidgets)
-    return -EIO;
+    return OSS_EIO;
 
   widget = &mixer->codecs[cad]->widgets[wid];
 
@@ -328,13 +328,13 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
       {
       case CT_INGAINSEL:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 0), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	return a & 0x7f;	// TODO: Handle mute
 	break;
 
       case CT_INMONO:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 0), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	if (a & 0x80)
 	  left = 0;
 	else
@@ -344,13 +344,13 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case CT_INSTEREO:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 1), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	if (a & 0x80)
 	  left = 0;
 	else
 	  left = scalein_vol (a, widget->inamp_caps);
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 0), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	if (a & 0x80)
 	  right = 0;
 	else
@@ -360,13 +360,13 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case CT_INMUTE:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 0), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	return (a >> 7) & 0x01;
 	break;
 
       case CT_INSRC:		/* Inverse mute */
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (0, 0), ix, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	return !((a >> 7) & 0x01);
 	break;
 
@@ -379,13 +379,13 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case CT_OUTGAINSEL:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (1, 1), 0, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	return a;		// TODO: Handle mute
 	break;
 
       case CT_OUTMONO:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (1, 1), 0, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	left = a & 0x7f;
 	if (a & 0x80)
 	  left = 0;
@@ -396,14 +396,14 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case CT_OUTSTEREO:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (1, 1), 0, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	left = a & 0x7f;
 	if (a & 0x80)
 	  left = 0;
 	else
 	  left = scalein_vol (a, widget->outamp_caps);
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (1, 0), 0, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	right = a & 0x7f;
 	if (a & 0x80)
 	  right = 0;
@@ -414,12 +414,12 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case CT_OUTMUTE:
 	if (!corb_read (mixer, cad, wid, 0, GET_GAIN (1, 0), 0, &a, &b))
-	  return -EIO;
+	  return OSS_EIO;
 	return (a >> 7) & 0x01;
 	break;
 
       default:
-	return -EINVAL;
+	return OSS_EINVAL;
       }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -567,11 +567,11 @@ hdaudio_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -780,7 +780,7 @@ hdaudio_mix_init (int dev)
 	   {
 	    if ((err = codec->mixer_init (dev, mixer, cad, group)) < 0)
 	      {
-		if (err != -EAGAIN)
+		if (err != OSS_EAGAIN)
 		  return err;
 		/*
 		 * We got EAGAIN whic means that we should fall
@@ -1166,7 +1166,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		      GET_PARAMETER, HDA_OUTPUTAMP_CAPS, &outamp_caps, &b))
 	{
 	  cmn_err (CE_WARN, "GET_PARAMETER HDA_OUTPUTAMP_CAPS failed\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
       widget->outamp_caps = outamp_caps;
 
@@ -1174,7 +1174,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		      GET_PARAMETER, HDA_INPUTAMP_CAPS, &inamp_caps, &b))
 	{
 	  cmn_err (CE_WARN, "GET_PARAMETER HDA_INPUTAMP_CAPS failed\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
       widget->inamp_caps = inamp_caps;
     }
@@ -1923,7 +1923,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
   if (cad >= MAX_CODECS)
     {
       cmn_err (CE_WARN, "attach_codec: Too many codecs %d\n", cad);
-      return -EIO;
+      return OSS_EIO;
     }
 
   mixer->ncodecs = cad + 1;
@@ -1933,7 +1933,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 	  if ((codec = PMALLOC (mixer->osdev, sizeof (*codec))) == NULL)
 	    {
 	      cmn_err (CE_CONT, "Cannot allocate codec descriptor\n");
-	      return -ENOMEM;
+	      return OSS_ENOMEM;
 	    }
 	
 	  memset (codec, 0, sizeof (*codec));
@@ -1956,7 +1956,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 	       		"attach_codec: Codec #%d is not physically present\n",
 	       		cad);
 	 }
-      return -EIO;
+      return OSS_EIO;
     }
   codec->vendor_id = a;
 
@@ -1967,7 +1967,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
   if (!corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_NODE_COUNT, &x, &b))
     {
       cmn_err (CE_WARN, "GET_PARAMETER HDA_NODE_COUNT3 failed\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   codec->first_node = first_node = (x >> 16) & 0xff;
@@ -2136,7 +2136,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
   copy_endpoints(mixer, codec, 0); /* Copy analog endpoints from codec to mixer */
 
-  return (has_audio_group) ? 0 : -EIO;
+  return (has_audio_group) ? 0 : OSS_EIO;
 }
 
 int
@@ -2224,7 +2224,7 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
       else
 	{
 	  cmn_err (CE_WARN, "Bad bit size\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
       break;
 
@@ -2241,7 +2241,7 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
 
     default:
       cmn_err (CE_WARN, "Bad format %x\n", fmt);
-      return -EIO;
+      return OSS_EIO;
     }
 
   corb_write (mixer, endpoint->cad, endpoint->base_wid, 0, SET_SPDIF_CONTROL1,
@@ -2404,12 +2404,12 @@ hda_codec_getname (hdaudio_mixer_t * mixer, hda_name_t * name)
   widget_t *widget;
 
   if (name->cad >= mixer->ncodecs)
-    return -EIO;
+    return OSS_EIO;
   if (mixer->codecs[name->cad] == &NULL_codec)
-    return -EIO;
+    return OSS_EIO;
 #if 1
   if (name->wid >= mixer->codecs[name->cad]->nwidgets)
-    return -EIO;
+    return OSS_EIO;
 #endif
 
   widget = &mixer->codecs[name->cad]->widgets[name->wid];
@@ -2424,15 +2424,15 @@ hda_codec_getwidget (hdaudio_mixer_t * mixer, hda_widget_info_t * info)
   widget_t *widget;
 
   if (info->cad >= mixer->ncodecs)
-    return -EIO;
+    return OSS_EIO;
   if (mixer->codecs[info->cad] == &NULL_codec)
-    return -EIO;
+    return OSS_EIO;
 
   widget = &mixer->codecs[info->cad]->widgets[info->wid];
   if (info->wid >= mixer->codecs[info->cad]->nwidgets)
-     return -EIO;
+     return OSS_EIO;
   if (widget == NULL)
-     return -EIO;
+     return OSS_EIO;
   memcpy (info->info, widget, sizeof (*widget));
 
   return 0;
@@ -2482,14 +2482,14 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       if (!corb_read
 	  (mixer, recsrc_widget->cad, recsrc_widget->wid, 0, GET_SELECTOR, 0,
 	   &a, &b))
-	return -EIO;
+	return OSS_EIO;
       return *arg = a;
       break;
 
     case SNDCTL_DSP_SET_RECSRC:
       a = *arg;
       if (a > recsrc_widget->nconn)
-	return -EIO;
+	return OSS_EIO;
 
       corb_write (mixer, recsrc_widget->cad, recsrc_widget->wid, 0,
 		  SET_SELECTOR, a);
@@ -2505,7 +2505,7 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       if (!corb_read
 	  (mixer, volume_widget->cad, volume_widget->wid, 0, GET_GAIN (0, 1),
 	   0, &a, &b))
-	return -EIO;
+	return OSS_EIO;
       if (a & 0x80)		/* Muted */
 	left = 0;
       else
@@ -2513,7 +2513,7 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       if (!corb_read
 	  (mixer, volume_widget->cad, volume_widget->wid, 0, GET_GAIN (0, 0),
 	   0, &a, &b))
-	return -EIO;
+	return OSS_EIO;
       if (a & 0x80)		/* Muted */
 	right = 0;
       else
@@ -2564,7 +2564,7 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       if (!corb_read
 	  (mixer, volume_widget->cad, volume_widget->wid, 0, GET_GAIN (1, 1),
 	   0, &a, &b))
-	return -EIO;
+	return OSS_EIO;
       if (a & 0x80)		/* Muted */
 	left = 0;
       else
@@ -2572,7 +2572,7 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       if (!corb_read
 	  (mixer, volume_widget->cad, volume_widget->wid, 0, GET_GAIN (1, 0),
 	   0, &a, &b))
-	return -EIO;
+	return OSS_EIO;
       if (a & 0x80)		/* Muted */
 	right = 0;
       else
@@ -2623,7 +2623,7 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
       break;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*
@@ -2651,11 +2651,11 @@ hda_codec_add_pingroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
   if (widget->used || widget->skip)
@@ -2686,11 +2686,11 @@ hda_codec_add_adcgroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
   if (widget->used || widget->skip)
@@ -2721,11 +2721,11 @@ hda_codec_add_miscgroup (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
   if (widget->used || widget->skip)
@@ -2890,11 +2890,11 @@ hda_codec_add_outamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -2958,11 +2958,11 @@ hda_codec_add_outmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3003,11 +3003,11 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   oss_mixext *ent;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3076,11 +3076,11 @@ hda_codec_add_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   int ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3118,11 +3118,11 @@ hda_codec_set_inmute (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3142,11 +3142,11 @@ hda_codec_add_insrc (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   int ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3190,11 +3190,11 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   *ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3215,7 +3215,7 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (ext == NULL)
     {
       cmn_err (CE_WARN, "Cannot locate the mixer extension (x)\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   memset (ext->enum_present, 0, sizeof (ext->enum_present));
@@ -3258,11 +3258,11 @@ hda_codec_add_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   *ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3281,7 +3281,7 @@ hda_codec_add_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (ext == NULL)
     {
       cmn_err (CE_WARN, "Cannot locate the mixer extension (x)\n");
-      return -EIO;
+      return OSS_EIO;
     }
   /* Copy RGB color */
   if (widget->color != 0)
@@ -3333,11 +3333,11 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   *ctl = 0;
 
   if (cad < 0 || cad >= mixer->ncodecs)
-    return -ENXIO;
+    return OSS_ENXIO;
   codec = mixer->codecs[cad];
 
   if (wid < 0 || wid >= codec->nwidgets)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   widget = &codec->widgets[wid];
 
@@ -3356,7 +3356,7 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (ext == NULL)
     {
       cmn_err (CE_WARN, "Cannot locate the mixer extension (x)\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   /* Copy RGB color */

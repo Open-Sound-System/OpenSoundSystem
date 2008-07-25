@@ -111,7 +111,7 @@ uart401_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   while (input_avail (devc))
@@ -178,7 +178,7 @@ uart401_out (int dev, unsigned char midi_byte)
 static int
 uart401_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t uart401_driver = {

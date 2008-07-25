@@ -1126,7 +1126,7 @@ envy24_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
   int rt;
 
   if (arg == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   switch (cmd)
     {
@@ -1151,7 +1151,7 @@ envy24_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     }
 
   if (devc->model_data->auxdrv->spdif_ioctl == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   rt = devc->model_data->auxdrv->spdif_ioctl (devc, dev, cmd, arg);
@@ -1316,14 +1316,14 @@ envy24_audio_open (int dev, int mode, int open_flags)
   if (devc->playbuf == NULL || devc->recbuf == NULL)
     {
       cmn_err (CE_WARN, "No DMA buffer\n");
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (portc->open_mode != 0 || devc->direct_audio_opened != 0)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (portc->direction == DIR_INPUT)
@@ -1331,7 +1331,7 @@ envy24_audio_open (int dev, int mode, int open_flags)
       if (devc->rec_channel_mask & (1 << portc->chnum))
 	{
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
       devc->rec_channel_mask |= (1 << portc->chnum);
     }
@@ -1340,7 +1340,7 @@ envy24_audio_open (int dev, int mode, int open_flags)
       if (devc->play_channel_mask & (1 << portc->chnum))
 	{
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
       devc->play_channel_mask |= (1 << portc->chnum);
     }
@@ -1490,7 +1490,7 @@ envy24_sync_control (int dev, int event, int mode)
       return 0;
     }
 
-  return -EIO;
+  return OSS_EIO;
 }
 
 static void
@@ -1561,7 +1561,7 @@ envy24_audio_prepare_for_input (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (audio_engines[dev]->flags & ADEV_NOINPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   nsamples = devc->hw_fragsamples;	/* Number of 32 bit samples */
 
@@ -1607,7 +1607,7 @@ envy24_audio_prepare_for_output (int dev, int bsize, int bcount)
   envy24_devc *devc = audio_engines[dev]->devc;
 
   if (audio_engines[dev]->flags & ADEV_NOOUTPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   nsamples = devc->hw_fragsamples;	/* Number of 32 bit samples */
 
@@ -1653,7 +1653,7 @@ envy24_audio_prepare_for_output (int dev, int bsize, int bcount)
 	}
 
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
   return 0;
@@ -1687,7 +1687,7 @@ envy24_alloc_buffer (int dev, dmap_t * dmap, int direction)
   if (dmap->dmabuf == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate a DMA buffer\n");
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
   memset (dmap->dmabuf, 0, dmap->buffsize);
   return 0;
@@ -1715,7 +1715,7 @@ envy24_check_input (int dev)
     return 0;
 
   cmn_err (CE_NOTE, "Input timed out.\n");
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -1727,7 +1727,7 @@ envy24_check_output (int dev)
     return 0;
 
   cmn_err (CE_NOTE, "Output timed out\n");
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -1802,7 +1802,7 @@ envy24_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     return *arg = SOUND_CAP_EXCL_INPUT;
   if (cmd == SOUND_MIXER_PRIVATE1)
     return *arg = 0;
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1845,7 +1845,7 @@ envy24_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  devc->model_data->auxdrv->get_locked_status (devc);
 
       default:
-	return -EIO;
+	return OSS_EIO;
       }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -1853,7 +1853,7 @@ envy24_set_control (int dev, int ctrl, unsigned int cmd, int value)
       {
       case 1:
 	if (value < 0 || value > 12)
-	  return -EIO;
+	  return OSS_EIO;
 
 	if (value != devc->pending_speed_sel)
 	  {
@@ -1866,7 +1866,7 @@ envy24_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case 2:
 	if (value < 0 || value > 2)
-	  return -EIO;
+	  return OSS_EIO;
 	return devc->syncsource = value;
 	break;
 
@@ -1898,10 +1898,10 @@ envy24_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	break;
 
       default:
-	return -EIO;
+	return OSS_EIO;
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2010,7 +2010,7 @@ envy24_get_peak (int dev, int ctrl, unsigned int cmd, int value)
       n = i;
 
   if (n == -1)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   orign = n;
   if (ctrl & 0x80000000)
@@ -2029,7 +2029,7 @@ envy24_get_peak (int dev, int ctrl, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2044,7 +2044,7 @@ envy24_set_mon (int dev, int ctrl, unsigned int cmd, int value)
       n = i;
 
   if (n == -1)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   orign = n;
   if (ctrl & 0x80000000)
@@ -2081,7 +2081,7 @@ envy24_set_mon (int dev, int ctrl, unsigned int cmd, int value)
 	}
       return left | (right << 16);
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2154,7 +2154,7 @@ envy24_set_outrout (int dev, int ctrl, unsigned int cmd, int value)
 	      }
 	  }
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
   else if (cmd == SNDCTL_MIX_WRITE)
     {
@@ -2192,7 +2192,7 @@ envy24_set_outrout (int dev, int ctrl, unsigned int cmd, int value)
       OUTW (devc->osdev, tmp, devc->mt_base + 0x30);
       return value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2233,7 +2233,7 @@ envy24_set_stereo_outrout (int dev, int ctrl, unsigned int cmd, int value)
 	      }
 	  }
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
   else if (cmd == SNDCTL_MIX_WRITE)
     {
@@ -2274,7 +2274,7 @@ envy24_set_stereo_outrout (int dev, int ctrl, unsigned int cmd, int value)
       OUTW (devc->osdev, tmp, devc->mt_base + 0x30);
       return value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2478,7 +2478,7 @@ envy24_set_spdifrout (int dev, int ctrl, unsigned int cmd, int value)
       else
 	return write_spdif_mono (devc, ctrl - 1, value);
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/ 

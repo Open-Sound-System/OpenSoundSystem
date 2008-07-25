@@ -390,7 +390,7 @@ ALI_audio_set_format (int dev, unsigned int arg)
 static int
 ALI_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void ALI_audio_trigger (int dev, int state);
@@ -427,7 +427,7 @@ ALI_audio_open (int dev, int mode, int openflags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (portc->port_type == DF_SPDIF)
@@ -437,7 +437,7 @@ ALI_audio_open (int dev, int mode, int openflags)
 	  cmn_err (CE_WARN,
 		   "ICH: The S/PDIF device supports only playback\n");
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
     }
   else
@@ -445,7 +445,7 @@ ALI_audio_open (int dev, int mode, int openflags)
       if (devc->open_mode & mode)
 	{
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
 
       devc->open_mode |= mode;

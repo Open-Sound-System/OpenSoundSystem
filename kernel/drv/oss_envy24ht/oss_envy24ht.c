@@ -245,7 +245,7 @@ midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (devc->midi_opened & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   devc->midi_opened |= mode;
 
@@ -309,7 +309,7 @@ midi_out (int dev, unsigned char midi_byte)
 static int
 midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t envy24ht_midi_driver = {
@@ -443,7 +443,7 @@ envy24ht_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     return *arg = SOUND_CAP_EXCL_INPUT;
   if (cmd == SOUND_MIXER_PRIVATE1)
     return *arg = 0;
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t envy24ht_mixer_driver = {
@@ -458,7 +458,7 @@ envy24ht_set_route (int dev, int ctrl, unsigned int cmd, int value)
   oss_native_word flags;
 
   if (ctrl < 0 || ctrl > 8)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -492,7 +492,7 @@ envy24ht_set_route (int dev, int ctrl, unsigned int cmd, int value)
 
       static const unsigned char cnv_tab[3] = { 0x00, 0x02, 0x06 };
       if (value < 0 || value > 2)
-	return -EINVAL;
+	return OSS_EINVAL;
 
       MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
       tmp = INL (devc->osdev, devc->mt_base + 0x2c);
@@ -534,7 +534,7 @@ envy24ht_set_route (int dev, int ctrl, unsigned int cmd, int value)
 
       return value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -596,7 +596,7 @@ envy24ht_get_peak (int dev, int ctrl, unsigned int cmd, int value)
       n = i;
 
   if (n == -1)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   orign = n;
   if (ctrl & 0x80000000)
@@ -615,7 +615,7 @@ envy24ht_get_peak (int dev, int ctrl, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/ 
@@ -850,7 +850,7 @@ envy24ht_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	return 1;
 
       default:
-	return -EIO;
+	return OSS_EIO;
       }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -858,7 +858,7 @@ envy24ht_set_control (int dev, int ctrl, unsigned int cmd, int value)
       {
       case 1:
 	if (value < 0 || value > devc->max_ratesel)
-	  return -EIO;
+	  return OSS_EIO;
 	MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 	if (devc->configured_rate_sel != value)
 	  {
@@ -875,7 +875,7 @@ envy24ht_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
       case 2:
 	if (value < 0 || value > 2)
-	  return -EIO;
+	  return OSS_EIO;
 	devc->syncsource = value;
 	if (devc->model_data->svid == SSID_JULIA)
 	    devc->auxdrv->private1 (devc, value);
@@ -900,10 +900,10 @@ envy24ht_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	break;
 
       default:
-	return -EIO;
+	return OSS_EIO;
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1475,7 +1475,7 @@ envy24ht_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
   if (devc->auxdrv->audio_ioctl)
     return devc->auxdrv->audio_ioctl (devc, portc, cmd, arg);
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void envy24ht_trigger (int dev, int state);
@@ -1498,7 +1498,7 @@ envy24ht_open_input (int dev, int mode, int open_flags)
   if (mode & OPEN_WRITE)
     {
       cmn_err (CE_CONT, "Playback is not possible with %s\n", adev->devnode);
-      return -ENOTSUP;
+      return OSS_ENOTSUP;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -1506,7 +1506,7 @@ envy24ht_open_input (int dev, int mode, int open_flags)
   if (portc->open_mode || (devc->busy_rec_channels & portc->chmask))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
   devc->open_count++;
@@ -1542,7 +1542,7 @@ envy24ht_open_output (int dev, int mode, int open_flags)
   if (mode & OPEN_READ)
     {
       cmn_err (CE_CONT, "Recording is not possible with %s\n", adev->devnode);
-      return -ENOTSUP;
+      return OSS_ENOTSUP;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -1550,7 +1550,7 @@ envy24ht_open_output (int dev, int mode, int open_flags)
   if (portc->open_mode || (devc->busy_play_channels & portc->chmask))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -1683,7 +1683,7 @@ envy24ht_prepare_for_input (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (audio_engines[dev]->flags & ADEV_NOINPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   setup_sample_rate (devc);
@@ -1709,7 +1709,7 @@ envy24ht_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (audio_engines[dev]->flags & ADEV_NOOUTPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   setup_sample_rate (devc);
@@ -1792,7 +1792,7 @@ envy24ht_check_output (int dev)
 							       devc->
 							       ccs_base +
 							       0x00));
-  return -EIO;
+  return OSS_EIO;
 }
 #endif
 
@@ -1880,7 +1880,7 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
   if (devc->nr_outdevs >= MAX_ODEV)
     {
       cmn_err (CE_CONT, "Envy24ht: Too many audio devices\n");
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOINPUT;
@@ -1977,7 +1977,7 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
   if (devc->nr_indevs >= MAX_IDEV)
     {
       cmn_err (CE_CONT, "Envy24ht: Too many audio devices\n");
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOOUTPUT | ADEV_COLD;

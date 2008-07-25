@@ -439,7 +439,7 @@ write_current_value (ossusb_devc * devc, usb_control_t * c, int value)
       break;
 
     default:
-      return -EIO;
+      return OSS_EIO;
     }
 
   return value;
@@ -547,10 +547,10 @@ mixer_func (int dev, int ctrl, unsigned int cmd, int value)
   usb_control_t *c;
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   if (ctrl < 0 || ctrl >= devc->ncontrols)
-    return -EIO;
+    return OSS_EIO;
 
   c = &devc->controls[ctrl];
 
@@ -560,7 +560,7 @@ mixer_func (int dev, int ctrl, unsigned int cmd, int value)
     }
 
   if (cmd != SNDCTL_MIX_WRITE)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   value = c->value = write_current_value (devc, c, value);
 
@@ -1275,7 +1275,7 @@ usb_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
   ossusb_devc *devc = mixer_devs[dev]->hw_devc;
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   switch (cmd)
     {

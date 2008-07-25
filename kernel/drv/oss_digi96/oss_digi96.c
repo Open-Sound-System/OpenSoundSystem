@@ -256,7 +256,7 @@ digi96_set_format (int dev, unsigned int arg)
 static int
 digi96_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void digi96_trigger (int dev, int state);
@@ -362,7 +362,7 @@ digi96_open (int dev, int mode, int open_flags)
   if (portc->open_mode != 0 || (devc->open_mode & mode))	/* Busy? */
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -490,7 +490,7 @@ digi96_prepare_for_output (int dev, int bsize, int bcount)
   if (!devc->master)
     {
       if (!verify_input (devc, portc))
-	return -EIO;
+	return OSS_EIO;
     }
 
   cmd = devc->ctrl1_bits;
@@ -546,7 +546,7 @@ digi96_prepare_for_input (int dev, int bsize, int bcount)
   write_ctrl1 (devc, cmd);
 
   if (!verify_input (devc, portc))
-    return -EIO;
+    return OSS_EIO;
   PCI_WRITEL (devc->osdev, devc->pRESETREC, 0);
 
   return 0;
@@ -643,7 +643,7 @@ digi96_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     return *arg = 100 | (100 << 8);
   if (cmd == SOUND_MIXER_WRITE_VOLUME || cmd == SOUND_MIXER_WRITE_PCM)
     return *arg = 100 | (100 << 8);
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t digi96_mixer_driver = {
@@ -657,7 +657,7 @@ digi96_set_control (int dev, int ctrl, unsigned int cmd, int value)
   unsigned int tmp;
 
   if (ctrl < 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -696,7 +696,7 @@ digi96_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 	}
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -710,7 +710,7 @@ digi96_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
 	case 2:
 	  if (value < 0 || value > 3)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 
 	  devc->input_source = value;
 	  return value;
@@ -731,7 +731,7 @@ digi96_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
 	case 4:
 	  if (value > 2 || (!devc->have_adat && value > 1))
-	    return -EINVAL;
+	    return OSS_EINVAL;
 
 	  devc->mode = value;
 	  return value;
@@ -781,10 +781,10 @@ digi96_set_control (int dev, int ctrl, unsigned int cmd, int value)
 
 	}
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

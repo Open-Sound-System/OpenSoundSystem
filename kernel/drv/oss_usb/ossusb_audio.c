@@ -76,7 +76,7 @@ write_control_value (ossusb_devc * devc, udi_endpoint_handle_t * endpoint,
 
     default:
       cmn_err (CE_CONT, "oss usbaudio: Bad control size %d\n", l);
-      return -EIO;
+      return OSS_EIO;
     }
 
   len = udi_usb_snd_control_msg (devc->mixer_usbdev, 0,	// endpoint
@@ -89,7 +89,7 @@ write_control_value (ossusb_devc * devc, udi_endpoint_handle_t * endpoint,
   if (len < 0)
     {
       cmn_err (CE_WARN, "Endpoint control write error %d\n", len);
-      return -EIO;
+      return OSS_EIO;
     }
 
   return len;
@@ -126,7 +126,7 @@ usbaudio_set_rate (int dev, int arg)
   int i, x, diff, bestdiff;
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   if (arg == 0)
     return portc->speed;
@@ -173,7 +173,7 @@ usbaudio_set_channels (int dev, short arg)
   ossusb_devc *devc = adev->devc;
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   return adev->min_channels;	/* max_channels should be the same too */
 }
@@ -197,9 +197,9 @@ usbaudio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   ossusb_devc *devc = audio_engines[dev]->devc;
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/
@@ -482,7 +482,7 @@ setup_format_specific (ossusb_devc * devc, ossusb_portc * portc, adev_p adev,
       cmn_err (CE_CONT, "oss usbaudio: Unsupported FORMAT II tag %04x\n",
 	       fmt);
       adev->enabled = 0;
-      return -ENXIO;
+      return OSS_ENXIO;
     }
   return 0;
 }
@@ -516,7 +516,7 @@ prepare_altsetting (ossusb_devc * devc, ossusb_portc * portc, int new_setting)
       portc->disabled = 1;
       adev->enabled = 0;
       portc->act_setting = new_setting;
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   UDB (cmn_err
@@ -585,7 +585,7 @@ prepare_altsetting (ossusb_devc * devc, ossusb_portc * portc, int new_setting)
 			 "\noss usbaudio: Unsupported format type %d\n",
 			 d[3]);
 		adev->enabled = 0;
-		return -ENXIO;
+		return OSS_ENXIO;
 	      }
 	    break;
 
@@ -606,7 +606,7 @@ prepare_altsetting (ossusb_devc * devc, ossusb_portc * portc, int new_setting)
   if (desc == NULL)
     {
       cmn_err (CE_CONT, "oss usbaudio: Bad endpoint\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   portc->endpoint_desc = desc;
@@ -637,13 +637,13 @@ usbaudio_open (int dev, int mode, int open_flags)
   int i;
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (portc->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
@@ -680,7 +680,7 @@ usbaudio_open (int dev, int mode, int open_flags)
     {
       usbaudio_close (dev, mode);
       cmn_err (CE_WARN, "Cannot open audio pipe\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   for (i = 0; i < 2; i++)
@@ -691,7 +691,7 @@ usbaudio_open (int dev, int mode, int open_flags)
 	{
 	  usbaudio_close (dev, mode);
 	  cmn_err (CE_WARN, "Cannot alloc isoc request\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
     }
 
@@ -1084,11 +1084,11 @@ usbaudio_prepare_for_input (int dev, int bsize, int bcount)
   adev_p adev = audio_engines[dev];
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
 
   if (adev->flags & ADEV_NOINPUT)
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
 
   portc->stopping = 0;
 
@@ -1097,7 +1097,7 @@ usbaudio_prepare_for_input (int dev, int bsize, int bcount)
        portc->speed) < 0)
     {
       cmn_err (CE_CONT, "Failed to set %d Hz sampling rate\n", portc->speed);
-      return -EIO;
+      return OSS_EIO;
     }
 
   /*
@@ -1119,10 +1119,10 @@ usbaudio_prepare_for_output (int dev, int bsize, int bcount)
   adev_p adev = audio_engines[dev];
 
   if (devc->disabled)
-    return -EPIPE;
+    return OSS_EPIPE;
 
   if (adev->flags & ADEV_NOOUTPUT)
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
 
   portc->stopping = 0;
 
@@ -1131,7 +1131,7 @@ usbaudio_prepare_for_output (int dev, int bsize, int bcount)
        portc->speed) < 0)
     {
       cmn_err (CE_CONT, "Failed to set %d Hz sampling rate\n", portc->speed);
-      return -EIO;
+      return OSS_EIO;
     }
 
   /*
@@ -1153,12 +1153,12 @@ usbaudio_check_input (int dev)
       cmn_err (CE_CONT,
 	       "oss usbaudio: Audio device %d removed from the system.\n",
 	       dev);
-      return -EPIPE;
+      return OSS_EPIPE;
     }
 
   cmn_err (CE_CONT, "oss usbaudio: Audio input timed out on device %d.\n",
 	   dev);
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -1170,12 +1170,12 @@ usbaudio_check_output (int dev)
       cmn_err (CE_CONT,
 	       "oss usbaudio: Audio device %d removed from the system.\n",
 	       dev);
-      return -EPIPE;
+      return OSS_EPIPE;
     }
 
   cmn_err (CE_CONT, "oss usbaudio: Audio output timed out on device %d.\n",
 	   dev);
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -1397,7 +1397,7 @@ ossusb_change_altsetting (int dev, int ctrl, unsigned int cmd, int value)
   ossusb_portc *portc;
 
   if (ctrl < 0 || ctrl >= devc->num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   portc = &devc->portc[ctrl];
 

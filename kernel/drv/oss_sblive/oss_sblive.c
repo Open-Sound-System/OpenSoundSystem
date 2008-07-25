@@ -640,7 +640,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SBLIVE_READREG:
 #ifdef GET_PROCESS_UID
       if (GET_PROCESS_UID () != 0)	/* Not root */
-	return -EINVAL;
+	return OSS_EINVAL;
 #endif
       reg->value = sblive_read_reg (devc, reg->reg, reg->chn);
       return 0;
@@ -649,7 +649,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SBLIVE_WRITEREG:
 #ifdef GET_PROCESS_UID
       if (GET_PROCESS_UID () != 0)	/* Not root */
-	return -EINVAL;
+	return OSS_EINVAL;
 #endif
       sblive_write_reg (devc, reg->reg, reg->chn, reg->value);
       return 0;
@@ -658,7 +658,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SBLIVE_READGPIO:
 #ifdef GET_PROCESS_UID
       if (GET_PROCESS_UID () != 0)	/* Not root */
-	return -EINVAL;
+	return OSS_EINVAL;
 #endif
       return *arg = INW (devc->osdev, devc->base + 0x18);
       break;
@@ -670,7 +670,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	OUTW (devc->osdev, val, devc->base + 0x18);
 
@@ -682,22 +682,22 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	if (gpr->ngpr >= MAX_GPR_PARMS)
-	  return -EIO;
+	  return OSS_EIO;
 
 	for (i = 0; i < gpr->ngpr; i++)
 	  {
 	    gpr->gpr[i].name[GPR_NAME_SIZE - 1] = 0;	/* Overflow protection */
 	    if (strlen (gpr->gpr[i].name) >= 32)	/* Name may be bad */
 	      {
-		return -EIO;
+		return OSS_EIO;
 	      }
 
 	    if (gpr->gpr[i].num >= MAX_GPR)
 	      {
-		return -EIO;
+		return OSS_EIO;
 	      }
 
 /* cmn_err(CE_CONT, "Gpr %d = %s (vol %x) type=%x\n", gpr->gpr[i].num, gpr->gpr[i].name, gpr->gpr[i].def, gpr->gpr[i].type); */
@@ -720,7 +720,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 	    if (devc->gpr == NULL)
 	      {
 		cmn_err (CE_WARN, "Out of memory (gpr)\n");
-		return -ENOSPC;
+		return OSS_ENOSPC;
 	      }
 	    memset (devc->gpr, 0, sizeof (gpr_info));
 	  }
@@ -735,16 +735,16 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	if (consts->nconst >= MAX_CONST_PARMS)
-	  return -EIO;
+	  return OSS_EIO;
 
 	for (i = 0; i < consts->nconst; i++)
 	  {
 	    if (consts->consts[i].gpr >= MAX_GPR)
 	      {
-		return -EIO;
+		return OSS_EIO;
 	      }
 
 	    sblive_write_reg (devc, consts->consts[i].gpr + GPR0, 0,
@@ -761,7 +761,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	for (pc = 0; pc < 512; pc++)
 	  {
@@ -779,7 +779,7 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	for (pc = 0; pc < 512; pc++)
 	  {
@@ -793,13 +793,13 @@ sblive_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SBLIVE_GETCHIPTYPE:
 #ifdef GET_PROCESS_UID
       if (GET_PROCESS_UID () != 0)	/* Not root */
-	return -EINVAL;
+	return OSS_EINVAL;
 #endif
       return *arg = devc->feature_mask & ~SB_AUDIGY2;
       break;
 
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void sblive_audio_trigger (int dev, int state);
@@ -863,7 +863,7 @@ sblive_audio_open (int dev, int mode, int open_flags)
   if (portc->mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->mode = mode;
@@ -888,7 +888,7 @@ sblive_audio_open (int dev, int mode, int open_flags)
       if (!setup_passthrough (devc, portc, 1))
 	{
 	  portc->mode = 0;
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
     }
   else
@@ -1610,7 +1610,7 @@ sblive_audio_prepare_for_input (int dev, int bsize, int bcount)
   if (audio_engines[dev]->flags & ADEV_NOINPUT)
     {
       cmn_err (CE_WARN, "Audio device %d is output only\n", dev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->buffsize > 65536)
@@ -1646,7 +1646,7 @@ sblive_audio_prepare_for_input (int dev, int bsize, int bcount)
 
     default:
       cmn_err (CE_WARN, "Unsupported input buffer size %d\n", dmap->buffsize);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (portc->input_type == ITYPE_SPDIF)
@@ -1690,7 +1690,7 @@ sblive_audio_prepare_for_output (int dev, int bsize, int bcount)
   int voiceL = portc->voice_chn, voiceR = portc->voice_chn + 1;
 
   if (audio_engines[dev]->flags & ADEV_NOOUTPUT)
-    return -EIO;
+    return OSS_EIO;
 
   /* AC3 needs stereo too */
   if (portc->format == AFMT_AC3 || portc->input_type == ITYPE_SPDIF)
@@ -1764,7 +1764,7 @@ sblive_alloc_buffer (int dev, dmap_t * dmap, int direction)
 	oss_free_dmabuf (dev, dmap);
 	dmap->dmabuf = NULL;
 
-	return -ENOSPC;
+	return OSS_ENOSPC;
       }
 
   if (direction == PCM_ENABLE_OUTPUT)
@@ -2154,7 +2154,7 @@ audigyuart_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   while (input_avail (devc))
@@ -2202,7 +2202,7 @@ audigyuart_out (int dev, unsigned char midi_byte)
 static int
 audigyuart_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t audigy_midi_driver = {
@@ -2947,7 +2947,7 @@ sblive_set_gpr (int dev, int ctrl, unsigned int cmd, int value)
     }
 
   if (ctrl < 0 || ctrl >= MAX_GPR)
-    return -EIO;
+    return OSS_EIO;
 
   typ = MIXT_SLIDER;
   for (i = 0; i < devc->gpr->ngpr; i++)
@@ -2956,7 +2956,7 @@ sblive_set_gpr (int dev, int ctrl, unsigned int cmd, int value)
 
   if (typ == MIXT_GROUP)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (cmd == SNDCTL_MIX_READ)
@@ -3059,7 +3059,7 @@ sblive_set_gpr (int dev, int ctrl, unsigned int cmd, int value)
       return value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -3069,7 +3069,7 @@ sblive_set_vol (int dev, int ctrl, unsigned int cmd, int value)
   sblive_portc *portc;
 
   if (ctrl < 0 || ctrl >= devc->n_audiodevs)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   portc = &devc->portc[ctrl];
 
@@ -3144,7 +3144,7 @@ sblive_set_vol (int dev, int ctrl, unsigned int cmd, int value)
 #endif
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/
@@ -3154,7 +3154,7 @@ sblive_get_peak (int dev, int ctrl, unsigned int cmd, int value)
   sblive_devc *devc = mixer_devs[dev]->hw_devc;
 
   if (ctrl < 0 || ctrl >= devc->n_audiodevs)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -3174,7 +3174,7 @@ sblive_get_peak (int dev, int ctrl, unsigned int cmd, int value)
       return peak_cnv[l] | (peak_cnv[r] << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -3212,7 +3212,7 @@ sblive_set_parm (int dev, int ctrl, unsigned int cmd, int value)
 	}
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -3332,7 +3332,7 @@ create_efx_mixer (int dev)
   devc->mixer_group = -1;
 
   if (devc->gpr->ngpr >= MAX_GPR_PARMS)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   for (i = 0; i < devc->gpr->ngpr; i++)
     {
@@ -3357,7 +3357,7 @@ create_efx_mixer (int dev)
       if (!group_created)
 	{
 	  cmn_err (CE_WARN, "Mixer initialization sequence error\n");
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 #endif
       mode = MIXF_READABLE;
@@ -3474,7 +3474,7 @@ mixer_override (int dev, int audiodev, unsigned int cmd, int val)
 	      portc = &devc->portc[i];
 
 	  if (portc == NULL)
-	    return -EIO;
+	    return OSS_EIO;
 
 	  return portc->playvol | (portc->playvol << 8);
 	}
@@ -3492,7 +3492,7 @@ mixer_override (int dev, int audiodev, unsigned int cmd, int val)
 	      portc = &devc->portc[i];
 
 	  if (portc == NULL)
-	    return -EIO;
+	    return OSS_EIO;
 
 	  left = val & 0xff;
 	  right = (val >> 8) & 0xff;
@@ -3768,7 +3768,7 @@ oss_sblive_attach (oss_device_t * osdev)
 	{
 	  cmn_err (CE_WARN, "Audio memory block exhausted (%d/%d)\n",
 		   devc->audio_memptr, AUDIO_MEMSIZE);
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       if (i == 0)

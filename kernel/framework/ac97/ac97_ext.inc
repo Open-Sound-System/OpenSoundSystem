@@ -1188,7 +1188,7 @@ ac97_micboost_ctl (int dev, int ctrl, unsigned int cmd, int value)
 	return value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1198,7 +1198,7 @@ ac97_recselect_ctl (int dev, int ctrl, unsigned int cmd, int value)
   ac97_devc *devc = mixer_devs[dev]->devc;
 
   if (ctrl < 0 || ctrl > 1)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   tmp = codec_read (devc, 0x1a);
 
@@ -1210,7 +1210,7 @@ ac97_recselect_ctl (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_WRITE)
     {
       if (value < 0 || value > 7)
-	return -EINVAL;
+	return OSS_EINVAL;
 
       tmp &= ~(0x7 << (ctrl * 8));
       tmp |= (value << (ctrl * 8));
@@ -1218,7 +1218,7 @@ ac97_recselect_ctl (int dev, int ctrl, unsigned int cmd, int value)
       return value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

@@ -174,7 +174,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (midic->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   midic->open_mode = mode;
@@ -190,7 +190,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	{
 	  usb_midi_close (dev, mode);
 	  cmn_err (CE_WARN, "Cannot open midi output pipe\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       if ((devc->output_pipe =
@@ -217,7 +217,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	{
 	  usb_midi_close (dev, mode);
 	  cmn_err (CE_WARN, "Cannot open midi input pipe\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
       if ((devc->input_pipe =
 	   udi_usb_alloc_request (midic->usbdev, midic->in_endpoint_handle, 1,
@@ -232,7 +232,7 @@ usb_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	{
 	  cmn_err (CE_WARN, "usbmidi: Input error %d\n", err);
 	  usb_midi_close (dev, mode);
-	  return -EIO;
+	  return OSS_EIO;
 	}
     }
 
@@ -273,7 +273,7 @@ usb_midi_out (int dev, unsigned char data)
  /*ARGSUSED*/ static int
 usb_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t usb_midi_driver = {

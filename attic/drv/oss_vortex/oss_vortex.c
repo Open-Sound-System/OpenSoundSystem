@@ -719,7 +719,7 @@ vortex_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->midi_input_intr = inputbyte;
@@ -769,7 +769,7 @@ vortex_midi_out (int dev, unsigned char midi_byte)
 static int
 vortex_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t vortex_midi_driver = {
@@ -850,7 +850,7 @@ vortex_set_format (int dev, unsigned int arg)
 static int
 vortex_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 #ifdef USE_SRC
@@ -897,13 +897,13 @@ vortex_open (int dev, int mode, int open_flags)
   if (portc->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -1362,7 +1362,7 @@ vortex_alloc_buffer (int dev, dmap_t * dmap, int direction)
     {
       cmn_err (CE_WARN, "Allocated DMA buffer smaller than 8k\n");
       vortex_free_buffer (dev, dmap, direction);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 #endif
 

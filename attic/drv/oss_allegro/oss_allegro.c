@@ -351,7 +351,7 @@ allegro_audio_set_format (int dev, unsigned int arg)
 static int
 allegro_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void allegro_audio_trigger (int dev, int state);
@@ -388,13 +388,13 @@ allegro_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -678,7 +678,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
 	}
 
       if (!db->rawbuf)
-	return -ENOMEM;
+	return OSS_ENOMEM;
 
 #ifdef linux
       /* now mark the pages as reserved; otherwise remap_page_range doesn't do what we want */
@@ -713,7 +713,7 @@ free_dmabuf (allegro_devc * devc, unsigned direction)
       db->rawbuf = NULL;
       return 0;
     }
-  return -EIO;
+  return OSS_EIO;
 }
 
 static audiodrv_t allegro_audio_driver = {

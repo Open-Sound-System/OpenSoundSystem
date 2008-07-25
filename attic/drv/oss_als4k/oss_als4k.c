@@ -245,17 +245,17 @@ als4000_mixer_set (als4000_devc * devc, int dev, int value)
     right = 100;
 
   if (dev > 31)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!(ALS4000_MIXER_DEVICES & (1 << dev)))	/*
 						 * Not supported
 						 */
-    return -EINVAL;
+    return OSS_EINVAL;
 
   regoffs = als4000_mix[dev][LEFT_CHN].regno;
 
   if (regoffs == 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   val = als4000_getmixer (devc, regoffs);
   change_bits (devc, &val, dev, LEFT_CHN, left);
@@ -342,7 +342,7 @@ als4000_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 
@@ -542,7 +542,7 @@ als4000_speed (als4000_devc * devc, int speed)
 static int
 als4000_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -602,13 +602,13 @@ als4000_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;

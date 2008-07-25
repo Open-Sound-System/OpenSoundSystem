@@ -48,7 +48,7 @@ get_mixer_info (int dev, ioctl_arg arg)
   memset(info, 0, sizeof(*info));
 
   if (dev < 0 || dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   strcpy (info->id, mixer_devs[dev]->id);
   strncpy (info->name, mixer_devs[dev]->name, 31);
@@ -74,28 +74,28 @@ oss_legacy_mixer_ioctl (int mixdev, int audiodev, unsigned int cmd,
 #endif
 
   if (!(cmd & SIOC_OUT) && !(cmd & SIOC_IN))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (arg == 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (((cmd >> 8) & 0xff) != 'M')	/* Not a mixer ioctl */
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (mixdev < 0 || mixdev >= num_mixers)
     {
       cmn_err (CE_WARN, "Bad mixer device %d\n", mixdev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (cmd == SOUND_MIXER_INFO)
     return get_mixer_info (mixdev, arg);
 
   if (!mixer_devs[mixdev]->enabled || mixer_devs[mixdev]->unloaded)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (mixer_devs[mixdev]->d->ioctl == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (IOC_IS_OUTPUT (cmd))
     mixer_devs[mixdev]->modify_counter++;
@@ -192,19 +192,19 @@ oss_mixer_ext_info (oss_mixext * ent)
   int extnr;
 
   if (ent == NULL)
-    return -EFAULT;
+    return OSS_EFAULT;
 
   if (ent->dev < 0 || ent->dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   dev = ent->dev;
   if (!mixer_devs[dev]->enabled || mixer_devs[dev]->unloaded)
-    return -ENXIO;
+    return OSS_ENXIO;
   touch_mixer (dev);
 
   ctrl = ent->ctrl;
   if (ent->ctrl < 0 || ent->ctrl >= mixer_devs[dev]->nr_ext)
-    return -EIDRM;
+    return OSS_EIDRM;
   extnr = ent->ctrl;
 
   memcpy ((char *) ent, (char *) &mixer_devs[dev]->extensions[extnr].ext,
@@ -239,7 +239,7 @@ mixer_ext_get_enuminfo (oss_mixer_enuminfo * ent)
   int dev, ctrl;
 
   if (ent == NULL)
-    return -EFAULT;
+    return OSS_EFAULT;
 
   dev = ent->dev;
   ctrl = ent->ctrl;
@@ -247,19 +247,19 @@ mixer_ext_get_enuminfo (oss_mixer_enuminfo * ent)
 
   if (dev < 0 || dev >= num_mixers)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   touch_mixer (dev);
 
   if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
     {
-      return -EIDRM;
+      return OSS_EIDRM;
     }
 
   if (mixer_devs[dev]->extensions[ctrl].enum_info == NULL)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   memcpy ((char *) ent,
@@ -277,7 +277,7 @@ mixer_ext_get_description (oss_mixer_enuminfo * ent)
   char *s;
 
   if (ent == NULL)
-    return -EFAULT;
+    return OSS_EFAULT;
 
   dev = ent->dev;
   ctrl = ent->ctrl;
@@ -285,19 +285,19 @@ mixer_ext_get_description (oss_mixer_enuminfo * ent)
 
   if (dev < 0 || dev >= num_mixers)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   touch_mixer (dev);
 
   if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
     {
-      return -EIDRM;
+      return OSS_EIDRM;
     }
 
   if (mixer_devs[dev]->extensions[ctrl].description == NULL)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   s = mixer_devs[dev]->extensions[ctrl].description;
@@ -358,16 +358,16 @@ mixer_ext_set_enum (oss_mixer_enuminfo * ent)
   int extnr;
 
   if (ent == NULL)
-    return -EFAULT;
+    return OSS_EFAULT;
 
   if (ent->dev < 0 || ent->dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   dev = ent->dev;
   touch_mixer (dev);
 
   if (ent->ctrl < 0 || ent->ctrl >= mixer_devs[dev]->nr_ext)
-    return -EIDRM;
+    return OSS_EIDRM;
   extnr = ent->ctrl;
 
   if (mixer_devs[dev]->extensions[extnr].enum_info == NULL)
@@ -375,7 +375,7 @@ mixer_ext_set_enum (oss_mixer_enuminfo * ent)
       PMALLOC (mixer_devs[dev]->osdev, sizeof (*ent));
 
   if (mixer_devs[dev]->extensions[extnr].enum_info == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   memcpy ((char *) mixer_devs[dev]->extensions[extnr].enum_info,
 	  (char *) ent, sizeof (*ent));
@@ -388,7 +388,7 @@ mixer_ext_set_enum (oss_mixer_enuminfo * ent)
   if (ent->nvalues >= OSS_ENUM_MAXVALUE)
     {
       mixer_devs[dev]->extensions[extnr].enum_info = NULL;
-      return -EIO;
+      return OSS_EIO;
     }
 
   return 0;
@@ -400,12 +400,12 @@ mixer_ext_set_description (int dev, int ctrl, const char *desc)
   int l = strlen(desc);
 
   if (dev < 0 || dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   touch_mixer (dev);
 
   if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
-    return -EIDRM;
+    return OSS_EIDRM;
 
   if (l >= OSS_ENUM_STRINGSIZE)
      l = OSS_ENUM_STRINGSIZE-1;
@@ -414,7 +414,7 @@ mixer_ext_set_description (int dev, int ctrl, const char *desc)
       PMALLOC (mixer_devs[dev]->osdev, l+1);
 
   if (mixer_devs[dev]->extensions[ctrl].description == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   strncpy (mixer_devs[dev]->extensions[ctrl].description,
 	  desc, l);
@@ -435,19 +435,19 @@ mixer_ext_read (oss_mixer_value * val)
   mixer_ext_fn func;
 
   if (val == NULL)
-    return -EFAULT;
+    return OSS_EFAULT;
 
   if (val->dev < 0 || val->dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   dev = val->dev;
 
   if (!mixer_devs[dev]->enabled || mixer_devs[dev]->unloaded)
-    return -ENXIO;
+    return OSS_ENXIO;
   touch_mixer (dev);
 
   if (val->ctrl < 0 || val->ctrl >= mixer_devs[dev]->nr_ext)
-    return -EIDRM;
+    return OSS_EIDRM;
   extnr = val->ctrl;
 
   ext_desc = &mixer_devs[dev]->extensions[extnr];
@@ -455,11 +455,11 @@ mixer_ext_read (oss_mixer_value * val)
 
   if (val->timestamp != ext->timestamp)
     {
-      return -EIDRM;
+      return OSS_EIDRM;
     }
 
   if (ext_desc->handler == NULL || !(ext->flags & MIXF_READABLE))
-    return -EFAULT;
+    return OSS_EFAULT;
 
   func = (mixer_ext_fn) ext_desc->handler;
   return (val->value = func (dev, ext->ctrl, SNDCTL_MIX_READ, val->value));
@@ -479,19 +479,19 @@ mixer_ext_write (oss_mixer_value * val)
   if (val == NULL)
     {
       cmn_err (CE_WARN, "NULL argument in mixer call\n");
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   if (val->dev < 0 || val->dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   dev = val->dev;
   if (!mixer_devs[dev]->enabled || mixer_devs[dev]->unloaded)
-    return -ENXIO;
+    return OSS_ENXIO;
   touch_mixer (dev);
 
   if (val->ctrl < 0 || val->ctrl >= mixer_devs[dev]->nr_ext)
-    return -EIDRM;
+    return OSS_EIDRM;
   extnr = val->ctrl;
 
   ext_desc = &mixer_devs[dev]->extensions[extnr];
@@ -500,12 +500,12 @@ mixer_ext_write (oss_mixer_value * val)
   if (ext_desc->handler == NULL || !(ext->flags & MIXF_WRITEABLE))
     {
       cmn_err (CE_WARN, "NULL handler or control not writeable\n");
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   if (val->timestamp != ext->timestamp)
     {
-      return -EIDRM;
+      return OSS_EIDRM;
     }
 
   func = (mixer_ext_fn) ext_desc->handler;
@@ -532,7 +532,7 @@ mixer_ext_create_device (int dev, int maxentries)
   if (mixer_devs[dev]->max_ext != 0)
     {
       cmn_err (CE_WARN, "Mixer%d (ext) initialization order is wrong\n", dev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   mixext_desc =
@@ -541,7 +541,7 @@ mixer_ext_create_device (int dev, int maxentries)
   if (mixext_desc == NULL)
     {
       cmn_err (CE_CONT, "Not enough memory for mixer%d (ext)\n", dev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   mixer_devs[dev]->extensions = mixext_desc;
@@ -589,7 +589,7 @@ mixer_ext_create_group_flags (int dev, int parent, const char *id,
     {
       cmn_err (CE_WARN, "Mixer extensions not initialized for device %d\n",
 	       dev);
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   /*
@@ -609,7 +609,7 @@ mixer_ext_create_group_flags (int dev, int parent, const char *id,
     {
       cmn_err (CE_WARN, "Out of mixer controls for device %d/%s (%d)\n", dev,
 	       mixer_devs[dev]->name, mixer_devs[dev]->max_ext);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   mixext_desc =
@@ -670,14 +670,14 @@ mixer_ext_create_control (int dev, int parent, int ctrl, mixer_ext_fn func,
     {
       cmn_err (CE_WARN, "Mixer extensions not initialized for device %d\n",
 	       dev);
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   if (mixer_devs[dev]->nr_ext >= mixer_devs[dev]->max_ext)
     {
       cmn_err (CE_WARN, "Out of mixer controls for device %d/%s (%d)\n", dev,
 	       mixer_devs[dev]->name, mixer_devs[dev]->max_ext);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (func == NULL)		/* No access function */
@@ -807,7 +807,7 @@ mixer_ext_rw (int dev, int ctrl, unsigned int cmd, int value)
       return value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 int
@@ -1302,7 +1302,7 @@ mixer_ext_set_init_fn (int dev, mixer_create_controls_t func, int nextra)
  * extended mixer is actually used.
  */
   if (dev < 0 || dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   mixer_devs[dev]->nr_extra_ext = nextra;
   mixer_devs[dev]->create_controls = func;
@@ -1321,7 +1321,7 @@ mixer_ext_set_vmix_init_fn (int dev, mixer_create_controls_t func, int nextra,
  * extended mixer is actually used.
  */
   if (dev < 0 || dev >= num_mixers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   mixer_devs[dev]->nr_extra_ext += nextra;
   mixer_devs[dev]->create_vmix_controls = func;
@@ -1404,13 +1404,13 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
   memset ((char *) info, 0, sizeof (*info));
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (adev == NULL)
     {
       cmn_err (CE_WARN, "Internal error - adev==NULL (%d)\n", dev);
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (!adev->unloaded && adev->enabled)
@@ -1464,11 +1464,11 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
     {
       if (audio_engines[dev]->d->adrv_ioctl (dev, SNDCTL_GETSONG,
 					     (ioctl_arg) info->song_name) ==
-	  -EINVAL)
+	  OSS_EINVAL)
 	strcpy (info->song_name, adev->song_name);
       if (audio_engines[dev]->d->adrv_ioctl (dev, SNDCTL_GETLABEL,
 					     (ioctl_arg) info->label) ==
-	  -EINVAL)
+	  OSS_EINVAL)
 	strcpy (info->label, adev->label);
     }
 
@@ -1544,11 +1544,11 @@ vmixctl_attach(vmixctl_attach_t *att)
 	oss_device_t *osdev;
 
 	if (att->masterdev<0 || att->masterdev >= num_audio_engines)
-	   return -ENXIO;
+	   return OSS_ENXIO;
 
 	if (att->inputdev != -1)
 	if (att->inputdev<0 || att->inputdev >= num_audio_engines)
-	   return -ENXIO;
+	   return OSS_ENXIO;
 
 	osdev=audio_engines[att->masterdev]->master_osdev;
 
@@ -1563,7 +1563,7 @@ vmixctl_rate(vmixctl_rate_t *rate)
 	int err;
 
 	if (rate->masterdev<0 || rate->masterdev >= num_audio_engines)
-	   return -ENXIO;
+	   return OSS_ENXIO;
 
 	if ((err=vmix_set_master_rate(rate->masterdev, rate->rate))<0)
 	   return err;
@@ -1647,11 +1647,11 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
       if (val==-1)
 	 val=orig_dev;
       if (val < 0 || val >= num_mixers)
-	return -ENXIO;
+	return OSS_ENXIO;
       if (mixer_devs[val] == NULL || mixer_devs[val]->unloaded
 	  || !mixer_devs[val]->enabled)
 	{
-	  return -ENXIO;
+	  return OSS_ENXIO;
 	}
 
 
@@ -1690,7 +1690,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	oss_audioinfo *info = (oss_audioinfo *) arg;
 
 	if (info == NULL)
-	  return -EFAULT;
+	  return OSS_EFAULT;
 
 	dev = info->dev;
 
@@ -1710,17 +1710,17 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	       * directly to specific audio engine instead of the
 	       * device file.
 	       */
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	  }
 
 	if (dev < 0 || dev >= num_audio_devfiles)
 	  {
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 
 	if (audio_devfiles[dev] == NULL)
 	  {
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	if (dev >= 0)
@@ -1739,7 +1739,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	oss_audioinfo *info = (oss_audioinfo *) arg;
 
 	if (info == NULL)
-	  return -EFAULT;
+	  return OSS_EFAULT;
 
 	dev = info->dev;
 
@@ -1753,12 +1753,12 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 	    default:
 	      cmn_err(CE_WARN, "Unrecognized device class %d for dev %d\n", class, orig_dev);
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	    }
 
 	if (dev < 0 || dev >= num_audio_engines)
 	  {
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 
 	return get_engineinfo (dev, info, 0);
@@ -1786,19 +1786,19 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	       */
 	      dev = orig_dev;
 	      if (dev < 0 || dev >= oss_num_midi_clients)
-		return -ENXIO;
+		return OSS_ENXIO;
 	      if (oss_midi_clients[dev]->mididev == NULL)
-		return -EBUSY;	/* No binding established (yet) */
+		return OSS_EBUSY;	/* No binding established (yet) */
 	      dev = oss_midi_clients[dev]->mididev->dev;
 	      break;
 
 	    default:
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	    }
 
 	if (dev < 0 || dev >= num_mididevs)
 	  {
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 
 	memset ((char *) info, 0, sizeof (*info));
@@ -1864,7 +1864,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 	if (card < 0 || card >= oss_num_cards)
 	  {
-	    return -ENXIO;
+	    return OSS_ENXIO;
 	  }
 
 	memset ((char *) info, 0, sizeof (*info));
@@ -1892,16 +1892,16 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	      break;
 
 	    default:
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	    }
 
 	if (dev < 0 || dev >= num_mixers)
 	  {
-	    return -ENXIO;
+	    return OSS_ENXIO;
 	  }
 
 	if (mixer_devs[dev] == NULL)
-	  return -ENXIO;
+	  return OSS_ENXIO;
 
 	memset ((char *) info, 0, sizeof (*info));
 	touch_mixer (dev);
@@ -1933,14 +1933,14 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 
 	if (r->n != num_audio_devfiles)	/* Wrong map size? */
 	  {
 	    cmn_err (CE_NOTE, "Legacy audio map size mismatch %d/%d\n",
 		     r->n, num_audio_devfiles);
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 
 	for (i = 0; i < r->n; i++)
@@ -1948,7 +1948,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    adev_p adev = audio_devfiles[i];
 
 	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
-	      return -EINVAL;
+	      return OSS_EINVAL;
 
 	    if (r->map[i] < -1)
 	      r->map[i] = -1;
@@ -1966,18 +1966,18 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 
 	if (r->n != num_mixers)	/* Wrong map size? */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 
 	for (i = 0; i < r->n; i++)
 	  {
 	    mixdev_p mdev = mixer_devs[i];
 
 	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
-	      return -EINVAL;
+	      return OSS_EINVAL;
 
 	    mdev->real_dev = r->map[i];
 	  }
@@ -1992,18 +1992,18 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 
 	if (r->n != num_mididevs)	/* Wrong map size? */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 
 	for (i = 0; i < r->n; i++)
 	  {
 	    mididev_p mdev = midi_devs[i];
 
 	    if (r->map[i] >= HARD_MAX_AUDIO_DEVFILES)	/* May be unnecessary check */
-	      return -EINVAL;
+	      return OSS_EINVAL;
 
 	    mdev->real_dev = r->map[i];
 	  }
@@ -2015,7 +2015,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
     case VMIXCTL_ATTACH:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
       return vmixctl_attach((vmixctl_attach_t*)arg);
       break;
@@ -2023,7 +2023,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
     case VMIXCTL_RATE:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
       return vmixctl_rate((vmixctl_rate_t*)arg);
       break;
@@ -2040,7 +2040,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
 	  {
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 #endif
 
@@ -2064,7 +2064,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    break;
 
 	  default:
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
       }
       return 0;
@@ -2078,13 +2078,13 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 
 	for (i = 0; i < r->devlist.ndevs; i++)
 	  {
 	    if ((d = r->devlist.devices[i]) < 0 || d >= num_audio_devfiles)
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	  }
 
 	switch (r->mode)
@@ -2093,7 +2093,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    /* Refuse if number of devices has changed */
 	    if (!check_list (&r->devlist, &dspinlist))
 	      {
-		return -EINVAL;
+		return OSS_EINVAL;
 	      }
 	    memcpy (&dspinlist, &r->devlist, sizeof (oss_devlist_t));
 	    break;
@@ -2107,7 +2107,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    /* Refuse if number of devices has changed */
 	    if (!check_list (&r->devlist, &dspoutlist))
 	      {
-		return -EINVAL;
+		return OSS_EINVAL;
 	      }
 	    memcpy (&dspoutlist, &r->devlist, sizeof (oss_devlist_t));
 	    dspoutlist2.ndevs = 0;
@@ -2117,13 +2117,13 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	    /* Refuse if number of devices has changed */
 	    if (!check_list (&r->devlist, &dspinoutlist))
 	      {
-		return -EINVAL;
+		return OSS_EINVAL;
 	      }
 	    memcpy (&dspinoutlist, &r->devlist, sizeof (oss_devlist_t));
 	    break;
 
 	  default:
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
       }
       return 0;
@@ -2134,7 +2134,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
     case OSSCTL_RESET_APPLIST:
 #ifdef GET_PROCESS_UID
       if (GET_PROCESS_UID () != 0)	/* Not root */
-	return -EINVAL;
+	return OSS_EINVAL;
 #endif
 
       oss_applist_size = 0;
@@ -2147,14 +2147,14 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 
 	if (oss_applist_size >= APPLIST_SIZE)
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 
 	if (parm->dev < -1 || parm->dev >= num_audio_devfiles)
-	  return -ENXIO;
+	  return OSS_ENXIO;
 
 	def = &oss_applist[oss_applist_size];
 
@@ -2171,7 +2171,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 #endif
 #endif
     default:
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 }
 
@@ -2192,10 +2192,10 @@ oss_mixer_open (int dev, int dev_type, struct fileinfo *file, int recursive,
     return 0;
 
   if (mixer_devs[dev]->unloaded)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (!mixer_devs[dev]->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   return 0;
 }
@@ -2246,20 +2246,20 @@ oss_mixer_ioctl (int dev, struct fileinfo *bogus,
 
   if (dev < 0 || dev >= num_mixers)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (mixer_devs == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (!mixer_devs[dev]->enabled || mixer_devs[dev]->unloaded)
     {
-      return -ENODEV;
+      return OSS_ENODEV;
     }
 
-  if ((ret = oss_legacy_mixer_ioctl (dev, -1, cmd, arg)) != -EINVAL)
+  if ((ret = oss_legacy_mixer_ioctl (dev, -1, cmd, arg)) != OSS_EINVAL)
     {
       return ret;
     }
@@ -2581,13 +2581,13 @@ oss_install_mixer (int vers,
        */
       if (nnn++ > 50)
 	cmn_err (CE_PANIC, "Killing runaway system.\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (vers != OSS_MIXER_DRIVER_VERSION)
     {
       cmn_err (CE_WARN, "Incompatible mixer driver for %s\n", name);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (driver_size > sizeof (mixer_driver_t))
@@ -2611,7 +2611,7 @@ oss_install_mixer (int vers,
   if ((d = PMALLOC (osdev, sizeof (*d))) == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate mixer driver for (%s)\n", name);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (num == -1)
@@ -2620,7 +2620,7 @@ oss_install_mixer (int vers,
       if (op == NULL)
 	{
 	  cmn_err (CE_WARN, "Can't allocate mixer driver for (%s)\n", name);
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       memset ((char *) op, 0, sizeof (*op));

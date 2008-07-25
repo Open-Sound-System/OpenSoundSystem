@@ -340,7 +340,7 @@ static int
 pt101_mixer_get (maestro_devc * devc, int dev)
 {
   if (!((1 << dev) & PT101_MIXER_DEVS))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   return devc->levels[dev];
 }
@@ -363,7 +363,7 @@ pt101_mixer_set (maestro_devc * devc, int dev, int value)
 
 
   if (!((1 << dev) & PT101_MIXER_DEVS))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!((1 << dev) & PT101_MIXER_STEREODEVS))
     {
@@ -559,7 +559,7 @@ pt101_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 /*
@@ -1267,7 +1267,7 @@ maestro_audio_set_format (int dev, unsigned int arg)
 static int
 maestro_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void maestro_audio_trigger (int dev, int state);
@@ -1304,7 +1304,7 @@ maestro_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->lock, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 #if 1
   if ((mode & OPEN_READ))
@@ -1319,7 +1319,7 @@ maestro_audio_open (int dev, int mode, int open_flags)
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->lock, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -1468,7 +1468,7 @@ maestro_audio_prepare_for_input (int dev, int bsize, int bcount)
   if (portc->channels == 2)
     {
       cmn_err (CE_WARN, "Stereo recording not supported\n");
-      return -EIO;
+      return OSS_EIO;
     }
 #endif
 

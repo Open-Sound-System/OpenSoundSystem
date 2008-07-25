@@ -1293,7 +1293,7 @@ envy24_set_akm (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x7f, 0x8c, 0x98 };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -1309,7 +1309,7 @@ envy24_set_akm (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -1324,7 +1324,7 @@ envy24_set_akm (int dev, int ctrl, unsigned int cmd, int value)
 	}
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1335,7 +1335,7 @@ envy24_set_ap (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x60, 0x6f, 0x7f };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -1351,7 +1351,7 @@ envy24_set_ap (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -1359,7 +1359,7 @@ envy24_set_ap (int dev, int ctrl, unsigned int cmd, int value)
       write_ap_codec (devc, 5, level);
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1370,7 +1370,7 @@ envy24_set_d410 (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x00, 0x00, 0x0c };
 
   if (ctrl >= 8)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -1386,7 +1386,7 @@ envy24_set_d410 (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -1399,7 +1399,7 @@ envy24_set_d410 (int dev, int ctrl, unsigned int cmd, int value)
 	write_ap_codec (devc, n + 1, level);
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static unsigned char
@@ -1414,7 +1414,7 @@ envy24_set_ewx2496 (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x60, 0x6f, 0x7f };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -1430,7 +1430,7 @@ envy24_set_ewx2496 (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -1438,7 +1438,7 @@ envy24_set_ewx2496 (int dev, int ctrl, unsigned int cmd, int value)
       write_ewx2496_codec (devc, 7, level);
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static unsigned char
@@ -1453,7 +1453,7 @@ envy24_set_ews88 (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x7f, 0x8c, 0x98 };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -1469,7 +1469,7 @@ envy24_set_ews88 (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -1481,11 +1481,11 @@ envy24_set_ews88 (int dev, int ctrl, unsigned int cmd, int value)
 	    continue;
 
 	  if (!HW_AK4525_WriteRegister (devc, codec >> 4, 4 + i, level))
-	    return -EIO;
+	    return OSS_EIO;
 	}
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/ 
@@ -2131,7 +2131,7 @@ cs8427_spdif_ioctl (envy24_devc * devc, int dev, unsigned int cmd,
   oss_digital_control *ctrl = (oss_digital_control *) arg;
 
   if (arg == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   switch (cmd)
     {
@@ -2233,7 +2233,7 @@ cs8427_spdif_ioctl (envy24_devc * devc, int dev, unsigned int cmd,
 
     default:;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2250,7 +2250,7 @@ set_spdif_control (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 	}
 
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -2262,10 +2262,10 @@ set_spdif_control (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 	}
 
-      return -EIO;
+      return OSS_EIO;
     }
 
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/ 

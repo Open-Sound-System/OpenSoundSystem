@@ -207,7 +207,7 @@ ymhusb_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (midic->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   midic->open_mode = mode;
@@ -224,13 +224,13 @@ ymhusb_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       midic->open_mode = 0;
       midic->midi_input_intr = NULL;
       cmn_err (CE_WARN, "Cannot open audio pipe\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
   if ((midic->datapipe =
        udi_usb_alloc_request (midic->usbdev, midic->endpoint_handle, 1,
 			      UDI_USBXFER_BULK_READ)) == NULL)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   return ymhmidi_start_input (devc, midic);
@@ -428,7 +428,7 @@ ymhusb_open_output (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (midic->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   midic->open_mode = mode;
@@ -448,7 +448,7 @@ ymhusb_open_output (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       midic->open_mode = 0;
       midic->midi_input_intr = NULL;
       cmn_err (CE_WARN, "Cannot create MIDI parser\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   if ((midic->endpoint_handle =
@@ -457,13 +457,13 @@ ymhusb_open_output (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       midic->open_mode = 0;
       midic->midi_input_intr = NULL;
       cmn_err (CE_WARN, "Cannot open audio pipe\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
   if ((midic->datapipe =
        udi_usb_alloc_request (midic->usbdev, midic->endpoint_handle, 1,
 			      UDI_USBXFER_BULK_WRITE)) == NULL)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   return 0;
@@ -490,7 +490,7 @@ ymhusb_out (int dev, unsigned char midi_byte)
  /*ARGSUSED*/ static int
 ymhusb_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t ymhusb_input_driver = {

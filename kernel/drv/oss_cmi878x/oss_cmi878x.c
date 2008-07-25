@@ -282,7 +282,7 @@ two_wire_write (void *devc_, int codec_num, unsigned char reg,
   if (status & 0x1)
     {
       cmn_err (CE_WARN, "Two-Wire interface busy\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   /* first write the Register Address into the MAP register */
@@ -446,7 +446,7 @@ cmi8788_audio_set_format (int dev, unsigned int arg)
 static int
 cmi8788_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void cmi8788_audio_trigger (int dev, int state);
@@ -483,13 +483,13 @@ cmi8788_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -1207,7 +1207,7 @@ cmi8788uart_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   while (input_avail (devc))
@@ -1276,7 +1276,7 @@ cmi8788uart_out (int dev, unsigned char midi_byte)
 static int
 cmi8788uart_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t cmi8788_midi_driver = {
@@ -1535,7 +1535,7 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       return value;
@@ -1593,11 +1593,11 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
       return (value);
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 
@@ -1807,7 +1807,7 @@ spdifout_ctl (int dev, int ctrl, unsigned int cmd, int value)
       return (value);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

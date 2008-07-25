@@ -405,7 +405,7 @@ ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
     {
     case SNDCTL_DSP_GETPLAYVOL:
       if (portc != &devc->play_portc[0])
-	return -EINVAL;
+	return OSS_EINVAL;
       left = (devc->gains[0] & 0xff) * 100 / 0x7f;
       right = ((devc->gains[0] >> 8) & 0xff) * 100 / 0x7f;
       return *arg = (left | (right << 8));
@@ -413,7 +413,7 @@ ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
 
     case SNDCTL_DSP_SETPLAYVOL:
       if (portc != &devc->play_portc[0])
-	return -EINVAL;
+	return OSS_EINVAL;
       value = *arg;
       left = value & 0xff;
       right = (value >> 8) & 0xff;
@@ -427,7 +427,7 @@ ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
       return 0;
       break;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -442,7 +442,7 @@ ap192_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	return devc->mute;
 
       default:
-	return -EINVAL;
+	return OSS_EINVAL;
       }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -454,10 +454,10 @@ ap192_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	return devc->mute;
 
       default:
-	return -EINVAL;
+	return OSS_EINVAL;
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -468,7 +468,7 @@ ap192_set_ak4358 (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_READ)
     {
       if (ctrl < 0 || ctrl > 4)
-	return -EIO;
+	return OSS_EIO;
 
       return devc->gains[ctrl];
     }
@@ -501,14 +501,14 @@ ap192_set_ak4358 (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       value = left | (right << 8);
       return devc->gains[ctrl] = value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 #if 0

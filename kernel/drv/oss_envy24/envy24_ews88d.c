@@ -318,7 +318,7 @@ ews88d_mixer_set (int dev, int ctrl, unsigned int cmd, int value)
 	break;
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

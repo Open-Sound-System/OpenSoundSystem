@@ -573,7 +573,7 @@ revo51_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
     case SNDCTL_DSP_SET_RECSRC:
       value = *arg;
       if (value < 0 || value > 2)
-	return -EINVAL;
+	return OSS_EINVAL;
       REVO51_set_recsrc (devc, value);
       return *arg = devc->recsrc;
       break;
@@ -589,7 +589,7 @@ revo51_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
 
 
     default:
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 }
 
@@ -634,7 +634,7 @@ revo51_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	return devc->reclevel;
 
       default:
-	return -EINVAL;
+	return OSS_EINVAL;
       }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -655,10 +655,10 @@ revo51_set_control (int dev, int ctrl, unsigned int cmd, int value)
 	return set_reclevel (devc, value);
 
       default:
-	return -EINVAL;
+	return OSS_EINVAL;
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -669,7 +669,7 @@ revo51_set_ak4358 (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_READ)
     {
       if (ctrl < 0 || ctrl > 4)
-	return -EIO;
+	return OSS_EIO;
 
       return devc->gains[ctrl];
     }
@@ -709,14 +709,14 @@ revo51_set_ak4358 (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       value = left | (right << 8);
       return devc->gains[ctrl] = value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -739,7 +739,7 @@ revo51_set_monitor (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_READ)
     {
       if (ctrl < 0 || ctrl > 3)
-	return -EIO;
+	return OSS_EIO;
 
       return devc->monitor[ctrl];
     }
@@ -775,14 +775,14 @@ revo51_set_monitor (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       value = left | (right << 8);
       return devc->monitor[ctrl] = value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
  /*ARGSUSED*/ static int

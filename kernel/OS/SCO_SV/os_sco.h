@@ -74,6 +74,7 @@ typedef unsigned long offset_t;
 #include <sys/param.h>
 #include <sys/signal.h>
 #include <sys/errno.h>
+#include <oss_errno.h>
 #include <sys/file.h>
 #include <sys/conf.h>
 #include <sys/uio.h>

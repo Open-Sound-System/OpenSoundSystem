@@ -202,7 +202,7 @@ via8233_audio_set_format (int dev, unsigned int arg)
 static int
 via8233_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void via8233_audio_trigger (int dev, int state);
@@ -239,13 +239,13 @@ via8233_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -398,7 +398,7 @@ via8233_audio_prepare_for_input (int dev, int bsize, int bcount)
   if (portc->rec_engine == NULL)
     {
       cmn_err (CE_WARN, "No rec engine (dev=%d)\n", dev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -740,7 +740,7 @@ via8233_alloc_engines (via8233_devc * devc)
 	  if (eng->sgd == NULL)
 	    {
 	      cmn_err (CE_WARN, "can't allocate SGD table\n");
-	      return -ENOSPC;
+	      return OSS_ENOSPC;
 	    }
 	  eng->sgd_phys = phaddr;
 	}
@@ -761,7 +761,7 @@ via8233_init (via8233_devc * devc)
   if (via8233_alloc_engines (devc) < 0)
     {
       cmn_err (CE_WARN, "Unable to allocate engines\n");
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   /*

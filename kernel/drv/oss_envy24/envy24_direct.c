@@ -55,7 +55,7 @@ envy24d_audio_set_format (int dev, unsigned int arg)
 static int
 envy24d_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void envy24d_audio_trigger (int dev, int state);
@@ -75,26 +75,26 @@ envy24d_audio_open (int dev, int mode, int open_flags)
   oss_native_word flags;
 
   if (!(mode & portc->direction))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode != 0 || (devc->direct_audio_opened & mode))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (mode == OPEN_WRITE && (devc->play_channel_mask != 0))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (mode == OPEN_READ && (devc->rec_channel_mask != 0))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -213,7 +213,7 @@ envy24d_alloc_buffer (int dev, dmap_t * dmap, int direction)
       if (devc->playbuf == NULL)
 	{
 	  cmn_err (CE_CONT, "Envy24: No playback DMA buffer available\n");
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       dmap->dmabuf = devc->playbuf;
@@ -227,7 +227,7 @@ envy24d_alloc_buffer (int dev, dmap_t * dmap, int direction)
       if (devc->recbuf == NULL)
 	{
 	  cmn_err (CE_CONT, "Envy24: No recording DMA buffer available\n");
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       dmap->dmabuf = devc->recbuf;
@@ -236,7 +236,7 @@ envy24d_alloc_buffer (int dev, dmap_t * dmap, int direction)
       return 0;
     }
 
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/ 
@@ -282,7 +282,7 @@ static int
 envy24d_check_input (int dev)
 {
   cmn_err (CE_WARN, "Envy24d: Input timed out.\n");
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/ 
@@ -290,7 +290,7 @@ static int
 envy24d_check_output (int dev)
 {
   cmn_err (CE_WARN, "Envy24d: Output timed out (%d)\n", GET_JIFFIES ());
-  return -EIO;
+  return OSS_EIO;
 }
 
 static const audiodrv_t envy24d_audio_driver = {

@@ -154,7 +154,7 @@ envy24_set_d1010lt (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x7f, 0x8c, 0x98 };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -209,7 +209,7 @@ envy24_set_d1010lt (int dev, int ctrl, unsigned int cmd, int value)
 
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 

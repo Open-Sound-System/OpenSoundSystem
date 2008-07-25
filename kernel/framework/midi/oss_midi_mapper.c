@@ -67,7 +67,7 @@ midi_mapper_autobind (int client_dev, int mode)
 			   "Failed to allocate MIDI input queue(2)\n");
 		  midi_devs[dev]->d->close (dev, mode);
 		  midi_devs[dev]->open_mode = 0;
-		  return -ENOMEM;
+		  return OSS_ENOMEM;
 
 		}
 	    }
@@ -82,7 +82,7 @@ midi_mapper_autobind (int client_dev, int mode)
 			   "Failed to allocate MIDI output queue(2)\n");
 		  midi_devs[dev]->d->close (dev, mode);
 		  midi_devs[dev]->open_mode = 0;
-		  return -ENOMEM;
+		  return OSS_ENOMEM;
 
 		}
 	    }
@@ -95,5 +95,5 @@ midi_mapper_autobind (int client_dev, int mode)
 	}
     }
 
-  return -EBUSY;
+  return OSS_EBUSY;
 }

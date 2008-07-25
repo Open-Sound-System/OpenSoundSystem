@@ -387,7 +387,7 @@ attach_selector (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
   if (ext == NULL)
     {
       cmn_err (CE_WARN, "Cannot locate the mixer extension (a)\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   /* Copy RGB color */
@@ -545,7 +545,7 @@ attach_pin_widget (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 	  if (ext == NULL)
 	    {
 	      cmn_err (CE_WARN, "Cannot locate the mixer extension (b)\n");
-	      return -EIO;
+	      return OSS_EIO;
 	    }
   	  /* Copy RGB color */
   	  ext->rgbcolor = widget->rgbcolor;
@@ -754,14 +754,14 @@ hdaudio_generic_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
   if (mixer->codecs[cad] == NULL)
     {
       cmn_err (CE_WARN, "Bad codec %d\n", cad);
-      return -EIO;
+      return OSS_EIO;
     }
   codec = mixer->codecs[cad];
 
   if (!corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_VENDOR, &vendorid, &b))
     {
       cmn_err (CE_WARN, "Cannot get codec ID\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
 /*

@@ -400,17 +400,17 @@ cmpci_mixer_set (cmpci_devc * devc, int chan, int value)
     right = 100;
 
   if (chan > 31)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!(CMEDIA_MIXER_DEVICES & (1 << chan)))	/*
 						 * Not supported
 						 */
-    return -EINVAL;
+    return OSS_EINVAL;
 
   regoffs = cmpci_mix[chan][LEFT_CHN].regno;
 
   if (regoffs == 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   val = cmpci_getmixer (devc, regoffs);
   change_bits (devc, &val, chan, LEFT_CHN, left);
@@ -511,7 +511,7 @@ cmpci_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 static int
@@ -640,7 +640,7 @@ cmpci_outsw (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       return value;
@@ -912,12 +912,12 @@ cmpci_outsw (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       return (value);
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -1214,7 +1214,7 @@ cmpci_audio_set_format (int dev, unsigned int arg)
 static int
 cmpci_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void cmpci_audio_trigger (int dev, int state);
@@ -1251,7 +1251,7 @@ cmpci_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (!(devc->dev_mode & DUALDAC_MODE))
@@ -1259,7 +1259,7 @@ cmpci_audio_open (int dev, int mode, int open_flags)
       if (devc->open_mode & mode)
 	{
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
 
       devc->open_mode |= mode;
@@ -1750,7 +1750,7 @@ cmpci_audio_prepare_for_input (int dev, int bsize, int bcount)
     case DUALDAC_MODE:
       cmn_err (CE_WARN, "Cannot record because DUALDAC mode is ON.\n");
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EIO;
+      return OSS_EIO;
 
     case SPDIFIN_MODE:
       if (portc->speed < 44100)
@@ -1758,7 +1758,7 @@ cmpci_audio_prepare_for_input (int dev, int bsize, int bcount)
 	  cmn_err (CE_WARN,
 		   "Cannot record spdif at sampling rate less than 44.1Khz.\n");
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
       set_adc_rate (dev, CHAN1);
       set_adc_fmt (dev, CHAN1);

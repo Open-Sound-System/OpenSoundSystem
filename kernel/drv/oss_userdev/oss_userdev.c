@@ -78,7 +78,7 @@ cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags)
   }
 
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*
@@ -123,7 +123,7 @@ static int
 userdev_control_open (int dev, int mode, int open_flags)
 {
   /* Dumy routine - Not actually used */
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/
@@ -138,7 +138,7 @@ static int
 userdev_control_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   /* Dumy routine - Not actually used */
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/
@@ -162,7 +162,7 @@ static int
 userdev_control_prepare_for_input (int dev, int bsize, int bcount)
 {
   /* Dumy routine - Not actually used */
-	return -EIO;
+	return OSS_EIO;
 }
 
 /*ARGSUSED*/
@@ -170,7 +170,7 @@ static int
 userdev_control_prepare_for_output (int dev, int bsize, int bcount)
 {
   /* Dumy routine - Not actually used */
-  return -EIO;
+  return OSS_EIO;
 }
 
 static audiodrv_t userdev_server_control_driver = {

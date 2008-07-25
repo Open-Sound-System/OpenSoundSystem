@@ -273,11 +273,11 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (fmt == 0)
     return adev->user_parms.fmt;
@@ -355,7 +355,7 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
       if (fmt_info->no_convert)	/* Cannot convert this format */
       {
 	if (fmt == AFMT_AC3)
-	   return -EIO;
+	   return OSS_EIO;
 
 	return ret;
       }
@@ -452,11 +452,11 @@ oss_audio_set_channels (int dev, int ch)
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (ch == 0)
     return adev->user_parms.channels;
@@ -468,7 +468,7 @@ oss_audio_set_channels (int dev, int ch)
       cmn_err (CE_WARN,
 	       "Audio engine %d: Internal error in channel setup, err=%d, ch=%d\n",
 	       dev, ret, ch);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (ch > 2 && ch > ret)	/* Requested multi channel mode not possible */
@@ -526,11 +526,11 @@ oss_audio_set_rate (int dev, int rate)
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (rate == 0)
     return adev->user_parms.rate;
@@ -603,7 +603,7 @@ oss_alloc_dmabuf (int dev, dmap_p dmap, int direction)
   if (adev == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: adev==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   return __oss_alloc_dmabuf (dev, dmap, adev->dmabuf_alloc_flags,
@@ -649,7 +649,7 @@ init_dmap (adev_p adev, dmap_p dmap, int direction)
   if (dmap->osdev == NULL)
     {
       cmn_err (CE_WARN, "dmap->osdev==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->dmabuf == NULL)
@@ -1353,18 +1353,18 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
 #endif
 
   if (dev < 0 || dev >= num_audio_engines || audio_engines == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (adev->unloaded)
-    return -ENODEV;
+    return OSS_ENODEV;
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (adev->osdev == NULL)
     {
       cmn_err (CE_WARN, "adev->osdev==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   open_flags = get_open_flags (mode, open_flags, file);
@@ -1373,7 +1373,7 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
   if (adev->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   adev->open_mode = mode;
   MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
@@ -1629,7 +1629,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 
   if (dev < 0 || dev >= num_audio_devfiles)
     {
-      return -ENODEV;
+      return OSS_ENODEV;
     }
   adev = audio_devfiles[dev];
   dev = adev->engine_num;
@@ -1642,7 +1642,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	     if (n++ > num_audio_engines)
 		{
 			cmn_err(CE_CONT, "Recursive audio device redirection\n");
-			return -ELOOP;
+			return OSS_ELOOP;
 		}
 
   	     next_dev = adev->d->adrv_redirect (dev, mode, open_flags);
@@ -1654,7 +1654,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 		break;
 
 	     if (next_dev < 0 || next_dev >= num_audio_engines)
-		return -ENXIO;
+		return OSS_ENXIO;
 
 	     dev = next_dev;
 	     adev = audio_engines[dev];
@@ -1757,10 +1757,10 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
     {
       DDB (cmn_err (CE_CONT, "Trying engine=%d\n", adev->engine_num));
       if (!adev->enabled)
-	return -EAGAIN;
+	return OSS_EAGAIN;
 
       if (adev->unloaded)
-	return -EAGAIN;
+	return OSS_EAGAIN;
 
       *newdev = adev->engine_num;
       if ((err =
@@ -1771,7 +1771,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	   * Check if the device was busy and if it has a
 	   * shadow device.
 	   */
-	  if (err != -EBUSY || adev->next_out == NULL)
+	  if (err != OSS_EBUSY || adev->next_out == NULL)
 	    return err;
 	  adev = adev->next_out;
 	}
@@ -1783,7 +1783,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	}
     }
 
-  return -EBUSY;
+  return OSS_EBUSY;
 
 done:
 /*
@@ -2320,7 +2320,7 @@ get_ospace (adev_p adev, dmap_p dmap, ioctl_arg arg)
 #ifdef DO_TIMINGS
       oss_do_timing ("GETOSPACE: Bad access mode - return EACCES");
 #endif
-      return -EACCES;
+      return OSS_EACCES;
     }
 
   if (dmap->mapping_flags & DMA_MAP_MAPPED)
@@ -2340,7 +2340,7 @@ get_ospace (adev_p adev, dmap_p dmap, ioctl_arg arg)
        * Applications that use mmap can call SNDCTL_DSP_GETOSPACE before calling
        * mmap to get the actual buffer size.
        */
-      return -EPERM;
+      return OSS_EPERM;
     }
 
   if (!(dmap->flags & DMAP_STARTED))
@@ -2439,7 +2439,7 @@ get_ispace (adev_p adev, dmap_p dmap, ioctl_arg arg)
       MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
       cmn_err (CE_WARN,
 	       "SNDCTL_DSP_GETISPACE cannot be called in write-only mode.\n");
-      return -EACCES;
+      return OSS_EACCES;
     }
 
   if (dmap->mapping_flags & DMA_MAP_MAPPED)
@@ -2456,7 +2456,7 @@ get_ispace (adev_p adev, dmap_p dmap, ioctl_arg arg)
        * Applications that use mmap can call SNDCTL_DSP_GETISPACE before calling
        * mmap to get the actual buffer size.
        */
-      return -EPERM;
+      return OSS_EPERM;
     }
 
   if (!(dmap->flags & DMAP_STARTED))
@@ -2565,7 +2565,7 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
 
   if (adev->sync_group != 0)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (group->id == 0)
@@ -2573,7 +2573,7 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
       if (adev->engine_num > SYNC_DEVICE_MASK)
 	{
 	  cmn_err (CE_WARN, "Bad device number %d\n", adev->engine_num);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       id = xrand (sync_seed) & ~SYNC_DEVICE_MASK; /* Clear the engine number field */
@@ -2592,7 +2592,7 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
   if (sync_dev < 0 || sync_dev >= num_audio_engines)
     {
       group->id = 0;
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   sync_adev = audio_engines[sync_dev];
@@ -2603,12 +2603,12 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
     {
       if (!(sync_adev->sync_flags & SYNC_MASTER))
 	{
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       if (sync_adev->sync_group != id)
 	{
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       adev->sync_flags |= SYNC_SLAVE;
@@ -2619,7 +2619,7 @@ handle_syncgroup (adev_p adev, oss_syncgroup * group)
   if (group->mode == 0)
     {
       adev->sync_flags = 0;
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   adev->sync_mode = group->mode;
@@ -2647,7 +2647,7 @@ handle_syncstart (int orig_dev, int group)
 
   master_dev = group & SYNC_DEVICE_MASK;
   if (master_dev < 0 || master_dev >= num_audio_engines)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   adev = audio_engines[master_dev];
 
@@ -2657,11 +2657,11 @@ handle_syncstart (int orig_dev, int group)
 	/*
 	 * Potential attack. SYNCSTART was called on wrong file descriptor.
 	 */
-	return -EPERM;
+	return OSS_EPERM;
      }
 
   if (adev->sync_group != group)
-    return -EINVAL;
+    return OSS_EINVAL;
 
 /*
  * Pass 1: Inform all devices about the actual start command to come soon.
@@ -3042,13 +3042,13 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (adev->unloaded)
-    return -ENODEV;
+    return OSS_ENODEV;
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
   dmapout = adev->dmap_out;
   dmapin = adev->dmap_in;
 
@@ -3059,7 +3059,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
   if ((mixdev = adev->mixer_dev) != -1)
     {
       if (((cmd >> 8) & 0xff) == 'M' && num_mixers > 0)	/* Mixer ioctl */
-	if ((ret = oss_legacy_mixer_ioctl (mixdev, dev, cmd, arg)) != -EINVAL)
+	if ((ret = oss_legacy_mixer_ioctl (mixdev, dev, cmd, arg)) != OSS_EINVAL)
 	  return ret;
 
       if (((cmd >> 8) & 0xff) == 'X')	/* Mixer extension API */
@@ -3152,7 +3152,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 				       "GETOSPACE called in read-only mode"),
 			       0);
 	  /* Errordesc: SNDCTL_DSP_GETOSPACE is not defined in read-only access mode */
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       ret = get_ospace (adev, dmapout, arg);
 #ifdef DO_TIMINGS
@@ -3179,7 +3179,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	   * Errordesc: SNDCTL_DSP_GETISPACE has no defined meaning when the audio
 	   * device is opened in write-only mode.
 	   */
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
 
       return get_ispace (adev, dmapin, arg);
@@ -3192,7 +3192,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 			       OSSERR (1005,
 				       "GETODELAY called in read-only mode"),
 			       0);
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       return get_odelay (adev, dmapout, arg);
       break;
@@ -3204,21 +3204,21 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 			       OSSERR (1006,
 				       "SETDUPLEX called in non-read/write mode"),
 			       0);
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       if (adev->flags & ADEV_DUPLEX)
 	{
 	  if (adev->d->adrv_ioctl == NULL)
 	    return 0;
 	  val = adev->d->adrv_ioctl (dev, cmd, arg);
-	  if (val == -EINVAL)
+	  if (val == OSS_EINVAL)
 	    return 0;
 	  else
 	    return val;
 	}
       else
 	{
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       break;
 
@@ -3308,7 +3308,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
     case SNDCTL_DSP_GETCHANNELMASK:
     case SNDCTL_DSP_BIND_CHANNEL:
       if (adev->d->adrv_bind == NULL)
-	return -EINVAL;
+	return OSS_EINVAL;
       return adev->d->adrv_bind (adev->engine_num, cmd, arg);
       break;
 
@@ -3320,7 +3320,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	  {
 	    cmn_err (CE_NOTE, "Device %d doesn't have trigger capability\n",
 		     adev->engine_num);
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	val = *arg;
@@ -3378,7 +3378,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	{
 	  cmn_err (CE_NOTE, "Device %d doesn't have trigger capability\n",
 		   adev->engine_num);
-	  return -EIO;
+	  return OSS_EIO;
 	}
       return *arg = (adev->enable_bits & adev->open_mode);
       break;
@@ -3446,12 +3446,12 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	  mixer_devs[mixdev]->modify_counter++;
 
 	if (adev->d->adrv_ioctl == NULL
-	    || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)
+	    || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)
 	  {
 	    /* Emulate these calls using mixer API */
 
 	    if (mixdev < 0 || mixdev >= num_mixers)
-	      return -EINVAL;
+	      return OSS_EINVAL;
 
 	    if (cmd == SNDCTL_DSP_GETPLAYVOL)
 	      cmd = SOUND_MIXER_READ_PCM;
@@ -3473,12 +3473,12 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	  mixer_devs[mixdev]->modify_counter++;
 
 	if (adev->d->adrv_ioctl == NULL
-	    || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)
+	    || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)
 	  {
 	    /* Emulate these calls using mixer API */
 
 	    if (mixdev < 0 || mixdev >= num_mixers)
-	      return -EINVAL;
+	      return OSS_EINVAL;
 
 	    /* Try with RECGAIN */
 	    if (cmd == SNDCTL_DSP_GETRECVOL)
@@ -3515,7 +3515,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 			       OSSERR (1007,
 				       "GETOPTR called in read-only mode"),
 			       0);
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       return get_optr (adev, dmapout, arg);
       break;
@@ -3527,7 +3527,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 			       OSSERR (1008,
 				       "GETIPTR called in write-only mode"),
 			       0);
-	  return -ENOTSUP;
+	  return OSS_ENOTSUP;
 	}
       return get_iptr (adev, dmapin, arg);
       break;
@@ -3535,13 +3535,13 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 #ifndef OSS_NO_LONG_LONG
     case SNDCTL_DSP_CURRENT_OPTR:
       if (!(adev->dmask & DMASK_OUT))
-	return -ENOTSUP;
+	return OSS_ENOTSUP;
       return get_long_optr (adev, dmapout, arg);
       break;
 
     case SNDCTL_DSP_CURRENT_IPTR:
       if (!(adev->dmask & DMASK_IN))
-	return -ENOTSUP;
+	return OSS_ENOTSUP;
       return get_long_iptr (adev, dmapin, arg);
       break;
 #endif
@@ -3549,7 +3549,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
     case SNDCTL_DSP_POLICY:
       val = *arg;
       if (val < 0 || val > 10)
-	return -EIO;
+	return OSS_EIO;
       adev->policy = val;
       return 0;
       break;
@@ -3592,7 +3592,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
     case SNDCTL_DSP_SPEED:
       val = *arg;
       if (val<0)
-	 return -EINVAL;
+	 return OSS_EINVAL;
       return *arg = (oss_audio_set_rate (dev, val));
 
     case SNDCTL_DSP_STEREO:
@@ -3611,11 +3611,11 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	     * supports only mono (0) or stereo (1). For larger number of channels
 	     * you need to use SNDCTL_DSP_CHANNELS instead.
 	     */
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  }
 
 	if (n < 0)
-	  return -EINVAL;
+	  return OSS_EINVAL;
 
 	v = oss_audio_set_channels (dev, n + 1);
 	return *arg = (v - 1);
@@ -3635,7 +3635,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 #endif
 	if (val<0)
 	{
-		return -EINVAL;
+		return OSS_EINVAL;
 	}
 	v = oss_audio_set_channels (dev, val);
 	return *arg = v;
@@ -3655,7 +3655,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_GET_RECSRC_NAMES:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  oss_mixer_enuminfo *ei = (oss_mixer_enuminfo *) arg;
 
@@ -3671,7 +3671,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_GET_RECSRC:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  return *arg = (get_legacy_recsrc (dev));
 	}
@@ -3679,7 +3679,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_SET_RECSRC:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  val = *arg;
 	  set_legacy_recsrc (dev, val);
@@ -3689,7 +3689,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_GET_PLAYTGT_NAMES:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  oss_mixer_enuminfo *ei = (oss_mixer_enuminfo *) arg;
 	  memset (ei, 0, sizeof (*ei));
@@ -3701,7 +3701,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_GET_PLAYTGT:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  return *arg = (0);
 	}
@@ -3709,7 +3709,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_SET_PLAYTGT:
-      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == -EINVAL)	/* Not handled */
+      if (adev->d->adrv_ioctl == NULL || (err = adev->d->adrv_ioctl (dev, cmd, arg)) == OSS_EINVAL)	/* Not handled */
 	{
 	  return *arg = (0);
 	}
@@ -3737,10 +3737,10 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
     default:
       if (adev->d->adrv_ioctl == NULL)
-	return -EINVAL;
+	return OSS_EINVAL;
       return adev->d->adrv_ioctl (dev, cmd, arg);
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 
@@ -4020,7 +4020,7 @@ launch_input (adev_p adev, dmap_p dmap)
   if (!(dmap->flags & DMAP_PREPARED))
     {
       cmn_err (CE_WARN, "launch_input while not prepared.\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
 #ifdef DO_TIMINGS
@@ -4081,7 +4081,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 #ifdef DO_TIMINGS
 	  oss_do_timing ("*** EAGAIN ***");
 #endif
-	  return -EAGAIN;
+	  return OSS_EAGAIN;
 	}
 
       if (n++ > 100)
@@ -4090,7 +4090,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 		   adev->engine_num);
 	  cmn_err (CE_CONT, "Counters %d / %d\n", count, lim);
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       tmout = (dmap->fragment_size * OSS_HZ) / dmap->data_rate;
@@ -4124,7 +4124,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 	  FMA_EREPORT(adev->osdev, DDI_FM_DEVICE_STALL, NULL, NULL, NULL);
 	  FMA_IMPACT(adev->osdev, DDI_SERVICE_LOST);
-	  return -EIO;
+	  return OSS_EIO;
 	}			/* Timed out */
 
 #ifdef DO_TIMINGS
@@ -4135,7 +4135,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
       if (status & WK_SIGNAL)
 	{
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-	  return -EINTR;
+	  return OSS_EINTR;
 	}
       count = (int) (dmap->byte_counter - dmap->user_counter);
 #ifdef DO_TIMINGS
@@ -4257,7 +4257,7 @@ move_rdpointer (adev_p adev, dmap_p dmap, int len)
     }
 
   cmn_err (CE_NOTE, "Why here?\n");
-  return -EIO;
+  return OSS_EIO;
 }
 
 int
@@ -4274,17 +4274,17 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
   if (adev->flags & ADEV_NOINPUT)
-    return -EACCES;
+    return OSS_EACCES;
   dmap = adev->dmap_in;
 
   if (!(adev->open_mode & OPEN_READ))
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
   if (dmap->dma_mode == PCM_ENABLE_OUTPUT)
     {
       audio_reset_output (adev);
@@ -4323,7 +4323,7 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
   if (!(dmap->flags & DMAP_PREPARED))
     {				/* Not prepared. Why??? */
       cmn_err (CE_WARN, "Intenal error (not prepared)\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   c = count;
@@ -4334,16 +4334,16 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
     {
       if ((l = find_input_space (adev, dmap, &dmabuf)) < 0)
 	{
-	  if (l == -EINTR)
+	  if (l == OSS_EINTR)
 	    {
 	      if (c == count)	/* Nothing read yet */
-		return -EINTR;
+		return OSS_EINTR;
 	      return count - c;
 	    }
-	  if (l == -EAGAIN)
+	  if (l == OSS_EAGAIN)
 	    {
 	      if (c == count)	/* Nothing read yet */
-		return -EAGAIN;
+		return OSS_EAGAIN;
 	      return count - c;
 	    }
 	  return l;
@@ -4355,7 +4355,7 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
       if (uiomove (dmabuf, l, UIO_READ, buf) != 0)
 	{
 	  cmn_err (CE_WARN, "audio: uiomove(UIO_READ) failed\n");
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
       if ((ret = move_rdpointer (adev, dmap, l)) < 0)
 	{
@@ -4427,7 +4427,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
   if (dmap == NULL)
     {
       cmn_err (CE_WARN, "Internal error - dmap==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
@@ -4440,7 +4440,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	{
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 	  cmn_err (CE_WARN, "Internal timeout error B\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if (adev->nonblock || !(adev->enable_bits & PCM_ENABLE_OUTPUT))
@@ -4470,7 +4470,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	       * triggered only recording on a duplex device.
 	       */
 	    }
-	  return -EAGAIN;
+	  return OSS_EAGAIN;
 	}
 
       if (n++ > dmap->nfrags * 2)
@@ -4485,7 +4485,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 #endif
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 	  audio_reset_output (adev);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       tmout = (dmap->fragment_size * OSS_HZ) / dmap->data_rate;
@@ -4498,7 +4498,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
       if (adev->go == 0)
 	{
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-	  return -EAGAIN;
+	  return OSS_EAGAIN;
 	}
 #ifdef DO_TIMINGS
       oss_timing_printf ("Sleep(%d)", adev->engine_num);
@@ -4529,7 +4529,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 	  FMA_EREPORT(adev->osdev, DDI_FM_DEVICE_STALL, NULL, NULL, NULL);
 	  FMA_IMPACT(adev->osdev, DDI_SERVICE_LOST);
-	  return -EIO;
+	  return OSS_EIO;
 	}			/* Timed out */
       DOWN_STATUS (STS_SLEEP);
 
@@ -4544,7 +4544,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
 	  oss_do_timing ("Signal caught");
 #endif
 	  MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-	  return -EINTR;
+	  return OSS_EINTR;
 	}
 
       len = audio_space_in_queue (adev, dmap, count);
@@ -4574,7 +4574,7 @@ find_output_space (adev_p adev, dmap_p dmap, int *size, int count)
   if (offs < 0 || (offs + len) > dmap->bytes_in_use)
     {
       cmn_err (CE_WARN, "Bad audio output buffer %d/%d\n", offs, len);
-      return -EIO;
+      return OSS_EIO;
     }
 
   return offs;
@@ -4602,7 +4602,7 @@ launch_output (adev_p adev, dmap_p dmap)
   if (!(dmap->flags & DMAP_PREPARED))
     {
       cmn_err (CE_WARN, "launch_output while not prepared. Engine=%d\n", adev->engine_num);
-      return -EIO;
+      return OSS_EIO;
     }
 
 #ifdef DO_TIMINGS
@@ -4709,11 +4709,11 @@ write_copy (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 
       if ((offs = find_output_space (adev, dmap, &spc, l)) < 0)
 	{
-	  if (offs == -EAGAIN)
+	  if (offs == OSS_EAGAIN)
 	    {
 	      store_tmp_data (adev, dmap, buf + p, count);
 	      launch_output (adev, dmap);
-	      return -EAGAIN;
+	      return OSS_EAGAIN;
 	    }
 	  return offs;
 	}
@@ -4750,17 +4750,17 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
   sync_seed++;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[dev];
   if (!adev->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
   if (adev->flags & ADEV_NOOUTPUT)
-    return -EACCES;
+    return OSS_EACCES;
   dmap = adev->dmap_out;
 
   if (!(adev->open_mode & OPEN_WRITE))
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
 
   UP_STATUS (STS_WRITE);
 
@@ -4807,7 +4807,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
       MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
       DOWN_STATUS (STS_WRITE);
       cmn_err (CE_WARN, "Internal error (not prepared)\n");
-      return -EIO;
+      return OSS_EIO;
     }
 #if 1
   if (dmap->leftover_bytes > 0)
@@ -4854,7 +4854,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
       if (tmout++ > 1000)
 	{
 	  cmn_err (CE_WARN, "Internal timeout error A (%d/%d)\n", c, count);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       l = c;
@@ -4863,19 +4863,19 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 
       if ((offs = find_output_space (adev, dmap, &spc, l)) < 0)
 	{
-	  if (offs == -EINTR)
+	  if (offs == OSS_EINTR)
 	    {
 	      DOWN_STATUS (STS_WRITE);
 	      if (c == count)	/* Nothing written yet */
-		return -EINTR;
+		return OSS_EINTR;
 	      return count - c;
 	    }
-	  if (offs == -EAGAIN)
+	  if (offs == OSS_EAGAIN)
 	    {
 	      DOWN_STATUS (STS_WRITE);
 	      if (c == count)	/* Nothing written yet */
 		{
-		  return -EAGAIN;
+		  return OSS_EAGAIN;
 		}
 	      return count - c;
 	    }
@@ -4911,7 +4911,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 		  cmn_err (CE_WARN,
 			   "audio: uiomove(UIO_WRITE) failed (noconv)\n");
 		  DOWN_STATUS (STS_WRITE);
-		  return -EFAULT;
+		  return OSS_EFAULT;
 		}
 	      if ((err =
 		   dmap->device_write (adev, dmap, tmpbuf,
@@ -4935,7 +4935,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 		{
 		  cmn_err (CE_WARN,
 			   "audio: uiomove(UIO_WRITE) (noconv2) failed\n");
-		  return -EFAULT;
+		  return OSS_EFAULT;
 		}
 	      if ((err = move_wrpointer (adev, dmap, l)) < 0)
 		{
@@ -4994,7 +4994,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 
 	  if ((err = write_copy (adev, dmap, p1, l2)) < 0)
 	    {
-	      if (err != -EAGAIN)
+	      if (err != OSS_EAGAIN)
 		{
 		  DOWN_STATUS (STS_WRITE);
 		  return err;
@@ -5004,7 +5004,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	      if (c == count)	/* Nothing written yet */
 		{
 		  DOWN_STATUS (STS_WRITE);
-		  return -EAGAIN;
+		  return OSS_EAGAIN;
 		}
 
 	      DOWN_STATUS (STS_WRITE);
@@ -5083,7 +5083,7 @@ oss_open_vdsp (int dev, int dev_type, struct fileinfo *file, int recursive,
   if (audio_devfiles == NULL)
     {
       cmn_err (CE_NOTE, "No audio device files available\n");
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 #ifdef MANAGE_DEV_DSP
 #ifdef VDEV_SUPPORT
@@ -5205,7 +5205,7 @@ oss_open_vdsp (int dev, int dev_type, struct fileinfo *file, int recursive,
 
   DDB (cmn_err (CE_CONT, " - got vdsp -> %d\n", dev));
   if (dev == -1)
-    return -EBUSY;
+    return OSS_EBUSY;
 
 done:
 /*
@@ -5243,7 +5243,7 @@ audio_init_device (int dev)
       if (dmap == NULL)
 	{
 	  cmn_err (CE_WARN, "Failed to allocate dmap, dev=%d\n", dev);
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       memset ((char *) dmap, 0, sizeof (dmap_t));
@@ -5254,7 +5254,7 @@ audio_init_device (int dev)
 	       oss_create_wait_queue (adev->osdev, "audio_out")) == NULL)
 	    {
 	      cmn_err (CE_WARN, "Cannot create audio output wait queue\n");
-	      return -ENOMEM;
+	      return OSS_ENOMEM;
 	    }
 	}
 
@@ -5264,7 +5264,7 @@ audio_init_device (int dev)
 	       oss_create_wait_queue (adev->osdev, "audio_in")) == NULL)
 	    {
 	      cmn_err (CE_WARN, "Cannot create audio input wait queue\n");
-	      return -ENOMEM;
+	      return OSS_ENOMEM;
 	    }
 	}
 
@@ -5282,7 +5282,7 @@ audio_init_device (int dev)
 	  if (dmap == NULL)
 	    {
 	      cmn_err (CE_WARN, "Failed to allocate dmap, dev=%d\n", dev);
-	      return -ENOMEM;
+	      return OSS_ENOMEM;
 	    }
 
 	  memset ((char *) dmap, 0, sizeof (dmap_t));
@@ -5680,7 +5680,7 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 #endif
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
   adev = audio_engines[dev];
 
   if ((events & (POLLOUT | POLLWRNORM)) && (adev->open_mode & OPEN_WRITE))
@@ -5700,7 +5700,7 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   * The select() and poll() system calls are not defined for OSS devices
 	   * when the device is in mmap mode.
 	   */
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if (dmap->dma_mode == PCM_ENABLE_INPUT)
@@ -5757,7 +5757,7 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   * The select() and poll() system calls are not defined for OSS devices
 	   * when the device is in mmap mode.
 	   */
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if (dmap->dma_mode != PCM_ENABLE_INPUT)
@@ -6095,7 +6095,7 @@ oss_install_audiodev_with_devname (int vers,
   if (vers != OSS_AUDIO_DRIVER_VERSION)
     {
       cmn_err (CE_WARN, "Incompatible audio driver for %s\n", name);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (driver_size > sizeof (audiodrv_t))
@@ -6131,7 +6131,7 @@ oss_install_audiodev_with_devname (int vers,
 		if (!resize_array(osdev, &audio_engines, &oss_max_audio_engines, AUDIO_ENGINE_INCREMENT))
 		   {
 		   	cmn_err (CE_CONT, "Cannot grow audio_engines[]\n");
-			return -EIO;
+			return OSS_EIO;
 		   }
 	}
 
@@ -6165,7 +6165,7 @@ oss_install_audiodev_with_devname (int vers,
     {
       cmn_err (CE_WARN, "Can't allocate driver for %s (adev=%p, d=%p)\n",
 	       name, op, d);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (d->adrv_get_input_pointer == NULL)
@@ -6226,7 +6226,7 @@ oss_install_audiodev_with_devname (int vers,
     }
 
   if (audio_init_device (num) < 0)
-    return -ENOMEM;
+    return OSS_ENOMEM;
 
 /*
  * Create the device node.

@@ -2277,7 +2277,7 @@ aureon_set_ctl (int dev, int ctl, unsigned int cmd, int value)
 	}
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2326,7 +2326,7 @@ aureon_set_vol (int dev, int ChannelID, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -2350,7 +2350,7 @@ aureon_set_ac97 (int dev, int Index, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
  /*ARGSUSED*/ static int

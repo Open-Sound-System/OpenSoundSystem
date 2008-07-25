@@ -682,7 +682,7 @@ cs461x_audio_set_format (int dev, unsigned int arg)
 static int
 cs461x_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void cs461x_audio_trigger (int dev, int state);
@@ -719,13 +719,13 @@ cs461x_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -1282,7 +1282,7 @@ cs461x_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   devc->midi_input_intr = inputbyte;
@@ -1350,7 +1350,7 @@ cs461x_midi_out (int dev, unsigned char midi_byte)
 static int
 cs461x_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t cs461x_midi_driver = {

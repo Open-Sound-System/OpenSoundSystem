@@ -58,7 +58,7 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
   int vol;
 
   if (mixer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -95,7 +95,7 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
@@ -132,11 +132,11 @@ vmix_outvol (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -146,7 +146,7 @@ vmix_invol (int dev, int ctrl, unsigned int cmd, int value)
   int vol;
 
   if (mixer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -167,7 +167,7 @@ vmix_invol (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
@@ -186,11 +186,11 @@ vmix_invol (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -201,10 +201,10 @@ vmix_outportc_vol (int dev, int ctrl, unsigned int cmd, int value)
   int vol, rvol;
 
   if (mixer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (ctrl < 0)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (ctrl >= mixer->num_clientdevs)			/* Client engine not created yet */
      return (DB_SIZE * 5) | ((DB_SIZE * 5) << 16);	/* Force to maximum level */
@@ -229,7 +229,7 @@ vmix_outportc_vol (int dev, int ctrl, unsigned int cmd, int value)
       return vol | (rvol << 16);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/
@@ -241,13 +241,13 @@ vmix_outportc_vu (int dev, int ctrl, unsigned int cmd, int value)
   int val;
 
   if (mixer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cmd != SNDCTL_MIX_READ)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (ctrl < 0 || ctrl >= mixer->num_clientdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   portc = mixer->client_portc[ctrl];
 
@@ -545,9 +545,9 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SNDCTL_DSP_SET_PLAYTGT:
       val = (*arg) * 2;
       if (val < 0)
-	return -EIO;
+	return OSS_EIO;
       if (val >= mixer->play_engine.channels)
-	return -EIO;
+	return OSS_EIO;
       portc->play_choffs = val;
       return *arg = val / 2;
       break;
@@ -605,11 +605,11 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SNDCTL_DSP_SETRECVOL:
 
       if (mixer->inputdev == -1)	/* No input device */
-	return -EINVAL;
+	return OSS_EINVAL;
       if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
-      return -EINVAL;
+      return OSS_EINVAL;
       break;
 
 /*
@@ -629,7 +629,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SNDCTL_DSP_GET_RECSRC:
 
       if (mixer->inputdev == -1)	/* No input device */
-	return -EINVAL;
+	return OSS_EINVAL;
       if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
@@ -639,16 +639,16 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
     case SNDCTL_DSP_SET_RECSRC:
 
       if (mixer->inputdev == -1)	/* No input device */
-	return -EINVAL;
+	return OSS_EINVAL;
 
       if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
 
       val = (*arg) * 2;
       if (val < 0)
-	return -EIO;
+	return OSS_EIO;
       if (val >= mixer->record_engine.channels)
-	return -EIO;
+	return OSS_EIO;
       portc->rec_choffs = val;
       return *arg = val / 2;
       break;
@@ -660,7 +660,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 	char *names = NULL;
 
 	if (mixer->inputdev == -1)
-	  return -EINVAL;
+	  return OSS_EINVAL;
 
 	if (mixer->open_inputs < 2 && mixer->record_engine.channels <= 2)
 	  return oss_audio_ioctl (mixer->inputdev, NULL, cmd, arg);
@@ -707,7 +707,7 @@ vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       }
       break;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void
@@ -899,7 +899,7 @@ vmix_open (int dev, int mode, int open_flags)
   int start = 0;
 
   if (mode & portc->disabled_modes)
-    return -EACCES;
+    return OSS_EACCES;
 
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 
@@ -908,7 +908,7 @@ vmix_open (int dev, int mode, int open_flags)
   if (portc->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (mixer->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -1206,7 +1206,7 @@ vmix_alloc_buffer (int dev, dmap_t * dmap, int direction)
   dmap->dmabuf_phys = 0;
   dmap->dmabuf = KERNEL_MALLOC (MY_BUFFSIZE);
   if (dmap->dmabuf == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
   dmap->buffsize = MY_BUFFSIZE;
 #endif
 
@@ -1511,10 +1511,10 @@ create_vmix_engine (vmix_mixer_t * mixer)
    */
 
   if (mixer->masterdev == -1)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (mixer->num_clientdevs >= MAX_CLIENTS) /* Cannot create more client engines */
-     return -EBUSY;
+     return OSS_EBUSY;
 
   /*
    * Other than the first instance are unlikely to be default the default
@@ -1526,7 +1526,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   if ((portc = PMALLOC (mixer->osedv, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
   memset (portc, 0, sizeof (*portc));
   portc->open_pending = 1; /* Reserve this engine to the client it was created for */
@@ -1681,7 +1681,7 @@ check_masterdev (void *mx)
   adev_t *adev;
 
   if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   adev = audio_engines[mixer->masterdev];
   DDB (cmn_err
@@ -1690,29 +1690,29 @@ check_masterdev (void *mx)
 
   /* Don't accept virtual devices other than loopback ones */
   if (adev->flags & ADEV_VIRTUAL && !(adev->flags & ADEV_LOOP))
-    return -EIO;
+    return OSS_EIO;
 
   if (adev->vmix_mixer != NULL) /* Already attached */
-     return -EBUSY;
+     return OSS_EBUSY;
 
   if (adev->flags & ADEV_NOOUTPUT)
-    return -EIO;
+    return OSS_EIO;
 
   if (adev->flags & ADEV_DISABLE_VIRTUAL)	/* Not compatible */
-    return -EIO;
+    return OSS_EIO;
 
   if (adev->vmix_flags & VMIX_DISABLED)	/* Not compatible */
-    return -EIO;
+    return OSS_EIO;
 
   if (adev->max_channels < 2)
-    return -EIO;
+    return OSS_EIO;
 
   if (!(adev->oformat_mask & SUPPORTED_FORMATS))
-    return -EIO;
+    return OSS_EIO;
 
   if (mixer->inputdev != -1 && mixer->inputdev != mixer->masterdev)
      if (audio_engines[mixer->inputdev]->vmix_mixer != NULL) /* Input master already driven */
-	return -EBUSY;
+	return OSS_EBUSY;
 
 /*
  * Good. Initialize all per-mixer variables
@@ -1838,12 +1838,12 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   int err;
 
   if (vmix_disabled) /* Vmix not available in the system */
-     return -EIO;
+     return OSS_EIO;
 
   if ((mixer = PMALLOC (osdev, sizeof (*mixer))) == NULL)
     {
       cmn_err (CE_CONT, "Cannot allocate memory for instance descriptor\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   memset (mixer, 0, sizeof (*mixer));
@@ -1889,7 +1889,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
     {
       if (masterdev >= num_audio_engines)
 	{
-	  return -ENXIO;
+	  return OSS_ENXIO;
 	}
 
       masterdev = mixer->masterdev;
@@ -1909,7 +1909,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
       return 0;
     }
 
-  return -EIO;
+  return OSS_EIO;
 }
 
 void
@@ -1948,15 +1948,15 @@ vmix_set_master_rate(int masterdev, int rate)
 	vmix_mixer_t *mixer;
 
 	if (rate < 4000 || rate > 200000)
-	   return -EDOM;
+	   return OSS_EDOM;
 
 	if (masterdev<0 || masterdev>=num_audio_engines)
-	   return -ENXIO;
+	   return OSS_ENXIO;
 
 	mixer = audio_engines[masterdev]->vmix_mixer;
 
 	if (mixer==NULL)
-	   return -EPERM;
+	   return OSS_EPERM;
 
 	mixer->rate = rate;
 
@@ -2004,7 +2004,7 @@ vmix_create_client(void *mixer_)
   vmix_mixer_t *mixer = mixer_;
 
   if (mixer->disabled) /* Vmix is disabled for the time being */
-     return -ENXIO;
+     return OSS_ENXIO;
 
 /*
  * First check if any of the already created engines is free and available for use.

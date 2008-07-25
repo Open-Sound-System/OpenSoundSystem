@@ -1590,7 +1590,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
  */
 
   if (cardnum < 0 || cardnum >= oss_num_cards)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cards[cardnum]->name != NULL)
     strncpy (ci->longname, cards[cardnum]->name, 128);
@@ -1770,7 +1770,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if (osdev == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: osdev==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   acc_attr = get_acc_attr (osdev);
@@ -1814,13 +1814,13 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if (osdev->dip == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: osdev->dip==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: dmap==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if ((err = ddi_dma_alloc_handle (osdev->dip,
@@ -1830,7 +1830,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 				   &dmap->dmabuf_dma_handle)) != DDI_SUCCESS)
     {
       cmn_err (CE_WARN, "Failed to allocate DMA handle (error %d)\n", err);
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
 
@@ -1874,7 +1874,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
     {
       cmn_err (CE_WARN, "Can't allocate a DMA buffer for device %d\n", dev);
       ddi_dma_free_handle (&dmap->dmabuf_dma_handle);
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   DDB (cmn_err (CE_CONT, "Allocated DMA memory, addr=%x, len=%d\n",
@@ -1894,7 +1894,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
     {
       cmn_err (CE_WARN, "DMA address setup failed (%d)\n", err);
 
-      return -EIO;
+      return OSS_EIO;
     }
 
   dmap->dmabuf =
@@ -1903,7 +1903,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 
   desc = PMALLOC (osdev, sizeof (contig_desc));
   if (desc == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
 
   desc->osdev = osdev;
   desc->next = NULL;
@@ -2004,26 +2004,26 @@ oss_register_interrupts (oss_device_t * osdev, int intrnum,
     {
       cmn_err (CE_WARN, "Bad interrupt index (%d) for %s\n", intrnum,
 	       osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (osdev == NULL)
     {
       cmn_err (CE_WARN, "oss_register_interrupts: Bad osdev\n");
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (osdev->tophalf_handler != NULL || osdev->bottomhalf_handler != NULL)
     {
       cmn_err (CE_WARN, "Interrupts already registered for %s\n",
 	       osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (top == NULL)
     {
       cmn_err (CE_WARN, "Bad interrupt handler for %s\n", osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   osdev->tophalf_handler = top;
@@ -2036,14 +2036,14 @@ oss_register_interrupts (oss_device_t * osdev, int intrnum,
 	  cmn_err (CE_WARN,
 		   "The driver for %s doesn't support hilevel interrupts\n",
 		   osdev->name);
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       DDB (cmn_err (CE_NOTE, "Using hilevel intr for %s\n", osdev->name));
 
       /* TODO: Fix hilevel intr handling */
       cmn_err (CE_WARN, "Hilevel interrupts are not supported yet.\n");
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   ddi_get_iblock_cookie (osdev->dip, intrnum, &osdev->iblock_cookie);
@@ -2052,7 +2052,7 @@ oss_register_interrupts (oss_device_t * osdev, int intrnum,
 			   oss_intr, (caddr_t) osdev)) != DDI_SUCCESS)
     {
       cmn_err (CE_WARN, "ddi_add_intr() failed, error=%d\n", err);
-      return -EIO;
+      return OSS_EIO;
     }
 
   return 0;
@@ -2086,7 +2086,7 @@ oss_disable_device (oss_device_t * osdev)
   int i;
 /*
  * This routine should check if the device is ready to be unloaded (no devices are in use).
- * If the device cannot be unloaded this routine must return -EBUSY.
+ * If the device cannot be unloaded this routine must return OSS_EBUSY.
  *
  * If the device can be unloaded then disable any timers or other features that may cause the
  * device to be called. Also mark the audio/midi/mixer/etc devices of this device to be disabled.
@@ -2107,7 +2107,7 @@ oss_disable_device (oss_device_t * osdev)
 		cmn_err (CE_CONT, "%s is opened\n", oss_cdevs[i]->name);
 	      }
 	}
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 //cmn_err(CE_CONT, "oss_disable_device %s\n", osdev->nick);
 
@@ -2326,5 +2326,5 @@ oss_get_procinfo(int what)
 #endif
 
 	}
-	return -EINVAL;
+	return OSS_EINVAL;
 }

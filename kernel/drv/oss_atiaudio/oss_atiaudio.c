@@ -89,7 +89,7 @@ ac97_ready (void *devc_)
       if (!timeout--)
 	{
 	  cmn_err (CE_WARN, "codec ready timed out\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
       oss_udelay (10);
     }
@@ -112,7 +112,7 @@ again:
     {
       cmn_err (CE_WARN, "ac97 not ready\n");
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
 
   addr = (unsigned int) (reg << 9) | (1 << 8) | (1 << 2);
@@ -122,7 +122,7 @@ again:
     {
       cmn_err (CE_WARN, "ac97 not ready\n");
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
 
   timeout = 1000;
@@ -388,7 +388,7 @@ ATI_audio_set_format (int dev, unsigned int arg)
 static int
 ATI_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void ATI_audio_trigger (int dev, int state);
@@ -425,7 +425,7 @@ ATI_audio_open (int dev, int mode, int openflags)
   if (portc->open_mode || (devc->open_mode & mode))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -630,7 +630,7 @@ ATI_audio_prepare_for_input (int dev, int bsize, int bcount)
   if (n > BDL_SIZE)
     {
       cmn_err (CE_WARN, "Internal error - BDL too small\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   for (i = 0; i < n; i++)
@@ -729,7 +729,7 @@ ATI_audio_prepare_for_output (int dev, int bsize, int bcount)
       if (n > BDL_SIZE)
 	{
 	  cmn_err (CE_WARN, "Internal error - BDL too small\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       for (i = 0; i < n; i++)

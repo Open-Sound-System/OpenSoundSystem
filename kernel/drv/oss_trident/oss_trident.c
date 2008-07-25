@@ -469,7 +469,7 @@ trident_audio_set_format (int dev, unsigned int arg)
 static int
 trident_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void trident_audio_trigger (int dev, int state);
@@ -506,7 +506,7 @@ trident_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
   portc->audio_enabled = ~mode;
@@ -1099,7 +1099,7 @@ trident_alloc_buffer (int dev, dmap_t * dmap, int direction)
       cmn_err (CE_WARN, "Got DMA buffer address beyond 2G limit.\n");
       oss_free_dmabuf (dev, dmap);
       dmap->dmabuf = NULL;
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
   return 0;
 }

@@ -81,7 +81,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 
   tmpbuf = CONTIG_MALLOC (dmap->osdev, size, maxaddr, &phaddr, NULL);
   if (tmpbuf == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
   dmap->dmabuf = tmpbuf;
   dmap->buffsize = size;
   dmap->dmabuf_phys = phaddr;
@@ -208,7 +208,7 @@ oss_register_device (oss_device_t * osdev, const char *name)
   strcpy (osdev->name, name);
   if (osdev->dip != NULL)
     device_set_desc (osdev->dip, name);
-  return -ENXIO;
+  return OSS_ENXIO;
 }
 
 void
@@ -251,10 +251,10 @@ oss_disable_device (oss_device_t * osdev)
   int i;
 
   if (osdev->refcount > 0)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   if (open_devices > 0)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   for (i = 0; i < num_mixers; i++)
     if (mixer_devs[i]->osdev == osdev)
@@ -288,7 +288,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
  */
 
   if (cardnum < 0 || cardnum >= oss_num_cards)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cards[cardnum]->name != NULL)
     strncpy (ci->longname, cards[cardnum]->name, 128);

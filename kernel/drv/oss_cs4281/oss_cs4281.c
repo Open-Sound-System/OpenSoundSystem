@@ -318,7 +318,7 @@ cs4281_audio_set_format (int dev, unsigned int arg)
 static int
 cs4281_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void cs4281_audio_trigger (int dev, int state);
@@ -353,13 +353,13 @@ cs4281_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -629,7 +629,7 @@ cs4281_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   cs4281_devc *devc = (cs4281_devc *) midi_devs[dev]->devc;
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->midi_input_intr = inputbyte;
@@ -680,7 +680,7 @@ cs4281_midi_out (int dev, unsigned char midi_byte)
 static int
 cs4281_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t cs4281_midi_driver = {
@@ -713,14 +713,14 @@ init_cs4281 (cs4281_devc * devc)
 	  if (tmp1 != 0x4281)
 	    {
 	      cmn_err (CE_WARN, "Resetting AC97 failed\n");
-	      return -EIO;
+	      return OSS_EIO;
 	    }
 	  WRITEL (BA0_CFLR, 0x1);
 	  tmp1 = READL (BA0_CFLR);
 	  if (tmp1 != 0x1)
 	    {
 	      cmn_err (CE_WARN, "Resetting AC97 still fails\n");
-	      return -EIO;
+	      return OSS_EIO;
 	    }
 	}
     }
@@ -738,7 +738,7 @@ init_cs4281 (cs4281_devc * devc)
   if ((tmp1 = READL (BA0_SERC1)) != (SERC1_SO1EN | SERC1_SO1F_AC97))
     {
       cmn_err (CE_WARN, "SERC1: AC97 check failed\n");
-      return -EIO;
+      return OSS_EIO;
     }
   /* setup power management to full power */
   WRITEL (BA0_SSPM, 0x7E);
@@ -775,7 +775,7 @@ init_cs4281 (cs4281_devc * devc)
   if (!(READL (BA0_CLKCR1) & CLKCR1_DLLRDY))
     {
       cmn_err (CE_WARN, "DLLRDY Clock not ready\n");
-      return -EIO;
+      return OSS_EIO;
     }
   /* (6) Enable ASYNC generation. */
   WRITEL (BA0_ACCTL, ACCTL_ESYN);	/* (460h) */
@@ -794,7 +794,7 @@ init_cs4281 (cs4281_devc * devc)
   if (!(READL (BA0_ACSTS) & ACSTS_CRDY))	/* If never came ready, */
     {
       cmn_err (CE_WARN, "AC97 not ready\n");
-      return -EIO;		/*   exit initialization. */
+      return OSS_EIO;		/*   exit initialization. */
     }
   /* (8) Assert the 'valid frame' signal so we can */
   /* begin sending commands to the AC97 codec. */
@@ -816,7 +816,7 @@ init_cs4281 (cs4281_devc * devc)
       (ACISV_ISV3 | ACISV_ISV4))
     {
       cmn_err (CE_WARN, "AC97 Slot not valid\n");
-      return -EIO;		/* If no valid data, exit initialization. */
+      return OSS_EIO;		/* If no valid data, exit initialization. */
     }
   /* (12) Start digital data transfer of audio data to the codec. */
   WRITEL (BA0_ACOSV, ACOSV_SLV3 | ACOSV_SLV4);	/* (468h) */

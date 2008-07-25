@@ -314,17 +314,17 @@ solo_mixer_set (solo_devc * devc, int dev, int value)
 #endif
 
   if (dev > 31)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!(SOLO_MIXER_DEVICES & (1 << dev)))	/*
 						 * Not supported
 						 */
-    return -EINVAL;
+    return OSS_EINVAL;
 
   regoffs = solo_mix[dev][LEFT_CHN].regno;
 
   if (regoffs == 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   val = solo_getmixer (devc, regoffs);
   change_bits (devc, &val, dev, LEFT_CHN, left);
@@ -369,7 +369,7 @@ solo_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     {
       val = *arg;
       if (val != 0 && val != 1)
-	return (-EINVAL);
+	return (OSS_EINVAL);
 
       if (val)
 	{
@@ -430,7 +430,7 @@ solo_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 static void
@@ -607,7 +607,7 @@ solo_audio_set_format (int dev, unsigned int arg)
 static int
 solo_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void solo_audio_trigger (int dev, int state);
@@ -644,7 +644,7 @@ solo_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
   portc->audio_enabled = ~mode;

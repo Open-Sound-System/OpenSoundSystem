@@ -666,7 +666,7 @@ dmx6fire_mixer_set (int dev, int ctrl, unsigned int cmd, int value)
 
       }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

@@ -110,7 +110,7 @@ sbxfi_intr(oss_device_t *osdev)
  /*ARGSUSED*/ static int
 sbxfi_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t sbxfi_mixer_driver = {
@@ -179,7 +179,7 @@ sbxfi_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
   //sbxfi_portc_t *portc = audio_engines[dev]->portc;
   //sbxfi_devc_t *devc = audio_engines[dev]->devc;
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void sbxfi_trigger (int dev, int state);
@@ -201,7 +201,7 @@ sbxfi_open_input (int dev, int mode, int open_flags)
   if (mode & OPEN_WRITE)
     {
       cmn_err (CE_CONT, "Playback is not possible with %s\n", adev->devnode);
-      return -ENOTSUP;
+      return OSS_ENOTSUP;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -209,7 +209,7 @@ sbxfi_open_input (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
 
@@ -228,7 +228,7 @@ sbxfi_open_output (int dev, int mode, int open_flags)
   if (mode == OPEN_READ)
     {
       cmn_err (CE_CONT, "Recording is not possible with %s\n", adev->devnode);
-      return -ENOTSUP;
+      return OSS_ENOTSUP;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -236,7 +236,7 @@ sbxfi_open_output (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -330,7 +330,7 @@ sbxfi_prepare_for_input (int dev, int bsize, int bcount)
   int i;
 
   if (audio_engines[dev]->flags & ADEV_NOINPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
@@ -363,7 +363,7 @@ sbxfi_prepare_for_output (int dev, int bsize, int bcount)
   int i;
 
   if (audio_engines[dev]->flags & ADEV_NOOUTPUT)
-    return -EACCES;
+    return OSS_EACCES;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
@@ -626,7 +626,7 @@ sbxfi_set_playvol (int dev, int ctrl, unsigned int cmd, int value)
   int left, right;
 
   if (ctrl<0 || ctrl >= devc->nr_outdevs)
-     return -ENXIO;
+     return OSS_ENXIO;
   portc = &devc->play_portc[ctrl];
 
   if (cmd == SNDCTL_MIX_READ)
@@ -652,7 +652,7 @@ sbxfi_set_playvol (int dev, int ctrl, unsigned int cmd, int value)
 	     return portc->vol_left | (portc->vol_right << 16);
      }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -663,7 +663,7 @@ sbxfi_set_recvol (int dev, int ctrl, unsigned int cmd, int value)
   int left, right;
 
   if (ctrl<0 || ctrl >= devc->nr_indevs)
-     return -ENXIO;
+     return OSS_ENXIO;
   portc = &devc->rec_portc[ctrl];
 
   if (cmd == SNDCTL_MIX_READ)
@@ -689,7 +689,7 @@ sbxfi_set_recvol (int dev, int ctrl, unsigned int cmd, int value)
 	     return portc->vol_left | (portc->vol_right << 16);
      }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -699,7 +699,7 @@ sbxfi_set_recsrc (int dev, int ctrl, unsigned int cmd, int value)
   sbxfi_portc_t *portc;
 
   if (ctrl<0 || ctrl >= devc->nr_indevs)
-     return -ENXIO;
+     return OSS_ENXIO;
   portc = &devc->rec_portc[ctrl];
 
   if (cmd == SNDCTL_MIX_READ)
@@ -715,7 +715,7 @@ sbxfi_set_recsrc (int dev, int ctrl, unsigned int cmd, int value)
 	     return portc->dwDAChan[0]=value;
      }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

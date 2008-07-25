@@ -219,7 +219,7 @@ revo71_set_akm (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_READ)
     {
       if (ctrl < 0 || ctrl > 4)
-	return -EIO;
+	return OSS_EIO;
 
       return devc->gains[ctrl];
     }
@@ -259,14 +259,14 @@ revo71_set_akm (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       value = left | (right << 8);
       return devc->gains[ctrl] = value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

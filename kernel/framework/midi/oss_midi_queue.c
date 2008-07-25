@@ -178,13 +178,13 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
   if (queue == NULL)
     {
       cmn_err (CE_WARN, "midi_queue_alloc_record: Queue==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (len < 1 && hdr == NULL)	/* Nothing was given */
     {
       cmn_err (CE_WARN, "midi_queue_alloc_record: No data\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (len > MIDI_PAYLOAD_SIZE)
@@ -200,13 +200,13 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
   if (next == queue->q_tail)
     {
       MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (queue->avail < BUF_PREFIX_SIZE + len)
     {
       MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   n = queue->q_head - queue->q_tail;
@@ -216,7 +216,7 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
   if (n < 1)
     {
       MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-      return -ENOSPC;
+      return OSS_ENOSPC;
     }
 
   if (queue->buf_tail > queue->buf_head)
@@ -247,7 +247,7 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
 #endif
 	{
 	  MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
     }
 
@@ -256,7 +256,7 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
       cmn_err (CE_CONT, "MIDI queue damaged (%d/%d/alloc)\n", queue->buf_head,
 	       QUEUE_BYTES);
       MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (queue->buf_head + BUF_PREFIX_SIZE + len > QUEUE_BYTES)
@@ -267,7 +267,7 @@ midi_queue_alloc_record (midi_queue_t * queue, unsigned char **data, int len,
       cmn_err (CE_CONT, "Avail=%d\n", avail);
       cmn_err (CE_CONT, "Required=%d\n", len + BUF_PREFIX_SIZE);
       MUTEX_EXIT_IRQRESTORE (queue->mutex, flags);
-      return -EIO;
+      return OSS_EIO;
     }
 
   ptr = queue->buffer + queue->buf_head;
@@ -306,7 +306,7 @@ midi_queue_put (midi_queue_t * queue, unsigned char *data, int len,
 
   if (queue == NULL)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 #if 0
   {
@@ -321,7 +321,7 @@ midi_queue_put (midi_queue_t * queue, unsigned char *data, int len,
     return 0;
 
   if (len > MIDI_PAYLOAD_SIZE)
-    return -E2BIG;
+    return OSS_E2BIG;
 
 #if 1
   if (len == 1)
@@ -343,7 +343,7 @@ midi_queue_put (midi_queue_t * queue, unsigned char *data, int len,
     {
       cmn_err (CE_CONT, "MIDI queue damaged (%d/%d/%d/put)\n",
 	       queue->buf_head, queue->buf_tail, QUEUE_BYTES);
-      return -EIO;
+      return OSS_EIO;
     }
   return len;
 }
@@ -359,13 +359,13 @@ midi_queue_get (midi_queue_t * queue, unsigned char **data, int max_len,
   *data = NULL;
 
   if (queue == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   if (queue->buf_head >= QUEUE_BYTES || queue->buf_tail >= QUEUE_BYTES)
     {
       cmn_err (CE_CONT, "MIDI queue damaged (%d/%d/%d/get)\n",
 	       queue->buf_head, queue->buf_tail, QUEUE_BYTES);
-      return -EIO;
+      return OSS_EIO;
     }
 
   MUTEX_ENTER_IRQDISABLE (queue->mutex, flags);
@@ -409,7 +409,7 @@ midi_queue_find_buffer (midi_queue_t * queue, unsigned char **data,
   *data = NULL;
 
   if (queue == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   MUTEX_ENTER_IRQDISABLE (queue->mutex, flags);
   if (queue->q_head == queue->q_tail)

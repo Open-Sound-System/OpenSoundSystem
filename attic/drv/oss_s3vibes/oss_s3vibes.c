@@ -200,7 +200,7 @@ static int
 vibes_mixer_get (vibes_devc * devc, int dev)
 {
   if (!((1 << dev) & MIXER_DEVS))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   return devc->levels[dev];
 }
@@ -374,7 +374,7 @@ vibes_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 static mixer_driver_t vibes_mixer_driver = {
@@ -428,7 +428,7 @@ vibes_audio_set_format (int dev, unsigned int arg)
 static int
 vibes_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void
@@ -488,7 +488,7 @@ vibes_audio_open (int dev, int mode, int open_flags)
   if (devc->audio_open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->audio_open_mode |= mode;

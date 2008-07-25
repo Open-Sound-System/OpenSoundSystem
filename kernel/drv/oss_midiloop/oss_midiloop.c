@@ -60,7 +60,7 @@ midiloop_open_server (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (devc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode = mode;
@@ -114,7 +114,7 @@ midiloop_open_client (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (devc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode = mode;
@@ -281,13 +281,13 @@ midiloop_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 
     case SNDCTL_MIDI_SET_LATENCY:
       if (devc->side != SIDE_SERVER)
-	return -EINVAL;
+	return OSS_EINVAL;
       if (*arg < -1 || *arg > 10000000)
-	return -EINVAL;
+	return OSS_EINVAL;
       midi_devs[devc->client->midi_dev]->latency = *arg;
       break;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t midiloop_client_driver = {

@@ -225,7 +225,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if ((p =
        oss_contig_malloc (audio_engines[dev]->osdev, size, maxaddr,
 			  &phaddr)) == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
 
   dmap->dmabuf = p;
   dmap->dmabuf_phys = phaddr;
@@ -510,7 +510,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
  */
 
   if (cardnum < 0 || cardnum >= oss_num_cards)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cards[cardnum]->name != NULL)
     strncpy (ci->longname, cards[cardnum]->name, 128);
@@ -749,7 +749,7 @@ oss_disable_device (oss_device_t * osdev)
   int i;
 /*
  * This routine should check if the device is ready to be unloaded (no devices are in use).
- * If the device cannot be unloaded this routine must return -EBUSY.
+ * If the device cannot be unloaded this routine must return OSS_EBUSY.
  *
  * If the device can be unloaded then disable any timers or other features that may cause the
  * device to be called. Also mark the audio/midi/mixer/etc devices of this device to be disabled.
@@ -758,7 +758,7 @@ oss_disable_device (oss_device_t * osdev)
  */
   if (osdev->refcount > 0)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
 /*
@@ -845,26 +845,26 @@ oss_register_interrupts (oss_device_t * osdev, int intrnum,
     {
       cmn_err (CE_WARN, "Bad interrupt index (%d) for %s\n", intrnum,
 	       osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (osdev == NULL)
     {
       cmn_err (CE_WARN, "oss_register_interrupts: Bad osdev\n");
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (osdev->tophalf_handler != NULL || osdev->bottomhalf_handler != NULL)
     {
       cmn_err (CE_WARN, "Interrupts already registered for %s\n",
 	       osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (top == NULL)
     {
       cmn_err (CE_WARN, "Bad interrupt handler for %s\n", osdev->name);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   osdev->tophalf_handler = top;
@@ -1040,13 +1040,13 @@ drvinfo_open (int dev, int dev_class, struct fileinfo *file,
   int i;
 
   if (drvinfo_busy)
-    return -EBUSY;
+    return OSS_EBUSY;
   drvinfo_busy = 1;
 
   if ((drvinfo_buf = KERNEL_MALLOC (DRVINFO_SIZE)) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate drvinfo buffer\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   drvinfo_len = 0;
@@ -1094,7 +1094,7 @@ drvinfo_read (int dev, struct fileinfo *file, uio_t * buf, int count)
     return 0;
 
   if (uiomove (&drvinfo_buf[drvinfo_ptr], l, UIO_READ, buf) != 0)
-    return -EFAULT;
+    return OSS_EFAULT;
   drvinfo_ptr += l;
 
   return l;
@@ -1661,5 +1661,5 @@ oss_get_procinfo(int what)
 {
 	// TODO
 
-	return -EINVAL;
+	return OSS_EINVAL;
 }

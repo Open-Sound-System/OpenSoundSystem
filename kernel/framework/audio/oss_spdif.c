@@ -55,7 +55,7 @@ oss_spdif_install (spdif_devc * devc, oss_device_t * osdev,
   if (d == NULL || driver_size != sizeof (spdif_driver_t))
     {
       cmn_err (CE_WARN, "spdif: Bad driver\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   memset (devc, 0, sizeof (*devc));
@@ -117,7 +117,7 @@ oss_spdif_open (spdif_devc * devc, int open_mode)
   if (!devc->is_ok)
     {
       cmn_err (CE_WARN, "spdif: Bad usage - open\n");
-      return -EIO;
+      return OSS_EIO;
     }
   MUTEX_ENTER (devc->mutex, flags);
   devc->open_mode |= open_mode;
@@ -251,7 +251,7 @@ readctl (spdif_devc * devc, oss_digital_control * c, int open_mode)
       else
 	{
 	  if (valid != 0)	/* Can't get input status */
-	    ret = -EIO;
+	    ret = OSS_EIO;
 	}
     }
 
@@ -263,7 +263,7 @@ readctl (spdif_devc * devc, oss_digital_control * c, int open_mode)
 static int
 handle_request (spdif_devc * devc, oss_digital_control * c)
 {
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -350,15 +350,15 @@ oss_spdif_ioctl (spdif_devc * devc, int open_mode, signed int cmd,
     {
     case SNDCTL_DSP_WRITECTL:
       if (!(open_mode & OPEN_WRITE))	/* Not opened for output */
-	return -ENOTSUP;
+	return OSS_ENOTSUP;
       if (!(devc->flags & SPDF_OUT))
-	return -ENOTSUP;
+	return OSS_ENOTSUP;
       return writectl (devc, (oss_digital_control *) arg);
       break;
 
     case SNDCTL_DSP_READCTL:
       if (!(devc->flags & (SPDF_OUT | SPDF_IN)))
-	return -ENOTSUP;
+	return OSS_ENOTSUP;
       return readctl (devc, (oss_digital_control *) arg, open_mode);
       break;
     }
@@ -403,7 +403,7 @@ spdif_set_control (spdif_devc * devc, int ctrl, unsigned int cmd, int value)
 	  return devc->ctl->emphasis_type;
 	}
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (cmd == SNDCTL_MIX_WRITE)
@@ -481,9 +481,9 @@ spdif_set_control (spdif_devc * devc, int ctrl, unsigned int cmd, int value)
 	  break;
 	}
 
-      return -EINVAL;
+      return OSS_EINVAL;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -499,7 +499,7 @@ spdif_set_mixer_control (int dev, int ctrl, unsigned int cmd, int value)
       devc = devc_list[i];
 
   if (devc == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
   MUTEX_ENTER (devc->mutex, flags);
   ret = spdif_set_control (devc, ctrl, cmd, value);
   MUTEX_EXIT (devc->mutex, flags);
@@ -516,7 +516,7 @@ spdif_mix_init (spdif_devc * devc)
   if (!devc->is_ok)
     {
       cmn_err (CE_WARN, "spdif: Bad usage - mix_init\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (devc->group > 0)

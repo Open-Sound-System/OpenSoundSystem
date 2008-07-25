@@ -104,7 +104,7 @@ userdev_check_input (int dev)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   if (!portc->peer->output_triggered)
     {
-      return -ECONNRESET;
+      return OSS_ECONNRESET;
     }
   return 0;
 }
@@ -116,11 +116,11 @@ userdev_check_output (int dev)
 
   if (!portc->peer->input_triggered)
     {
-      return -ECONNRESET;
+      return OSS_ECONNRESET;
     }
 
   if (portc->peer->open_mode == 0)
-    return -EIO;
+    return OSS_EIO;
   return 0;
 }
 
@@ -285,14 +285,14 @@ userdev_server_open (int dev, int mode, int open_flags)
 cmn_err(CE_CONT, "Server open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -314,14 +314,14 @@ userdev_client_open (int dev, int mode, int open_flags)
 cmn_err(CE_CONT, "Client open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -404,7 +404,7 @@ userdev_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       break;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void
@@ -601,7 +601,7 @@ userdev_alloc_buffer (int dev, dmap_t * dmap, int direction)
   dmap->dmabuf_phys = 0;	/* Not mmap() capable */
   dmap->dmabuf = KERNEL_MALLOC (MY_BUFFSIZE);
   if (dmap->dmabuf == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
   dmap->buffsize = MY_BUFFSIZE;
 
   return 0;
@@ -776,7 +776,7 @@ userdev_create_device_pair(void)
   oss_native_word flags;
 
   if ((devc=PMALLOC(userdev_osdev, sizeof (*devc))) == NULL)
-     return -ENOMEM;
+     return OSS_ENOMEM;
   memset(devc, 0, sizeof(*devc));
 
   devc->osdev = userdev_osdev;
@@ -888,5 +888,5 @@ cmn_err(CE_CONT, "Reuse %d\n", devc->server_portc.audio_dev);
      }
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 
-  return -ENXIO;
+  return OSS_ENXIO;
 }

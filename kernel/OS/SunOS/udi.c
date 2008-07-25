@@ -431,7 +431,7 @@ udi_usbdev_set_interface (udi_usb_devc * usbdev, int inum, int altset)
   if (usb_set_alt_if (usbdev->osdev->dip, inum, altset, USB_FLAGS_SLEEP,
 		      NULL, 0) != USB_SUCCESS)
     {
-      return -EIO;
+      return OSS_EIO;
     }
 
   return 0;
@@ -605,7 +605,7 @@ udi_usb_snd_control_msg (udi_usb_devc * usbdev, unsigned int endpoint,
   if (usbdev == NULL)
     {
       cmn_err (CE_CONT, "udi_usb_snd_control_msg: usbdev==NULL\n");
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   data = allocb_wait (len + 1, BPRI_HI, STR_NOSIG, NULL);
@@ -644,7 +644,7 @@ udi_usb_snd_control_msg (udi_usb_devc * usbdev, unsigned int endpoint,
       cmn_err (CE_CONT, "bRq %x, wIx %x, wVal %x, wLen %d\n", rq, index,
 	       value, len);
       freemsg (data);
-      return -EIO;
+      return OSS_EIO;
     }
 
   freemsg (data);
@@ -670,7 +670,7 @@ udi_usb_rcv_control_msg (udi_usb_devc * usbdev, unsigned int endpoint,
   if (usbdev == NULL)
     {
       cmn_err (CE_CONT, "udi_usb_rcv_control_msg: usbdev==NULL\n");
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   setup.bmRequestType = rqtype | USB_DEV_REQ_DEV_TO_HOST;
@@ -694,7 +694,7 @@ udi_usb_rcv_control_msg (udi_usb_devc * usbdev, unsigned int endpoint,
       cmn_err (CE_NOTE, "usb_pipe_ctrl_xfer_wait read failed: %s (%s)\n",
 	       usb_errstr (err), usb_cb_err (completion_reason));
       freemsg (data);
-      return -EIO;
+      return OSS_EIO;
     }
 
    /*LINTED*/ l = data->b_wptr - data->b_rptr;
@@ -1040,7 +1040,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	      {
 		cmn_err (CE_WARN, "allocb_wait (isoc) failed\n");
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 
 	    if ((isoc_req = usb_alloc_isoc_req (req->dip, 1, 0, 0)) == NULL)
@@ -1048,7 +1048,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 		cmn_err (CE_WARN, "usb_alloc_isoc_req failed\n");
 		freemsg (req->data);
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 	    req->isoc_req = isoc_req;
 	  }
@@ -1056,7 +1056,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	if (isoc_req == NULL)
 	  {
 	    cmn_err (CE_WARN, "req->isoc==NULL\n");
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	memcpy (req->data->b_wptr, data, len);
@@ -1078,7 +1078,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	  {
 	    cmn_err (CE_WARN, "usb_pipe_isoc_xfer failed (%s)\n",
 		     usb_errstr (err));
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 	req->active = 1;
       }
@@ -1098,7 +1098,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	      {
 		cmn_err (CE_WARN, "usb_alloc_isoc_req failed\n");
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 	    req->isoc_req = isoc_req;
 	  }
@@ -1106,7 +1106,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	if (isoc_req == NULL)
 	  {
 	    cmn_err (CE_WARN, "req->isoc==NULL\n");
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	isoc_req->isoc_attributes = USB_ATTRS_ISOC_XFER_ASAP;
@@ -1124,7 +1124,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	  {
 	    cmn_err (CE_WARN, "usb_pipe_isoc_xfer failed (%s)\n",
 		     usb_errstr (err));
-	    return -EIO;
+	    return OSS_EIO;
 	  }
       }
       break;
@@ -1142,7 +1142,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	      {
 		cmn_err (CE_WARN, "allocb_wait (bulk) failed\n");
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 
 	    if ((bulk_req = usb_alloc_bulk_req (req->dip, len, 0)) == NULL)
@@ -1150,7 +1150,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 		cmn_err (CE_WARN, "usb_alloc_bulk_req failed\n");
 		freemsg (req->data);
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 	    req->bulk_req = bulk_req;
 	  }
@@ -1158,7 +1158,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	if (bulk_req == NULL)
 	  {
 	    cmn_err (CE_WARN, "req->bulk==NULL\n");
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	memcpy (req->data->b_wptr, data, len);
@@ -1178,7 +1178,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	  {
 	    cmn_err (CE_WARN, "usb_pipe_bulk_xfer failed (%s)\n",
 		     usb_errstr (err));
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 	req->active = 1;
       }
@@ -1198,7 +1198,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	      {
 		cmn_err (CE_WARN, "allocb_wait (bulk) failed\n");
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 #endif
 
@@ -1208,7 +1208,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 		cmn_err (CE_WARN, "usb_alloc_bulk_req failed\n");
 		freemsg (req->data);
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 	    req->bulk_req = bulk_req;
 	  }
@@ -1216,7 +1216,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	if (bulk_req == NULL)
 	  {
 	    cmn_err (CE_WARN, "req->bulk==NULL\n");
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	bulk_req->bulk_attributes = USB_ATTRS_SHORT_XFER_OK;
@@ -1234,7 +1234,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	  {
 	    cmn_err (CE_WARN, "usb_pipe_bulk_xfer failed (%s)\n",
 		     usb_errstr (err));
-	    return -EIO;
+	    return OSS_EIO;
 	  }
       }
       break;
@@ -1253,7 +1253,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	      {
 		cmn_err (CE_WARN, "allocb_wait (intr) failed\n");
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 #endif
 
@@ -1263,7 +1263,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 		cmn_err (CE_WARN, "usb_alloc_intr_req failed\n");
 		freemsg (req->data);
 		KERNEL_FREE (req);
-		return -ENOMEM;
+		return OSS_ENOMEM;
 	      }
 	    req->intr_req = intr_req;
 	  }
@@ -1271,7 +1271,7 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	if (intr_req == NULL)
 	  {
 	    cmn_err (CE_WARN, "req->intr==NULL\n");
-	    return -EIO;
+	    return OSS_EIO;
 	  }
 
 	intr_req->intr_attributes =
@@ -1290,14 +1290,14 @@ udi_usb_submit_request (udi_usb_request_t * req,
 	  {
 	    cmn_err (CE_WARN, "usb_pipe_intr_xfer failed (%s)\n",
 		     usb_errstr (err));
-	    return -EIO;
+	    return OSS_EIO;
 	  }
       }
       break;
 
     default:
       cmn_err (CE_WARN, "Unimplemented transfer type %d\n", xfer_type);
-      return -EIO;
+      return OSS_EIO;
     }
 
   return 0;

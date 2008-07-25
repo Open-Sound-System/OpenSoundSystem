@@ -580,7 +580,7 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       case HDA_IOCTL_WRITE:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	do_corb_write_simple (devc, *(unsigned int *) arg);
 	return 0;
@@ -589,11 +589,11 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       case HDA_IOCTL_READ:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	if (!do_corb_read_simple
 	    (devc, *(unsigned int *) arg, (unsigned int *) arg))
-	  return -EIO;
+	  return OSS_EIO;
 
 	return 0;
 	break;
@@ -601,7 +601,7 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       case HDA_IOCTL_NAME:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	return hda_codec_getname (devc->mixer, (hda_name_t *) arg);
 	break;
@@ -609,7 +609,7 @@ hda_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       case HDA_IOCTL_WIDGET:
 #ifdef GET_PROCESS_UID
 	if (GET_PROCESS_UID () != 0)	/* Not root */
-	  return -EINVAL;
+	  return OSS_EINVAL;
 #endif
 	return hda_codec_getwidget (devc->mixer, (hda_widget_info_t *) arg);
 	break;
@@ -641,7 +641,7 @@ hda_audio_open (int dev, int mode, int openflags)
   if (portc->open_mode || portc->endpoint->busy)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (portc->port_type == PT_INPUT)
@@ -665,7 +665,7 @@ hda_audio_open (int dev, int mode, int openflags)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
       cmn_err (CE_WARN, "No free DMA engines.\nn");
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -920,7 +920,7 @@ setup_audio_engine (hda_devc_t * devc, hda_engine_t * engine, hda_portc_t * port
        portc->bits, portc->endpoint->stream_number, &tmp) < 0)
     {
       cmn_err (CE_WARN, "Codec setup failed\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   PCI_WRITEW (devc->osdev, engine->base + HDA_SD_FORMAT, tmp);
@@ -940,7 +940,7 @@ hda_audio_prepare_for_input (int dev, int bsize, int bcount)
   hda_engine_t *engine;
 
   if (portc->port_type != PT_INPUT)
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
 
   engine = portc->engine;
 
@@ -971,7 +971,7 @@ hda_audio_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (portc->port_type != PT_OUTPUT)
-    return -ENOTSUP;
+    return OSS_ENOTSUP;
 
   engine = portc->engine;
 
@@ -1311,7 +1311,7 @@ hdaudio_reprogram_spdif (void *_devc, void *_portc,
   hdaudio_endpointinfo_t *endpoint = devc->spdifout_endpoint;
 
   if (endpoint == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 

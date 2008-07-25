@@ -22,7 +22,7 @@ deftmr_create_instance (int timer_dev, int driver_dev)
   deftmr_timerc_t *timerc;
 
   if ((timerc = KERNEL_MALLOC (sizeof (*timerc))) == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
 
   memset (timerc, 0, sizeof (*timerc));
 
@@ -58,7 +58,7 @@ deftmr_detach_client (int timer_dev, int mididev)
 static int
 deftmr_ioctl (int timer_dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -88,7 +88,7 @@ deftmr_start (int timer_dev, oss_uint64_t tick)
   if (timerc == NULL)
     {
       cmn_err (CE_WARN, "deftmr_start: timerc==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   timerc->start_time = GET_JIFFIES ();

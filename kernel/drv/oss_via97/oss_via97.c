@@ -259,7 +259,7 @@ via97_audio_set_format (int dev, unsigned int arg)
 static int
 via97_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void via97_audio_trigger (int dev, int state);
@@ -296,13 +296,13 @@ via97_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   if (devc->open_mode & mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -419,7 +419,7 @@ via97_audio_prepare_for_input (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (audio_engines[dev]->dmap_in->dmabuf_phys == 0)
-    return -ENOSPC;
+    return OSS_ENOSPC;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   tmp = 0x81;			/* Auto start at EOL, interrupt on FLAG */
@@ -438,7 +438,7 @@ via97_audio_prepare_for_input (int dev, int bsize, int bcount)
       if (sgd_ptr >= SGD_TOTAL_SIZE)
 	{
 	  cmn_err (CE_WARN, "Out of Record SGD entries\n");
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       devc->SGD_table[sgd_ptr].phaddr =
@@ -470,7 +470,7 @@ via97_audio_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (audio_engines[dev]->dmap_out->dmabuf_phys == 0)
-    return -ENOSPC;
+    return OSS_ENOSPC;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   tmp = 0x81;			/* Auto start at EOL, interrupt on FLAG */
@@ -490,7 +490,7 @@ via97_audio_prepare_for_output (int dev, int bsize, int bcount)
       if (sgd_ptr >= SGD_TOTAL_SIZE)
 	{
 	  cmn_err (CE_WARN, "Out of Playback SGD entries\n");
-	  return -ENOSPC;
+	  return OSS_ENOSPC;
 	}
 
       devc->SGD_table[sgd_ptr].phaddr =
@@ -684,7 +684,7 @@ init_via97 (via97_devc * devc)
 	CONTIG_MALLOC (devc->osdev, SGD_ALLOC, MEMLIMIT_32BITS, &phaddr, devc->sgd_dma_handle);
 
       if (devc->SGD_table == NULL)
-	return -ENOSPC;
+	return OSS_ENOSPC;
       devc->SGD_table_phys = phaddr;
     }
 

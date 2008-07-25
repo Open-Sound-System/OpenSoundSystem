@@ -137,9 +137,9 @@ static int
 ac97_mixer_get (ac97_devc * devc, int dev)
 {
   if (dev < 0 || dev >= SOUND_MIXER_NRDEVICES)
-    return -EINVAL;
+    return OSS_EINVAL;
   if (!((1 << dev) & devc->devmask))
-    return -EINVAL;
+    return OSS_EINVAL;
   return devc->levels[dev];
 }
 
@@ -177,9 +177,9 @@ ac97_mixer_set (ac97_devc * devc, int dev, int value)
   int left, right, lvl;
 
   if (dev < 0 || dev >= SOUND_MIXER_NRDEVICES)
-    return -EINVAL;
+    return OSS_EINVAL;
   if (!((1 << dev) & devc->devmask))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!((1 << dev) & STEREO_DEVS))
     {
@@ -289,7 +289,7 @@ ac97_mixer_set (ac97_devc * devc, int dev, int value)
       break;
 #endif
     default:
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   return devc->levels[dev] = value;
@@ -392,13 +392,13 @@ call_override_func (ac97_devc * devc, int audiodev, unsigned int cmd, int val)
   int ret, ctrl;
 
   if (!devc->is_ok)
-    return -EIO;
+    return OSS_EIO;
 
   ctrl = cmd & 0xff;
 
   if (ctrl < 0 || ctrl >= SOUND_MIXER_NRDEVICES
       || devc->overrides[ctrl] == NULL)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   ret = devc->overrides[ctrl] (devc->mixer_dev, audiodev, cmd, val);
   if (ret < 0)
@@ -460,7 +460,7 @@ ac97_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	value = *arg;
 	if (value != 0 && value != 1)
-	  return -EINVAL;
+	  return OSS_EINVAL;
 
 	tmp = codec_read (devc, 0x0e);
 
@@ -491,7 +491,7 @@ ac97_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  default:
 	    if ((cmd & 0xff) > SOUND_MIXER_NRDEVICES)
-	      return -EINVAL;
+	      return OSS_EINVAL;
 	    val = *arg;
 	    ctrl = cmd & 0xff;
 	    if (ctrl >= 0 && ctrl < SOUND_MIXER_NRDEVICES)
@@ -541,7 +541,7 @@ ac97_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     }
   else
     {
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 }
 

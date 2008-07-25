@@ -586,7 +586,7 @@ read_status (uio_t * buf, int count)
     return 0;
 
   if (uiomove (&sndstat_buf[sndstat_ptr], l, UIO_READ, buf) != 0)
-    return -EFAULT;
+    return OSS_EFAULT;
   sndstat_ptr += l;
 
   return l;
@@ -599,13 +599,13 @@ sndstat_open (int dev, int dev_class, struct fileinfo *file,
 {
   /* TODO: Concurrency control */
   if (sndstat_busy)
-    return -EBUSY;
+    return OSS_EBUSY;
   sndstat_busy = 1;
 
   if ((sndstat_buf = KERNEL_MALLOC (4096)) == NULL)
     {
       sndstat_busy = 0;
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   sndstat_len = 0;
@@ -647,7 +647,7 @@ sndstat_write (int dev, struct fileinfo *file, uio_t * buf, int count)
   oss_detach_enabled = 1;
   return count;
 #else
-  return -EIO;
+  return OSS_EIO;
 #endif
 }
 
@@ -659,7 +659,7 @@ sndstat_ioctl (int dev, struct fileinfo *bogus,
   if (cmd == OSS_GETVERSION)
     return *arg = OSS_VERSION;
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static oss_cdev_drv_t sndstat_cdev_drv = {

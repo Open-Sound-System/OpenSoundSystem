@@ -288,7 +288,7 @@ ymf7xx_audio_set_format (int dev, unsigned int arg)
 static int
 ymf7xx_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void ymf7xx_audio_trigger (int dev, int state);
@@ -325,7 +325,7 @@ ymf7xx_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;

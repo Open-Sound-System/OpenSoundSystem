@@ -533,7 +533,7 @@ apci97_audio_set_format (int dev, unsigned int arg)
 static int
 apci97_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void apci97_audio_trigger (int dev, int state);
@@ -570,7 +570,7 @@ apci97_audio_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   portc->open_mode = mode;
   portc->audio_enabled = ~mode;
@@ -961,7 +961,7 @@ apci97_midi_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->midi_input_intr = inputbyte;
@@ -1014,7 +1014,7 @@ apci97_midi_out (int dev, unsigned char midi_byte)
 static int
 apci97_midi_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t apci97_midi_driver = {

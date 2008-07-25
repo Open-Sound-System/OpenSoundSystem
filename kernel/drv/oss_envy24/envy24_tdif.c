@@ -283,7 +283,7 @@ envy24_set_tdif (int dev, int ctrl, unsigned int cmd, int value)
   static unsigned char levels[] = { 0x60, 0x6f, 0x7f };
 
   if (ctrl >= 0xff)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -299,7 +299,7 @@ envy24_set_tdif (int dev, int ctrl, unsigned int cmd, int value)
       else
 	{
 	  if (value > 2)
-	    return -EINVAL;
+	    return OSS_EINVAL;
 	  level = levels[value];
 	}
 
@@ -307,7 +307,7 @@ envy24_set_tdif (int dev, int ctrl, unsigned int cmd, int value)
       write_tdif_codec (devc, 5, level);
       return devc->akm_gains[ctrl] = value;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 

@@ -97,7 +97,7 @@ imux_igain (int dev, int ctrl, unsigned int cmd, int value)
   imux_portc *portc;
 
   if (ctrl != 100 && (ctrl < 0 || ctrl >= devc->imux_devices))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   portc = &devc->portc[ctrl];
 
@@ -130,7 +130,7 @@ imux_igain (int dev, int ctrl, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int
@@ -146,7 +146,7 @@ imux_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       {
 	value = *arg;
 	if (value <= 0 || value >= devc->hw_channels - 1)
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	portc->ch_index = value;
       }
 
@@ -203,7 +203,7 @@ imux_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       return 0;
       break;
     }
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void imux_trigger (int dev, int state);
@@ -413,7 +413,7 @@ start_device (imux_devc * devc)
   if (devc->hw_dev < 0 || devc->hw_dev >= num_audio_engines)
     {
       cmn_err (CE_WARN, "No audio hardware available\n");
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (devc->device_started)
@@ -433,7 +433,7 @@ start_device (imux_devc * devc)
       && devc->hw_dev <= devc->portc[devc->imux_devices - 1].audio_dev)
     {
       cmn_err (CE_WARN, "Bad master device %d\n", devc->hw_dev);
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (!(audio_engines[devc->hw_dev]->iformat_mask & SUPPORTED_FORMATS))
@@ -441,7 +441,7 @@ start_device (imux_devc * devc)
       cmn_err (CE_CONT,
 	       "Audio device %d doesn't support compatible sample formats.\n",
 	       devc->hw_dev);
-      return -EIO;
+      return OSS_EIO;
     }
   if ((err =
        oss_audio_open_engine (devc->hw_dev, OSS_DEV_DSP, &devc->finfo, 1, 0,
@@ -481,7 +481,7 @@ start_device (imux_devc * devc)
       cmn_err (CE_WARN,
 	       "This device doesn't support any known sample formats (%x)\n",
 	       devc->hw_fmt);
-      return -EIO;
+      return OSS_EIO;
     }
 
   switch (devc->hw_fmt)
@@ -503,7 +503,7 @@ start_device (imux_devc * devc)
     {
       oss_audio_release (devc->hw_dev, &devc->finfo);
       cmn_err (CE_WARN, "A 2 channel soundcard (or better) is required\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   DDB (cmn_err (CE_CONT, "Started audio device %d, s=%d, c=%d, bits=%d\n",
@@ -560,7 +560,7 @@ imux_open (int dev, int mode, int open_flags)
   if (devc->hw_dev < 0)
     {
       cmn_err (CE_NOTE, "No master device allocated\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -568,7 +568,7 @@ imux_open (int dev, int mode, int open_flags)
   if (portc->is_opened)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->is_opened = 1;
@@ -664,7 +664,7 @@ imux_prepare_for_input (int dev, int bsize, int bcount)
 static int
 imux_prepare_for_output (int dev, int bsize, int bcount)
 {
-  return -EIO;
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/
@@ -677,7 +677,7 @@ imux_alloc_buffer (int dev, dmap_t * dmap, int direction)
   dmap->dmabuf_phys = 0;	/* Not mmap() capable */
   dmap->dmabuf = KERNEL_MALLOC (MY_BUFFSIZE);
   if (dmap->dmabuf == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
   dmap->buffsize = MY_BUFFSIZE;
 
   return 0;
@@ -734,7 +734,7 @@ static audiodrv_t imux_driver = {
 static int
 imux_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t imux_mixer_driver = {
@@ -784,7 +784,7 @@ imux_vu (int dev, int ctrl, unsigned int cmd, int value)
   imux_devc *devc = mixer_devs[dev]->devc;
 
   if (ctrl < 0 || ctrl >= devc->imux_devices)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (cmd == SNDCTL_MIX_READ)
     {
@@ -795,7 +795,7 @@ imux_vu (int dev, int ctrl, unsigned int cmd, int value)
       return left | (right << 8);
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

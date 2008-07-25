@@ -563,13 +563,13 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
  */
   oss_native_word flags;
   oss_midi_client_t *client;
-  int ok, err = -EBUSY;
+  int ok, err = OSS_EBUSY;
   int mode = file->mode & O_ACCMODE;
 
   char *cmd;
 
   if (dev < 0 || dev >= num_mididevs)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   /* 
    * Don't allow read only access on playback only devices.
@@ -578,7 +578,7 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
    */
   if ((mode == OPEN_READ) && !(midi_devs[dev]->flags & MFLAG_INPUT))
     {
-      return -EACCES;
+      return OSS_EACCES;
     }
 
   /*
@@ -586,18 +586,18 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
    */
   if ((mode & OPEN_WRITE) && !(midi_devs[dev]->flags & MFLAG_OUTPUT))
     {
-      return -EACCES;
+      return OSS_EACCES;
     }
 
   if (!midi_devs[dev]->enabled)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (midi_devs[dev]->unloaded)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   client = oss_midi_clients[dev];
   if (client == NULL)
-     return -ENXIO;
+     return OSS_ENXIO;
 
   MUTEX_ENTER_IRQDISABLE (midi_mutex, flags);
 
@@ -659,7 +659,7 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
 	  midi_devs[dev]->open_mode = 0;
 	  client->open_mode = 0;
 	  client->mididev = NULL;
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
     }
 
@@ -678,7 +678,7 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
 	  midi_devs[dev]->open_mode = 0;
 	  client->open_mode = 0;
 	  client->mididev = NULL;
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
 /*
@@ -932,7 +932,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
   mididev = client->mididev;
 
   if (mididev == NULL)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   MUTEX_ENTER_IRQDISABLE (mididev->mutex, flags);
 
@@ -949,21 +949,21 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	{
 	  MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
 	  cmn_err (CE_WARN, "Too short MIDI write (no header)\n");
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
 
       MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
       if (uiomove (&hdr, sizeof (midi_packet_header_t), UIO_WRITE, buf) != 0)
 	{
 	  cmn_err (CE_WARN, "uiomove (header) failed\n");
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
 
       if (hdr.magic != MIDI_HDR_MAGIC)
 	{
 	  cmn_err (CE_WARN, "Bad MIDI write packet header (%04x)\n",
 		   hdr.magic);
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
       count -= sizeof (midi_packet_header_t);
       c += sizeof (midi_packet_header_t);
@@ -987,7 +987,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	  MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
 	  cmn_err (CE_CONT, "MIDI Output buffer %d doesn't drain %d/%d\n",
 		   mididev->dev, c, count);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if (l > MIDI_PAYLOAD_SIZE)
@@ -997,7 +997,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	   midi_queue_alloc_record (mididev->out_queue, &targetbuf, l,
 				    &hdr)) < 0)
 	{
-	  if (ret == -ENOSPC)	/* Buffers full */
+	  if (ret == OSS_ENOSPC)	/* Buffers full */
 	    {
 	      MDB (cmn_err (CE_CONT, "*** Buffers full ***\n"));
 	      tmout =
@@ -1008,7 +1008,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 		  MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
 		  if (c > 0)
 		    return c;
-		  return -EIO;	/* Timeout - why */
+		  return OSS_EIO;	/* Timeout - why */
 		}
 	      else
 		loops = 0;	/* Restart loop limiter */
@@ -1017,7 +1017,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 		{
 		  mididev->is_killed = 1;
 		  MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
-		  return -EINTR;
+		  return OSS_EINTR;
 		}
 
 	      if (loops > 95)
@@ -1043,7 +1043,7 @@ oss_midi_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	  if (uiomove (targetbuf, l, UIO_WRITE, buf) != 0)
 	    {
 	      cmn_err (CE_WARN, "uiomove (write) failed\n");
-	      return -EFAULT;
+	      return OSS_EFAULT;
 	    }
 
 	  count -= l;
@@ -1074,14 +1074,14 @@ do_read (mididev_t * mididev, uio_t * buf, unsigned char *data, int c,
       if (max_bytes <= sizeof (*hdr))
 	{
 	  cmn_err (CE_WARN, "MIDI read too small for packet header\n");
-	  return -E2BIG;
+	  return OSS_E2BIG;
 	}
 
       hdr->magic = MIDI_HDR_MAGIC;
       if (uiomove (hdr, sizeof (*hdr), UIO_READ, buf) != 0)
 	{
 	  cmn_err (CE_WARN, "uiomove (read) failed\n");
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
 
       l += sizeof (*hdr);
@@ -1091,12 +1091,12 @@ do_read (mididev_t * mididev, uio_t * buf, unsigned char *data, int c,
     c = max_bytes - l;
 
   if (c <= 0)
-    return -E2BIG;
+    return OSS_E2BIG;
 
   if (uiomove (data, c, UIO_READ, buf) != 0)
     {
       cmn_err (CE_WARN, "uiomove (read) failed\n");
-      return -EFAULT;
+      return OSS_EFAULT;
     }
 
   midi_queue_remove_chars (mididev->in_queue, c);
@@ -1125,7 +1125,7 @@ oss_midi_read (int dev, struct fileinfo *file, uio_t * buf, int count)
   mididev = client->mididev;
 
   if (mididev == NULL)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   MUTEX_ENTER_IRQDISABLE (mididev->mutex, flags);
 
@@ -1146,7 +1146,7 @@ oss_midi_read (int dev, struct fileinfo *file, uio_t * buf, int count)
   if (mididev->prech_timeout < 0)	/* Non blocking mode */
     {
       MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
-      return -EWOULDBLOCK;
+      return OSS_EWOULDBLOCK;
     }
 
   if (!oss_sleep
@@ -1163,7 +1163,7 @@ oss_midi_read (int dev, struct fileinfo *file, uio_t * buf, int count)
     {
       mididev->is_killed = 1;
       MUTEX_EXIT_IRQRESTORE (mididev->mutex, flags);
-      return -EINTR;
+      return OSS_EINTR;
     }
 
   if ((c = midi_queue_get (mididev->in_queue, &data, count, &hdr)) < 0
@@ -1197,7 +1197,7 @@ setup_working_mode (mididev_t * mididev)
 	{
 	  cmn_err (CE_WARN, "Invalid MIDI timer %d selected\n",
 		   mididev->timer_driver);
-	  return -ENXIO;
+	  return OSS_ENXIO;
 	}
 
       if ((timer_dev =
@@ -1222,7 +1222,7 @@ setup_working_mode (mididev_t * mididev)
       oss_timer_devs[timer_dev] == NULL)
     {
       cmn_err (CE_WARN, "Failed to allocate a timer instance\n");
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
 
@@ -1261,7 +1261,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
       return err;
   mididev = client->mididev;
   if (mididev == NULL)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   dev = mididev->dev;
 
@@ -1270,7 +1270,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
     case SNDCTL_MIDI_PRETIME:
       val = *arg;
       if (val < -1)
-	return -EINVAL;
+	return OSS_EINVAL;
 
       if (val != -1)
 	val = (OSS_HZ * val) / 100;
@@ -1299,7 +1299,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
 	  break;
 	  break;
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
       mididev->mtc_timebase = val;
       mididev->mtc_t0 = GET_JIFFIES ();
@@ -1317,7 +1317,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
       val = *arg;
       if (val != MIDI_MODE_TRADITIONAL && val != MIDI_MODE_TIMED
 	  && val != MIDI_MODE_TIMED_ABS)
-	return -EINVAL;
+	return OSS_EINVAL;
       mididev->working_mode = val;
       *arg = val;
       if ((err = setup_working_mode (mididev)) < 0)
@@ -1332,7 +1332,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
     case SNDCTL_MIDI_TIMEBASE:
       val = *arg;
       if (val < 1 || val > 1000)
-	return -EINVAL;
+	return OSS_EINVAL;
       mididev->timebase = val;
       return setup_timebase (mididev);
       break;
@@ -1340,7 +1340,7 @@ oss_midi_ioctl (int dev, struct fileinfo *file,
     case SNDCTL_MIDI_TEMPO:
       val = *arg;
       if (val < 1 || val > 200)
-	return -EINVAL;
+	return OSS_EINVAL;
       mididev->tempo = val;
       return setup_tempo (mididev);
       break;
@@ -1361,14 +1361,14 @@ oss_midi_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
   int err;
 
   if (dev < 0 || dev >= oss_num_midi_clients)
-    return -ENXIO;
+    return OSS_ENXIO;
   client = oss_midi_clients[dev];
   if (client->mididev == NULL)
     if ((err = midi_mapper_autobind (dev, client->open_mode)) < 0)
       return err;
   mididev = client->mididev;
   if (mididev == NULL)
-    return -EIO;
+    return OSS_EIO;
 
   if ((events & (POLLOUT | POLLWRNORM)) && (mididev->open_mode & OPEN_WRITE))
     {
@@ -1479,14 +1479,14 @@ oss_vmidi_open (int dev, int dev_type, struct fileinfo *file, int recursive,
 	{
 	  cmn_err (CE_WARN, "Too many MIDI clients\n");
 	  MUTEX_EXIT_IRQRESTORE (midi_mutex, flags);
-	  return -ENXIO;
+	  return OSS_ENXIO;
 	}
 
       if (client == NULL)
 	{
 	  cmn_err (CE_WARN, "Out of memory\n");
 	  MUTEX_EXIT_IRQRESTORE (midi_mutex, flags);
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       memset (client, 0, sizeof (*client));
@@ -1600,7 +1600,7 @@ oss_install_mididev (int version,
   if (midi_devs == NULL)
     {
       cmn_err (CE_WARN, "oss_install_mididev: Out of memory\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   for (i = 0; i < num_mididevs; i++)
@@ -1618,7 +1618,7 @@ oss_install_mididev (int version,
       if (num_mididevs >= MAX_MIDI_DEV - 1)
 	{
 	  cmn_err (CE_WARN, "Too many MIDI devices in the system\n");
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       op = midi_devs[num_mididevs] = PMALLOC (osdev, sizeof (mididev_t));
@@ -1626,7 +1626,7 @@ oss_install_mididev (int version,
 	{
 	  cmn_err (CE_WARN,
 		   "oss_install_mididev: Failed to allocate memory\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
       memset (op, 0, sizeof (*op));
       curr_midi_dev = num_mididevs++;

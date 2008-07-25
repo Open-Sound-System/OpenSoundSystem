@@ -90,7 +90,7 @@ remux_set_format (int dev, unsigned int arg)
 static int
 remux_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void remux_trigger (int dev, int state);
@@ -113,7 +113,7 @@ remux_open (int dev, int mode, int open_flags)
   if (mode & OPEN_READ)
     {
       cmn_err (CE_WARN, "Audio device %d cannot do recording\n", dev);
-      /* return -ENOTSUP; */
+      /* return OSS_ENOTSUP; */
     }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
@@ -122,7 +122,7 @@ remux_open (int dev, int mode, int open_flags)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   devc->open_mode = mode;
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
@@ -294,7 +294,7 @@ remux_trigger (int dev, int state)
 static int
 remux_prepare_for_input (int dev, int bsize, int bcount)
 {
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
@@ -321,7 +321,7 @@ remux_prepare_for_output (int dev, int bsize, int bcount)
 	{
 	  cmn_err (CE_NOTE, "remux: Bad sample format %x\n", tmp);
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       tmp = pdev->d->adrv_set_channels (pd, 2);
@@ -329,7 +329,7 @@ remux_prepare_for_output (int dev, int bsize, int bcount)
 	{
 	  cmn_err (CE_NOTE, "remux: Bad number of channels %d\n", tmp);
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       tmp = pdev->d->adrv_set_rate (pd, devc->speed);
@@ -337,7 +337,7 @@ remux_prepare_for_output (int dev, int bsize, int bcount)
 	{
 	  cmn_err (CE_NOTE, "remux: Bad sample rate %d\n", tmp);
 	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if (pdev->min_block > 0 && bsize < pdev->min_block)
@@ -363,7 +363,7 @@ remux_prepare_for_output (int dev, int bsize, int bcount)
       if (dmap->dmabuf == NULL)
 	{
 	  cmn_err (CE_WARN, "dmabuf==NULL\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       memset (dmap->dmabuf, 0, dmap->buffsize);

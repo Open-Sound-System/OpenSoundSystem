@@ -437,7 +437,7 @@ static int
 cs4231_mixer_get (cs4231_devc_t * devc, int dev)
 {
   if (!((1 << dev) & devc->supported_devices))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   dev = devc->mixer_reroute[dev];
 
@@ -455,10 +455,10 @@ cs4231_mixer_set (cs4231_devc_t * devc, int dev, int value)
   unsigned char val;
 
   if (dev > 31)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   if (!(devc->supported_devices & (1 << dev)))
-    return -EINVAL;
+    return OSS_EINVAL;
 
   dev = devc->mixer_reroute[dev];
 
@@ -483,7 +483,7 @@ cs4231_mixer_set (cs4231_devc_t * devc, int dev, int value)
 #endif
 
   if (devc->mix_devices[dev][LEFT_CHN].nbits == 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   devc->levels[dev] = retvol;
 
@@ -617,7 +617,7 @@ cs4231_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	  }
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 static int
@@ -805,7 +805,7 @@ cs4231_open (int dev, int mode, int open_flags)
   oss_native_word flags;
 
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   devc = (cs4231_devc_t *) audio_engines[dev]->devc;
   portc = (cs4231_portc_t *) audio_engines[dev]->portc;
@@ -814,7 +814,7 @@ cs4231_open (int dev, int mode, int open_flags)
   if (portc->open_mode || (devc->open_mode & mode))
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   devc->open_mode |= mode;
@@ -858,7 +858,7 @@ cs4231_close (int dev, int mode)
 static int
 cs4231_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void

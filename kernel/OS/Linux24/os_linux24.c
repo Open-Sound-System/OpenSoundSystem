@@ -291,7 +291,7 @@ oss_disable_device (oss_device_t * osdev)
  */
   if (osdev->refcount > 0)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   for (i = 0; i < num_mixers; i++)
@@ -367,7 +367,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
  */
 
   if (cardnum < 0 || cardnum >= oss_num_cards)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (cards[cardnum]->name != NULL)
     strncpy (ci->longname, cards[cardnum]->name, 128);
@@ -399,7 +399,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if (dmap == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: dmap==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
 /*
@@ -429,7 +429,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 			      &phaddr)) == NULL)
 	{
 	  if ((dmap->buffsize = (dmap->buffsize / 2)) < 8 * 1024)
-	    return -ENOMEM;
+	    return OSS_ENOMEM;
 	  cmn_err (CE_CONT, "Dropping DMA buffer size to %d bytes.\n",
 		   dmap->buffsize);
 	  continue;
@@ -441,7 +441,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
       return 0;
     }
 
-  return -ENOMEM;
+  return OSS_ENOMEM;
 }
 
 void
@@ -486,9 +486,9 @@ oss_cdev_open (oss_inode_handle_t * inode, oss_file_handle_t * file)
   oss_cdev_t *cdev;
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   DDB (cmn_err
        (CE_CONT, "oss_cdev_open(%d): %s, class=%d, instance=%d\n", dev,
@@ -496,7 +496,7 @@ oss_cdev_open (oss_inode_handle_t * inode, oss_file_handle_t * file)
 
   if (cdev->d->open == NULL)
     {
-      return -ENODEV;
+      return OSS_ENODEV;
     }
 
   dev_class = cdev->dev_class;
@@ -559,10 +559,10 @@ oss_cdev_read (oss_file_handle_t * file, char *buf, size_t count,
   cpy_file (file, &fi);
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d->read == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if ((err = oss_create_uio (&uio, buf, count, UIO_READ, 0)) < 0)
@@ -589,10 +589,10 @@ oss_cdev_write (oss_file_handle_t * file, char *buf, size_t count,
   cpy_file (file, &fi);
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d->write == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if ((err = oss_create_uio (&uio, buf, count, UIO_WRITE, 0)) < 0)
@@ -623,10 +623,10 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
   cpy_file (file, &fi);
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d->ioctl == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (__SIOC_DIR (cmd) != __SIOC_NONE && __SIOC_DIR (cmd) != 0)
@@ -635,7 +635,7 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
       if (len < 1 || len > 65536 || arg == 0)
 	{
 	  cmn_err (CE_WARN, "Bad ioctl command %x, %d, %x\n", cmd, len, arg);
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
 
       /* Use statically allocated buffer for short arguments */
@@ -649,7 +649,7 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
 
       if (ptr == NULL || arg == 0)
 	{
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
 
       if (__SIOC_DIR (cmd) & __SIOC_WRITE)
@@ -658,7 +658,7 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
 	    {
 	      if (alloced)
 		KERNEL_FREE (ptr);
-	      return -EFAULT;
+	      return OSS_EFAULT;
 	    }
 	}
     }
@@ -676,7 +676,7 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
 	{
 	  if (alloced)
 	    KERNEL_FREE (ptr);
-	  return -EFAULT;
+	  return OSS_EFAULT;
 	}
     }
 
@@ -702,10 +702,10 @@ oss_cdev_poll (oss_file_handle_t * file, oss_poll_table_handle_t * wait)
   cpy_file (file, &fi);
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d->chpoll == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   ev.wait = wait;
@@ -731,21 +731,21 @@ oss_cdev_mmap (oss_file_handle_t * file, oss_vm_area_handle_t * vma)
   int err;
 
   if (dev > oss_num_cdevs)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if ((cdev = oss_cdevs[dev]) == NULL)
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   if (cdev->dev_class != OSS_DEV_DSP && cdev->dev_class != OSS_DEV_DSP_ENGINE)	/* Only mmap audio devices */
     {
-      return -ENXIO;
+      return OSS_ENXIO;
     }
 
   dev = cdev->instance;
   if (dev < 0 || dev >= num_audio_engines)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   if (oss_vma_get_flags (vma) & VM_WRITE)	/* Map write and read/write to the output buf */
     {
@@ -758,38 +758,38 @@ oss_cdev_mmap (oss_file_handle_t * file, oss_vm_area_handle_t * vma)
   else
     {
       cmn_err (CE_WARN, "Undefined mmap() access\n");
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (dmap == NULL)
     {
       cmn_err (CE_WARN, "mmap() error. dmap == NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->dmabuf == NULL)
     {
       cmn_err (CE_WARN, "mmap() called when raw_buf == NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->dmabuf_phys == 0)
     {
       cmn_err (CE_WARN, "mmap() not supported by device /dev/dsp%d.\n", dev);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->mapping_flags)
     {
       cmn_err (CE_WARN, "mmap() called twice for the same DMA buffer\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (dmap->flags & DMAP_COOKED)
     {
       cmn_err (CE_WARN,
 	       "mmap() not possible with currently selected sample format.\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if ((err = oss_do_mmap (vma, dmap->dmabuf_phys, dmap->bytes_in_use)) < 0)
@@ -923,7 +923,7 @@ oss_init_osscore (oss_device_t * osdev)
     {
       cmn_err (CE_WARN, "Failed to allocate character major number %d\n",
 	       osscore_major);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   osdev->major = osscore_major;

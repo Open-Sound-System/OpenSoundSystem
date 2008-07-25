@@ -284,7 +284,7 @@ digi32_set_format (int dev, unsigned int arg)
 static int
 digi32_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void digi32_trigger (int dev, int state);
@@ -324,7 +324,7 @@ digi32_open (int dev, int mode, int open_flags)
   if (portc->open_mode != 0)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -485,7 +485,7 @@ digi32_prepare_for_output (int dev, int bsize, int bcount)
   if (bsize != 8 * 1024)
     {
       cmn_err (CE_CONT, "Illegal fragment size %d\n", bsize);
-      return -EIO;
+      return OSS_EIO;
     }
 
   prev_dblbit = cmd & C_DS;
@@ -543,7 +543,7 @@ digi32_prepare_for_input (int dev, int bsize, int bcount)
   if (i >= 1000)
     {
       cmn_err (CE_WARN, "No input signal detected\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   devc->speed_locked = 1;
@@ -559,7 +559,7 @@ digi32_prepare_for_input (int dev, int bsize, int bcount)
   if (bsize != 8 * 1024)
     {
       cmn_err (CE_CONT, "Illegal fragment size %d\n", bsize);
-      return -EIO;
+      return OSS_EIO;
     }
 
   prev_dblbit = cmd & C_DS;
@@ -604,7 +604,7 @@ digi32_alloc_buffer (int dev, dmap_t * dmap, int direction)
   dmap->dmabuf_phys = 0;	/* Not mmap() capable */
   dmap->dmabuf = KERNEL_MALLOC (digi32_buffsize);
   if (dmap->dmabuf == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
   dmap->buffsize = digi32_buffsize;
 
   return 0;
@@ -729,7 +729,7 @@ digi32_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
     return *arg = 100 | (100 << 8);
   if (cmd == SOUND_MIXER_WRITE_VOLUME || cmd == SOUND_MIXER_WRITE_PCM)
     return *arg = 100 | (100 << 8);
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static mixer_driver_t digi32_mixer_driver = {
@@ -744,7 +744,7 @@ digi32_set_control (int dev, int ctrl, unsigned int cmd, int value)
   unsigned int data;
 
   if (ctrl < 0)
-    return -EINVAL;
+    return OSS_EINVAL;
 
   offs = (ctrl >> 4) & 0x0f;	/* # of bits in the field */
   nbits = ctrl & 0x0f;		/* Shift amount */
@@ -758,14 +758,14 @@ digi32_set_control (int dev, int ctrl, unsigned int cmd, int value)
   if (cmd == SNDCTL_MIX_WRITE)
     {
       if (value < 0 || value >= (1 << nbits))
-	return -EINVAL;
+	return OSS_EINVAL;
       data = devc->cmd & ~(((1 << nbits) - 1) << offs);
       data |= (value & ((1 << nbits) - 1)) << offs;
       devc->cmd = data;
       return value;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

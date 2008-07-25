@@ -55,13 +55,13 @@ neomagic_setInfo (int dev, struct neomagic_devc *devc)
   else if (devc->dev[1] == dev)
     w = 1;
   else
-    return -ENODEV;
+    return OSS_ENODEV;
 
   targetrate = devc->portc[w].samplerate;
 
   if ((devc->portc[w].bits != 8 && devc->portc[w].bits != 16)
       || targetrate < samplerates[0] || targetrate > samplerates[7])
-    return -EINVAL;
+    return OSS_EINVAL;
 
   for (x = 0; x < 8; x++)
     if (targetrate < ((samplerates[x] + samplerates[x + 1]) / 2))
@@ -100,7 +100,7 @@ neomagic_setInfo (int dev, struct neomagic_devc *devc)
       return 0;
     }
   else
-    return -EINVAL;
+    return OSS_EINVAL;
 }
 
 /* Start the play process going. */
@@ -453,7 +453,7 @@ neomagic_readAC97Reg (void *devc_, int reg)
   else
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 }
 
@@ -777,21 +777,21 @@ neomagic_audio_open (int dev, int mode, int open_flags)
   int w;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->dev[0] == dev)
     w = 0;
   else if (devc->dev[1] == dev)
     w = 1;
   else
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->opencnt[w] > 0)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   /* No bits set? Huh? */
   if (!((mode & OPEN_READ) || (mode & OPEN_WRITE)))
-    return -EIO;
+    return OSS_EIO;
 
   /*
    * If it's open for both read and write, and the devc's currently
@@ -824,7 +824,7 @@ neomagic_audio_open (int dev, int mode, int open_flags)
 	    ~(ADEV_FIXEDRATE | ADEV_16BITONLY | ADEV_STEREOONLY);
 	}
       else
-	return -EBUSY;
+	return OSS_EBUSY;
     }
 
   if (mode & OPEN_READ)
@@ -840,7 +840,7 @@ neomagic_audio_open (int dev, int mode, int open_flags)
 	    ADEV_FIXEDRATE | ADEV_16BITONLY | ADEV_STEREOONLY;
 	}
       else
-	return -EBUSY;
+	return OSS_EBUSY;
     }
 
   devc->opencnt[w]++;
@@ -901,7 +901,7 @@ neomagic_set_rate (int dev, int arg)
   int which;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->dev[0] == dev)
     which = 0;
@@ -933,7 +933,7 @@ neomagic_set_channels (int dev, short arg)
   int which;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->dev[0] == dev)
     which = 0;
@@ -976,7 +976,7 @@ neomagic_set_format (int dev, unsigned int arg)
 static int
 neomagic_audio_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*
@@ -1038,10 +1038,10 @@ neomagic_audio_prepare_for_input (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->is_open_record && devc->dev_for_record != dev)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   /*
@@ -1079,10 +1079,10 @@ neomagic_audio_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   if (devc->is_open_play && devc->dev_for_play != dev)
-    return -EBUSY;
+    return OSS_EBUSY;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   /*
@@ -1200,7 +1200,7 @@ neomagic_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   oss_native_word flags;
 
   if (devc == NULL)
-    return -ENODEV;
+    return OSS_ENODEV;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   if (direction == PCM_ENABLE_OUTPUT)

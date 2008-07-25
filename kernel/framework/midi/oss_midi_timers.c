@@ -27,25 +27,25 @@ oss_install_timer (int driver_version,
     {
       cmn_err (CE_WARN, "Incompatible timer driver version %d\n",
 	       driver_version);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (driver_size != sizeof (*op))
     {
       cmn_err (CE_WARN, "Incompatible timer driver size %d\n", driver_size);
-      return -EINVAL;
+      return OSS_EINVAL;
     }
 
   if (oss_num_timer_drivers >= MAX_TIMER_DEV)
     {
       cmn_err (CE_WARN, "Too many timer drivers\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   if ((op = PMALLOC (osdev, sizeof (*op))) == NULL)
     {
       cmn_err (CE_WARN, "Out of memory (oss_install_timer)\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   memcpy (op, d, driver_size);
@@ -77,7 +77,7 @@ oss_timer_create_instance (int driver_dev, mididev_t * mididev)
 /* TODO: Create a mutex for all timers */
 
   if (driver_dev < 0 || driver_dev >= oss_num_timer_drivers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   drv = oss_timer_drivers[driver_dev];
 
@@ -88,7 +88,7 @@ oss_timer_create_instance (int driver_dev, mididev_t * mididev)
 	       driver_dev, drv->max_instances);
 
       MUTEX_EXIT_IRQRESTORE (drv->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   drv->num_instances++;
   MUTEX_EXIT_IRQRESTORE (drv->mutex, flags);
@@ -98,7 +98,7 @@ oss_timer_create_instance (int driver_dev, mididev_t * mididev)
       MUTEX_ENTER_IRQDISABLE (drv->mutex, flags);
       drv->num_instances--;
       MUTEX_EXIT_IRQRESTORE (drv->mutex, flags);
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
   memset (tmr, 0, sizeof (*tmr));
 
@@ -120,7 +120,7 @@ oss_timer_create_instance (int driver_dev, mididev_t * mididev)
 	  MUTEX_ENTER_IRQDISABLE (drv->mutex, flags);
 	  drv->num_instances--;
 	  MUTEX_EXIT_IRQRESTORE (drv->mutex, flags);
-	  return -EBUSY;
+	  return OSS_EBUSY;
 	}
       num = oss_num_timers++;
     }
@@ -165,18 +165,18 @@ oss_timer_attach_client (int timer_dev, mididev_t * mididev)
   oss_native_word flags;
 
   if (timer_dev < 0 || timer_dev >= oss_num_timers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   tmr = oss_timer_devs[timer_dev];
   if (tmr == NULL)
     {
       cmn_err (CE_WARN, "tmr==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
   if (tmr->d == NULL)
     {
       cmn_err (CE_WARN, "tmr->d==NULL\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   if (tmr->d->attach_client != NULL)
@@ -340,11 +340,11 @@ oss_timer_set_tempo (int timer_dev, int tempo)
   int err;
 
   if (timer_dev < 0 || timer_dev >= oss_num_timers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   tmr = oss_timer_devs[timer_dev];
   if (tmr == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
   tmr->pending_tempo = tempo;
 
   {
@@ -368,11 +368,11 @@ oss_timer_set_timebase (int timer_dev, int timebase)
   int err;
 
   if (timer_dev < 0 || timer_dev >= oss_num_timers)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   tmr = oss_timer_devs[timer_dev];
   if (tmr == NULL || tmr->d->set_timebase == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
   tmr->timebase = timebase;
   if ((err = tmr->d->set_timebase (timer_dev, timebase)) < 0)
     return err;

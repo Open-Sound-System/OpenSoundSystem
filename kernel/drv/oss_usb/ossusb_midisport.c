@@ -354,7 +354,7 @@ midisport_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (midic->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   midic->open_mode = mode;
@@ -377,7 +377,7 @@ midisport_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       if (devc->recbuf == NULL)
 	{
 	  cmn_err (CE_CONT, "Failed to allocate the recording buffer\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       if ((devc->input_endpoint_handle =
@@ -386,20 +386,20 @@ midisport_open_input (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 	  midic->open_mode = 0;
 	  midic->midi_input_intr = NULL;
 	  cmn_err (CE_WARN, "Cannot open audio pipe\n");
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
       if ((devc->input_pipe =
 	   udi_usb_alloc_request (devc->usbdev, devc->input_endpoint_handle,
 				  1, UDI_USBXFER_INTR_READ)) == NULL)
 	{
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if ((err = midisport_start_input (devc)) < 0)
 	{
 	  cmn_err (CE_WARN, "midisport: Input error %d\n", err);
 	  midisport_close_input (dev, mode);
-	  return -EIO;
+	  return OSS_EIO;
 	}
     }
 
@@ -417,7 +417,7 @@ open_output_queue (midisport_devc * devc, int queue_ix)
   if (queue_ix < 0 || queue_ix >= devc->num_queues)
     {
       cmn_err (CE_WARN, "Bad output queue index %d\n", queue_ix);
-      return -EIO;
+      return OSS_EIO;
     }
 
   q = &devc->out_queues[queue_ix];
@@ -441,7 +441,7 @@ open_output_queue (midisport_devc * devc, int queue_ix)
 	  cmn_err (CE_WARN, "Failed to allocate output buffer (%d bytes)\n",
 		   QUEUE_SIZE);
 	  q->open_count--;
-	  return -ENOMEM;
+	  return OSS_ENOMEM;
 	}
 
       if ((q->output_endpoint_handle =
@@ -449,7 +449,7 @@ open_output_queue (midisport_devc * devc, int queue_ix)
 	{
 	  cmn_err (CE_WARN, "Failed to open output endpoint\n");
 	  q->open_count--;
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       if ((q->output_pipe =
@@ -458,7 +458,7 @@ open_output_queue (midisport_devc * devc, int queue_ix)
 	{
 	  cmn_err (CE_WARN, "Failed to allocate output request\n");
 	  q->open_count--;
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
     }
@@ -531,7 +531,7 @@ midisport_open_output (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (midic->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (midic->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   midic->open_mode = mode;
@@ -614,7 +614,7 @@ midisport_bulk_write (int dev, unsigned char *buf, int len)
   if (midic->outqueue_ix < 0 || midic->outqueue_ix >= devc->num_queues)
     {
       cmn_err (CE_WARN, "Bad output queue index %d\n", midic->outqueue_ix);
-      return -EIO;
+      return OSS_EIO;
     }
 
   q = &devc->out_queues[midic->outqueue_ix];
@@ -669,7 +669,7 @@ midisport_bulk_write (int dev, unsigned char *buf, int len)
  /*ARGSUSED*/ static int
 midisport_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t midisport_midi_input_driver = {

@@ -302,7 +302,7 @@ emu10k1x_set_format (int dev, unsigned int arg)
 static int
 emu10k1x_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static void emu10k1x_trigger (int dev, int state);
@@ -340,7 +340,7 @@ emu10k1x_open (int dev, int mode, int open_flags)
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -569,7 +569,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
 	  portc->recbuf =
 	    CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->recbuf_dma_handle);
 	  if (portc->recbuf == NULL)
-	    return -ENOMEM;
+	    return OSS_ENOMEM;
 	  portc->recbuf_phys = phaddr;
 	}
     }
@@ -578,7 +578,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
       portc->playbuf =
 	CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->playbuf_dma_handle);
       if (portc->playbuf == NULL)
-	return -ENOMEM;
+	return OSS_ENOMEM;
       portc->playbuf_phys = phaddr;
     }
   return 0;
@@ -728,7 +728,7 @@ emu10k1xuart_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 
   if (devc->midi_opened)
     {
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   while (input_avail (devc))
@@ -798,7 +798,7 @@ emu10k1xuart_out (int dev, unsigned char midi_byte)
 static int
 emu10k1xuart_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static midi_driver_t emu10k1x_midi_driver = {

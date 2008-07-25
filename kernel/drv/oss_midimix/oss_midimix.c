@@ -207,7 +207,7 @@ midimix_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
   if (devc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
   devc->open_mode = mode;
   devc->inputbuf = inputbuf;
@@ -218,7 +218,7 @@ midimix_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
       devc->open_mode = 0;
       devc->inputbuf = NULL;
       cmn_err (CE_WARN, "Cannot create MIDI parser\n");
-      return -ENOMEM;
+      return OSS_ENOMEM;
     }
 
   devc->timeout_id = timeout (timer_callback, devc, OSS_HZ / 10);	/* 0.1s */
@@ -228,7 +228,7 @@ midimix_open (int dev, int mode, oss_midi_inputbyte_t inputbyte,
 static int
 midimix_ioctl (int dev, unsigned cmd, ioctl_arg arg)
 {
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 static int

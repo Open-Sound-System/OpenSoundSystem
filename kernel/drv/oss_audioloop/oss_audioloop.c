@@ -164,7 +164,7 @@ audioloop_check_input (int dev)
   audioloop_portc_t *portc = audio_engines[dev]->portc;
   if (!portc->peer->output_triggered)
     {
-      return -ECONNRESET;
+      return OSS_ECONNRESET;
     }
   return 0;
 }
@@ -176,11 +176,11 @@ audioloop_check_output (int dev)
 
   if (!portc->peer->input_triggered)
     {
-      return -ECONNRESET;
+      return OSS_ECONNRESET;
     }
 
   if (portc->peer->open_mode == 0)
-    return -EIO;
+    return OSS_EIO;
   return 0;
 }
 
@@ -340,17 +340,17 @@ audioloop_server_open (int dev, int mode, int open_flags)
   adev_t *adev;
 
   if ((mode & OPEN_READ) && (mode & OPEN_WRITE))
-    return -EACCES;
+    return OSS_EACCES;
 
   if (portc == NULL || portc->peer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -380,14 +380,14 @@ audioloop_client_open (int dev, int mode, int open_flags)
   oss_native_word flags;
 
   if (portc == NULL || portc->peer == NULL)
-    return -ENXIO;
+    return OSS_ENXIO;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
   if (portc->open_mode)
     {
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return -EBUSY;
+      return OSS_EBUSY;
     }
 
   portc->open_mode = mode;
@@ -464,7 +464,7 @@ audioloop_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
       break;
     }
 
-  return -EINVAL;
+  return OSS_EINVAL;
 }
 
 /*ARGSUSED*/
@@ -549,7 +549,7 @@ audioloop_server_prepare_for_input (int dev, int bsize, int bcount)
       if (status & WK_SIGNAL)
 	{
 	  MUTEX_EXIT_IRQRESTORE (portc->mutex, flags);
-	  return -EINTR;
+	  return OSS_EINTR;
 	}
     }
   MUTEX_EXIT_IRQRESTORE (portc->mutex, flags);
@@ -581,7 +581,7 @@ audioloop_server_prepare_for_output (int dev, int bsize, int bcount)
       if (status & WK_SIGNAL)
 	{
 	  MUTEX_EXIT_IRQRESTORE (portc->mutex, flags);
-	  return -EINTR;
+	  return OSS_EINTR;
 	}
     }
   MUTEX_EXIT_IRQRESTORE (portc->mutex, flags);
@@ -647,7 +647,7 @@ audioloop_alloc_buffer (int dev, dmap_t * dmap, int direction)
   dmap->dmabuf_phys = 0;	/* Not mmap() capable */
   dmap->dmabuf = KERNEL_MALLOC (MY_BUFFSIZE);
   if (dmap->dmabuf == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
   dmap->buffsize = MY_BUFFSIZE;
 
   return 0;
@@ -741,7 +741,7 @@ install_server (audioloop_devc_t * devc, int num)
     ADEV_FIXEDRATE | ADEV_SPECIAL;
 
   if ((portc = PMALLOC (devc->osdev, sizeof (*portc))) == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
   memset (portc, 0, sizeof (*portc));
 
   portc->devc = devc;
@@ -749,7 +749,7 @@ install_server (audioloop_devc_t * devc, int num)
   if ((portc->wq = oss_create_wait_queue (devc->osdev, "audioloop")) == NULL)
     {
       cmn_err (CE_WARN, "Cannot create audioloop wait queue\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   portc->instance = num;
@@ -802,14 +802,14 @@ install_client (audioloop_devc_t * devc, int num)
     ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP;
 
   if ((portc = PMALLOC (devc->osdev, sizeof (*portc))) == NULL)
-    return -ENOMEM;
+    return OSS_ENOMEM;
   memset (portc, 0, sizeof (*portc));
 
   portc->devc = devc;
   if ((portc->wq = oss_create_wait_queue (devc->osdev, "audioloop")) == NULL)
     {
       cmn_err (CE_WARN, "Cannot create audioloop wait queue\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
   portc->instance = num;

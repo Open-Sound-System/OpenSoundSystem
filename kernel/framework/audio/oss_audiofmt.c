@@ -263,7 +263,7 @@ do_src (adev_p adev, dmap_p dmap, int srcrate, int tgtrate, void *p1,
 	{
 	  cmn_err (CE_WARN, "SRC failed (%d), bits=%d, ssize=%d\n", err, bits,
 		   ssize);
-	  return -EIO;
+	  return OSS_EIO;
 	}
 
       *len = ((grc3state_t *) dmap->srcstate[ch])->outsz * ssize * channels;
@@ -312,7 +312,7 @@ setup_src (adev_p adev, dmap_p dmap, int srate, int trate, int sch, int tch)
   if (nch > 2)
     {
       cmn_err (CE_WARN, "Too many channels for SRC (%d)\n", nch);
-      return -EIO;
+      return OSS_EIO;
     }
   {
     int val;
@@ -320,7 +320,7 @@ setup_src (adev_p adev, dmap_p dmap, int srate, int trate, int sch, int tch)
     if (src_open (&dmap->src, srate, trate, nch, 0) != 0)
       {
 	cmn_err (CE_CONT, "OSS audio: SRC open failed\n");
-	return -EIO;
+	return OSS_EIO;
       }
   }
 #endif
@@ -328,7 +328,7 @@ setup_src (adev_p adev, dmap_p dmap, int srate, int trate, int sch, int tch)
   if (nch > OSS_MAX_CONVERT_CHANNELS)
     {
       cmn_err (CE_WARN, "Too many channels for SRC (%d)\n", nch);
-      return -EIO;
+      return OSS_EIO;
     }
 #ifdef DO_TIMINGS
   oss_timing_printf ("grc3_setup %d -> %d Hz, %d channels", srate, trate, nch);
@@ -594,7 +594,7 @@ cnv_default (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl, unsigned
       default:
 	cmn_err (CE_WARN, "Unsupported conversion source format %08x\n",
 		 source->fmt);
-	return -EIO;
+	return OSS_EIO;
       }
 
   if (source->rate != target->rate && source->channels <= target->channels)
@@ -914,7 +914,7 @@ cnv_default (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl, unsigned
       default:
 	cmn_err (CE_WARN, "Unsupported conversion target format %08x\n",
 		 target->fmt);
-	return -EIO;
+	return OSS_EIO;
       }
 
   VMEM_CHECK (p1, len);
@@ -941,7 +941,7 @@ cnv_srconly (adev_p adev, dmap_p dmap, unsigned char **srcp, int *srcl, unsigned
   if ((fmt = oss_find_format (source->fmt)) == NULL)
     {
       cmn_err (CE_WARN, "Unknown audio format %x\n", source->fmt);
-      return -EIO;
+      return OSS_EIO;
     }
 
   switch (fmt->bits)
@@ -1115,13 +1115,13 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
   if ((src_f = oss_find_format (source->fmt)) == NULL)
     {
       cmn_err (CE_CONT, "internal format error 1 (%x)\n", source->fmt);
-      return -EIO;
+      return OSS_EIO;
     }
 
   if ((tgt_f = oss_find_format (target->fmt)) == NULL)
     {
       cmn_err (CE_CONT, "internal format error 2\n");
-      return -EIO;
+      return OSS_EIO;
     }
 
 #ifdef DO_TIMINGS
@@ -1150,7 +1150,7 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
 	 "Audio format conversions not supported with more than %d channels\n",
 	 OSS_MAX_CONVERT_CHANNELS);
       dmap->flags &= ~DMAP_COOKED;
-      return -EIO;
+      return OSS_EIO;
     }
 
   expand = (expand * target->rate) / source->rate;
@@ -1253,7 +1253,7 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
     }
 
   if (dmap->tmpbuf1 == NULL || dmap->tmpbuf2 == NULL)
-    return -ENOSPC;
+    return OSS_ENOSPC;
 
   if (cnv & CNV_SRC)
     if (setup_src
@@ -1261,7 +1261,7 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
 	 target->channels) < 0)
       {
 	cmn_err (CE_CONT, "internal format error 3\n");
-	return -EIO;
+	return OSS_EIO;
       }
 
   return 0;

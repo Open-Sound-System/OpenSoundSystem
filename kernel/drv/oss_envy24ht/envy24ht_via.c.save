@@ -129,7 +129,7 @@ viaref_set_akm (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	default:
-	  return -EINVAL;
+	  return OSS_EINVAL;
 	}
     }
 
@@ -232,10 +232,10 @@ viaref_set_akm (int dev, int ctrl, unsigned int cmd, int value)
 	  break;
 
 	}
-      return -EIO;
+      return OSS_EIO;
     }
 
-  return -EIO;
+  return OSS_EIO;
 }
 
 static int
