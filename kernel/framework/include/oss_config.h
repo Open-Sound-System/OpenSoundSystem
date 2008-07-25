@@ -181,8 +181,11 @@ typedef struct
 #endif
 } oss_cdev_drv_t;
 
-typedef struct
+typedef struct _oss_cdev_t oss_cdev_t;
+
+struct _oss_cdev_t
 {
+  oss_cdev_t *hl;	/* Hash link (for operating system ports that use it) */
   int dev_class;
   int instance;
   oss_cdev_drv_t *d;
@@ -192,7 +195,7 @@ typedef struct
   int active;
   int open_count;
   struct fileinfo file;
-} oss_cdev_t;
+};
 
 extern oss_cdev_t **oss_cdevs;
 extern int oss_num_cdevs;
