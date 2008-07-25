@@ -106,7 +106,7 @@ static int mixer_num;
 enum uflag {
   WHAT_LABEL,
   WHAT_UPDATE,
-  WHAT_DYNAMIC
+  WHAT_VMIX
 };
 
 typedef enum uflag uflag_t;
@@ -995,11 +995,15 @@ load_devinfo (int dev)
 	  gtk_widget_set_name (wid, extnames[i]);
 	  gtk_widget_show_all (frame);
 	  widgets[i] = wid;
-	  if (thisrec->flags & MIXF_DYNAMIC)
-	    {
-		create_update (NULL, NULL, NULL, wid, thisrec, WHAT_DYNAMIC,
-			       thisrec->update_counter);
-	    }
+	  {
+	    int tmp = -1;
+
+            if ((sscanf (extnames[i], "vmix%d-out", &tmp) == 1) &&
+		(tmp >= 0))
+	      {
+		create_update (NULL, NULL, NULL, wid, thisrec, WHAT_VMIX, n);
+	      }
+	  }
 	  break;
 
 	case MIXT_HEXVALUE:
@@ -1732,29 +1736,31 @@ poll_all (gpointer data)
      	      gtk_frame_set_label (GTK_FRAME (srec->frame), new_label);
 	    }
 	  break;
-	case WHAT_DYNAMIC:
+	case WHAT_VMIX:
+	  { int i = dev;
 /*
- * The group can have mixer controls created/removed from under it
- * (e.g. vmix engines). ossxmix needs to poll for this.
- * Handling for this is below:
+ * The aforementioned mixer controls can be create dynamically, so ossxmix
+ * needs to poll for this. Handling for this is here
  */
-	  if (ioctl (mixer_fd, SNDCTL_MIX_EXTINFO, srec->mixext) == -1)
+	  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &i) == -1)
 	    {
-	      perror ("SNDCTL_MIX_EXTINFO");
+	      perror ("SNDCTL_MIX_NREXT");
+	      if (errno == EINVAL)
+		fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
 	      exit (-1);
 	    }
-	  if (srec->parm != srec->mixext->update_counter)
-	    {
+	    if (i != srec->parm)
+	      {
+		srec->parm = i;
 /*
- * Since we know the added controls are under dev, we should be able to do
+ * Since we know the added controls are vmix controls, we should be able to do
  * something more graceful here, like reloading only the current device, or
  * even adding the controls directly. This will do for now.
-	      srec->parm = srec->mixext->update_counter;
  */
-    	      reload_gui ();
-	      return TRUE;
-	    }
-	  break;
+		reload_gui ();
+		return TRUE;
+	      }
+	  } break;
 	case WHAT_UPDATE:
 	  if (status_changed)
 	    do_update (srec);
