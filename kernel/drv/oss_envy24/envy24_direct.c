@@ -274,7 +274,7 @@ envy24d_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
       return pos;
     }
 
-  return -1;			/* TODO: Input handling */
+  return OSS_EIO;
 }
 
 /*ARGSUSED*/ 

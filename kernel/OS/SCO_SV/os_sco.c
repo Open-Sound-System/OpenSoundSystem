@@ -499,7 +499,7 @@ oss_find_minor (int dev_class, int instance)
 	&& oss_cdevs[i]->instance == instance)
       return i;
 
-  return -1;
+  return OSS_EIO;
 }
 
 int

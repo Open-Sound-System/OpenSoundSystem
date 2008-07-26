@@ -145,10 +145,10 @@ ext_read (solo_devc * devc, unsigned char reg)
 {
 
   if (!solo_command (devc, 0xc0))	/* Read register command */
-    return -1;
+    return OSS_EIO;
 
   if (!solo_command (devc, reg))
-    return -1;
+    return OSS_EIO;
 
   return solo_get_byte (devc);
 }

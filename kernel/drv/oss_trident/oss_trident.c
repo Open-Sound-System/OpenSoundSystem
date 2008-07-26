@@ -219,7 +219,7 @@ ac97_read (void *devc_, int addr)
 	  cmn_err (CE_WARN, "Unknown codec interface\n");
 	already_done = 1;
 	MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-	return -1;
+	return OSS_EIO;
       }
     }
 
@@ -248,7 +248,7 @@ ac97_read (void *devc_, int addr)
     {
       DDB (cmn_err (CE_WARN, "AC97 mixer read timed out\n"));
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return ret;
@@ -296,7 +296,7 @@ ac97_write (void *devc_, int addr, int data)
 	  cmn_err (CE_WARN, "Unknown codec interface\n");
 	already_done = 1;
 	MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-	return -1;
+	return OSS_EIO;
       }
     }
 

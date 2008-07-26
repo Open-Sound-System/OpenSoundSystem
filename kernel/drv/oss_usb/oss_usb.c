@@ -456,7 +456,7 @@ new_ctl (ossusb_devc * devc, usb_audio_unit_t * un, int index, int exttype,
   if (devc->ncontrols >= MAX_CONTROLS)
     {
       cmn_err (CE_CONT, "Too many mixer features.\n");
-      return -1;
+      return OSS_EIO;
     }
 
   n = devc->ncontrols++;

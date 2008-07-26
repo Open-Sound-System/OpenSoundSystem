@@ -120,7 +120,7 @@ ac97_read (void *devc_, int wAddr)
   if (i == 1000)
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;		/* Timeout */
+      return OSS_EIO;		/* Timeout */
     }
   dtemp = INW (devc->osdev, devc->base + 0x1c);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);

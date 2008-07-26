@@ -138,7 +138,7 @@ ac97_read (void *devc_, int addr)
       }
   DDB (cmn_err (CE_WARN, "AC97 mixer read timed out\n"));
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  return -1;
+  return OSS_EIO;
 }
 
 static int

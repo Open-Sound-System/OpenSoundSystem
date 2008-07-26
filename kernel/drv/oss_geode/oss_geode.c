@@ -258,7 +258,7 @@ ac97_read (void *devc_, int wAddr)
     }
 
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  return -1;
+  return OSS_EIO;
 }
 
 static int

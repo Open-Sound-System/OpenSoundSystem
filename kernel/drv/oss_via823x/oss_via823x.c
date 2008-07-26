@@ -38,7 +38,7 @@ ac97_read (void *devc_, int wIndex)
   if (i == CODEC_TIMEOUT_COUNT)
     {
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
 
   /* Check if Index still ours? If yes, return data, else return FAIL */
@@ -50,7 +50,7 @@ ac97_read (void *devc_, int wIndex)
       return ((int) dwTmpValue & CODEC_DATA);
     }
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  return -1;
+  return OSS_EIO;
 
 }
 

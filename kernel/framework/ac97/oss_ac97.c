@@ -566,7 +566,7 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
   devc->write = writefn;
   strcpy (devc->name, "AC97");
   if (codec_write (devc, 0x00, 0x00) < 0)	/* reset */
-    return -1;
+    return OSS_EIO;
   codec_write (devc, 0x26, 0x00);	/* Power up */
   oss_udelay (1000);
 
@@ -580,7 +580,7 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
   if (tmp >= 0xffff)
     {
       cmn_err (CE_WARN, "AC97 Codec/mixer chip doesn't seem to be alive.\n");
-      return -1;
+      return OSS_EIO;
     }
 
   tmp2 = codec_read (devc, 0x7e);
@@ -1095,7 +1095,7 @@ ac97_init_ext (int dev, ac97_devc * devc, mixer_create_controls_t func,
 	       int nextra)
 {
   if (dev < 0)
-    return -1;
+    return OSS_EIO;
   if ((devc->mixer_ext) || (devc->spdifout_support)
       || (devc->spdifin_support) || ac97_recselect)
     nextra += 50;

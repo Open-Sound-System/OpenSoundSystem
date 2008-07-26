@@ -122,7 +122,7 @@ oss_find_minor (int dev_class, int instance)
 	return i;
     }
 
-  return -1;
+  return OSS_EIO;
 }
 
 oss_device_t *

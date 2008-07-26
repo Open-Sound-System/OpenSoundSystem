@@ -141,7 +141,7 @@ ac97_write (void *devc_, int index, int data)
     {
       DDB (cmn_err (CE_WARN, "AC97 busy\n"));
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
   /* write data and address */
   OUTW (devc->osdev, data, devc->base + AC97_DATA);
@@ -159,7 +159,7 @@ ac97_write (void *devc_, int index, int data)
     {
       DDB (cmn_err (CE_WARN, "AC97 busy (1)\n"));
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return 0;
@@ -240,7 +240,7 @@ ac97_write2 (void *devc_, int index, int data)
     {
       DDB (cmn_err (CE_WARN, "Secondary AC97 busy\n"));
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
   /* write data and address */
   OUTW (devc->osdev, data, devc->base + AC97_DATA);
@@ -258,7 +258,7 @@ ac97_write2 (void *devc_, int index, int data)
     {
       DDB (cmn_err (CE_WARN, "Secondary AC97 busy (1)\n"));
       MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-      return -1;
+      return OSS_EIO;
     }
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return 0;

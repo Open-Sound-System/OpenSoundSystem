@@ -85,7 +85,7 @@ oss_spdif_install (spdif_devc * devc, oss_device_t * osdev,
      if (ndevs >= MAX_DEV)
      {
 	     cmn_err(CE_WARN, "Too many S/PDIF devices\n");
-	     return -1;
+	     return OSS_BUSY;
      }
 
      pos=ndevs++;
