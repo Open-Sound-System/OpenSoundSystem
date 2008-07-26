@@ -714,6 +714,22 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
 
 }
 
+/* No BKL if this is used */
+static long
+oss_cdev_unlocked_ioctl (oss_file_handle_t * file, unsigned int cmd,
+		         unsigned long arg)
+{
+  return oss_cdev_ioctl (NULL, file, cmd, arg);
+}
+
+/* Used for 32 bit clients on a 64 bit kernel */
+static long
+oss_cdev_compat_ioctl (oss_file_handle_t * file, unsigned int cmd,
+	               unsigned long arg)
+{
+  return oss_cdev_ioctl (NULL, file, cmd, arg);
+}
+
 static unsigned int
 oss_cdev_poll (oss_file_handle_t * file, oss_poll_table_handle_t * wait)
 {
@@ -834,7 +850,9 @@ oss_file_operation_handle_t oss_fops = {
   oss_cdev_ioctl,
   oss_cdev_mmap,
   oss_cdev_open,
-  oss_cdev_release
+  oss_cdev_release,
+  oss_cdev_compat_ioctl,
+  oss_cdev_unlocked_ioctl
 };
 
 static int

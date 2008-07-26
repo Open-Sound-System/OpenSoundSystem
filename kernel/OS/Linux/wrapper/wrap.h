@@ -135,6 +135,8 @@ typedef struct oss_file_operation_handle
   int (*mmap) (oss_file_handle_t *, oss_vm_area_handle_t *);
   int (*open) (oss_inode_handle_t *, oss_file_handle_t *);
   int (*release) (oss_inode_handle_t *, oss_file_handle_t *);
+  long (*compat_ioctl) (oss_file_handle_t *, unsigned int, unsigned long);
+  long (*unlocked_ioctl) (oss_file_handle_t *, unsigned int, unsigned long);
   int (*fsync) (oss_inode_handle_t *, oss_file_handle_t *);
   int (*fasync) (oss_inode_handle_t *, oss_file_handle_t *, int);
 }

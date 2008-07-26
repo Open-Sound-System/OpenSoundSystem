@@ -882,6 +882,7 @@ typedef poll_table select_table;
 typedef int (*readdir_t) (struct inode *, struct file *, void *, filldir_t);
 typedef int (*ioctl_t) (struct inode *, struct file *, unsigned int,
 			unsigned long);
+typedef int (*new_ioctl_t) (struct file *, unsigned int, unsigned long);
 typedef int (*mmap_t) (struct file *, struct vm_area_struct *);
 typedef int (*open_t) (struct inode *, struct file *);
 
@@ -942,6 +943,8 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   mmap_t tmp_mmap = (mmap_t) op->mmap;
   open_t tmp_open = (open_t) op->open;
   release_t tmp_release = (release_t) op->release;
+  new_ioctl_t tmp_unlocked_ioctl = (new_ioctl_t) op->unlocked_ioctl;
+  new_ioctl_t tmp_compat_ioctl = (new_ioctl_t) op->compat_ioctl;
 
   fop = (struct file_operations *)
     oss_kmem_alloc (sizeof (struct file_operations));
@@ -966,6 +969,12 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   fop->flush = NULL;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
   fop->owner = osdev_get_owner (osdev);
+#endif
+#ifdef HAVE_UNLOCKED_IOCTL
+  fop->unlocked_ioctl = tmp_unlocked_ioctl;
+#endif
+#ifdef HAVE_COMPAT_IOCTL
+  fop->compat_ioctl = tmp_compat_ioctl;
 #endif
 
   return fop;
