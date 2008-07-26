@@ -1083,15 +1083,23 @@ touch_parents (int dev, int group)
   mixext_desc = &mixer_devs[dev]->extensions[group];
   thisrec = &mixext_desc->ext;
 
-  if (thisrec->type != MIXT_GROUP && thisrec->type != MIXT_DEVROOT)	/* Not a group */
-    return;
+  while (thisrec->type != MIXT_DEVROOT)
+    {
+      if (thisrec->type != MIXT_GROUP)	/* Not a group */
+        return;
+
+      thisrec->update_counter++;
+
+      if (thisrec->parent >= group)	/* Broken link */
+        return;
+
+      unflatten_group (dev, thisrec->parent);	/* Unflatten the parent */
+
+      mixext_desc = &mixer_devs[dev]->extensions[thisrec->parent];
+      thisrec = &mixext_desc->ext;
+    }
 
   thisrec->update_counter++;
-
-  if (thisrec->parent >= group)	/* Broken link */
-    return;
-
-  unflatten_group (dev, thisrec->parent);	/* Unflatten the parent */
 }
 
 #define INPUT_MASK (SOUND_MASK_RECLEV|SOUND_MASK_IGAIN)
