@@ -11,12 +11,12 @@ char *confpath = "";
 static int
 copy_parms (FILE * f, FILE * conf)
 {
-  char line[1024], *s, *p;
+  char line[1024], *s;
   char var[256] = "", comment[64 * 1024] = "";
   int i;
   int ok = 0;
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       for (i = 0; i < strlen (line); i++)
 	if (line[i] == '\n')
@@ -32,7 +32,7 @@ copy_parms (FILE * f, FILE * conf)
 	    {
 	      fprintf (conf, "%s\n", comment);
 	      if (*var != 0)
-		fprintf (conf, "#%s\n", var);
+		fprintf (conf, "#%s\n#\n", var);
 	      *var = 0;
 	      *comment = 0;
 	    }
@@ -68,16 +68,15 @@ copy_parms (FILE * f, FILE * conf)
 }
 
 static void
-scan_dir (char *srcdir, char *modnam)
+scan_dir (const char *srcdir, const char *modnam)
 {
-  char confname[256], tmp[256], line[1024], syscmd[255];
+  char confname[256], tmp[256], line[1024];
   char module[256], *p;
   FILE *conf;
   FILE *f;
   int i;
   struct stat st;
 
-  int is_pci = 1;
   int check_platform = 0;
   int platform_ok = 0;
   int ok = 0;
@@ -129,7 +128,7 @@ scan_dir (char *srcdir, char *modnam)
       fclose (f);
     }
 
-  if (check_platform && !platform_ok)
+  if (check_platform && !platform_ok && strcmp (modnam, "osscore"))
     {
       return;
     }
@@ -149,28 +148,24 @@ scan_dir (char *srcdir, char *modnam)
 #endif
 
   sprintf (confname, "%s/%s.conf", targetdir, module);
-
-  if ((conf = fopen (confname, "w")) == NULL)
-    {
-      perror (confname);
-      exit (-1);
-    }
-
-  fprintf (conf, "# Open Sound System configuration file\n");
-  fprintf (conf,
-	   "# Remove the '#' in front of the option(s) you like to set.\n#\n");
-
   sprintf (tmp, "%s/.params", srcdir);
   if ((f = fopen (tmp, "r")) != NULL)
     {
+      if ((conf = fopen (confname, "w")) == NULL)
+        {
+          perror (confname);
+          exit (-1);
+        }
+      fprintf (conf, "# Open Sound System configuration file\n");
+      fprintf (conf,
+	   "# Remove the '#' in front of the option(s) you like to set.\n#\n");
       ok = copy_parms (f, conf);
       fclose (f);
-    }
-
 //      fprintf(conf, "#\n");
-  fclose (conf);
-  if (!ok)
-    unlink (confname);
+      fclose (conf);
+      if (!ok)
+        unlink (confname);
+    }
 }
 
 int

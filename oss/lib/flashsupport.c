@@ -49,7 +49,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // enable OSS here as it will override it.
 //
 
-#define OPENSSL
+//#define OPENSSL
 //#define GNUTLS
 //#define ALSA
 #define OSS

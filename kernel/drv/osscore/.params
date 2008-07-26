@@ -4,7 +4,6 @@ int detect_trace=0;
  * this feature should only be enabled when requested by the technical support
  * personnell.
  */
-
 int max_intrate=100;
 /*
  * Max intrate sets up the maximum number of interrupts/second. This
@@ -23,7 +22,6 @@ int max_intrate=100;
  * Some devices use fixed fragment size and this parameter will not have any
  * effect with them. For example the Digi32 and Digi96 devices work in this way.
  */
-
 int src_quality=3;
 /*
  * The src_quality setting defines the precision of the software based sample
@@ -89,4 +87,18 @@ int flat_device_model=0;
  * where all devices are directly visible to the applications. This may be
  * necessary with some custom applications that depend on the old
  * behaviour.
+ */
+int vmix_disabled=0;
+/*
+ * The virtual mixer subsystem can be disabled by setting this configuration
+ * option to 1.  By default the value is 0 which enables virtual mixer.
+ */
+int vmix_loopdevs=0;
+/*
+ * Optionally the virtual mixer subsystem can create special loopback audio
+ * devices that can be used to record the output mix sent to the device.
+ * This option tells how many loopback devices will be created (0, 1 or 2).
+ * If there are multiple audio devices in the system the all of them will have
+ * the same number of loopback devices. This setting should be left to 0 unless
+ * there are specific reasons to enable the loopback devices.
  */

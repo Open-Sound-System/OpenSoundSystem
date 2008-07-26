@@ -331,7 +331,7 @@ rm -f `ls -l -d /dev/*|grep ^c|grep '    14, '|sed 's/.* //'`
 
 # Recompile libflashsupport.so if possible. Otherwise use the precompiled
 # version.
-(cd $OSSLIBDIR/lib;gcc -m32 -shared -fPIC -O2 -Wall -Werror -lssl flashsupport.c -o /usr/lib/libflashsupport.so) > /dev/null 2>&1
+(cd $OSSLIBDIR/lib;gcc -m32 -shared -fPIC -O2 -Wall -Werror flashsupport.c -o $OSSLIBDIR/lib/libflashsupport.so) > /dev/null 2>&1
 
 if test ! -f $OSSLIBDIR/etc/userdefs
 then
