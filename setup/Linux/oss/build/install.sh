@@ -26,7 +26,7 @@ else
    ln -s $OSSLIBDIR/modules.noregparm $OSSLIBDIR/modules
 fi
 
-if test -f /lib/modules/`uname -r`/kernel/oss/vmix.ko || test -f /lib/modules/`uname -r`/kernel/oss/oss_vmix.ko
+if test -f /lib/modules/`uname -r`/kernel/oss/vmix.ko || test -f /lib/modules/`uname -r`/kernel/oss/ich.ko
 then
 # Older versions of OSS modules exist under /lib/modules. This indicates that
 # previous version of OSS has not been properly uninstalled. Use brute force
@@ -34,6 +34,16 @@ then
 
 	rm -f /lib/modules/`uname -r`/kernel/oss/*.ko
 	/usr/sbin/ossdetect
+fi
+
+if test -f /usr/lib/oss/build/ich.c
+then
+	echo
+	echo
+	echo Error: Older OSS version seems to be installed in your system.
+	echo Please remove previous /usr/lib/oss directory and the install OSS v4.1 again.
+	soundoff
+	exit -1
 fi
 
 if ! test -f $OSSLIBDIR/objects/osscore.o
