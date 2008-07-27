@@ -23,7 +23,6 @@ static void reorder_dspdevs (void);
 #endif
 
 #define ETCDIRLEN 512
-#define ETCNAMELEN ETCDIRLEN+11	/* Adding '/mixer.save' */
 #define SLINELEN 256
 
 static char ossetcdir[ETCDIRLEN] = "/usr/lib/oss/etc";
@@ -260,8 +259,8 @@ static char *
 get_mapname (void)
 {
   FILE *f;
-  char tmp[ETCNAMELEN];
-  static char name[ETCNAMELEN];
+  char tmp[ETCDIRLEN+11]; /* Adding 'OSSLIBDIR=' */
+  static char name[ETCDIRLEN+15]; /* Adding '/etc/mixer.save' */
   struct stat st;
 
   if (stat ("/etc/oss", &st) != -1)	/* Use /etc/oss/mixer.save */
@@ -286,13 +285,13 @@ get_mapname (void)
       if (strncmp (tmp, "OSSLIBDIR=", 10) == 0)
 	{
 	  l = snprintf (name, sizeof (name), "%s/etc/mixer.save", &tmp[10]);
-	  if ((l > ETCNAMELEN) || (l < 0))
+	  if ((l >= sizeof (name)) || (l < 0))
 	    {
 	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
 	      goto oexit;
 	    }
 	  snprintf (ossetcdir, sizeof (ossetcdir), "%s/etc", &tmp[10]);
-	  if ((l > ETCDIRLEN) || (l < 0))
+	  if ((l >= sizeof (ossetcdir)) || (l < 0))
 	    {
 	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
 	      goto oexit;

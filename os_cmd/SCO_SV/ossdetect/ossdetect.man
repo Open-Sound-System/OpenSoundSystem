@@ -1,5 +1,8 @@
 NAME
-ossdetect - Open Sound System audio device detection applet.
+ossdetect - Open Sound System audio device detection program.
+
+SYNOPSIS
+ossdetect [-diuv] [-L<path>]
 
 DESCRIPTION
 The ossdetect application performs automatic detection of soundcards.
@@ -9,11 +12,17 @@ drivers in /usr/lib/oss/etc/installed_drivers.
 
 The Input Multiplexer driver (IMUX) is not configured by default and
 can be added to the OSS configuration using the -i option.
+
 OPTIONS
--v		Verbose output
--f		Forces the creation of driver.conf files.
--i	 	Adds the IMUX driver.
--d		Scans /devices and creates device file links
+-d		Create device file links.
+-i	 	Adds the oss_imux driver.
+-u		Adds the oss_userdev driver.
+-v		Verbose output.
+-L<path>        Use <path> as root directory for OSS files.
+                Default: Path from /etc/oss.conf, followed by /usr/lib/oss.
+
+SEE ALSO
+ossdevlinks(1), ossinfo(1)
 
 FILES
 /usr/sbin/ossdetect

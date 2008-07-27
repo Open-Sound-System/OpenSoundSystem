@@ -20,7 +20,8 @@
 #define PSEUDO_PASS	2
 #define MAX_PASS	3
 
-static char *osslibdir = "/usr/lib/oss";
+#define OSSLIBDIRLEN 512
+static char *osslibdir = NULL;
 
 static int verbose = 0;
 
@@ -36,11 +37,65 @@ typedef struct
 static driver_def_t drivers[MAX_DRIVERS];
 static int ndrivers = 0;
 
+static int add_drv (char *, int);
+static void create_devlinks (void);
+static char * get_mapname (void);
+static void load_license (const char *);
+static void load_devlist (const char *, int);
+static void pci_detect (void);
+
+static char *
+get_mapname (void)
+{
+  FILE *f;
+  static char name[OSSLIBDIRLEN], tmp[OSSLIBDIRLEN+11];
+  struct stat st;
+
+  if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
+    {
+      perror ("/etc/oss.conf");
+      goto oexit;
+    }
+
+  while (fgets (tmp, sizeof (tmp), f) != NULL)
+    {
+      int l = strlen (tmp);
+      if (l > 0 && tmp[l - 1] == '\n')
+	tmp[l - 1] = '\0';
+
+      if (strncmp (tmp, "OSSLIBDIR=", 10) == 0)
+	{
+	  l = snprintf (name, sizeof (name), "%s", &tmp[10]);
+	  if ((l >= OSSLIBDIRLEN) || (l < 0))
+	    {
+	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
+	      goto oexit;
+	    }
+	  if ((stat (name, &st) == -1) || !S_ISDIR(st.st_mode))
+	    {
+	      fprintf (stderr, "Directory %s from /etc/oss.conf cannot "
+			       "be used!\n", name);
+	      goto oexit;
+	    }
+	  fclose (f);
+	  return name;
+	}
+    }
+
+  fprintf (stderr, "OSSLIBDIR not set in /etc/oss.conf, using default "
+		   "/usr/lib/oss\n");
+oexit:
+  fclose (f);
+  snprintf (name, sizeof (name), "/usr/lib/oss");
+  return name;
+}
+
 static void
-load_license (char *fname)
+load_license (const char *fname)
 {
   struct stat st;
-  char cmd[256];
+  char cmd[2*OSSLIBDIRLEN];
+  int n;
 
   if (stat (fname, &st) == -1)
     return;			/* Doesn't exist */
@@ -48,7 +103,9 @@ load_license (char *fname)
   if (stat ("/usr/sbin/osslic", &st) == -1)
     return;			/* No osslic utility in the system. No need to install license. */
 
-  sprintf (cmd, "/usr/sbin/osslic -q %s", fname);
+  n = snprintf (cmd, sizeof (cmd), "/usr/sbin/osslic -q %s/%s", osslibdir,
+		fname);
+  if (n >= sizeof (cmd) || n < 0) return;
   system (cmd);
 }
 
@@ -56,16 +113,18 @@ static void
 load_devlist (const char *fname, int is_3rdparty)
 {
   FILE *f;
-  char line[256], *p;
+  char line[256], *p, rfname[2*OSSLIBDIRLEN];
   char *driver, *key, *name;
 
-  if ((f = fopen (fname, "r")) == NULL)
+  snprintf (rfname, sizeof (rfname), "%s/%s", osslibdir, fname);
+
+  if ((f = fopen (rfname, "r")) == NULL)
     {
-      perror (fname);
+      perror (rfname);
       exit (-1);
     }
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       p = line;
       while (*p)
@@ -140,6 +199,7 @@ create_devlinks (void)
 {
   FILE *f;
   char line[256], tmp[300], *s;
+  int perm;
 
   if ((f = fopen ("/proc/opensound/devfiles", "r")) == NULL)
     {
@@ -149,7 +209,7 @@ create_devlinks (void)
       exit (-1);
     }
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       char dev[20] = "/dev/";
       int minor, major;
@@ -158,17 +218,18 @@ create_devlinks (void)
 
       if (sscanf (line, "%s %d %d", dev + 5, &major, &minor) != 3)
 	{
-	  fprintf (stderr, "Syntax error in /proc(opensound/devfiles\n");
+	  fprintf (stderr, "Syntax error in /proc/opensound/devfiles\n");
 	  fprintf (stderr, "%s\n", line);
 	  exit (-1);
 	}
 
-      sprintf (tmp, "mknod %s c %d %d", dev, major, minor);
       unlink (dev);
       if (verbose)
-	printf ("%s\n", tmp);
-      system (tmp);
-      chmod (dev, 0666);
+	printf ("%s c %d %d\n", dev, major, minor);
+      perm = umask (0);
+      if (mknod (dev, S_IFCHR | 0666, (major << 8) | minor) == -1)
+	perror (dev);
+      unmask (perm);
     }
 
   fclose (f);
@@ -256,47 +317,76 @@ pci_detect (void)
 int
 main (int argc, char *argv[])
 {
+  char instfname[2*OSSLIBDIRLEN];
+  int i, pass, do_license = 0, make_devs = 0;
   struct stat st;
-  int i, pass;
   FILE *f;
 
-  for (i = 1; i < argc; i++)
-    if (argv[i][0] == '-')
-      switch (argv[i][1])
-	{
+  while ((i = getopt(argc, argv, "L:a:diluv")) != EOF)
+    switch (i)
+      {
 	case 'v':
 	  verbose++;
 	  break;
 
 	case 'd':
-	  create_devlinks ();
-	  exit (0);
+	  make_devs = 1;
 	  break;
 
 	case 'i':
-	  add_drv ("IMUX", PSEUDO_PASS);
+	  add_drv ("oss_imux", PSEUDO_PASS);
+	  break;
+
+	case 'u':
+#if 0
+	  add_drv ("oss_userdev", PSEUDO_PASS);
+#endif
+	  break;
+
+	case 'a':
+	  add_drv (optarg, PSEUDO_PASS);
 	  break;
 
 	case 'l':
-	  load_license ("/usr/lib/oss/etc/license.asc");
-	  exit (0);
+	  do_license = 1;
+	  break;
+
+	case 'L':
+	  osslibdir = optarg;
 	  break;
 
 	default:
 	  fprintf (stderr, "%s: bad usage\n", argv[0]);
 	  exit (-1);
-	}
+      }
 
-  load_devlist ("/usr/lib/oss/etc/devices.list", 0);
+  if (osslibdir == NULL) osslibdir = get_mapname ();
+
+  if (make_devs == 1)
+    {
+      create_devlinks ();
+      exit (0);
+    }
+
+  if (do_license == 1)
+    {
+      load_license ("etc/license.asc");
+      exit (0);
+    }
+
+  load_devlist ("etc/devices.list", 0);
 
   if (stat ("/etc/oss_3rdparty", &st) != -1)
     load_devlist ("/etc/oss_3rdparty", 1);
 
   pci_detect ();
 
-  if ((f = fopen ("/usr/lib/oss/etc/installed_drivers", "w")) == NULL)
+  snprintf (instfname, sizeof (instfname), "%s/%s", osslibdir,
+ 	    "etc/installed_drivers");
+
+  if ((f = fopen (instfname, "w")) == NULL)
     {
-      perror ("/usr/lib/oss/etc/installed_drivers");
+      perror (instfname);
       exit (-1);
     }
 
@@ -308,8 +398,6 @@ main (int argc, char *argv[])
 	}
 
   fclose (f);
-
-  load_license ("/usr/lib/oss/etc/license.asc");
 
   exit (0);
 }
