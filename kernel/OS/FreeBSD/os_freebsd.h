@@ -129,17 +129,17 @@ struct mtx;
 #define MUTEX_INIT(osdev, mutex, hier) \
 do { \
 	mutex = malloc(sizeof(*mutex), M_DEVBUF, M_WAITOK | M_ZERO); \
-	mtx_init(mutex, "oss", NULL, MTX_RECURSE); \
+	mtx_init(mutex, "oss", NULL, MTX_RECURSE | MTX_SPIN); \
 } while (0)
 #define MUTEX_CLEANUP(mutex) \
 do { \
 	mtx_destroy(mutex); \
 	free(mutex, M_DEVBUF); \
 } while (0)
-#define MUTEX_ENTER_IRQDISABLE(mutex, flags)	mtx_lock(mutex)
-#define MUTEX_ENTER(mutex, flags)		mtx_lock(mutex)
-#define MUTEX_EXIT_IRQRESTORE(mutex, flags)	mtx_unlock(mutex)
-#define MUTEX_EXIT(mutex, flags)		mtx_unlock(mutex)
+#define MUTEX_ENTER_IRQDISABLE(mutex, flags)	mtx_lock_spin_flags(mutex, flags)
+#define MUTEX_ENTER(mutex, flags)		mtx_lock_spin(mutex)
+#define MUTEX_EXIT_IRQRESTORE(mutex, flags)	mtx_unlock_spin_flags(mutex, flags)
+#define MUTEX_EXIT(mutex, flags)		mtx_unlock_spin(mutex)
 #endif	/* USE_SX_LOCK */
 
 

@@ -99,6 +99,11 @@ typedef struct
 #define VMIXCTL_DETACH		__SIOW ('X', 221, vmixctl_attach_t)
 #define VMIXCTL_RATE		__SIOW ('X', 222, vmixctl_rate_t)
 
+/*
+ * FreeBSD compatibility ioctl
+ */
+#define FREEBSD_GETBLKSIZE	__SIOR ('P', 4, int)
+
 #ifdef DO_TIMINGS
 #define DFLAG_ALL		0x00000001
 #define DFLAG_PROFILE		0x00000002

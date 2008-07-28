@@ -8,7 +8,11 @@
 #define COPYING13 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
 
 #include <sys/types.h>
-#if __FreeBSD_version >= 700031
+#if __FreeBSD_version >= 700031 && defined(0)
+/* Some crashes have been reported with SX on 7-STABLE/8-CURRENT:
+ * http://4front-tech.com/forum/viewtopic.php?t=2718
+ * http://4front-tech.com/forum/viewtopic.php?t=2563
+ */
 #define USE_SX_LOCK	1
 #endif
 #undef  VDEV_SUPPORT

@@ -3586,6 +3586,9 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	}
       return 0;
 
+#ifdef __FreeBSD__
+    case FREEBSD_GETBLKSIZE:
+#endif
     case SNDCTL_DSP_GETBLKSIZE:
       return *arg = getblksize (adev);
 

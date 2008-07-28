@@ -13,6 +13,7 @@
 #include <sys/lockmgr.h>
 #include <fs/devfs/devfs.h>
 #include <sys/poll.h>
+#include <sys/param.h>
 
 /* Function prototypes */
 static d_open_t oss_open;
@@ -140,7 +141,11 @@ oss_sleep (oss_wait_queue_t * wq, oss_mutex_t * mutex, int ticks,
 #ifdef USE_SX_LOCK
   flag = sx_sleep (wq, *mutex, PRIBIO | PCATCH, "oss", ticks);
 #else
+#if __FreeBSD_version >= 602000
+  flag = msleep_spin (wq, *mutex, "oss", ticks);
+#else
   flag = msleep (wq, *mutex, PRIBIO | PCATCH, "oss", ticks);
+#endif
 #endif
   if (flag == EWOULDBLOCK)	/* Timeout */
     {
