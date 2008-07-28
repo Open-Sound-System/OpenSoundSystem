@@ -121,10 +121,9 @@ do
 	shift
 done
 
-cd `dirname $0` || exit 1
+#cd `dirname $0` || exit 1
 DIR=`pwd`
-cd - >/dev/null 2>&1
-SRCDIR=$DIR
+SRCDIR=`dirname $0`
 export SRCDIR
 export COPY_OPTIONS
 
@@ -170,7 +169,7 @@ case `uname` in
 		echo Using Solaris10 specific script
 		;;
 	esac
-	exec sh $DIR/setup/SunOS/solsetup.sh
+	exec sh $SRCDIR/setup/SunOS/solsetup.sh
 	;;
 
 "Linux")
@@ -188,16 +187,16 @@ case `uname` in
 	then
 	  # REGPARM/NOTREGPARM not set so compile a version for both of them
 	        echo Using the Linux specific script
-		exec sh $DIR/setup/Linux/linsetup.sh
+		exec sh $SRCDIR/setup/Linux/linsetup.sh
 	fi
 
 	echo Using the default script
-	exec sh $DIR/setup/setupdir.sh
+	exec sh $SRCDIR/setup/setupdir.sh
 	;;
 
 *)
 	echo Using the default script
-	exec sh $DIR/setup/setupdir.sh
+	exec sh $SRCDIR/setup/setupdir.sh
 
 esac
 
