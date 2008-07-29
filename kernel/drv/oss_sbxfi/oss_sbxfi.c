@@ -13,6 +13,7 @@
 
 #define PCI_VENDOR_CREATIVE	0x1102
 #define 	CREATIVE_SBXFI	0x0005
+#define 	CREATIVE_SBXFI_E	0x0009
 
 #define TIMER_INTERVAL	5	/* In milliseconds */
 
@@ -784,7 +785,8 @@ oss_sbxfi_attach (oss_device_t * osdev)
   DDB (cmn_err
        (CE_CONT, "oss_sbxfi_attach(Vendor %x, device %x)\n", vendor, device));
 
-  if (vendor != PCI_VENDOR_CREATIVE || device != CREATIVE_SBXFI)
+  if (vendor != PCI_VENDOR_CREATIVE ||
+		  (device != CREATIVE_SBXFI && device != CREATIVE_SBXFI_E))
     {
       cmn_err (CE_WARN, "Hardware not recognized (vendor=%x, dev=%x)\n",
 	       vendor, device);
