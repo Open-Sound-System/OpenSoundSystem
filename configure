@@ -121,9 +121,9 @@ do
 	shift
 done
 
-#cd `dirname $0` || exit 1
 DIR=`pwd`
 SRCDIR=`dirname $0`
+SRCDIR=`cd $SRCDIR && pwd`
 export SRCDIR
 export COPY_OPTIONS
 
