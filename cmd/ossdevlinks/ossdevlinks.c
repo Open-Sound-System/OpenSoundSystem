@@ -93,7 +93,7 @@ create_dsplinks (void)
   oss_renumber_t renum = { 0 };
 
   if (recreate_all)
-    system ("rm -f /dev/dsp[0-9]* /dev/dsp_*");
+    system ("rm -f /dev/dsp /dev/dsp[0-9]* /dev/dsp_*");
 
   printf ("%d audio devices\n", si.numaudios);
 
@@ -273,6 +273,50 @@ create_dsplinks (void)
 	continue;
 
       printf ("%s is the default /dev/dsp device\n", ai->devnode);
+      symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
+      break;
+    }
+
+/*
+ * Find out a suitable /dev/dsp_out device.
+ */
+
+  for (dev = 0; dev < si.numaudios; dev++)
+    {
+      ai = audiodevs[dev];
+
+      if (!(ai->caps & PCM_CAP_OUTPUT))
+	continue;
+
+      printf ("%s is the default dsp_out device\n", ai->devnode);
+      symlink (ai->devnode, "/dev/dsp_out");	/* Ignore errors */
+
+      /*
+       * Also link /dev/dsp just in case the link doesn't
+       * exist yet.
+       */
+      symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
+      break;
+    }
+
+/*
+ * Find out a suitable /dev/dsp_in device.
+ */
+
+  for (dev = 0; dev < si.numaudios; dev++)
+    {
+      ai = audiodevs[dev];
+
+      if (!(ai->caps & PCM_CAP_INPUT))
+	continue;
+
+      printf ("%s is the default dsp_in device\n", ai->devnode);
+      symlink (ai->devnode, "/dev/dsp_in");	/* Ignore errors */
+
+      /*
+       * Also link /dev/dsp just in case the link doesn't
+       * exist yet.
+       */
       symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
       break;
     }
