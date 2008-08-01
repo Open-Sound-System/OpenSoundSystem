@@ -36,7 +36,6 @@
 #include <sys/systm.h>
 #endif
 #include <sys/param.h>
-#include <sys/errno.h>
 #include <oss_errno.h>
 #include <sys/uio.h>
 #include <sys/fcntl.h>
