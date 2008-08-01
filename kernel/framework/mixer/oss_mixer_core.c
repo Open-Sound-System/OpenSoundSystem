@@ -176,14 +176,6 @@ load_mixer_volumes (char *name, int *levels, int present)
  * Mixer "extension" handling
  */
 
-#ifndef EIDRM
-#define EIDRM EFAULT
-#endif
-
-#ifndef EFAULT
-#define EFAULT ENOTSUP
-#endif
-
 static int
 oss_mixer_ext_info (oss_mixext * ent)
 {
