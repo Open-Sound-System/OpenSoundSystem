@@ -2056,6 +2056,9 @@ static void
 cleanup (void)
 {
   close (mixer_fd);
+#if !defined(GTK1_ONLY) && GTK_CHECK_VERSION(2,2,0)
+  gdk_notify_startup_complete ();
+#endif /* !GTK1_ONLY */
 }
 
 /*

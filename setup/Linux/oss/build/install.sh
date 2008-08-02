@@ -26,13 +26,15 @@ else
    ln -s $OSSLIBDIR/modules.noregparm $OSSLIBDIR/modules
 fi
 
-if test -f /lib/modules/`uname -r`/kernel/oss/vmix.ko || test -f /lib/modules/`uname -r`/kernel/oss/ich.ko
+UNAME=`uname -r`
+
+if test -f /lib/modules/$UNAME/kernel/oss/vmix.ko || test -f /lib/modules/$UNAME/kernel/oss/ich.ko
 then
 # Older versions of OSS modules exist under /lib/modules. This indicates that
 # previous version of OSS has not been properly uninstalled. Use brute force
 # to get rid of it.
 
-	rm -f /lib/modules/`uname -r`/kernel/oss/*.ko
+	rm -f /lib/modules/$UNAME/kernel/oss/*.ko
 	/usr/sbin/ossdetect
 fi
 
@@ -61,7 +63,7 @@ fi
 echo
 echo OSS build environment set up for $REGPARM kernels
 
-KERNELDIR=/lib/modules/`uname -r`/build
+KERNELDIR=/lib/modules/$UNAME/build
 UBUNTUPACKAGES=""
 
 OK=1
@@ -123,11 +125,11 @@ then
 fi
 
 
-if ! test -f $KERNELDIR/Makefile && ! test -f /lib/modules/`uname -r`/sources/Makefile
+if ! test -f $KERNELDIR/Makefile && ! test -f /lib/modules/$UNAME/sources/Makefile
 then
   echo
   echo 'Warning: Cannot locate the Linux kernel development package for'
-  echo '         Linux kernel version ' `uname -r`
+  echo '         Linux kernel version ' $UNAME
   echo '         Please install the kernel development package if linking the'
   echo '         OSS modules fails.'
   echo
@@ -160,17 +162,17 @@ then
 	echo Under Ubuntu you may need to prepare the kernel environment
 	echo after downloading the kernel sources using
 	echo 
-	echo "  sudo apt-get install linux-headers-`uname -r`"
-        echo "  cd /usr/src/linux-headers-`uname -r`/"
+	echo "  sudo apt-get install linux-headers-$UNAME"
+        echo "  cd /usr/src/linux-headers-$UNAME/"
         echo "  sudo make prepare"
         echo "  sudo make prepare scripts"
 	echo
   fi
 fi
 
-if ! test -d /lib/modules/`uname -r`
+if ! test -d /lib/modules/$UNAME
 then
-	echo Error: Kernel directory /lib/modules/`uname -r` does not exist
+	echo Error: Kernel directory /lib/modules/$UNAME does not exist
 	exit 1
 fi
 
@@ -179,7 +181,6 @@ cp -f ../objects/osscore.o osscore_mainline.o
 ln -sf ../include/sys/*.h ../include/sys/ossddk .
 
 rm -f Makefile
-cp module.inc module.inc.orig
 ln -s Makefile.osscore Makefile
 
 echo Building module osscore
@@ -191,18 +192,18 @@ then
 	exit 2
 fi
 
-if ! test -d /lib/modules/`uname -r`/kernel/oss
+if ! test -d /lib/modules/$UNAME/kernel/oss
 then
-  mkdir /lib/modules/`uname -r`/kernel/oss
+  mkdir /lib/modules/$UNAME/kernel/oss
 fi
 
-if ! test -d /lib/modules/`uname -r`/kernel/oss
+if ! test -d /lib/modules/$UNAME/kernel/oss
 then
-	echo OSS module directory /lib/modules/`uname -r`/kernel/oss does not exist.
+	echo OSS module directory /lib/modules/$UNAME/kernel/oss does not exist.
 	exit 3
 fi
 
-if ! ld -r osscore.ko osscore_mainline.o -o /lib/modules/`uname -r`/kernel/oss/osscore.ko
+if ! ld -r osscore.ko osscore_mainline.o -o /lib/modules/$UNAME/kernel/oss/osscore.ko
 then
 	echo Linking the osscore module failed
 	exit 5
@@ -240,7 +241,7 @@ do
 		exit 4
 	fi
 
-	if ! ld -r $N.ko $N_mainline.o -o /lib/modules/`uname -r`/kernel/oss/$N.ko
+	if ! ld -r $N.ko $N_mainline.o -o /lib/modules/$UNAME/kernel/oss/$N.ko
 	then
 		echo Linking $N module failed
 		exit 6
@@ -250,8 +251,7 @@ do
 	make clean
 done 
 
-cp module.inc.orig module.inc
-rm -f Makefile module.inc.orig
+rm -f Makefile
 
 echo "depmod -a"
 depmod -a

@@ -722,7 +722,7 @@ oss_cdev_unlocked_ioctl (oss_file_handle_t * file, unsigned int cmd,
   return oss_cdev_ioctl (NULL, file, cmd, arg);
 }
 
-/* Used for 32 bit clients on a 64 bit kernel */
+/* Used for 32 bit clients on a 64 bit kernel. No BKL here either */
 static long
 oss_cdev_compat_ioctl (oss_file_handle_t * file, unsigned int cmd,
 	               unsigned long arg)

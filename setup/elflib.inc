@@ -296,7 +296,7 @@ static int n_module_table = 0;
 
 typedef void (*elf_callback_t) (char *buffer, int blen, Elf_Sym * sym,
 				char *name, int addr);
-static char *
+static int
 list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
 {
   Elf_Ehdr *ehdr = (Elf_Ehdr *) buffer;
@@ -306,6 +306,7 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
   int symsize = 0;
   int i;
   int shstrndx = -1;
+  int found = 0;
 
   shdr = (Elf_Shdr *) & buffer[ehdr->e_shoff];
   shstrndx = ehdr->e_shstrndx;
@@ -321,7 +322,11 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
 	  sym = (Elf_Sym *) & buffer[shdr[i].sh_offset];
 	  symsize = shdr[i].sh_size / shdr[i].sh_entsize;
 	  if (elf_verbose > 1)
+#ifdef ELF32
 	    printf ("ELF symtab at 0x%x\n", shdr[i].sh_offset);
+#else
+	    printf ("ELF symtab at 0x%lx\n", shdr[i].sh_offset);
+#endif
 	  break;
 
 	case SHT_STRTAB:
@@ -329,7 +334,11 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
 	    break;
 	  strtab = &buffer[shdr[i].sh_offset];
 	  if (elf_verbose > 1)
+#ifdef ELF32
 	    printf ("ELF strtab at 0x%x (%d) \n", shdr[i].sh_offset, i);
+#else
+	    printf ("ELF strtab at 0x%lx (%d) \n", shdr[i].sh_offset, i);
+#endif
 	  break;
 	}
     }
@@ -337,7 +346,7 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
   if (sym == NULL || strtab == NULL)
     {
       fprintf (stderr, "Missing ELF symbol information\n");
-      return NULL;
+      return 0;
     }
 
   for (i = 0; i < symsize; i++)
@@ -353,6 +362,7 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
 
 	  if (callback != NULL)
 	    {
+	      found = 1;
 	      callback (buffer, len, &sym[i], name, sym[i].st_value);
 	      continue;
 	    }
@@ -362,13 +372,13 @@ list_symbols (char *buffer, int len, char *prefix, elf_callback_t callback)
 	  m->addr = sym[i].st_value;
 	}
     }
-  return NULL;
+  return found;
 }
 
 int
 ELF_LOAD_SYMTAB (char *filename, char *prefix, elf_callback_t callback)
 {
-  char buffer[4 * 1024 * 1024], *ptr;
+  char buffer[4 * 1024 * 1024];
   int fd, len;
   Elf_Ehdr *hdr = (Elf_Ehdr *) buffer;
 
@@ -406,9 +416,10 @@ ELF_LOAD_SYMTAB (char *filename, char *prefix, elf_callback_t callback)
       return 0;
     }
 
-  if (!(ptr = list_symbols (buffer, len, prefix, callback)))
+  if (!(list_symbols (buffer, len, prefix, callback)))
     {
-/*      fprintf(stderr, "%s doesn't contain kernel_version\n", filename); */
+      if (elf_verbose > 1)
+	fprintf(stderr, "%s does not contain %s symbol\n", filename, prefix);
       close (fd);
       return 0;
     }

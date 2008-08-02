@@ -11,6 +11,8 @@ CONFIG_MIDI=DISABLED
 
 export CONFIGURE CONFIG_MIDI
 
+unset CDPATH >/dev/null 2>&1
+
 while test  "$# " != "0 "
 do
 	case "$1" in

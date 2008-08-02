@@ -31,6 +31,7 @@ int quiet = 0;
 int verbose = 0;
 int once = 0;
 int exit_status = -1;
+int check_compile_vermagic = 0;
 
 static void
 sym_callback (char *buffer, int blen, Elf_Sym * sym, char *name, int addr)
@@ -66,9 +67,20 @@ find_vermagic (char *fname)
   if (verbose)
     printf ("ELF scan %s\n", fname);
 
-  ELF_LOAD_SYMTAB (fname, "vermagic", sym_callback);
+  ok = ELF_LOAD_SYMTAB (fname, "vermagic", sym_callback);
   if (!ok)
-    ELF_LOAD_SYMTAB (fname, "__mod_vermagic", sym_callback);
+    ok = ELF_LOAD_SYMTAB (fname, "__mod_vermagic", sym_callback);
+  if (!ok)
+    ELF_LOAD_SYMTAB (fname, "__oss_compile_vermagic", sym_callback);
+}
+
+static void
+find_link_vermagic (char *fname)
+{
+  if (verbose)
+    printf ("ELF scan %s\n", fname);
+
+  ELF_LOAD_SYMTAB (fname, "__oss_compile_vermagic", sym_callback);
 }
 
 static void
@@ -243,6 +255,8 @@ main (int argc, char *argv[])
 	verbose++;
       if (strcmp (argv[i], "-z") == 0)
 	valid = 1;
+      if (strcmp (argv[i], "-u") == 0)
+	check_compile_vermagic = 1;
     }
 
   if (!valid)
@@ -291,7 +305,10 @@ main (int argc, char *argv[])
       ok = 0;
 
       if (*fname != '-')
-	find_vermagic (fname);
+	{
+          if (check_compile_vermagic == 0) find_vermagic (fname);
+          else find_link_vermagic (fname);
+	}
     }
 
   exit (exit_status);

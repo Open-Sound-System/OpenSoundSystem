@@ -44,7 +44,9 @@ then
 	exit 10
 fi
 
-if  test -f /lib/modules/`uname -r`/kernel/oss/osscore.ko
+UBUNTU_OVERRIDE=
+POS_UBUNTU_OVERRIDE=
+if  test -f /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko
 then
 # Verify that vermagic of OSS matches the kernel vermagic
 
@@ -52,14 +54,24 @@ then
 
 	if ! test "$OSS_VERMAGIC " = "$KERNEL_VERMAGIC "
 	then
+		OSS_VERMAGIC=`/usr/sbin/ossvermagic -z -u -q /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko`
+		POS_UBUNTU_OVERRIDE=1
+	fi
+
+	if ! test "$OSS_VERMAGIC " = "$KERNEL_VERMAGIC "
+	then
 		echo "Old    vermagic: " $OSS_VERMAGIC >> $LOG
 		rm -rf /lib/modules/$KERNEL_VERSION/kernel/oss
 		echo Previous OSS modules were for a different kernel version - removed
 		echo Previous OSS modules were for a different kernel version - removed >> $LOG
+	elif test "$POS_UBUNTU_OVERRIDE " = "1 "
+	then
+		echo "Vermagic backup activated for Ubuntu. Vermagic: $OSS_VERMAGIC" >> $LOG
+		UBUNTU_OVERRIDE="-u"
 	fi
 fi
 
-if ! test -f /lib/modules/`uname -r`/kernel/oss/osscore.ko
+if ! test -f /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko
 then
 	NOTIFY=1
 	echo Relinking OSS kernel modules for \"$KERNEL_VERMAGIC\"
@@ -82,15 +94,15 @@ then
 	rm -f /var/log/relink.log
 fi
 
-if ! test -f /lib/modules/`uname -r`/kernel/oss/osscore.ko
+if ! test -f /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko
 then
 	echo
-	echo No /lib/modules/`uname -r`/kernel/oss/osscore.ko module >> $LOG
-	echo No /lib/modules/`uname -r`/kernel/oss/osscore.ko module in the system
+	echo No /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko module >> $LOG
+	echo No /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko module in the system
 	exit 30
 fi
 
-OSS_VERMAGIC=`/usr/sbin/ossvermagic -z -q /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko`
+OSS_VERMAGIC=`/usr/sbin/ossvermagic -z $UBUNTU_OVERRIDE -q /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko`
 echo "OSS    vermagic: " $OSS_VERMAGIC >> $LOG
 
 if ! test "$OSS_VERMAGIC " = "$KERNEL_VERMAGIC "
@@ -214,7 +226,7 @@ if test -f $OSSLIBDIR/.cuckoo_installed
 then
 # Use kernel based ALSA compatibility
 
-  if ! test -f /lib/modules/`uname -r`/kernel/sound/core/snd.ko
+  if ! test -f /lib/modules/$KERNEL_VERSION/kernel/sound/core/snd.ko
   then
 	sh $OSSLIBDIR/scripts/setup-alsa.sh >> $LOG 2>&1
   	depmod -a

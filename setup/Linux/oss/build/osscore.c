@@ -40,6 +40,7 @@ typedef struct _smap_t dmap_t;
 #include "../include/sys/soundcard.h"
 #include "../include/internals/audio_core.h"
 #include "../include/internals/mixer_core.h"
+#include "ubuntu_version_hack.inc"
 
 MODULE_LICENSE ("GPL v2");
 MODULE_DESCRIPTION ("Open Sound System core services");
@@ -193,7 +194,7 @@ oss_strcpy (char *s1, const char *s2)
 
   while (*s2)
     *s1++ = *s2++;
-  *s1++ = 0;
+  *s1 = '\0';
   return s;
 }
 
@@ -220,7 +221,7 @@ oss_strncpy (char *s1, const char *s2, size_t l)
 
       *s1++ = *s2++;
     }
-  *s1++ = 0;
+  *s1 = '\0';
   return s;
 }
 
@@ -882,7 +883,7 @@ typedef poll_table select_table;
 typedef int (*readdir_t) (struct inode *, struct file *, void *, filldir_t);
 typedef int (*ioctl_t) (struct inode *, struct file *, unsigned int,
 			unsigned long);
-typedef int (*new_ioctl_t) (struct file *, unsigned int, unsigned long);
+typedef long (*new_ioctl_t) (struct file *, unsigned int, unsigned long);
 typedef int (*mmap_t) (struct file *, struct vm_area_struct *);
 typedef int (*open_t) (struct inode *, struct file *);
 
