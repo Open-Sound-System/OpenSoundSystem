@@ -427,7 +427,12 @@ vmix_set_rate (int dev, int arg)
        */
       if (arg > (mixer->play_engine.rate * 5) / 4)	/* At most 1.25*master_rate */
 	arg = mixer->play_engine.rate;
-      if (arg < mixer->play_engine.rate / 4)
+
+/*
+ * The simple linear interpolation algorithm cannot handle more than 2x rate
+ * boosts reliably so don't permit them.
+ */
+      if (arg < mixer->play_engine.rate / 2)
 	arg = mixer->play_engine.rate;
 
       return portc->rate = arg;
