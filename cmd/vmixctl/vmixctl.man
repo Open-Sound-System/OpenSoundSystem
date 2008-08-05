@@ -60,14 +60,20 @@ o	vmixctl rate /dev/oss/oss_envy240/pcm0
 
 DETACHING VMIX FROM AN AUDIO DEVICE
 It is possible to detach vmix from an audio device if it causes problems
-with applications by using "vmix detach audiodev".
+with applications by using "vmix detach audiodev". 
+
+It is not possible to detach and (re)attach vmix to the same device more
+than few times. Use the vmix-enable setting in the control panel
+(ossxmix or ossmix) to disable/re-enable vmix if you need to do it
+repeatedly. Use vmix detach only if you need to attach virtual mixer using
+different parameters.
 
  EXAMPLE
 o	vmix detach /dev/oss/oss_envy240/pcm0
 
 POSSIBLE BUGS
-o	Some of the functions may not be implemented in the first version of
-	vmixctl.
+o	The control panel elements related with vmix are not removed from the
+	mixer API when vmix is detached. This may be somehow confusing.
 
 SEE ALSO
 soundoff(1), soundon(1), ossmix(1), ossxmix(1)

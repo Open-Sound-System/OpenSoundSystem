@@ -1433,6 +1433,8 @@ unlink_masterdev (vmix_mixer_t * mixer)
       return;
     }
 
+  master_adev->vmix_mixer=NULL;
+
   master_adev->next_out = last_adev->next_out;
   last_adev->next_out = NULL;
 }
@@ -1489,6 +1491,7 @@ unlink_inputdev (vmix_mixer_t * mixer)
 
   last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
   input_adev = audio_engines[mixer->inputdev];
+  input_adev->vmix_mixer=NULL;
 
   input_adev->next_in = last_adev->next_in;
   last_adev->next_in = NULL;
@@ -1672,6 +1675,46 @@ create_loopdev (vmix_mixer_t * mixer)
   portc->channels = 2;
   portc->volume[0] = DB_SIZE * 5;
   portc->volume[1] = DB_SIZE * 5;
+}
+
+static int
+uninit_vmix_instance(vmix_mixer_t *mixer)
+{
+      if (mixer->master_osdev != NULL)
+	{
+	  MUTEX_CLEANUP (mixer->mutex);
+	}
+
+      if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
+	return OSS_ENXIO;
+
+      if (!mixer->installed_ok)
+	{
+	  return OSS_EIO;
+	}
+
+      if (audio_engines[mixer->masterdev] == NULL)
+	return OSS_ENXIO;
+
+/*
+ * Cleanup the engine redirection links
+ */
+
+      audio_engines[mixer->masterdev]->redirect_out = -1;
+
+      if (mixer->inputdev > -1)
+	{
+	  audio_engines[mixer->inputdev]->redirect_in = -1;
+	  audio_engines[mixer->masterdev]->redirect_in = -1;
+	}
+      unlink_masterdev (mixer);
+
+      if (mixer->inputdev > -1 && mixer->inputdev != mixer->masterdev)
+	{
+	  unlink_inputdev (mixer);
+	}
+
+      return 0;
 }
 
 static int
@@ -1917,7 +1960,7 @@ vmix_delete_mixer(void * vmix_mixer)
 {
 }
 
-void
+int
 vmix_detach_audiodev(int masterdev)
 {
 /*
@@ -1931,6 +1974,18 @@ vmix_detach_audiodev(int masterdev)
  *
  * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
  */
+
+	vmix_mixer_t *mixer;
+
+	if (masterdev<0 || masterdev>=num_audio_engines)
+	   return OSS_ENXIO;
+
+	mixer = audio_engines[masterdev]->vmix_mixer;
+
+	if (mixer==NULL) /* Not attached */
+	   return 0;
+
+        return uninit_vmix_instance(mixer);
 }
 
 int
@@ -2073,37 +2128,7 @@ vmix_core_uninit (void)
 
   while (mixer != NULL)
     {
-      if (mixer->master_osdev != NULL)
-	{
-	  MUTEX_CLEANUP (mixer->mutex);
-	}
-
-      if (mixer->masterdev < 0 || mixer->masterdev >= num_audio_engines)
-	continue;
-
-      if (!mixer->installed_ok)
-	{
-	  oss_unregister_device (mixer->osdev);
-	  continue;
-	}
-
-      if (audio_engines[mixer->masterdev] == NULL)
-	continue;
-
-      audio_engines[mixer->masterdev]->redirect_out = -1;
-
-      if (mixer->inputdev > -1)
-	{
-	  audio_engines[mixer->inputdev]->redirect_in = -1;
-	  audio_engines[mixer->masterdev]->redirect_in = -1;
-	}
-      unlink_masterdev (mixer);
-
-      if (mixer->inputdev > -1 && mixer->inputdev != mixer->masterdev)
-	{
-	  unlink_inputdev (mixer);
-	}
-
+      uninit_vmix_instance(mixer);
       mixer = mixer->next;
     }
 
