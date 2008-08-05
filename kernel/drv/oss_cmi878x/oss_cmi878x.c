@@ -10,6 +10,7 @@
 
 #define CMEDIA_VENDOR_ID	0x13F6
 #define CMEDIA_CMI8788		0x8788
+
 /*
  * CM8338 registers definition
  */
@@ -87,12 +88,128 @@
 #define CODEC_VERSION		(devc->base+0xE4)
 #define CTRL_VERSION		(devc->base+0xE6)
 
+/* Device IDs */
+#define ASUS_VENDOR_ID		0x1043
+#define SUBID_XONAR_D2		0x8269
+#define SUBID_XONAR_D2X		0x82b7
+#define SUBID_XONAR_DX		0x8275
+
+#define SUBID_GENERIC		0x0000
+
+/* Xonar specific */
+#define XONAR_DX_FRONTDAC	0x9e
+#define XONAR_DX_SURRDAC	0x30
+#define XONAR_DX_OUTPUT		0x01
+#define XONAR_DX_MCLOCK_256	0x10
+
 /* defs for AKM 4396 DAC */
 #define AK4396_CTL1        0x00
 #define AK4396_CTL2        0x01
 #define AK4396_CTL3        0x02
 #define AK4396_LchATTCtl   0x03
 #define AK4396_RchATTCtl   0x04
+
+/* defs for CS4398 DAC */
+#define CS4398_CHIP_ID	  0x01
+#define CS4398_MODE_CTRL  0x02
+#define CS4398_MIXING	  0x03
+#define CS4398_MUTE_CTRL  0x04
+#define CS4398_VOLA       0x05
+#define CS4398_VOLB       0x06
+#define CS4398_RAMP_CTRL  0x07
+#define CS4398_MISC_CTRL  0x08
+#define CS4398_MISC2_CTRL 0x09
+
+#define CS4398_POWER_DOWN (1<<7)	// Obvious
+#define CS4398_CPEN	  (1<<6)	// Control Port Enable
+#define CS4398_FREEZE	  (1<<5)	// Freezes registers, unfreeze to
+					// accept changed registers
+#define CS4398_MCLKDIV2   (1<<4)	// Divide MCLK by 2
+#define	CS4398_MCLKDIV3   (1<<3)	// Divive MCLK by 3
+#define CS4398_I2S	  (1<<4)	// Set I2S mode
+
+/* defs for CS4362A DAC */
+#define CS4362A_MODE1_CTRL 	0x01
+#define CS4362A_MODE2_CTRL	0x02
+#define CS4362A_MODE3_CTRL	0x03
+#define CS4362A_FILTER_CTRL	0x04
+#define CS4362A_INVERT_CTRL	0x05
+#define CS4362A_MIX1_CTRL	0x06
+#define CS4362A_VOLA_1		0x07
+#define CS4362A_VOLB_1		0x08
+#define CS4362A_MIX2_CTRL	0x09
+#define CS4362A_VOLA_2		0x0A
+#define CS4362A_VOLB_2		0x0B
+#define CS4362A_MIX3_CTRL	0x0C
+#define CS4362A_VOLA_3		0x0D
+#define CS4362A_VOLB_3		0x0E
+#define CS4362A_CHIP_REV	0x12
+
+/* CS4362A Reg 01h */
+#define CS4362A_CPEN		(1<<7)
+#define CS4362A_FREEZE		(1<<6)
+#define CS4362A_MCLKDIV		(1<<5)
+#define CS4362A_DAC3_ENABLE	(1<<3)
+#define CS4362A_DAC2_ENABLE	(1<<2)
+#define CS4362A_DAC1_ENABLE	(1<<1)
+#define CS4362A_POWER_DOWN	(1)
+
+/* CS4362A Reg 02h */
+#define CS4362A_DIF_LJUST	0x00
+#define CS4362A_DIF_I2S		0x10
+#define CS4362A_DIF_RJUST16	0x20
+#define CS4362A_DIF_RJUST24	0x30
+#define CS4362A_DIF_RJUST20	0x40
+#define CS4362A_DIF_RJUST18	0x50
+
+/* CS4362A Reg 03h */
+#define CS4362A_RAMP_IMMEDIATE  0x00
+#define CS4362A_RAMP_ZEROCROSS	0x40
+#define CS4362A_RAMP_SOFT	0x80
+#define CS4362A_RAMP_SOFTZERO   0xC0
+#define CS4362A_SINGLE_VOL	0x20
+#define CS4362A_RAMP_ERROR	0x10
+#define CS4362A_MUTEC_POL	0x08
+#define CS4362A_AUTOMUTE	0x04
+#define CS4362A_SIX_MUTE	0x00
+#define CS4362A_ONE_MUTE	0x01
+#define CS4362A_THREE_MUTE	0x03
+
+/* CS4362A Reg 04h */
+#define CS4362A_FILT_SEL	0x10
+#define CS4362A_DEM_NONE	0x00
+#define CS4362A_DEM_44KHZ	0x02
+#define CS4362A_DEM_48KHZ	0x04
+#define CS4362A_DEM_32KHZ	0x06
+#define CS4362A_RAMPDOWN	0x01
+
+/* CS4362A Reg 05h */
+#define CS4362A_INV_A3 		(1<<4)
+#define CS4362A_INV_B3 		(1<<5)
+#define CS4362A_INV_A2		(1<<2)
+#define CS4362A_INV_B2		(1<<3)
+#define CS4362A_INV_A1		(1)
+#define CS4362A_INV_B1		(1<<1)
+
+/* CS4362A Reg 06h, 09h, 0Ch */
+/* ATAPI crap, does anyone still use analog CD playback? */
+
+/* CS4362A Reg 07h, 08h, 0Ah, 0Bh, 0Dh, 0Eh */
+/* Volume registers */
+#define CS4362A_VOL_MUTE	0x80
+
+/* Alias only for now. */
+#define CS4398_WRITE(devc, codec, reg, val) \
+	two_wire_write(devc, codec, reg, val)
+#define CS4362A_WRITE(devc, codec, reg, val) \
+	two_wire_write(devc, codec, reg, val)
+
+/* 0-100. Start at -96dB. */
+#define CS4398_VOL(x) \
+	((x) == 0 ? 0xFF : (0xC0 - ((x)*192/100)))
+/* 0-100. Start at -96dB. Bit 7 is mute. */
+#define CS4362A_VOL(x) \
+	(char)((x) == 0 ? 0xFF : (0x60 - ((x)*96/100)))
 
 #define UNUSED_CMI9780_CONTROLS ( \
         SOUND_MASK_VOLUME | \
@@ -143,6 +260,7 @@ typedef struct cmi8788_devc
   /* Audio parameters */
   oss_mutex_t mutex;
   oss_mutex_t low_mutex;
+  oss_mutex_t dac_mutex;
   int open_mode;
   cmi8788_portc portc[MAX_PORTC];
 
@@ -156,7 +274,6 @@ typedef struct cmi8788_devc
   volatile unsigned char input_byte;
   int midi_dev;
   int mpu_attached;
-
 }
 cmi8788_devc;
 
@@ -268,44 +385,165 @@ spi_write (void *devc_, int codec_num, unsigned char *data)
   return 1;
 }
 
-#if 0
 static int
-two_wire_write (void *devc_, int codec_num, unsigned char reg,
-		unsigned int data)
+two_wire_write (void *devc_, unsigned char codec_num, unsigned char reg,
+		unsigned char data)
 {
   cmi8788_devc *devc = devc_;
   oss_native_word flags;
-  unsigned char status;
+  int count = 50;
 
-  MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
-  status = INW (devc->osdev, TWO_WIRE_CTRL);
-  if (status & 0x1)
-    {
-      cmn_err (CE_WARN, "Two-Wire interface busy\n");
-      return OSS_EIO;
-    }
+  /* Wait for it to stop being busy */
+  MUTEX_ENTER(devc->dac_mutex, flags);
+  while((INW(devc->osdev, TWO_WIRE_CTRL) & 0x1) && (count > 0))
+  {
+	oss_udelay(10);
+	count--;
+  }
+  if(count == 0)
+  {
+	cmn_err(CE_WARN, "Time out on Two-Wire interface (busy).");
+  	MUTEX_EXIT(devc->dac_mutex, flags);
+	return OSS_EIO;
+  }
+  MUTEX_EXIT(devc->dac_mutex, flags);
 
+  MUTEX_ENTER_IRQDISABLE(devc->low_mutex, flags);
   /* first write the Register Address into the MAP register */
   OUTB (devc->osdev, reg, TWO_WIRE_MAP);
 
   /* now write the data */
-  OUTW (devc->osdev, data, TWO_WIRE_DATA);
+  OUTB (devc->osdev, data, TWO_WIRE_DATA);
 
   /* select the codec number to address */
-  OUTB (devc->osdev, codec_num << 1 | 0x1, TWO_WIRE_ADDR);
-
+  OUTB (devc->osdev, codec_num, TWO_WIRE_ADDR);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
+  oss_udelay(100); 
+
   return 1;
 
 }
 
+static int
+cs4398_init (void *devc_, int codec_)
+{
+  cmi8788_devc *devc = devc_;
+
+  // Fast Two-Wire. Reduces the wire ready time.
+  OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
+
+  // Power down, enable control mode.
+  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL, 
+    CS4398_CPEN | CS4398_POWER_DOWN);
+  // Left justified PCM (DAC and 8788 support I2S, but doesn't work.
+  // Setting it introduces clipping like hell).
+  CS4398_WRITE(devc_, codec_, CS4398_MODE_CTRL, 0);
+  // That's the DAC default, set anyway. 
+  CS4398_WRITE(devc_, codec_, 3, 0x09);
+  // PCM auto-mute.
+  CS4398_WRITE(devc_, codec_, 4, 0x82);
+  // Vol A+B to -64dB.
+  CS4398_WRITE(devc_, codec_, 5, 0x80);
+  CS4398_WRITE(devc_, codec_, 6, 0x80);
+  // Soft-ramping.
+  CS4398_WRITE(devc_, codec_, 7, 0xF0);
+  // Remove power down flag.
+  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL, CS4398_CPEN);
+
+  return 1;
+}
+
+static int
+cs4362a_init(void * devc_, int codec_)
+{
+  cmi8788_devc *devc = devc_;
+  
+  // Fast Two-Wire. Reduces the wire ready time.
+  OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
+
+  /* Power down and enable control port. */ 
+  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN | CS4362A_POWER_DOWN);
+  /* Left-justified PCM */
+  CS4362A_WRITE(devc_, codec_, CS4362A_MODE2_CTRL, CS4362A_DIF_LJUST);
+  /* Ramp & Automute, re-set DAC defaults. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_MODE3_CTRL, 0x84); 
+  /* Filter control, DAC defs. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_FILTER_CTRL, 0);
+  /* Invert control, DAC defs. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_INVERT_CTRL, 0);
+  /* Mixing control, DAC defs. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_MIX1_CTRL, 0x24);
+  CS4362A_WRITE(devc_, codec_, CS4362A_MIX2_CTRL, 0x24);
+  CS4362A_WRITE(devc_, codec_, CS4362A_MIX3_CTRL, 0x24);
+  /* Volume to -64dB. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_1, 0x40);
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_1, 0x40);
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_2, 0x40);
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_2, 0x40);
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_3, 0x40);
+  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_3, 0x40);
+  /* Power up. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN);
+
+  return 1;
+}
+
+#if 0
 static unsigned int
 mix_scale (int vol, int bits)
 {
   vol = mix_cvt[vol];
   return (vol * ((1 << bits) - 1) / 100);
 }
+
+static int
+cs4398_cleanup(void * devc_, int codec_)
+{
+  /* Simply power down. Keep control port mode up. */
+  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL,
+    CS4398_POWER_DOWN | CS4398_CPEN);
+
+  return 1;
+}
+
+static int cs4362a_cleanup(void *devc_, int codec_)
+{
+  /* Simply power down. Keep control port mode up. */
+  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL,
+    CS4362A_CPEN | CS4362A_POWER_DOWN);
+
+  return 1;
+}
 #endif
+
+static void
+xonar_dx_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
+{
+  int left, right;
+
+  left = (value & 0x00FF);
+  right = (value & 0xFF00) >> 8;
+
+  switch(codec_id)
+  {
+    case 0:
+      CS4398_WRITE(devc, XONAR_DX_FRONTDAC, CS4398_VOLA, CS4398_VOL(left));
+      CS4398_WRITE(devc, XONAR_DX_FRONTDAC, CS4398_VOLB, CS4398_VOL(right));
+      break;
+    case 1:
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_1, CS4362A_VOL(left));
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_1, CS4362A_VOL(right));
+      break;
+    case 2:
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_2, CS4362A_VOL(left));
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_2, CS4362A_VOL(right));
+      break;
+    case 3:
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_3, CS4362A_VOL(left));
+      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_3, CS4362A_VOL(right));
+      break;
+  }
+}
 
 static int
 cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
@@ -318,13 +556,21 @@ cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
 
   devc->playvol[codec_id] = left | (right << 8);
 
-  data[0] = left;
-  data[1] = AK4396_LchATTCtl | 0x20;
-  spi_write (devc, codec_id, data);
-
-  data[0] = right;
-  data[1] = AK4396_RchATTCtl | 0x20;
-  spi_write (devc, codec_id, data);
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+      xonar_dx_set_play_volume(devc, codec_id, value);
+      break;
+    default:
+      /* Assume default AKM DACs */
+      data[0] = left;
+      data[1] = AK4396_LchATTCtl | 0x20;
+      spi_write (devc, codec_id, data);
+      data[0] = right;
+      data[1] = AK4396_RchATTCtl | 0x20;
+      spi_write (devc, codec_id, data);
+      break;
+  }
 
   return devc->playvol[codec_id];
 }
@@ -1930,6 +2176,7 @@ static int
 init_cmi8788 (cmi8788_devc * devc)
 {
   unsigned short sVal;
+  unsigned short sDac;
   unsigned char bVal;
   int i, first_dev = -1, count;
   int default_vol;
@@ -1945,11 +2192,43 @@ init_cmi8788 (cmi8788_devc * devc)
     }
 
   bVal = INB (devc->osdev, FUNCTION);
-  bVal |= 0x82;			/*reset codec */
+  bVal |= 0x02; /* Reset codec*/
+
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+      /* Two-Wire communication for Xonar DX DACs. */
+      bVal |= 0x40;
+      break;
+    default:
+      /* SPI default for anything else, including the */
+      /* Xonar D2 and D2X. */
+      bVal &= ~0x40;
+      /* Enable SPI outputs 4 and 5 */
+      bVal |= 0x80;
+      break;
+  }
+
   OUTB (devc->osdev, bVal, FUNCTION);
 
+  /* I2S to 16bit, see below. */
+  sDac = 0x010A; 
+ 
+  /* Non-generic DAC initialization */
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+      /* Front DAC. */
+      cs4398_init(devc, XONAR_DX_FRONTDAC); 
+      /* Surround DAC. */
+      cs4362a_init(devc, XONAR_DX_SURRDAC);
+      /* Must set master clock. */
+      sDac |= XONAR_DX_MCLOCK_256;
+      break;
+  }
+
   /* Setup I2S to use 16bit instead of 24Bit */
-  OUTW (devc->osdev, 0x010A, I2S_MULTICH_FORMAT);
+  OUTW (devc->osdev, sDac, I2S_MULTICH_FORMAT);
   OUTW (devc->osdev, 0x010A, I2S_ADC1_FORMAT);
   OUTW (devc->osdev, 0x010A, I2S_ADC2_FORMAT);
   OUTW (devc->osdev, 0x010A, I2S_ADC3_FORMAT);
@@ -2167,6 +2446,15 @@ init_cmi8788 (cmi8788_devc * devc)
     cmi8788_mixer_ioctl (devc->spi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_SIDEVOL), &default_vol);
 
+  /* Enable Xonar output */
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+      OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_CONTROL);
+      OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_DATA);
+      break;
+  }
+
   return 1;
 }
 
@@ -2176,12 +2464,15 @@ oss_cmi878x_attach (oss_device_t * osdev)
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
   unsigned int pci_ioaddr;
+  unsigned short sub_vendor, sub_id;
   int err;
   cmi8788_devc *devc;
 
   DDB (cmn_err (CE_CONT, "Entered CMEDIA CMI8788 attach routine\n"));
   pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
 
   if (vendor != CMEDIA_VENDOR_ID || device != CMEDIA_CMI8788)
     return 0;
@@ -2211,7 +2502,6 @@ oss_cmi878x_attach (oss_device_t * osdev)
       return 0;
     }
 
-
   devc->osdev = osdev;
   osdev->devc = devc;
   devc->irq = pci_irq_line;
@@ -2228,8 +2518,33 @@ oss_cmi878x_attach (oss_device_t * osdev)
 
   if (device == CMEDIA_CMI8788)
     {
-      devc->model = MDL_CMI8788;
-      devc->chip_name = "CMedia CMI8788";
+      /* Detect Xonar device */
+      if(sub_vendor == ASUS_VENDOR_ID)
+      {
+        switch(sub_id)
+        {
+          case SUBID_XONAR_DX:
+            devc->chip_name = "Asus Xonar DX (AV100)";
+            break;
+          case SUBID_XONAR_D2:
+            devc->chip_name = "Asus Xonar D2 (AV200)";
+            break;
+          case SUBID_XONAR_D2X:
+            devc->chip_name = "Asus Xonar D2X (AV200)";
+            break;
+          default:
+            devc->chip_name = "Asus Xonar (unknown)";
+            sub_id = SUBID_GENERIC;
+            break;
+        }
+        devc->model = sub_id;
+      }
+      else
+      {
+        /* If not one of the above, regular. */
+        devc->model = MDL_CMI8788;
+        devc->chip_name = "CMedia CMI8788";
+      }
     }
   else
     {
@@ -2239,6 +2554,7 @@ oss_cmi878x_attach (oss_device_t * osdev)
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
   MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
+  MUTEX_INIT (devc->osdev, devc->dac_mutex, MH_DRV + 2);
 
   oss_register_device (osdev, devc->chip_name);
 
@@ -2267,6 +2583,7 @@ oss_cmi878x_detach (oss_device_t * osdev)
   UNMAP_PCI_IOADDR (devc->osdev, 0);
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
+  MUTEX_CLEANUP (devc->dac_mutex);
 
   oss_unregister_device (osdev);
   return 1;

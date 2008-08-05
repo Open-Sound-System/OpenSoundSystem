@@ -1,1 +1,4 @@
 oss_cmi878x	pci13f6,8788	CMedia CMI8788
+oss_cmi878x	pci1043,8269    Asus Xonar D2 (AV200)
+oss_cmi878x	pci1043,8275    Asus Xonar DX (AV100)
+oss_cmi878x	pci1043,82b7    Asus Xonar D2X (AV200)
