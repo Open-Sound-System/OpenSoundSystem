@@ -341,7 +341,24 @@ create_output_controls (int mixer_dev)
 
       mixer_ext_set_strings (mixer_dev, ctl,
 			     "Fast Low Medium High High+ Production OFF", 0);
-      mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by the virtual mixer.");
+      mixer_ext_set_description(mixer_dev, ctl, "Sample rate conversion quality used by the virtual mixer.\n"
+         "\n"
+         "Virtual mixer uses internally a fixed sampling rate that can be set\n"
+         "using the 'vmixctl rate' command (usually 48 kHz by default). Applications\n"
+         "that want to use different rates will be handled by performing automatic\n"
+         "sample rate conversions (SRC) in software. This operation will consume\n"
+         "some additional CPU ti,e depending on the quality. The following\n"
+         "alternatives are availabe:\n"
+         "\n"
+         "Fast:	Use fast linear interpolation algorithm (low quality).\n"
+         "Low: Use slightly better linear interpolation\n"
+         "Medium: Use an algorithm that provides good quality with moderate CPU load.\n"
+         "High/High+/Production: Higher quality algorithms that consume more CPU resources.\n"
+         "OFF: No sample rate conversions. Sample rate locked to the master rate.\n"
+         "\n"
+         "'Fast' will work best in most cases. Only users with high end audio\n"
+         "cards and speakers should use the other settings.\n"
+		      );
 
       /*
        * Create the vmix volume slider and peak meter to the top panel.
@@ -1422,14 +1439,22 @@ unlink_masterdev (vmix_mixer_t * mixer)
  * Remove the VMIX devices from the engine search list of the master device.
  */
   adev_t *last_adev, *master_adev;
-  int n = mixer->num_clientdevs;
+  int i, n = mixer->num_clientdevs;
 
   if (n < 1)
     return;
 
-  n = n - 1;
+  for (i=0;i<n;i++)
+  {
+	  /*
+	   * Mark all client engines as unloaded
+	   */
+	  adev_t *adev = audio_engines[mixer->client_portc[i]->audio_dev];
 
-  last_adev = audio_engines[mixer->client_portc[n]->audio_dev];
+	  adev->unloaded = 1;
+  }
+
+  last_adev = audio_engines[mixer->client_portc[n-1]->audio_dev];
   master_adev = audio_engines[mixer->masterdev];
 
   if (master_adev == NULL)
