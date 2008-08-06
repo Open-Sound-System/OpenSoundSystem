@@ -18,7 +18,7 @@ typedef struct fmt_struct {
   const int fmt;
 } format_t;
 
-int audio_fd, channels, datalimit, format, speed, type;
+extern int audio_fd, channels, datalimit, format, speed, type;
 
 enum {
   WAVE_FILE,
