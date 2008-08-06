@@ -109,11 +109,8 @@ static int
 solo_command (solo_devc * devc, unsigned char val)
 {
   int i;
-  oss_native_word limit;
 
-  limit = GET_JIFFIES () + OSS_HZ / 10;	/* Timeout */
-
-  for (i = 0; i < 900000 && GET_JIFFIES () < limit; i++)
+  for (i = 0; i < 0x10000; i++)
     {
       if ((INB (devc->osdev, DSP_STATUS) & 0x80) == 0)
 	{
@@ -131,7 +128,7 @@ solo_get_byte (solo_devc * devc)
 {
   int i;
 
-  for (i = 1000; i; i--)
+  for (i=0; i < 0x10000; i++)
     if (INB (devc->osdev, DSP_DATA_AVAIL) & 0x80)
       {
 	return INB (devc->osdev, DSP_READ);
@@ -169,11 +166,9 @@ solo_getmixer (solo_devc * devc, unsigned int port)
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   OUTB (devc->osdev, (unsigned char) (port & 0xff), MIXER_ADDR);
-
-  oss_udelay (10);
+  oss_udelay (50);
   val = INB (devc->osdev, MIXER_DATA);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  oss_udelay (10);
   return val;
 }
 
@@ -184,10 +179,9 @@ solo_setmixer (solo_devc * devc, unsigned int port, unsigned int value)
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   OUTB (devc->osdev, (unsigned char) (port & 0xff), MIXER_ADDR);
-  oss_udelay (10);
+  oss_udelay (50);
   OUTB (devc->osdev, (unsigned char) (value & 0xff), MIXER_DATA);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  oss_udelay (10);
 }
 
 static int
@@ -202,14 +196,13 @@ solo_reset (solo_devc * devc)
   OUTB (devc->osdev, 0, DSP_RESET);
   oss_udelay (10);
 
-  for (loopc = 0; loopc < 1000 && !(INB (devc->osdev, DSP_DATA_AVAIL) & 0x80);
-       loopc++);
-
-  if (INB (devc->osdev, DSP_READ) != 0xAA)
-    {
-      DDB (cmn_err (CE_WARN, "No response to RESET\n"));
-      return 0;			/* Sorry */
-    }
+  for (loopc = 0; loopc < 0x10000; loopc++)
+    if (INB (devc->osdev, DSP_DATA_AVAIL) & 0x80)
+      if (INB (devc->osdev, DSP_READ) != 0xAA)
+        {
+          DDB (cmn_err (CE_WARN, "No response to RESET\n"));
+          return 0;			/* Sorry */
+        }
   solo_command (devc, 0xc6);	/* Enable extended mode */
   DDB (cmn_err (CE_WARN, "solo_reset() OK\n"));
   return 1;
@@ -522,18 +515,20 @@ solointr (oss_device_t * osdev)
   int i;
 
   status = INB (devc->osdev, devc->base + 7);
-
-  OUTB (devc->osdev, 0x00, devc->base + 7);
   devc->irq_ok = 1;
 
   for (i = 0; i < MAX_PORTC; i++)
     {
       if (status & 0x10)	/* ESS Native Mode */
 	{
+          int instat;
 	  solo_portc *portc = &devc->portc[i];
 	  serviced = 1;
+
+  	  instat = INB (devc->osdev, devc->sb_base + 0xe);	/* Ack the interrupt */
+	  
 	  if (portc->trigger_bits & PCM_ENABLE_INPUT)
-	    oss_audio_inputintr (portc->audiodev, 0);
+	    oss_audio_inputintr (portc->audiodev, 1);
 	}
 
       if (status & 0x20)	/* ESS DAC2 Mode */
@@ -550,12 +545,8 @@ solointr (oss_device_t * osdev)
   if (status & 0x80)		/* MPU interrupt */
     {
       serviced = 1;
-      /*        uart401intr (INT_HANDLER_CALL (devc->irq)); *//* UART401 interrupt */
+      /* uart401intr (INT_HANDLER_CALL (devc->irq)); *//* UART401 interrupt */
     }
-
-  INB (devc->osdev, devc->sb_base + 0xe);	/* Ack the interrupt */
-  /* mask the interrupts! */
-  OUTB (devc->osdev, devc->intr_mask, devc->base + 7);
 
   return serviced;
 }
@@ -615,7 +606,10 @@ static void solo_audio_trigger (int dev, int state);
 static void
 solo_audio_reset (int dev)
 {
+  solo_devc *devc = audio_engines[dev]->devc;
+
   solo_audio_trigger (dev, 0);
+  solo_reset (devc);
 }
 
 static void
@@ -703,14 +697,11 @@ solo_audio_start_input (int dev, oss_native_word buf, int count,
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
+  OUTB (devc->osdev, 0xc4, devc->ddma_base + 0x08);
   OUTB (devc->osdev, 0xff, devc->ddma_base + 0x0d);
   OUTB (devc->osdev, 0x01, devc->ddma_base + 0x0f);
-  OUTB (devc->osdev, (p) & 0xff, devc->ddma_base + 0x00);
-  OUTB (devc->osdev, (p >> 8) & 0xff, devc->ddma_base + 0x01);
-  OUTB (devc->osdev, (p >> 16) & 0xff, devc->ddma_base + 0x02);
-  OUTB (devc->osdev, (p >> 24) & 0xff, devc->ddma_base + 0x03);
-  OUTB (devc->osdev, (c) & 0xff, devc->ddma_base + 0x04);
-  OUTB (devc->osdev, (c >> 8) & 0xff, devc->ddma_base + 0x05);
+  OUTL (devc->osdev, p, devc->ddma_base + 0x00);
+  OUTW (devc->osdev, c, devc->ddma_base + 0x04);
   OUTB (devc->osdev, 0x14, devc->base + 0x0b);	/*Demand/Single Mode */
 
   c = -(dmap->fragment_size);
@@ -738,8 +729,10 @@ solo_audio_trigger (int dev, int state)
 	  if ((portc->audio_enabled & PCM_ENABLE_OUTPUT) &&
 	      !(portc->trigger_bits & PCM_ENABLE_OUTPUT))
 	    {
-	      OUTB (devc->osdev, 0x0A, devc->base + 6);	/*unmask dac2 intr */
+	      solo_setmixer (devc, 0x78, 0x92);	/* Go */
+	      oss_udelay(10);
 	      solo_setmixer (devc, 0x78, 0x93);	/* Go */
+	      OUTB (devc->osdev, 0x0A, devc->base + 6);	/*unmask dac2 intr */
 	      portc->trigger_bits |= PCM_ENABLE_OUTPUT;
 	    }
 	}
@@ -763,7 +756,7 @@ solo_audio_trigger (int dev, int state)
 	      !(portc->trigger_bits & PCM_ENABLE_INPUT))
 	    {
 	      OUTB (devc->osdev, 0x00, devc->ddma_base + 0x0f);
-	      ext_write (devc, 0xb8, ext_read (devc, 0xb8) | 0x01);	/* Go */
+	      ext_write (devc, 0xb8, 0x0f);	/* Go */
 	      portc->trigger_bits |= PCM_ENABLE_INPUT;
 	    }
 	}
@@ -774,7 +767,7 @@ solo_audio_trigger (int dev, int state)
 	    {
 	      portc->trigger_bits &= ~PCM_ENABLE_INPUT;
 	      portc->audio_enabled &= ~PCM_ENABLE_INPUT;
-	      solo_reset (devc);
+	      ext_write (devc, 0xb8, 0x00);	/* stop */
 	    }
 	}
     }
@@ -852,36 +845,13 @@ solo_audio_prepare_for_input (int dev, int bsize, int bcount)
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   ext_speed (dev, 1);
 
-  ext_write (devc, 0xb8, (ext_read (devc, 0xb8) | 0x0E));	/* Auto init DMA mode */
   ext_write (devc, 0xa8, (ext_read (devc, 0xa8) & ~0x3) | (3 - portc->channels));	/* Mono/stereo */
-  ext_write (devc, 0xb9, 3);	/* Demand mode (4 bytes/DMA request) */
+  ext_write (devc, 0xb9, 2);	/* Demand mode (4 bytes/DMA request) */
 
-  if (portc->channels == 1)
-    {
-      if (portc->bits == AFMT_U8)
-	{			/* 8 bit mono */
-	  ext_write (devc, 0xb7, 0x51);
-	  ext_write (devc, 0xb7, 0xd0);
-	}
-      else
-	{			/* 16 bit mono */
-	  ext_write (devc, 0xb7, 0x71);
-	  ext_write (devc, 0xb7, 0xf4);
-	}
-    }
-  else
-    {				/* Stereo */
-      if (portc->bits == AFMT_U8)
-	{			/* 8 bit stereo */
-	  ext_write (devc, 0xb7, 0x51);
-	  ext_write (devc, 0xb7, 0x98);
-	}
-      else
-	{			/* 16 bit stereo */
-	  ext_write (devc, 0xb7, 0x71);
-	  ext_write (devc, 0xb7, 0xbc);
-	}
-    }
+
+  ext_write (devc, 0xb7, (portc->bits == AFMT_U8) ? 0x51 : 0x71);
+  ext_write (devc, 0xb7, ((portc->bits == AFMT_U8) ? 0x00 : 0x24) |
+			 ((portc->channels == 1) ? 0x04 : 0x08));
   ext_write (devc, 0xb1, (ext_read (devc, 0xb1) & 0x0F) | 0x50);
   ext_write (devc, 0xb2, (ext_read (devc, 0xb2) & 0x0F) | 0x50);
   solo_command (devc, DSP_CMD_SPKOFF);
@@ -910,7 +880,7 @@ solo_audio_prepare_for_output (int dev, int bsize, int bcount)
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
-  solo_setmixer (devc, 0x78, 0x10);	/*set autoinit */
+  solo_reset (devc);
   ext_speed (dev, 0);
   if (portc->channels == 1)
     {
@@ -1177,10 +1147,12 @@ oss_solo_attach (oss_device_t * osdev)
   pci_write_config_word (osdev, 0x40, 0x805f);
 
   /* Select DDMA and Disable IRQ emulation */
+  pci_write_config_dword (osdev, 0x50, 0);
+#if 1
   pci_read_config_dword (osdev, 0x50, &pci_ioaddr0);
   pci_ioaddr0 &= (~(0x0700 | 0x6000));
   pci_write_config_dword (osdev, 0x50, pci_ioaddr0);
-
+#endif
   return init_solo (devc);	/* Detected */
 }
 

@@ -815,7 +815,7 @@ oss_contig_malloc (oss_device_t * osdev, int buffsize, oss_uint64_t memlimit,
 
   *phaddr = 0;
 
-  if (memlimit <= 0x00000000ffffffffLL)
+  if (memlimit < 0x00000000ffffffffLL)
     flags |= GFP_DMA;
 
   start_addr = NULL;
