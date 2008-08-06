@@ -1,28 +1,29 @@
 NAME
-ossrecord - Open Sound System recording applet.
+ossrecord - Open Sound System recording program.
 
 USAGE
 ossrecord [options] filename
 
 DESCRIPTION
-The ossrecord applet records audio in Microsoft RIFF (wav) format. It
+The ossrecord program records audio in Microsoft RIFF (wav) format. It
 will record from any input that's currently set as the recording source
-by the ossxmix/ossmix mixer applets. With the -l option, you also get
+by the ossxmix/ossmix mixer programs. With the -l option, you also get
 a level meter that will display VU levels in a character mode.
 
 The filename parameter is name of the (.wav) file to be produced. Output can be
-sent to stdot by giving - as the file name.
+sent to stdout by giving - as the file name.
 
 OPTIONS
--s<rate> 	Select the playback rate for raw PCM audio (eg -s48000).
--b<bits> 	Select the number of bits/sample (8/16/32) (eg. -b8 or -b16).
+-s<rate> 	Select the recording rate for raw PCM audio (eg -s48000).
 -c<channels> 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc. 
 -d<devname>  	Select <devname> as the device (eg -d/dev/dsp2).
--S		Record in stereo (obsolete - use -c2 instead).
+-f<fmt>		Select the output sample format (eg -fS32_LE or -fMU_LAW)
+-f?		Prints the list of supported format names.
+-F<cnt>		Select the container format (eg WAV or AU). Default is WAV.
+-F?		Prints the list of supported container formats.
 -R		Open audio device in raw mode to disable virtual mixing and
-		sample rate/format.
-		conversions. Can be used when recording from a digital source
-		(S/PDIF input).
+		sample rate/format conversions. Can be used when recording
+		from a digital source (S/PDIF input).
 -v		Verbose output.
 -l		Display level meters (character based).
 -i<recsrc|?> 	Select the recording source or display available recording 

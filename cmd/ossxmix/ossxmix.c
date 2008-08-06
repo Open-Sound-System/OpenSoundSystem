@@ -2031,7 +2031,9 @@ main (int argc, char **argv)
       gtk_widget_show (window);
       if (background) gtk_window_iconify (GTK_WINDOW (window));
     }
+#if GTK_CHECK_VERSION(2,2,0)
   else gdk_notify_startup_complete ();
+#endif
 #else
   add_timeout ((gpointer)poll_tag_list);
   gtk_widget_show (window);

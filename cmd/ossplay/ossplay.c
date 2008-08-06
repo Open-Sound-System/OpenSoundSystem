@@ -74,7 +74,6 @@ static const format_t format_a[] = {
   {NULL,		0,			0}
 };
 
-static void cleanup (void);
 static void describe_error (void);
 static void find_devname (char *, const char *);
 static int select_format (const char *);
@@ -130,7 +129,7 @@ be_int (const unsigned char * p, int l)
 static void
 usage (const char * prog)
 {
-  print_msg (HELPM, "Usage: %s [options...] filename...\n", prog);
+  print_msg (HELPM, "Usage: %s [options] filename(s)\n", prog?prog:"ossplay");
   print_msg (HELPM, "  Options:  -v             Verbose output.\n");
   print_msg (HELPM, "            -q             No informative printouts.\n");
   print_msg (HELPM, "            -d<devname>    Change output device.\n");
@@ -202,8 +201,6 @@ open_device (void)
       exit (-1);
     }
 
-  atexit (cleanup);
-
   if (raw_mode)
     {
       /*
@@ -258,9 +255,8 @@ find_devname (char * devname, const char * num)
   close (mixer_fd);
 }
 
-/*ARGSUSED*/
 int
-setup_device (int fd, int format, int channels, int speed)
+setup_device (int format, int channels, int speed)
 {
   int tmp;
 
@@ -313,7 +309,7 @@ setup_device (int fd, int format, int channels, int speed)
             tmp = format_a[i].may_conv;
             if (tmp == 0) return 0;
             print_msg (WARNM, "Converting to format %x\n", tmp);
-            return setup_device (fd, tmp, channels, speed);
+            return setup_device (tmp, channels, speed);
           }
       return 0;
     }
@@ -371,46 +367,6 @@ ossplay_lseek_stdin (int fd, off_t off, int w)
       i -= bytes_read;
     }
   return off;
-}
-
-void 
-print_verbose (int format, int channels, int speed)
-{
-  char chn[32], *fmt = "";
-
-  if (channels == 1)
-    strcpy (chn, "mono");
-  else if (channels == 2)
-    strcpy (chn, "stereo");
-  else
-    snprintf (chn, sizeof(chn), "%d channels", channels);
-
-  switch (format)
-    {
-       case AFMT_QUERY: fmt = "Invallid format"; break;
-       case AFMT_IMA_ADPCM: fmt = "ADPCM"; break;
-       case AFMT_MS_ADPCM: fmt = "MS-ADPCM"; break;
-       case AFMT_MU_LAW: fmt = "mu-law"; break;
-       case AFMT_A_LAW: fmt = "A-law"; break;
-       case AFMT_U8:
-       case AFMT_S8: fmt = "8 bits"; break;
-       case AFMT_S16_LE:
-       case AFMT_S16_BE:
-       case AFMT_U16_LE:
-       case AFMT_U16_BE: fmt = "16 bits"; break;
-       case AFMT_S24_LE:
-       case AFMT_S24_BE:
-       case AFMT_S24_PACKED: fmt = "24 bits"; break;
-       case AFMT_SPDIF_RAW:
-       case AFMT_S32_LE:
-       case AFMT_S32_BE: fmt = "32 bits"; break;
-       case AFMT_FLOAT: fmt = "float"; break;
-       case AFMT_VORBIS: fmt = "vorbis"; break;
-       case AFMT_MPEG: fmt = "mpeg"; break;
-       case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
-       case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
-    }
-  print_msg (NORMALM, "%s/%s/%d Hz\n", fmt, chn, speed);
 }
 
 static void
@@ -515,19 +471,11 @@ static void get_int (int signum)
   quitflag = 1;
 }
 
-static void cleanup (void)
-{
-  close (audiofd);
-}
-
 int
 parse_opts (int argc, char ** argv)
 {
-  char * prog;
   extern int optind;
   int c;
-
-  prog = argv[0];
 
   while ((c = getopt (argc, argv, "FRS:c:d:f:g:hlo:qs:v")) != EOF)
     {
@@ -598,7 +546,7 @@ parse_opts (int argc, char ** argv)
 	  break;
 
 	default:
-	  usage (prog);
+	  usage (argv[0]);
 	}
 
     }
@@ -611,7 +559,7 @@ parse_opts (int argc, char ** argv)
     select_playtgt (playtgt);
 
   if (argc < 2)
-    usage (prog);
+    usage (argv[0]);
 
 #ifdef SIGQUIT
   signal (SIGQUIT, get_int);

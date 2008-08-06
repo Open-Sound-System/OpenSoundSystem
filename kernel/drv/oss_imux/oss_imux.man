@@ -18,38 +18,9 @@ are getting data from the physical soundcard.
 
 CONFIGURATION
 To add the IMUX driver you first need to ensure that there is a physical
-soundcard present and then you can run ossdetect -i to add the IMUX driver.
-
-When properly configured, IMUX output in /dev/sndstat will look like:
-
-	Audio devices:
-	0: AMD 8111 (DUPLEX)
-	1: AMD 8111 (shadow) (DUPLEX)
-	2: OSS Virtual Mixer v2.5 Playback CH #0 (GRC3)
-	3: OSS Virtual Mixer v2.5 Playback CH #1 (GRC3)
-	4: OSS Virtual Mixer v2.5 Playback CH #2 (GRC3)
-	5: OSS Virtual Mixer v2.5 Playback CH #3 (GRC3)
-	6: OSS Virtual Mixer v2.5 Playback CH #4 (GRC3)
-	7: OSS Virtual Mixer v2.5 Playback CH #5 (GRC3)
-	8: OSS Virtual Mixer v2.5 Playback CH #6 (GRC3)
-	9: OSS Virtual Mixer v2.5 Playback CH #7 (GRC3)
-	10: Virtual Mixer Loopback Record CH #0 (GRC3)
-	11: Virtual Mixer Loopback Record CH #1 (GRC3)
-	12: Virtual Mixer Loopback Record CH #2 (GRC3)
-	13: Virtual Mixer Loopback Record CH #3 (GRC3)
-	14: IMux0 CH #0 (GRC3)
-	15: IMux0 CH #1 (GRC3)
-	16: IMux0 CH #2 (GRC3)
-	17: IMux0 CH #3 (GRC3)
-	18: IMux0 CH #4 (GRC3)
-
-	Midi devices:
-
-	Mixers:
-	0: ICH AC97 Mixer (AD1885)
-	1: Virtual Mixer
-	2: IMUX Control panel
-
+soundcard present and then you can run ossdetect -i to add it. You may want
+to select a master device by setting imux_masterdev, but the autodetection
+should provide a good default. After OSS restart, imux should be available.
 
 USAGE
 Connect an input source to the soundcard's line-in jack. Using the Mixer app
@@ -57,8 +28,8 @@ like ossmix (or any OSS compliant mixer) set the recording source to Line-In
 (eg ossmix line.rec ON) Now you can start recording the input in multiple 
 formats and at different sample rates. The simplest example is:
 
-	/usr/lib/oss/record -s48000 -b16 -S -d/dev/dsp3 test1.wav &
-	/usr/lib/oss/record -s8000 -b8 -d/dev/dsp5 test2.wave &
+	ossrecord -s48000 -b16 -c2 -d/dev/oss/oss_imux0/pcmin0 test1.wav &
+	ossrecord -s8000 -b8 -d/dev/oss/oss_imux0/pcmin0 test2.wav &
 
 After a few minutes of recording you can stop them by placing the command in
 forground mode (type fg %1 or fg %2) and press ^c to stop.
@@ -67,10 +38,10 @@ You now have two wav format files. test1.wav is a 48KHz 16bit stereo file and
 test2.wav is a 8Khz 8bit Mono file.
 
 You can now playback the files as follows:
-o /usr/lib/oss/play -v test1.wav and it should show you that the file is indeed
+o ossplay -v test1.wav and it should show you that the file is indeed
 48Khz 16bit stereo.
 
-o /usr/lib/oss/play -v test2.wav - you should see that this file is indeed a
+o ossplay -v test2.wav - you should see that this file is indeed a
 8Khz 8bit mono file.
 
 What you have essentially accomplished is recording a single input stream into
@@ -87,7 +58,6 @@ activity when a recording program is active on a particular channel.
 
 
 OPTIONS
-
 o imux_masterdev: Selects which physical device to use as the Master device
 for the IMUX driver.
 Values: -1: automatically selected by OSS, 1-N: Audio device index of the

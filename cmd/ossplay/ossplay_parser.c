@@ -38,7 +38,8 @@ enum {
   WAVE_FILE_BE,
   _8SVX_FILE,
   _16SV_FILE,
-  MAUD_FILE
+  MAUD_FILE,
+  AU_FILE
 };
 
 extern int audiofd, quitflag, quiet, verbose;
@@ -55,6 +56,7 @@ static void play_iff (const char *, int, unsigned char *, int);
 extern void play_mpeg (const char *, int, unsigned char *, int);
 #endif
 static void play_voc (const char *, int, unsigned char *, int);
+static void print_verbose_fileinfo (const char *, int, int, int, int);
 
 void
 play_file (const char * filename)
@@ -630,7 +632,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 int i, len;
 
                 print_msg (STARTM,  "%s: ", filename);
-                if (chunk_size > 1024) len = 1024;
+                if (chunk_size > 1023) len = 1023;
                 else len = chunk_size;
                 switch (chunk_id)
                   {
@@ -651,9 +653,9 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                       AREAD (fd, buf, len, ANNO);
                       break;
                   }
-                for (i = 0; i < len; i++)
-                  print_msg (CONTM, "%c", isprint (buf[i])?buf[i]:' ');
-                print_msg (ENDM, "\n");
+                for (i = 0; i < len; i++) if (!isprint (buf[i])) buf[i] = '.';
+                buf[len] = '\0';
+                print_msg (ENDM, "%s\n", buf);
                 break;
               }
 
@@ -691,21 +693,7 @@ nexta:
 
 stdinext:
   if (!quiet)
-    {
-      if (type == AIFF_FILE)
-        print_msg (NORMALM, "Playing AIFF file %s, ", filename);
-      else if (type == AIFC_FILE)
-        print_msg (NORMALM, "Playing AIFC file %s, ", filename);
-      else if ((type == WAVE_FILE) || (type == WAVE_FILE_BE))
-        print_msg (NORMALM, "Playing WAVE file %s, ", filename);
-      else if (type == _8SVX_FILE)
-        print_msg (NORMALM, "Playing 8SVX file %s, ", filename);
-      else if (type == _16SV_FILE)
-        print_msg (NORMALM, "Playing 16SV file %s, ", filename);
-      else
-        print_msg (NORMALM, "Playing MAUD file %s, ", filename);
-      print_verbose (format, channels, speed);
-    }
+    print_verbose_fileinfo (filename, type, format, channels, speed);
 
   decode_sound (fd, sound_size, format, channels, speed, (void *)&msadpcm_val);
 
@@ -782,24 +770,22 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
 
   if (!quiet)
     {
-      print_msg (NORMALM, "Playing .au file %s, ", filename);
-      print_verbose (format, channels, speed);
+      print_verbose_fileinfo (filename, AU_FILE, format, channels, speed);
 
       if ((verbose) && (p > 24))
-	{
-          if (p > 1048) an_len = 1024;
+        {
+          if (p > 1047) an_len = 1023;
           else an_len = p - 24;
           if (read (fd, hdr, an_len) < an_len)
             {
-              print_msg (ERRORM, "%s: Can't read to pos %u\n", filename,
-                         an_len + 24);
+              print_msg (ERRORM, "%s: Can't %u bytes from pos 24\n", filename,
+                         an_len);
               return;
             }
-	  print_msg (NORMALM, "%s: Annotations: ", filename);
-	  for (i = 0; i < an_len; i++)
-	    print_msg (NORMALM, "%c", isprint (hdr[i])?hdr[i]:'.');
-	  print_msg (NORMALM, "\n");
-	}
+          for (i = 0; i < an_len; i++) if (!isprint (hdr[i])) hdr[i] = '.';
+          hdr[an_len] = '\0';
+          print_msg (NORMALM, "%s: Annotations: %s\n", filename, hdr);
+        }
     }
 
   if (ossplay_lseek (fd, p - l - an_len, SEEK_CUR) == -1)
@@ -937,10 +923,9 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
 
               if (len > 256) len = 256;
               VREAD (fd, buf, len);
-              print_msg (STARTM, "Text: ");
-              for (i = 0; i < len; i++)
-                print_msg (CONTM, "%c", isprint(buf[i])?buf[i]:'.');
-              print_msg (ENDM, "\n");
+              for (i = 0; i < len; i++) if (!isprint (buf[i])) buf[i] = '.';
+              buf[len-1] = '\0';
+              print_msg (NORMALM, "Text: %s\n", buf);
             }
           break;
 
@@ -1015,4 +1000,64 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
       if (block_type != 8) plock = 0;
       data_offs += blklen + 4;
     }
+}
+
+static void 
+print_verbose_fileinfo (const char * filename, int type, int format,
+                        int channels, int speed)
+{
+  char chn[32], *fmt = "";
+
+  switch (type)
+    {
+      case WAVE_FILE:
+      case WAVE_FILE_BE:
+        print_msg (NORMALM, "Playing WAVE file %s, ", filename); break;
+      case AIFC_FILE:
+        print_msg (NORMALM, "Playing AIFC file %s, ", filename); break;
+      case AIFF_FILE:
+        print_msg (NORMALM, "Playing AIFF file %s, ", filename); break;
+      case AU_FILE:
+        print_msg (NORMALM, "Playing AU file %s, ", filename); break;
+      case _8SVX_FILE:
+        print_msg (NORMALM, "Playing 8SVX file %s, ", filename); break;
+      case _16SV_FILE:
+        print_msg (NORMALM, "Playing 16SV file %s, ", filename); break;
+      case MAUD_FILE:
+        print_msg (NORMALM, "Playing MAUD file %s, ", filename); break;
+    }
+
+  if (channels == 1)
+    strcpy (chn, "mono");
+  else if (channels == 2)
+    strcpy (chn, "stereo");
+  else
+    snprintf (chn, sizeof(chn), "%d channels", channels);
+
+  switch (format)
+    {
+       case AFMT_QUERY: fmt = "Invallid format"; break;
+       case AFMT_IMA_ADPCM: fmt = "ADPCM"; break;
+       case AFMT_MS_ADPCM: fmt = "MS-ADPCM"; break;
+       case AFMT_MU_LAW: fmt = "mu-law"; break;
+       case AFMT_A_LAW: fmt = "A-law"; break;
+       case AFMT_U8:
+       case AFMT_S8: fmt = "8 bits"; break;
+       case AFMT_S16_LE:
+       case AFMT_S16_BE:
+       case AFMT_U16_LE:
+       case AFMT_U16_BE: fmt = "16 bits"; break;
+       case AFMT_S24_LE:
+       case AFMT_S24_BE:
+       case AFMT_S24_PACKED: fmt = "24 bits"; break;
+       case AFMT_SPDIF_RAW:
+       case AFMT_S32_LE:
+       case AFMT_S32_BE: fmt = "32 bits"; break;
+       case AFMT_FLOAT: fmt = "float"; break;
+       case AFMT_VORBIS: fmt = "vorbis"; break;
+       case AFMT_MPEG: fmt = "mpeg"; break;
+       case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
+       case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
+    }
+  print_msg (NORMALM, "%s/%s/%d Hz\n", fmt, chn, speed);
 }

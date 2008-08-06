@@ -34,13 +34,21 @@ typedef struct
   int pass;
 } driver_def_t;
 
+typedef struct drv_slist
+{
+  const char * drv_name;
+  struct drv_slist * next;
+} drvlist_t;
+static drvlist_t * drvl = NULL;
+
 #define MAX_DRIVERS	1000
 static driver_def_t drivers[MAX_DRIVERS];
 static int ndrivers = 0;
 
-static int add_drv (char *, int);
+static int add_drv (const char *, int);
 static void create_devlinks (void);
 static void create_node (char *, char *, int);
+static drvlist_t * prepend_drvlist (const char *);
 static char * get_mapname (void);
 static void load_license (const char *);
 static void load_devlist (const char *, int);
@@ -177,7 +185,7 @@ load_devlist (const char *fname, int is_3rdparty)
 }
 
 static int
-add_drv (char *id, int pass)
+add_drv (const char * id, int pass)
 {
   int i;
 
@@ -186,7 +194,7 @@ add_drv (char *id, int pass)
       if (strcmp (id, drivers[i].key) == 0)
 	{
 	  if (verbose > 0)
-	    fprintf (stderr, "Detected %s\n", drivers[i].name);
+	    printf ("Detected %s\n", drivers[i].name);
 	  drivers[i].detected = 1;
 	  drivers[i].pass = pass;
 	  return 1;
@@ -351,6 +359,23 @@ pci_detect (void)
   pclose (f);
 }
 
+static drvlist_t *
+prepend_drvlist (const char * name)
+{
+  drvlist_t * dp;
+
+  dp = malloc (sizeof (drvlist_t));
+  if (dp == NULL)
+    {
+      fprintf (stderr, "Can't allocate memory!\n");
+      exit (-1);
+    }
+
+  dp->drv_name = name;
+  dp->next = drvl;
+  return dp;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -371,15 +396,15 @@ main (int argc, char *argv[])
 	  break;
 
 	case 'i':
-	  add_drv ("oss_imux", PSEUDO_PASS);
+	  drvl = prepend_drvlist ("oss_imux");
 	  break;
 
 	case 'u':
-	  add_drv ("oss_userdev", PSEUDO_PASS);
+	  drvl = prepend_drvlist ("oss_userdev");
 	  break;
 
 	case 'a':
-	  add_drv (optarg, PSEUDO_PASS);
+	  drvl = prepend_drvlist (optarg);
 	  break;
 
 	case 'l':
@@ -415,6 +440,14 @@ main (int argc, char *argv[])
     load_devlist ("/etc/oss_3rdparty", 1);
 
   pci_detect ();
+
+  while (drvl != NULL)
+    {
+      drvlist_t * d = drvl;
+      add_drv (drvl->drv_name, PSEUDO_PASS);
+      drvl = drvl->next;
+      free (d);
+    }
 
   snprintf (instfname, sizeof (instfname), "%s/%s", osslibdir,
 	    "etc/installed_drivers");

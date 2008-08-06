@@ -18,14 +18,14 @@
 #define DEFAULT_CHANNELS	1
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
+#define MAX_CHANNELS		12
+#define MIN_UPDATE_INTERVAL		200.0
 
 enum {
   ERRORM,
   HELPM,
   NORMALM,
   NOTIFYM,
-  UPDATEM,
-  CLEARUPDATEM,
   WARNM,
   STARTM,
   CONTM,
@@ -62,6 +62,7 @@ typedef struct msadpcm_values {
 msadpcm_values_t;
 
 int be_int (const unsigned char *, int);
+void clear_update (void);
 const char * filepart (const char *);
 int le_int (const unsigned char *, int);
 void * ossplay_malloc (size_t);
@@ -71,7 +72,7 @@ char * ossplay_strdup (const char *);
 int parse_opts (int, char **);
 void perror_msg (const char * s);
 void print_msg (char, const char *, ...);
-void print_verbose (int, int, int);
-int setup_device (int, int, int, int);
+void print_update (int, const char *, const char *);
+int setup_device (int, int, int);
 
 #endif

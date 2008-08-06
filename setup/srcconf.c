@@ -1093,7 +1093,7 @@ produce_errno_h(void)
 		   exit(-1);
 	   }
 #define GEN_ERRNO(e) \
-	fprintf (f, "#define OSS_"#e"\t\t%d\n", (e<0) ? e : -(e));
+	fprintf (f, "#define OSS_"#e"\t\t%d\n", (e<=0) ? e : -(e));
 
 	fprintf (f, "#ifndef OSS_ERRNO_H\n");
 	fprintf (f, "#define OSS_ERRNO_H\n");

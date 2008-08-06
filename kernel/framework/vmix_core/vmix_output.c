@@ -55,9 +55,6 @@ process_limiter (unsigned int *statevar, int *chbufs[], int nchannels,
 {
 #define Abs(x) ((x) < 0 ? -(x) : (x))
 
-  const unsigned ioutgain = ((unsigned) 0x100) * 0x100 >> 8;
-  const int outclip =
-    ((unsigned) 0x100) * 0x7FFF + (((unsigned) 0x100) * 0xFF >> 8);
   int k, t;
   unsigned int q, amp, amp2;
 

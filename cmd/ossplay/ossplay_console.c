@@ -3,7 +3,7 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
-extern int quiet, quitflag, exitstatus, loop, from_stdin;
+extern int exitstatus, from_stdin, loop, quiet, quitflag, verbose;
 extern char current_songname[64];
 
 #include "ossplay.h"
@@ -12,6 +12,26 @@ extern char current_songname[64];
 void perror_msg (const char * s)
 {
   perror (s);
+}
+
+void clear_update (void)
+{
+  if (verbose) fprintf (stdout, "\r\n");
+}
+
+void print_update (int v, const char * time, const char * total)
+{
+  char template[12] = "-------++!!";
+
+  if (v > 0) template[v] = '\0';
+  else
+    {
+      template[0] = '0';
+      template[1] = '\0';
+    }
+
+  fprintf (stdout, "\rTime: %s of %s VU %-11s", time, total, template);
+  fflush (stdout);
 }
 
 void print_msg (char type, const char * fmt, ...)
@@ -27,14 +47,6 @@ void print_msg (char type, const char * fmt, ...)
         if (quiet == 2) break;
       case ERRORM:
         vfprintf (stderr, fmt, ap);
-        break;
-      case UPDATEM:
-        fprintf (stdout, "\r");
-        vfprintf (stdout, fmt, ap);
-        fflush (stdout);
-        break;
-      case CLEARUPDATEM:
-        fprintf (stdout, "\r\n");
         break;
       case HELPM:
         vfprintf (stdout, fmt, ap);
@@ -65,6 +77,7 @@ ossplay_malloc (size_t sz)
 void
 ossplay_free (void * ptr)
 {
+  if (ptr == NULL) return;
   free (ptr);
 }
 

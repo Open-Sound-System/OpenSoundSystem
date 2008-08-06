@@ -54,6 +54,7 @@ then
 
 	if ! test "$OSS_VERMAGIC " = "$KERNEL_VERMAGIC "
 	then
+		OSS_ORIG_VERMAGIC="$OSS_VERMAGIC"
 		OSS_VERMAGIC=`/usr/sbin/ossvermagic -z -u -q /lib/modules/$KERNEL_VERSION/kernel/oss/osscore.ko`
 		POS_UBUNTU_OVERRIDE=1
 	fi
@@ -66,7 +67,7 @@ then
 		echo Previous OSS modules were for a different kernel version - removed >> $LOG
 	elif test "$POS_UBUNTU_OVERRIDE " = "1 "
 	then
-		echo "Vermagic backup activated for Ubuntu. Vermagic: $OSS_VERMAGIC" >> $LOG
+		echo "Vermagic backup check activated for Ubuntu. Backup vermagic: $OSS_VERMAGIC. OSS stored vermagic $OSS_ORIG_VERMAGIC" >> $LOG
 		UBUNTU_OVERRIDE="-u"
 	fi
 fi
@@ -138,17 +139,17 @@ then
 	exit 50
 fi
 
-touch $OSSLIBDIR/starting
-sync
-
 echo >> $LOG
 echo '*** Loading OSS kernel modules ***' >> $LOG
 echo >> $LOG
 
+touch $OSSLIBDIR/starting
+sync
+
 OPTIONS=
 if test -f $OSSLIBDIR/conf/osscore.conf
 then
-  OPTIONS="`grep -v -h '^#' $OSSLIBDIR/conf/osscore.conf|sed 's/ //g'`"
+  OPTIONS="`grep -v -h '^#' $OSSLIBDIR/conf/osscore.conf|sed 's/[ \t]//g'`"
 fi
 
 if ! /sbin/modprobe osscore $OPTIONS
@@ -167,7 +168,7 @@ do
 
 	if test -f $OSSLIBDIR/conf/$n.conf
 	then
-	  OPTIONS="`grep -v -h '^#' $OSSLIBDIR/conf/$n.conf|sed 's/ //g'`"
+	  OPTIONS="`grep -v -h '^#' $OSSLIBDIR/conf/$n.conf|sed 's/[ \t]//g'`"
 	fi
 
 	if ! /sbin/modprobe $n $OPTIONS
@@ -295,6 +296,8 @@ then
   echo Running $OSSLIBDIR/soundon.user >> $LOG
   $OSSLIBDIR/soundon.user >> $LOG 2>&1
 fi
+
+vmixctl attach /dev/dsp >> $LOG 2>&1
 
 if test "$NOTIFY " = "1 "
 then
