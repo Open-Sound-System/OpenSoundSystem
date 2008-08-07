@@ -29,13 +29,18 @@ static void
 usage(void)
 {
 	fprintf (stderr, "Usage:\n");
-	fprintf (stderr, "%s attach [options...] devname\n", cmdname);
-	fprintf (stderr, "%s attach devname inputdev\n", cmdname);
+	fprintf (stderr, "%s attach [attach_options...] devname\n", cmdname);
+	fprintf (stderr, "%s attach [attach_options...] devname inputdev\n", cmdname);
 	fprintf (stderr, "%s detach devname\n", cmdname);
 	fprintf (stderr, "%s rate devname samplerate\n", cmdname);
 	fprintf (stderr, "\n");
 	fprintf (stderr, "Use ossinfo -a to find out the devname and inputdev parameters\n");
 	fprintf (stderr, "Use ossinfo -a -v2 to find out a suitable sample rate.\n");
+	fprintf (stderr, "\n");
+	fprintf (stderr, "attach_options:\n");
+	fprintf (stderr, "\n");
+	fprintf (stderr, "\t-r\tDisable recording\n");
+	fprintf (stderr, "\t-p\tDo not preallocate client engines\n");
 
 	exit(-1);
 }
@@ -67,13 +72,42 @@ vmix_attach(int argc, char **argv)
 {
 	int masterfd, inputfd=-1;
 	int masterdev, inputdev=-1;
+	int c;
+  	extern int optind;
 
-	vmixctl_attach_t att;
+	vmixctl_attach_t att={0};
 
-	masterdev=find_audiodev(argv[2], O_WRONLY, &masterfd);
+/*
+ * Simple command line switch handling.
+ */
+	argv++;argc--; /* Skip the initial command ("attach") */
 
-	if (argc>3)
-	   inputdev=find_audiodev(argv[3], O_RDONLY, &inputfd);
+  	while ((c = getopt (argc, argv, "rp")) != EOF)
+    	   {
+      		switch (c)
+        	{
+		case 'r': /* No input */
+			att.attach_flags |= VMIX_INSTALL_NOINPUT;
+			break;
+
+		case 'p': /* No client engine preallocation */
+			att.attach_flags |= VMIX_INSTALL_NOPREALOC;
+			break;
+
+		default:
+			usage();
+		}
+	   }
+
+	if (optind >= argc)
+	   usage();
+
+	masterdev=find_audiodev(argv[optind], O_WRONLY, &masterfd);
+
+	optind++;
+
+	if (optind<argc)
+	   inputdev=find_audiodev(argv[optind], O_RDONLY, &inputfd);
 	   
 	att.masterdev=masterdev;
 	att.inputdev=inputdev;

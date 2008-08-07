@@ -1797,15 +1797,18 @@ check_masterdev (void *mx)
 //cmn_err(CE_CONT, "OK\n");
 
   DDB (cmn_err (CE_CONT, "Vmix masterdev=%d\n", mixer->masterdev));
-  /* TODO: Prevent the other virtual drivers from picking this one */
 
-  mixer->vmix_flags = adev->vmix_flags;
-  mixer->max_channels = adev->max_channels;
 /*
  * The device is OK. Next check for the input/duplex capability.
  */
 
-  if (adev->vmix_flags & VMIX_NOINPUT)
+  mixer->vmix_flags = adev->vmix_flags;
+  mixer->max_channels = adev->max_channels;
+
+  if (mixer->attach_flags & VMIX_INSTALL_NOINPUT)
+     mixer->vmix_flags |= VMIX_NOINPUT;
+
+  if (mixer->vmix_flags & VMIX_NOINPUT)
     mixer->inputdev = -1;
   else if (!(adev->flags & ADEV_NOINPUT) && (adev->flags & ADEV_DUPLEX))
     {
@@ -1865,7 +1868,7 @@ check_masterdev (void *mx)
 /*
  * Crate one client in advance so that that SNDCTL_AUDIOINFO can provide proper info.
  */
-  if (!(mixer->flags & VMIX_INSTALL_NOPREALOC))
+  if (!(mixer->attach_flags & VMIX_INSTALL_NOPREALOC))
      {
 	int cl;
 	
@@ -1944,7 +1947,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   mixer->masterdev = masterdev;
   mixer->inputdev = inputdev;
   mixer->rate = 48000;
-  mixer->flags = attach_flags;
+  mixer->attach_flags = attach_flags;
 
   DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
   DDB (cmn_err (CE_CONT, "vmix_masterdev=%d\n", masterdev));

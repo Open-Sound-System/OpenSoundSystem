@@ -1699,7 +1699,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 		      if ((dev = oss_audio_open_engine (vmix_dev, dev_class, file,
 							recursive, open_flags, newdev)) < 0)
 			{
-			  cmn_err(CE_WARN, "Failed to open vmix engine %d, err=%d\n", vmix_dev, dev);
+			  //cmn_err(CE_WARN, "Failed to open vmix engine %d, err=%d\n", vmix_dev, dev);
 			  return dev;
 			}
 #ifdef DO_TIMINGS

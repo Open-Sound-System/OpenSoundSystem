@@ -87,6 +87,10 @@ typedef struct
 {
 	int masterdev;
 	int inputdev;
+
+	int attach_flags;
+#define VMIX_INSTALL_NOPREALOC			0x00000001
+#define VMIX_INSTALL_NOINPUT			0x00000002
 } vmixctl_attach_t;
 
 typedef struct

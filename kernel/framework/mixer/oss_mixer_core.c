@@ -1552,7 +1552,7 @@ vmixctl_attach(vmixctl_attach_t *att)
 
 	osdev=audio_engines[att->masterdev]->master_osdev;
 
-	if ((err=vmix_attach_audiodev(osdev, att->masterdev, att->inputdev, 0))<0)
+	if ((err=vmix_attach_audiodev(osdev, att->masterdev, att->inputdev, att->attach_flags))<0)
 	   return err;
 
 	return 0;
