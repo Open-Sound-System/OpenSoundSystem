@@ -228,7 +228,6 @@ struct _adev_t
 #define VMIX_DISABLED	0x00000002	/* Not compatible with vmix */
 #define VMIX_NOINPUT	0x00000004	/* Disable input capability */
 #define VMIX_NOMAINVOL	0x00000008	/* No main volume sliders/meters please */
-#define VMIX_SKIP	0x00000010	/* Do not install vmix devices by default */
   pid_t pid;
   char cmd[16];
   oss_device_t *osdev;

@@ -3865,7 +3865,7 @@ oss_sblive_attach (oss_device_t * osdev)
  * latencies because emu10k1 doesn't have working full/half buffer DMA
  * interrupts.
  */
-	      adev->vmix_flags = VMIX_MULTIFRAG /* | VMIX_SKIP*/;
+	      adev->vmix_flags = VMIX_MULTIFRAG;
 	      adev->max_intrate = 50;
 	      adev->min_block = 4096;
 	    }

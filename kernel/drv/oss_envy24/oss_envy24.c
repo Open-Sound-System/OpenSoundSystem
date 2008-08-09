@@ -3128,7 +3128,7 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
       for (i = 0; speed_tab[i].speed != -1; i++)
 	adev->rates[adev->nrates++] = speed_tab[i].speed;
 
-      adev->vmix_flags = VMIX_SKIP;
+      adev->vmix_flags = 0;
 
       if (flags == DIR_OUTPUT)
 	{
