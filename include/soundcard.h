@@ -9,7 +9,7 @@
  * (for compatibility with older applications that still ned them).
  * Do not use this file as a reference manual of OSS.
  * Please check the OSS Programmer's guide for descriptions
- * of the supported API details (http://manuals.opensound.com/developer).}
+ * of the supported API details (http:/*manuals.opensound.com/developer).} */
  */
 
 #ifndef SOUNDCARD_H
@@ -23,7 +23,7 @@
 #define EXTERNC extern
 #endif /* EXTERN_C_WRAPPERS */
 
-#define OSS_VERSION	0x040090 // Pre 4.1
+#define OSS_VERSION	0x040090 /* Pre 4.1 */
 
 #define SOUND_VERSION	OSS_VERSION
 #define OPEN_SOUND_SYSTEM
@@ -1825,11 +1825,11 @@ typedef struct oss_mixext
  * Recommended colors to be used in the rgbcolor field. These match the
  * colors used as the audio jack colors in HD audio motherboards.
  */
-#define OSS_RGB_BLUE	0x7aabde		// Light blue
-#define OSS_RGB_GREEN	0xb3c98c		// Lime green
+#define OSS_RGB_BLUE	0x7aabde		/* Light blue */
+#define OSS_RGB_GREEN	0xb3c98c		/* Lime green */
 #define OSS_RGB_PINK	0xe88c99
 #define OSS_RGB_GRAY	0xd1ccc4
-#define OSS_RGB_BLACK	0x2b2926		// Light black
+#define OSS_RGB_BLACK	0x2b2926		/* Light black */
 #define OSS_RGB_ORANGE	0xe89e47
 #define OSS_RGB_RED	0xff0000
 #define OSS_RGB_YELLOW	0xffff00
