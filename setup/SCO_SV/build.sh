@@ -55,6 +55,7 @@ cp .version prototype/usr/lib/oss/version.dat
 cp -R $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
 cp $SRCDIR/kernel/framework/include/midiparser.h prototype/usr/lib/oss/include/
 
+(cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp -f target/bin/* prototype/usr/bin
 cp -f target/sbin/* prototype/usr/sbin
 cp -f $SRCDIR/setup/SCO_SV/sbin/* prototype/usr/sbin

@@ -86,6 +86,10 @@ ossrecord -S -b16 -s48 - | lame -m j - -
 
 exit 0
 
+NOTES
+The ossrecord executable is the same as the ossplay executable.
+Behaviour is decided by the name used to invoke the program.
+
 SEE ALSO
 ossplay(1), ossmix(1), ossxmix(1)
 

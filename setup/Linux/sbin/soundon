@@ -297,8 +297,6 @@ then
   $OSSLIBDIR/soundon.user >> $LOG 2>&1
 fi
 
-vmixctl attach /dev/dsp >> $LOG 2>&1
-
 if test "$NOTIFY " = "1 "
 then
   echo

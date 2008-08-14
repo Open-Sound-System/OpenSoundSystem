@@ -3,7 +3,6 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
-#include "ossplay.h"
 #include "ossplay_parser.h"
 #include "ossplay_decode.h"
 
@@ -31,35 +30,24 @@
 /* Beginning of magic for Creative .voc files */
 #define Crea_MAGIC	0x43726561	/* 'Crea' */
 
-enum {
-  AIFF_FILE,
-  AIFC_FILE,
-  WAVE_FILE,
-  WAVE_FILE_BE,
-  _8SVX_FILE,
-  _16SV_FILE,
-  MAUD_FILE,
-  AU_FILE
-};
-
-extern int audiofd, quitflag, quiet, verbose;
-extern int raw_file, raw_mode, exitstatus, force_fmt, from_stdin;
+extern int quiet, verbose;
+extern int raw_file, exitstatus, force_fmt, from_stdin;
 extern off_t (*ossplay_lseek) (int, off_t, int);
 
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
 
-static void play_au (const char *, int, unsigned char *, int);
-static void play_iff (const char *, int, unsigned char *, int);
+static void play_au (dspdev_t *, const char *, int, unsigned char *, int);
+static void play_iff (dspdev_t *, const char *, int, unsigned char *, int);
+static void play_voc (dspdev_t *, const char *, int, unsigned char *, int);
 #ifdef MPEG_SUPPORT
 extern void play_mpeg (const char *, int, unsigned char *, int);
 #endif
-static void play_voc (const char *, int, unsigned char *, int);
 static void print_verbose_fileinfo (const char *, int, int, int, int);
 
 void
-play_file (const char * filename)
+play_file (dspdev_t * dsp, const char * filename)
 {
   int fd, l, i;
   unsigned char buf[PLAYBUF_SIZE];
@@ -88,7 +76,7 @@ play_file (const char * filename)
     {
       print_msg (NORMALM, "%s: Playing RAW file.\n", filename);
 
-      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                     DEFAULT_SPEED, NULL);
       goto done;
     }
@@ -106,7 +94,7 @@ play_file (const char * filename)
     }
 
 /*
- * Try to detect the file type - First .wav
+ * Try to detect the file type
  */
   switch (be_int (buf, 4))
     {
@@ -121,7 +109,7 @@ play_file (const char * filename)
           }
         l += i;
         if (l < 24) break;
-        play_au (filename, fd, buf, l);
+        play_au (dsp, filename, fd, buf, l);
         goto done;
       case Crea_MAGIC:
         if ((i = read (fd, buf + 12, 7)) == -1)
@@ -131,34 +119,34 @@ play_file (const char * filename)
           }
         l += i;
         if ((l < 19) || (memcmp (buf, "Creative Voice File", 19))) break;
-        play_voc (filename, fd, buf, l);
+        play_voc (dsp, filename, fd, buf, l);
         goto done;
       case RIFF_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        play_iff (filename, fd, buf, WAVE_FILE);
+        play_iff (dsp, filename, fd, buf, WAVE_FILE);
         goto done;
       case RIFX_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        play_iff (filename, fd, buf, WAVE_FILE_BE);
+        play_iff (dsp, filename, fd, buf, WAVE_FILE_BE);
         goto done;
       case FORM_MAGIC:
         if (l < 12) break;
         switch (be_int (buf + 8, 4))
           {
             case AIFF_MAGIC:
-              play_iff (filename, fd, buf, AIFF_FILE);
+              play_iff (dsp, filename, fd, buf, AIFF_FILE);
               goto done;
             case AIFC_MAGIC:
-              play_iff (filename, fd, buf, AIFC_FILE);
+              play_iff (dsp, filename, fd, buf, AIFC_FILE);
               goto done;
             case _8SVX_MAGIC:
-              play_iff (filename, fd, buf, _8SVX_FILE);
+              play_iff (dsp, filename, fd, buf, _8SVX_FILE);
               goto done;
             case _16SV_MAGIC:
-              play_iff (filename, fd, buf, _16SV_FILE);
+              play_iff (dsp, filename, fd, buf, _16SV_FILE);
               goto done;
             case MAUD_MAGIC:
-              play_iff (filename, fd, buf, MAUD_FILE);
+              play_iff (dsp, filename, fd, buf, MAUD_FILE);
               goto done;
             default: break;
           }
@@ -179,7 +167,7 @@ play_file (const char * filename)
     {				/* Raw mu-Law data */
       print_msg (NORMALM, "Playing raw mu-Law file %s\n", filename);
 
-      decode_sound (fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
+      decode_sound (dsp, fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
       goto done;
     }
 
@@ -189,8 +177,8 @@ play_file (const char * filename)
                  "%s: Unknown format. Assuming RAW audio (%d/%d/%d.\n",
                  filename, DEFAULT_SPEED, DEFAULT_FORMAT, DEFAULT_CHANNELS);
 
-      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
-                  DEFAULT_SPEED, NULL);
+      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                    DEFAULT_SPEED, NULL);
       goto done;
     }
 
@@ -198,7 +186,7 @@ play_file (const char * filename)
     {
       print_msg (NORMALM, "%s: Playing CD-R (cdwrite) file.\n", filename);
 
-      decode_sound (fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
+      decode_sound (dsp, fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
       goto done;
     }
 
@@ -207,8 +195,8 @@ play_file (const char * filename)
     {
       print_msg (NORMALM, "%s: Playing RAW file.\n", filename);
 
-      decode_sound (fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
-                  DEFAULT_SPEED, NULL);
+      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                    DEFAULT_SPEED, NULL);
       goto done;
     }
 
@@ -253,7 +241,8 @@ seekerror:
 
 /*ARGSUSED*/
 static void
-play_iff (const char * filename, int fd, unsigned char * buf, int type)
+play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
+          int type)
 {
 /*
  * Generalized IFF parser - handles WAV, AIFF, AIFC, 8SVX, 16SV and MAUD.
@@ -336,24 +325,23 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
 
 #define BITS2SFORMAT(endian) \
   do { \
-    switch (bits) \
+    if (force_fmt == 0) switch (bits) \
       { \
          case 8: format = AFMT_S8; break; \
          case 16: format = AFMT_S16_##endian; break; \
-         case 24: format = AFMT_S24_##endian; break; \
+         case 24: format = AFMT_S24_PACKED_##endian; break; \
          case 32: format = AFMT_S32_##endian; break; \
          default: format = AFMT_S16_##endian; break; \
      } break; \
   } while (0)
 
   int channels = 1, bits = 8, format, speed = 11025;
-  long double COMM_rate;
   unsigned int chunk_id, chunk_size = 18, csize = 12, found = 0, offset = 0,
                sound_loc = 0, sound_size = 0, timestamp, total_size;
   int (*ne_int) (const unsigned char *p, int l) = be_int;
 
   msadpcm_values_t msadpcm_val = {
-    256, 496, 7, {
+    256, 496, 7, 4, {
       {256, 0},
       {512, -256},
       {0, 0},
@@ -366,6 +354,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
 
   if (type == _8SVX_FILE) format = AFMT_S8;
   else format = AFMT_S16_BE;
+  if (force_fmt != 0) format = force_fmt;
   if (type == WAVE_FILE) ne_int = le_int;
 
   total_size = ne_int (buf + 4, 4);
@@ -390,8 +379,8 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
           case COMM_HUNK:
             if (found & COMM_FOUND)
               {
-                print_msg (ERRORM,
-                         "%s: error: COMM hunk not singular!\n", filename);
+                print_msg (ERRORM, "%s: error: COMM hunk not singular!\n",
+                           filename);
                 return;
               }
             if (type == AIFC_FILE) AREAD (fd, buf, 22, COMM);
@@ -405,18 +394,37 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             bits = be_int (buf + 6, 2);
             bits += bits % 8;
             BITS2SFORMAT (BE);
-#if AFMT_S16_NE == AFMT_S16_LE
             {
-              unsigned char tmp, *s = buf + 8; int i;
+              /*
+               * Conversion from IEEE-754 extended 80-bit to long double.
+               * We take some shortcuts which don't affect this application.
+               */
+              int exp;
+              long double COMM_rate = 0;
 
-              for (i=0; i < 5; i++)
-                {
-                  tmp = s[i]; s[i] = s[9-i]; s[9-i] = tmp;
-                }
-            }
+              exp = ((buf[8] & 127) << 8) + buf[9] - 16383;
+#if 0
+              /*
+               * This part of the mantisaa will always be resolved to
+               * sub-Hz rates which we don't support anyway.
+               */
+              COMM_rate = ((buf[14]) << 24) + (buf[15] << 16) +
+                          (buf[16] << 8) + buf[17];
+              COMM_rate /= 1L << 32;
 #endif
-            memcpy (&COMM_rate, buf + 8, sizeof (COMM_rate));
-            speed = (int)COMM_rate;
+              COMM_rate += ((buf[10] & 127) << 24) + (buf[11] << 16) +
+                           (buf[12] << 8) + buf[13];
+              /* Can overflow for huge values which don't make sense here */
+              COMM_rate /= 1L << (31 - exp);
+              if (buf[10] & 128) COMM_rate += 1L << exp; /* Normalize bit */
+              if (buf[8] & 128) COMM_rate = -COMM_rate; /* Sign bit */
+              if ((exp == 16384) || (COMM_rate <= 0))
+                {
+                  print_msg (ERRORM, "Invalid sample rate!\n");
+                  return;
+                }
+              speed = COMM_rate;
+            }
 
             if (type != AIFC_FILE)
               {
@@ -424,6 +432,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 continue;
               }
 
+            if (force_fmt != 0) break;
             switch (be_int (buf + 18, 4))
               {
                 case NONE_FMT: break;
@@ -433,14 +442,17 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 case ni24_FMT: format = AFMT_S24_LE; break;
                 case ni32_FMT: format = AFMT_S32_LE; break;
                 case sowt_FMT: BITS2SFORMAT (LE); break;
-                /* Apple Docs refer to this as AFMT_S16_LE only, but some
-                   programs misinterpret this. */
+                /*
+                 * This appear to have been intended as AFMT_S16_LE only, but
+                 * programs misinterpret this. Really complaint programs should
+                 * have set the bits field to 16 anyway.
+                 */
                 case raw_FMT: format = AFMT_U8; break;
                 case alaw_FMT:
                 case ALAW_FMT: format = AFMT_A_LAW; break;
                 case ulaw_FMT:
                 case ULAW_FMT: format = AFMT_MU_LAW; break;
-                case ima4_FMT: format = AFMT_IMA_ADPCM; break;
+                case ima4_FMT: format = AFMT_MAC_IMA_ADPCM; break;
 #if 0
                 case fl32_FMT:
                 case FL32_FMT: format = AFMT_FLOAT; break;
@@ -450,9 +462,9 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                            "%s: error: %c%c%c%c compression is not supported\n",
                            filename, *(buf + 18), *(buf + 19),
                            *(buf + 20), *(buf + 21));
-                  if (force_fmt == 0) return;
+                  return;
               }
-              break;
+            break;
           case SSND_HUNK:
             if (found & SSND_FOUND)
               {
@@ -495,7 +507,9 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
           case VHDR_HUNK:
             AREAD (fd, buf, 16, VHDR);
             speed = be_int (buf + 12, 2);
-            if (type == _8SVX_FILE) switch (buf[15])
+            found |= COMM_FOUND;
+            if ((force_fmt != 0) || (type != _8SVX_FILE)) break;
+            switch (buf[15])
               {
                 case 0: format = AFMT_S8; break;
                 case 1: format = AFMT_FIBO_DELTA; break;
@@ -503,9 +517,8 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 default:
                   print_msg (ERRORM, "%s: Unsupported compression %d\n",
                              filename, buf[15]);
-                  if (force_fmt == 0) return;
+                  return;
               }
-            found |= COMM_FOUND;
             break;
           case data_HUNK: /* WAVE chunk */
             if (verbose > 2)
@@ -537,6 +550,8 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             BITS2SFORMAT (BE);
             speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
             channels = be_int (buf + 16, 2);
+            found |= COMM_FOUND;
+            if (force_fmt != 0) break;
             switch (be_int (buf + 18, 2))
               {
                 case 0: /* NONE */ break;
@@ -545,9 +560,8 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 case 6: format = AFMT_IMA_ADPCM; break;
                 default:
                   print_msg (ERRORM, "%s: format not supported", filename);
-                  if (force_fmt == 0) return;
+                  return;
               }
-            found |= COMM_FOUND;
             break;
 
           /* WAVE chunks */
@@ -562,7 +576,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             else len = chunk_size;
             AREAD (fd, buf, len, fmt);
 
-            format = ne_int (buf, 2);
+            if (force_fmt == 0) format = ne_int (buf, 2);
             if (verbose > 2)
               print_msg (NORMALM,  "FMT chunk: len = %u, fmt = %#x\n",
                          chunk_size, format);
@@ -570,19 +584,19 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
             msadpcm_val.channels = channels = ne_int (buf + 2, 2);
             speed = ne_int (buf + 4, 4);
             msadpcm_val.nBlockAlign = ne_int (buf + 12, 2);
-            bits = ne_int (buf + 14, 2);
+            msadpcm_val.bits = bits = ne_int (buf + 14, 2);
             bits += bits % 8;
 
             if (format == 0xFFFE)
               {
                 if (chunk_size < 40)
-                   {
-                     print_msg (ERRORM, "%s: invallid fmt chunk\n", filename);
-                     return;
-                   }
+                  {
+                   print_msg (ERRORM, "%s: invallid fmt chunk\n", filename);
+                    return;
+                  }
                 format = ne_int (buf + 24, 2);
               }
-            switch (format)
+            if (force_fmt == 0) switch (format)
               {
                 case 0x1:
                   if (type == WAVE_FILE) BITS2SFORMAT (LE);
@@ -592,7 +606,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 case 0x2: format = AFMT_MS_ADPCM; break;
                 case 0x6: format = AFMT_A_LAW; break;
                 case 0x7: format = AFMT_MU_LAW; break;
-                case 0x11: format = AFMT_IMA_ADPCM; break;
+                case 0x11: format = AFMT_MS_IMA_ADPCM; break;
 #if 0
                 case 0x3: format = AFMT_FLOAT; break;
                 case 0x50: /* MPEG */
@@ -601,7 +615,7 @@ play_iff (const char * filename, int fd, unsigned char * buf, int type)
                 default:
                   print_msg (ERRORM, "%s: Unsupported wave format %#x\n",
                              filename, format);
-                  if (force_fmt == 0) return;
+                  return;
               }
             found |= COMM_FOUND;
 
@@ -682,7 +696,7 @@ nexta:
       }
 
     if ((type == AIFC_FILE) && ((found & FVER_FOUND) == 0))
-      print_msg (ERRORM, "%s: Couldn't find AIFFC FVER chunk.\n", filename);
+      print_msg (WARNM, "%s: Couldn't find AIFC FVER chunk.\n", filename);
 
     if (ossplay_lseek (fd, sound_loc, SEEK_SET) == -1)
       {
@@ -695,14 +709,15 @@ stdinext:
   if (!quiet)
     print_verbose_fileinfo (filename, type, format, channels, speed);
 
-  decode_sound (fd, sound_size, format, channels, speed, (void *)&msadpcm_val);
-
+  decode_sound (dsp, fd, sound_size, format, channels, speed,
+                (void *)&msadpcm_val);
   return;
 }
 
 /*ARGSUSED*/
 static void
-play_au (const char * filename, int fd, unsigned char * hdr, int l)
+play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
+         int l)
 {
   int channels = 1, format = AFMT_S8, speed = 11025;
   unsigned int filelen, fmt = 0, i, p = 24, an_len = 0;
@@ -723,7 +738,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
   if (verbose > 2) print_msg (NORMALM, "%s: Offset: %u\n", filename, p);
   if (filelen == (unsigned int)-1) filelen = UINT_MAX;
 
-  switch (fmt)
+  if (force_fmt == 0) switch (fmt)
     {
     case 1:
       format = AFMT_MU_LAW;
@@ -738,7 +753,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
       break;
 
     case 4:
-      format = AFMT_S24_BE;
+      format = AFMT_S24_PACKED_BE;
       break;
 
     case 5:
@@ -747,9 +762,13 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
 
     case 6:
     case 7:
-      print_msg (ERRORM, "%s: Floating point encoded .au files are not supported",
+#if 0
+      format = AFMT_FLOAT;
+#endif
+      print_msg (ERRORM,
+                 "%s: Floating point encoded .au files are not supported",
                  filename);
-      if (force_fmt == 0) return;
+      return;
 
     case 23:
     case 24:
@@ -757,7 +776,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
     case 26:
       print_msg (ERRORM, "%s: G.72x ADPCM encoded .au files are not supported",
                  filename);
-      if (force_fmt == 0) return;
+      return;
 
     case 27:
       format = AFMT_A_LAW;
@@ -765,7 +784,7 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
 
     default:
       print_msg (ERRORM, "%s: Unknown encoding %d.\n", filename, fmt);
-      if (force_fmt == 0) return;
+      return;
     }
 
   if (!quiet)
@@ -795,12 +814,13 @@ play_au (const char * filename, int fd, unsigned char * hdr, int l)
       return;
     }
 
-  decode_sound (fd, filelen, format, channels, speed, NULL);
+  decode_sound (dsp, fd, filelen, format, channels, speed, NULL);
 }
 
 /*ARGSUSED*/
 static void
-play_voc (const char * filename, int fd, unsigned char * hdr, int l)
+play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
+          int l)
 {
 #define VREAD(fd, buf, len) \
   do { \
@@ -885,6 +905,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
                fmt = buf[1];
                len -= 2;
 
+               if (force_fmt != 0) break;
                switch (fmt)
                  {
                    case 0: format = AFMT_U8; break;
@@ -898,12 +919,12 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
                      print_msg (ERRORM,
                                 "%s: encoding %d is not supported\n",
                                 filename, fmt);
-                     if (force_fmt == 0) return;
+                     return;
                  }
             }
 
 	case 2:		/* Continuation data */
-          if (decode_sound (fd, len, format, channels, speed, NULL) < 0)
+          if (decode_sound (dsp, fd, len, format, channels, speed, NULL) < 0)
             return;
           pos += len;
 	  break;
@@ -913,7 +934,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
 	  len = le_int (buf, 2);
 	  tmp = 256 - buf[2];	/* Time constant */
 	  speed = (1000000 + tmp / 2) / tmp;
-          silence (len, speed);
+          silence (dsp, len, speed);
 	  break;
 
         case 5: 	/* Text */
@@ -949,6 +970,9 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
           speed = 256000000/(channels * (65536 - le_int (buf, 2)));
           channels = buf[3] + 1;
           fmt = buf[2];
+          plock = 1;
+
+          if (force_fmt != 0) break;
           switch (fmt)
             {
               case 0: format = AFMT_U8; break;
@@ -961,9 +985,8 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                if (force_fmt == 0) return;
+                return;
             }
-          plock = 1;
           break;
 
         case 9:		/* New format sound data */
@@ -976,7 +999,7 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
           channels = buf[5];
           fmt = le_int (buf + 6, 2);
 
-          switch (fmt)
+          if (force_fmt == 0) switch (fmt)
             {
               case 0: format = AFMT_U8; break;
               case 1: format = AFMT_CR_ADPCM_4; break;
@@ -988,10 +1011,10 @@ play_voc (const char * filename, int fd, unsigned char * hdr, int l)
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                if (force_fmt == 0) return;
+                return;
             }
 
-          if (decode_sound (fd, len, format, channels, speed, NULL) < 0)
+          if (decode_sound (dsp, fd, len, format, channels, speed, NULL) < 0)
             return;
           pos += len;
 	  break;
@@ -1037,7 +1060,9 @@ print_verbose_fileinfo (const char * filename, int type, int format,
   switch (format)
     {
        case AFMT_QUERY: fmt = "Invallid format"; break;
-       case AFMT_IMA_ADPCM: fmt = "ADPCM"; break;
+       case AFMT_MAC_IMA_ADPCM:
+       case AFMT_MS_IMA_ADPCM:
+       case AFMT_IMA_ADPCM: fmt = "IMA ADPCM"; break;
        case AFMT_MS_ADPCM: fmt = "MS-ADPCM"; break;
        case AFMT_MU_LAW: fmt = "mu-law"; break;
        case AFMT_A_LAW: fmt = "A-law"; break;
@@ -1049,6 +1074,7 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_U16_BE: fmt = "16 bits"; break;
        case AFMT_S24_LE:
        case AFMT_S24_BE:
+       case AFMT_S24_PACKED_BE:
        case AFMT_S24_PACKED: fmt = "24 bits"; break;
        case AFMT_SPDIF_RAW:
        case AFMT_S32_LE:

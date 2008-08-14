@@ -85,6 +85,7 @@ Caution: All header files included in this directory are there only because
          versions/builds.
 EOF
 
+(cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp -f target/build/* prototype/usr/lib/oss/build/
 cp -f target/bin/* prototype/usr/bin
 cp -f target/sbin/* prototype/usr/sbin

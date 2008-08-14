@@ -70,6 +70,7 @@ cp $KERNEL32/.version prototype/etc/oss/version.dat
 
 cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 cp $SRCDIR/include/oss_userdev_exports.h prototype/usr/include/oss
+(cd $KERNEL32/target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp $KERNEL32/target/bin/* prototype/usr/bin
 cp $KERNEL32/target/sbin/* prototype/usr/sbin
 cp $KERNEL32/setup/SunOS/sbin/* prototype/usr/sbin

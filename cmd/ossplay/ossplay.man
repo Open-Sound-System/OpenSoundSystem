@@ -39,6 +39,10 @@ INTERRUPT
 Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing
 the currently played file and skip to the next file.
 
+NOTES
+The ossplay executable is the same as the ossrecord executable.
+Behaviour is decided by the name used to invoke the program.
+
 SEE ALSO
 ossrecord(1), ossmix(1), ossxmix(1)
 

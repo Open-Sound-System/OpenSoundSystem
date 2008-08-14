@@ -45,6 +45,7 @@ echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 done
 
+(cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp target/modules/*.o prototype/usr/lib/oss/objects
 cp target/build/*.c prototype/usr/lib/oss/build/
 cp target/bin/* prototype/usr/bin/
