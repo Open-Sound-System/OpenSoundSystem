@@ -9,7 +9,7 @@
  * (for compatibility with older applications that still ned them).
  * Do not use this file as a reference manual of OSS.
  * Please check the OSS Programmer's guide for descriptions
- * of the supported API details (http:/*manuals.opensound.com/developer).} */
+ * of the supported API details (http://manuals.opensound.com/developer).} 
  */
 
 #ifndef SOUNDCARD_H
