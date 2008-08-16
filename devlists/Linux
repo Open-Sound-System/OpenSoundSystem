@@ -20,6 +20,7 @@ Creative AudioPCI97 (ES1371/ES1373)
 Creative AudioPCI (ES1370)
 Creative Ectiva EV1938
 Creative SB X-Fi *EARLY BETA*
+Creative SB X-Fi (PCI-e) *EARLY BETA*
 Creative Sound Blaster 5.1 (Dell)
 Creative Sound Blaster Audigy2 Value/Audigy4
 Creative Sound Blaster Audigy2 ZS PCMCIA
@@ -69,6 +70,13 @@ Intel High Definition Audio (P35)
 Labtec LCS1040 Speaker System (BETA)
 Logitec Quickcam Pro 4000 (mic) (BETA)
 Logitec USB Headset
+Lynx AES16-SRC Studio Interface
+Lynx AES16 Studio Interface
+Lynx-L22 Studio Interface
+LynxONE Studio Interface
+LynxTWO-A Studio Interface
+LynxTWO-B Studio Interface
+LynxTWO-C Studio Interface
 M Audio Audiophile 192
 M Audio Audiophile 2496
 M Audio Delta 1010
@@ -111,6 +119,9 @@ OSS Input Multiplexer
 OSS loopback audio driver
 OSS MIDI Loopback driver
 OSS user space audio driver I/O module
+pci1043,8269    Asus Xonar D2 (AV200)
+pci1043,8275    Asus Xonar DX (AV100)
+pci1043,82b7    Asus Xonar D2X (AV200)
 Philips ToUcam Pro (mic) (BETA)
 RME Digi96
 RME Digi96/8
