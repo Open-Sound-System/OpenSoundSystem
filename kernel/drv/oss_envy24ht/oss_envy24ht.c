@@ -418,31 +418,6 @@ envy24htintr (oss_device_t * osdev)
 static int
 envy24ht_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
-  extern int envy24ht_fake_mixer;
-
-  if (!envy24ht_fake_mixer)	/* Fake "legacy" mixer is not enabled */
-    return *arg = 0;
-
-  if (cmd == SOUND_MIXER_READ_DEVMASK ||
-      cmd == SOUND_MIXER_READ_RECMASK || cmd == SOUND_MIXER_READ_RECSRC ||
-      cmd == SOUND_MIXER_READ_STEREODEVS)
-    return *arg =
-      SOUND_MASK_LINE | SOUND_MASK_PCM | SOUND_MASK_MIC |
-      SOUND_MASK_VOLUME | SOUND_MASK_CD;
-
-  if (cmd == SOUND_MIXER_READ_VOLUME || cmd == SOUND_MIXER_READ_PCM ||
-      cmd == SOUND_MIXER_READ_LINE || cmd == SOUND_MIXER_READ_MIC ||
-      cmd == SOUND_MIXER_READ_CD || cmd == MIXER_READ (SOUND_MIXER_DIGITAL1))
-    return *arg = 100 | (100 << 8);
-  if (cmd == SOUND_MIXER_WRITE_VOLUME || cmd == SOUND_MIXER_WRITE_PCM ||
-      cmd == SOUND_MIXER_WRITE_LINE || cmd == SOUND_MIXER_READ_MIC ||
-      cmd == SOUND_MIXER_WRITE_CD ||
-      cmd == MIXER_WRITE (SOUND_MIXER_DIGITAL1))
-    return *arg = 100 | (100 << 8);
-  if (cmd == SOUND_MIXER_READ_CAPS)
-    return *arg = SOUND_CAP_EXCL_INPUT;
-  if (cmd == SOUND_MIXER_PRIVATE1)
-    return *arg = 0;
   return OSS_EINVAL;
 }
 
