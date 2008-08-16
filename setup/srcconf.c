@@ -89,6 +89,7 @@ static conf_t conf = {
 static char this_os[64] = "kernel/OS/SunOS";
 static int kernelonly = 0;
 static int useronly = 0;
+static int do_warning_checks=1;
 
 char *hostcc="cc";
 char *targetcc="cc";
@@ -1259,6 +1260,9 @@ main (int argc, char *argv[])
 			fclose (cf);
      		}
      }
+  
+  if (getenv("NO_WARNING_CHECKS")!=NULL)
+     do_warning_checks = 0;
 
   produce_output (&conf);
 
