@@ -74,7 +74,8 @@ do
 
 	"--include-closed-source")
 		CLOSED_SOURCE=YES
-		export CLOSED_SOURCE
+		NO_WARNING_CHECKS=YES
+		export CLOSED_SOURCE NO_WARNING_CHECKS
 		;;
 
 	"--enable-libsalsa=NO")
