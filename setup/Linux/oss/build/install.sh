@@ -35,11 +35,14 @@ then
 # to get rid of it.
 
 	rm -f /lib/modules/$UNAME/kernel/oss/*.ko
+
 	/usr/sbin/ossdetect
 fi
 
 if test -f /usr/lib/oss/build/ich.c
 then
+	# Older v4.0 modules found. Remove them
+	(cd /usr/lib/oss/build ; rm -f ali5455.c allegro.c als300.c als4000.c apci97.c atiaudio.c audigyls.c audioloop.c audiopci.c cmi8788.c cmpci.c cs4280.c cs4281.c digi32.c digi96.c emu10k1x.c envy24.c envy24ht.c fm801.c geode.c hdaudio.c hdsp.c ich.c imux.c maestro.c neomagic.c ossusb.c riptide.c s3vibes.c sblive.c sbxfi.c softoss.c solo.c sonorus.c trident.c via8233.c via97.c vmix.c vortex.c ymf7xx.c)
 	echo
 	echo
 	echo Error: Older OSS version seems to be installed in your system.

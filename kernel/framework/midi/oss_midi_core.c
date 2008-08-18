@@ -1525,7 +1525,7 @@ oss_midi_init (oss_device_t * osdev)
 
   if (sizeof (midi_packet_header_t) != 32)
     {
-      cmn_err (CE_WARN, "sizeof(midi_packet_header_t) != 16 (%d)\n",
+      cmn_err (CE_WARN, "sizeof(midi_packet_header_t) != 32 (%d)\n",
 	       sizeof (midi_packet_header_t));
       cmn_err (CE_CONT, "MIDI subsystem not activated\n");
       return;

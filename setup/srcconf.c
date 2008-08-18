@@ -1234,6 +1234,8 @@ main (int argc, char *argv[])
 	  break;		/* Compile only the user land utilities */
 	}
 
+  if (getenv("NO_WARNING_CHECKS")!=NULL)
+     do_warning_checks = 0;
 
 #if defined(linux) || defined(__FreeBSD__) || defined(__SCO_VERSION__)
   mkdir ("target", 0755);
@@ -1261,8 +1263,6 @@ main (int argc, char *argv[])
      		}
      }
   
-  if (getenv("NO_WARNING_CHECKS")!=NULL)
-     do_warning_checks = 0;
 
   produce_output (&conf);
 

@@ -934,6 +934,10 @@ typedef struct
 #define MIDI_OPT_USECTIME		0x0004	/* Time is absolute (in usecs) */
 #define MIDI_OPT_BUSY			0x0008	/* Reserved for internal use */
   oss_midi_time_t time;
+#ifndef OSS_NO_LONG_LONG
+  /* oss_midi_time_t is just 32 bits instead of 64. Use a padding word to compensate this */
+  int budding;
+#endif
   int parm;
   int filler[3];		/* Fur future expansion - init to zeros */
 } midi_packet_header_t;
