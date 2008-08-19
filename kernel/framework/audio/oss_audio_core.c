@@ -5670,28 +5670,34 @@ oss_audio_start_syncgroup (unsigned int syncgroup)
 
 #ifdef ALLOW_SELECT
 /*ARGSUSED*/
-int
-oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
+static int
+chpoll_output (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 {
   short events = ev->events;
   adev_p adev;
   dmap_p dmap;
   oss_native_word flags;
+  audio_buf_info bi;
+  int limit;
 
 #ifdef DO_TIMINGS
-  oss_timing_printf ("--- audio_chpoll(%d, %08x) ---", dev, events);
+  oss_timing_printf ("--- audio_chpoll_output(%d, %08x) ---", dev, events);
 #endif
 
   if (dev < 0 || dev >= num_audio_engines)
     return OSS_ENXIO;
   adev = audio_engines[dev];
 
-  if ((events & (POLLOUT | POLLWRNORM)) && (adev->open_mode & OPEN_WRITE))
-    {
-      audio_buf_info bi;
-      int limit;
-
       dmap = adev->dmap_out;
+#if 1
+      /*
+       * It might actually be better to permit pollling in mmapped
+       * mode rather than returning an error.
+       */
+      if (dmap->interrupt_count > 0)
+	 ev->revents |= (POLLOUT | POLLWRNORM) & events;
+      return 0;
+#else
       if (dmap->mapping_flags & DMA_MAP_MAPPED)
 	{
 	  oss_audio_set_error (adev->engine_num, E_PLAY,
@@ -5703,8 +5709,9 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   * The select() and poll() system calls are not defined for OSS devices
 	   * when the device is in mmap mode.
 	   */
-	  return OSS_EIO;
+	  return OSS_EPERM;
 	}
+#endif
 
       if (dmap->dma_mode == PCM_ENABLE_INPUT)
 	{
@@ -5741,14 +5748,39 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	  ev->revents |= (POLLOUT | POLLWRNORM) & events;
 	}
       MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
-    }
 
-  if ((events & (POLLIN | POLLRDNORM)) && (adev->open_mode & OPEN_READ))
-    {
-      audio_buf_info bi;
-      int limit;
+  return 0;
+}
 
-      dmap = adev->dmap_in;
+/*ARGSUSED*/
+static int
+chpoll_input (int dev, struct fileinfo *file, oss_poll_event_t * ev)
+{
+  short events = ev->events;
+  adev_p adev;
+  dmap_p dmap;
+  oss_native_word flags;
+  audio_buf_info bi;
+  int limit;
+
+#ifdef DO_TIMINGS
+  oss_timing_printf ("--- audio_chpoll_input(%d, %08x) ---", dev, events);
+#endif
+
+  if (dev < 0 || dev >= num_audio_engines)
+    return OSS_ENXIO;
+  adev = audio_engines[dev];
+
+  dmap = adev->dmap_in;
+#if 1
+      /*
+       * It might actually be better to permit pollling in mmapped
+       * mode rather than returning an error.
+       */
+      if (dmap->interrupt_count > 0)
+	 ev->revents |= (POLLOUT | POLLWRNORM) & events;
+      return 0;
+#else
       if (dmap->mapping_flags & DMA_MAP_MAPPED)
 	{
 	  oss_audio_set_error (adev->engine_num, E_REC,
@@ -5762,6 +5794,7 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   */
 	  return OSS_EIO;
 	}
+#endif
 
       if (dmap->dma_mode != PCM_ENABLE_INPUT)
 	{
@@ -5814,6 +5847,39 @@ oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	  ev->revents |= (POLLIN | POLLRDNORM) & events;
 	}
       MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
+
+  return 0;
+}
+
+/*ARGSUSED*/
+int
+oss_audio_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
+{
+  short events = ev->events;
+  adev_p adev;
+
+#ifdef DO_TIMINGS
+  oss_timing_printf ("--- audio_chpoll(%d, %08x) ---", dev, events);
+#endif
+
+  if (dev < 0 || dev >= num_audio_engines)
+    return OSS_ENXIO;
+  adev = audio_engines[dev];
+
+  if ((events & (POLLOUT | POLLWRNORM)) && (adev->open_mode & OPEN_WRITE))
+    {
+	    int err;
+
+	    if ((err=chpoll_output (dev, file, ev))<0)
+	       return err;
+    }
+
+  if ((events & (POLLIN | POLLRDNORM)) && (adev->open_mode & OPEN_READ))
+    {
+	    int err;
+
+	    if ((err=chpoll_input (dev, file, ev))<0)
+	       return err;
     }
 
   return 0;
