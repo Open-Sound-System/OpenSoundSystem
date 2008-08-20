@@ -224,8 +224,8 @@ ossrecord_main (int argc, char ** argv)
   dspdev_t dsp = { 0 };
   char current_filename[512];
 
-  extern int force_fmt, force_channels, force_speed, datalimit;
-  extern int nfiles;
+  extern int force_fmt, force_channels, force_speed, nfiles;
+  extern unsigned int datalimit;
   extern fctypes_t type;
   extern char script[512];
 

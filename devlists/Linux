@@ -7,6 +7,7 @@ ATI High Definition Audio (SB600)
 ATI IXP200
 ATI IXP300
 ATI IXP400
+Asus Xonar DX (AV100)
 Audiotrak Prodigy 7.1
 C-Media CM8338A
 CMedia CM8338B
@@ -119,9 +120,6 @@ OSS Input Multiplexer
 OSS loopback audio driver
 OSS MIDI Loopback driver
 OSS user space audio driver I/O module
-pci1043,8269    Asus Xonar D2 (AV200)
-pci1043,8275    Asus Xonar DX (AV100)
-pci1043,82b7    Asus Xonar D2X (AV200)
 Philips ToUcam Pro (mic) (BETA)
 RME Digi96
 RME Digi96/8

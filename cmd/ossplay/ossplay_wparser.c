@@ -200,7 +200,7 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned int datalimit,
               return -1;
           }
 
-        /* The method below is good enough for sane values */
+        /* The method used here is good enough for sane values */
         memset (afh.speed, 0, sizeof (afh.speed));
         i = 0;
         while ((1L << (i + 1)) <= speed) i++;
@@ -234,7 +234,7 @@ finalize_head (FILE * wave_fp, fctypes_t type, unsigned int datalimit,
     {
       /*
        * All chunks must have an even length in an AIFF file,
-       * so we mught have to add a pad byte.
+       * so we have to add a pad byte in this case.
        */
       flag = 0;
       datalimit++;

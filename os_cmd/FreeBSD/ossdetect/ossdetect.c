@@ -237,7 +237,7 @@ create_devlinks (void)
       perm = umask (0);
       if (mknod (dev, S_IFCHR | 0666, (major << 8) | minor) == -1)
 	perror (dev);
-      unmask (perm);
+      umask (perm);
     }
 
   fclose (f);

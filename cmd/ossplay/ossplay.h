@@ -117,7 +117,8 @@ msadpcm_values_t;
 
 typedef ssize_t (decfunc_t) (unsigned char **, unsigned char *,
                              ssize_t, void *);
-typedef int (seekfunc_t) (int, unsigned int *, int, double, int, int);
+typedef ssize_t (seekfunc_t) (int, unsigned int *, unsigned int, double,
+                              unsigned int, int);
 
 typedef enum {
   FREE_OBUF = 1,
@@ -140,7 +141,7 @@ int le_int (const unsigned char *, int);
 off_t ossplay_lseek_stdin (int, off_t, int);
 int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);
-int play (dspdev_t *, int, unsigned int *, int, double,
+int play (dspdev_t *, int, unsigned int *, unsigned int, double,
           decoders_queue_t *, seekfunc_t *);
 int record (dspdev_t *, FILE *, const char *, double, unsigned int,
             unsigned int *, decoders_queue_t * dec);

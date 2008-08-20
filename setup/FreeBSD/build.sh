@@ -22,6 +22,7 @@ mkdir prototype/usr/lib/oss/objects
 mkdir prototype/usr/share
 mkdir prototype/usr/share/man
 mkdir prototype/usr/share/man/man1
+mkdir prototype/usr/share/man/man7
 mkdir prototype/usr/share/man/man8
 
 echo "OSSLIBDIR=/usr/lib/oss" > prototype/etc/oss.conf

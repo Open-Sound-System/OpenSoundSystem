@@ -49,7 +49,8 @@ static void print_verbose_fileinfo (const char *, int, int, int, int);
 void
 play_file (dspdev_t * dsp, const char * filename)
 {
-  int fd, l, i;
+  int fd;
+  ssize_t l, i;
   unsigned char buf[PLAYBUF_SIZE];
   const char * suffix;
 

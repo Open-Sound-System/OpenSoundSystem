@@ -1120,7 +1120,9 @@ produce_errno_h(void)
 	GEN_ERRNO(E2BIG);
 	GEN_ERRNO(EACCES);
 	GEN_ERRNO(EAGAIN);
+#ifdef EBADE /* Doesn't exist on FreeBSD */
 	GEN_ERRNO(EBADE);
+#endif
 	GEN_ERRNO(EBUSY);
 	GEN_ERRNO(ECONNRESET);
 	GEN_ERRNO(EDOM);

@@ -64,7 +64,7 @@ decode_sound (dspdev_t * dsp, int fd, unsigned int filesize, int format,
   if (force_fmt != 0) format = force_fmt;
   if (channels > MAX_CHANNELS) channels = MAX_CHANNELS;
 
-  constant = format2bits (format) * speed * channels / 8;
+  constant = format2bits (format) * speed * channels / 8.0;
 #if 0
   /*
    * There is no reason to use SNDCTL_DSP_GETBLKSIZE in applications like this.
@@ -228,7 +228,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   FILE * wave_fp;
 
   if (setup_device (dsp, format, channels, speed) == -2) return -1;
-  constant = format2bits (format) * speed * channels / 8;
+  constant = format2bits (format) * speed * channels / 8.0;
 
   if (channels == 1)
     print_msg (VERBOSEM, "Recording wav: Speed %dHz %d bits Mono\n",
@@ -278,7 +278,11 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   ret = record (dsp, wave_fp, fname, constant, datalimit, &datasize, dec);
 
   finalize_head (wave_fp, type, datasize, format, channels, speed);
-  fclose (wave_fp);
+  if (fclose (wave_fp) != 0)
+    {
+      perror (fname);
+      ret = -1;
+    }
 
   decoders = dec;
   while (decoders != NULL)
@@ -1009,9 +1013,9 @@ setup_verbose (int format, double constant, unsigned int * filesize)
   return val;
 }
 
-static int
-seek_normal (int fd, unsigned int * datamark, int filesize,
-             double constant, int channels, int rsize) 
+static ssize_t
+seek_normal (int fd, unsigned int * datamark, unsigned int filesize,
+             double constant, unsigned int rsize, int channels)
 {
   off_t pos = seek_time * constant;
   int ret;
@@ -1027,9 +1031,9 @@ seek_normal (int fd, unsigned int * datamark, int filesize,
   return 0;
 }
 
-static int
-seek_compressed (int fd, unsigned int * datamark, int filesize,
-                 double constant, int rsize, int channels)
+static ssize_t
+seek_compressed (int fd, unsigned int * datamark, unsigned int filesize,
+                 double constant, unsigned int rsize, int channels)
 /*
  * We have to use this method because some compressed formats depend on
  * the previous state of the decoder.

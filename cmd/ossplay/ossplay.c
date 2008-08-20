@@ -220,7 +220,7 @@ format2bits (int format)
   switch (format)
     {
       case AFMT_CR_ADPCM_2: return 2;
-      case AFMT_CR_ADPCM_3: return 2.66;
+      case AFMT_CR_ADPCM_3: return 2.66F;
       case AFMT_CR_ADPCM_4:
       case AFMT_MAC_IMA_ADPCM:
       case AFMT_MS_IMA_ADPCM:
@@ -838,7 +838,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 'm':
-          nfiles = atoi (optarg);
+          sscanf (optarg, "%u", &nfiles);
           break;
 
         case 's':
@@ -975,7 +975,7 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
 }
 
 int
-play (dspdev_t * dsp, int fd, unsigned int * datamark, int bsize,
+play (dspdev_t * dsp, int fd, unsigned int * datamark, unsigned int bsize,
       double constant, decoders_queue_t * dec, seekfunc_t * seekf)
 {
 #define EXITPLAY(code) \
@@ -987,7 +987,7 @@ play (dspdev_t * dsp, int fd, unsigned int * datamark, int bsize,
     return code; \
   } while (0)
 
-  int rsize = bsize;
+  unsigned int rsize = bsize;
   unsigned int filesize = *datamark;
   ssize_t outl;
   unsigned char * buf, * obuf, contflag = 0;
@@ -1075,7 +1075,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
     return code; \
   } while(0)
 
-  unsigned int l, outl;
+  ssize_t l, outl;
   decoders_queue_t * d;
   unsigned char * buf, * obuf;
   verbose_values_t * verbose_meta = NULL;
@@ -1091,7 +1091,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
   buf = ossplay_malloc (RECBUF_SIZE);
    /*LINTED*/ while (1)
     {
-      if ((l = read (dsp->fd, buf, RECBUF_SIZE)) == -1)
+      if ((l = read (dsp->fd, buf, RECBUF_SIZE)) < 0)
 	{
           if ((errno == EINTR) && (eflag)) EXITREC (eflag);
 	  if (errno == ECONNRESET) EXITREC (0); /* Device disconnected */
@@ -1135,7 +1135,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 
 int silence (dspdev_t * dsp, unsigned int len, int speed)
 {
-  int i;
+  ssize_t i;
   unsigned char empty[1024];
 
   if (!(i = setup_device (dsp, AFMT_U8, 1, speed))) return -1;
@@ -1148,8 +1148,7 @@ int silence (dspdev_t * dsp, unsigned int len, int speed)
     {
       i = 1024;
       if (i > len) i = len;
-      if ((write (dsp->fd, empty, i) < 0) ||
-          ((errno == EINTR) && (eflag))) return -1;
+      if ((i = write (dsp->fd, empty, i)) < 0) return -1;
 
       len -= i;
     }
