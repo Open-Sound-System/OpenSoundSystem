@@ -462,7 +462,7 @@ static audiodrv_t sbxfi_input_driver = {
   sbxfi_get_buffer_pointer
 };
 
-static void
+static int
 init_play_device (sbxfi_devc_t * devc,
 		  char *name, int dev_flags)
 {
@@ -476,7 +476,7 @@ init_play_device (sbxfi_devc_t * devc,
   if (devc->nr_outdevs > MAX_OUTPUTDEVS)
     {
       cmn_err (CE_CONT, "Too many audio devices\n");
-      return;
+      return -1;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOINPUT;
@@ -491,7 +491,7 @@ init_play_device (sbxfi_devc_t * devc,
 				   sizeof (audiodrv_t),
 				   opts, formats, devc, -1)) < 0)
     {
-      return;
+      return -1;
     }
 
   if (devc->first_dev == -1)
@@ -543,9 +543,11 @@ init_play_device (sbxfi_devc_t * devc,
   devc->next_pg += 128/4;	// Up to 128k for buffer
 
   devc->nr_outdevs++;
+
+  return dev;
 }
 
-static void
+static int
 init_rec_device (sbxfi_devc_t * devc,
 		  char *name, int dev_flags)
 {
@@ -559,7 +561,7 @@ init_rec_device (sbxfi_devc_t * devc,
   if (devc->nr_indevs > MAX_INPUTDEVS)
     {
       cmn_err (CE_CONT, "Too many audio devices\n");
-      return;
+      return -1;
     }
 
   opts = ADEV_AUTOMODE | ADEV_NOOUTPUT;
@@ -574,7 +576,7 @@ init_rec_device (sbxfi_devc_t * devc,
 				   sizeof (audiodrv_t),
 				   opts, formats, devc, -1)) < 0)
     {
-      return;
+      return -1;
     }
 
   if (devc->first_dev == -1)
@@ -618,6 +620,8 @@ init_rec_device (sbxfi_devc_t * devc,
   devc->next_pg += 128/4;	// Up to 128k for buffer
 
   devc->nr_indevs++;
+
+  return dev;
 }
 
 static int
@@ -762,6 +766,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
 {
   unsigned short pci_command, vendor, device, revision;
   unsigned short subvendor, subdevice;
+  int pdev, rdev;
 
   sbxfi_devc_t *devc;
   sbxfi_portc_t *portc;
@@ -931,8 +936,15 @@ oss_sbxfi_attach (oss_device_t * osdev)
     }
 
   devc->first_dev=-1; /* Not assigned */
-  init_play_device (devc, "output", 0);
-  init_rec_device (devc, "input", 0);
+  pdev = init_play_device (devc, "output", 0);
+  rdev = init_rec_device (devc, "input", 0);
+#ifdef CONFIG_OSS_VMIX
+   if (pdev != -1)
+     {
+         vmix_attach_audiodev (devc->osdev, pdev, rdev, 0);
+     }
+#endif
+
 #if 0
   // Initialize ADC
   InitADC (devc, ADC_SRC_LINEIN, FALSE);
