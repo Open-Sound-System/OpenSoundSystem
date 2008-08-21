@@ -1978,7 +1978,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 
       if ((err=check_masterdev (mixer))<0)
 	{
-	  cmn_err (CE_CONT, "Vmix instance %d: Invalid master device %d (err=%d)\n",
+	  cmn_err (CE_CONT, "Vmix instance %d: Master device %d is not compatible with vmix (error %d)\n",
 		   mixer->instance_num + 1, mixer->masterdev, err);
 	  return err;
 	}
