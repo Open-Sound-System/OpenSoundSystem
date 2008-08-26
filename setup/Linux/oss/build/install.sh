@@ -341,4 +341,10 @@ then
   echo "autosave_mixer yes" > $OSSLIBDIR/etc/userdefs
 fi
 
+# Hal 0.5.0+ hotplug
+mkdir -p /usr/lib/hal/scripts
+ln -sf $OSSLIBDIR/scripts/oss_usb-create-devices /usr/lib/hal/scripts/
+mkdir -p /usr/share/hal/fdi/policy/20thirdparty/
+ln -sf $OSSLIBDIR/scripts/90-oss_usb-create-device.fdi /usr/share/hal/fdi/policy/20thirdparty/
+
 exit 0
