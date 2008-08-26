@@ -272,8 +272,6 @@ showenum (char *extname, oss_mixext * rec, int val)
   static char tmp[512];
   oss_mixer_enuminfo ei;
 
-  *tmp = 0;
-
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
 
@@ -296,8 +294,7 @@ showenum (char *extname, oss_mixext * rec, int val)
       return tmp;
     }
 
-  if (*tmp == 0)
-    sprintf (tmp, "%d", val);
+  sprintf (tmp, "%d", val);
   return tmp;
 }
 
@@ -379,7 +376,7 @@ findenum (char *extname, oss_mixext * rec, char *arg)
 	  }
     }
 
-  if (sscanf (arg, "%d", &n) < 1 || n < 0)
+  if (sscanf (arg, "%d", &n) < 1 || n < 0 || n > rec->maxvalue)
     {
       fprintf (stderr, "Invalid enumerated value '%s'\n", arg);
       return -1;
@@ -734,10 +731,16 @@ find_name (char *name)
 static void
 change_level (int dev, char *cname, char *arg)
 {
+  enum {
+    RELLEFT = 1,
+    RELRIGHT = 2
+  };
   int ctrl, lefti, righti, dist = 0, vol = 0;
   float left = -1, right = 0;
   oss_mixer_value val;
   oss_mixext extrec;
+  int relative = 0;
+  char * p;
 
   if ((ctrl = find_name (cname)) == -1)
     {
@@ -770,11 +773,13 @@ change_level (int dev, char *cname, char *arg)
       if (sscanf (arg, "%x", &lefti) != 1)
 	goto argerror;
       left = lefti;
+      if ((arg[0] == '+') || (arg[0] == '-')) relative = RELLEFT;
     }
   else if (extrec.type == MIXT_VALUE)
     {
       if (sscanf (arg, "%f", &left) != 1)
 	goto argerror;
+      if ((arg[0] == '+') || (arg[0] == '-')) relative = RELLEFT;
     }
   else if (extrec.type == MIXT_3D)
     {
@@ -788,18 +793,24 @@ change_level (int dev, char *cname, char *arg)
     left = 1;
   else if (strcmp (arg, "OFF") == 0 || strcmp (arg, "off") == 0)
     left = 0;
-  else if (sscanf (arg, "%f:%f", &left, &right) != 2)
+  else if ((p = strchr (arg, ':')) != NULL)
+    {
+      if (sscanf (arg, "%f:%f", &left, &right) != 2)
+	goto argerror;
+      if ((arg[0] == '+') || (arg[0] == '-'))
+	relative |= RELLEFT;
+      if ((p[1] == '+') || (p[1] == '-'))
+	relative |= RELRIGHT;
+    }
+  else
     {
       if (sscanf (arg, "%f", &left) != 1)
 	goto argerror;
-      else
-	right = left;
+      if ((arg[0] == '+') || (arg[0] == '-'))
+	relative = RELLEFT | RELRIGHT;
+      right = left;
     }
 
-  if (left < 0)
-    left = 0;
-  if (right < 0)
-    right = 0;
   if (extrec.flags & MIXF_CENTIBEL)
     {
       lefti = left * 10;
@@ -813,7 +824,31 @@ change_level (int dev, char *cname, char *arg)
 
   val.dev = dev;
   val.ctrl = ctrl;
+  val.timestamp = extrec.timestamp;
 
+  if (relative)
+    {
+      if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
+        {
+          perror ("SNDCTL_MIX_READ");
+          exit (-1);
+        }
+      if (extrec.type == MIXT_STEREOSLIDER16 || extrec.type == MIXT_MONOSLIDER16)
+        {
+          left = val.value & 0xffff;
+          right = (val.value >> 16) & 0xffff;
+        }
+      else
+        {
+          left = val.value & 0xff;
+          right = (val.value >> 8) & 0xff;
+        }
+      if (relative & RELLEFT) lefti += left;
+      if (relative & RELRIGHT) righti += right;
+    }
+
+  if (lefti < 0) lefti = 0;
+  if (righti < 0) righti = 0;
   switch (extrec.type)
     {
       case MIXT_STEREOSLIDER16:
@@ -822,14 +857,8 @@ change_level (int dev, char *cname, char *arg)
         if (righti > 0xffff) righti = 0xffff;
         val.value = (lefti & 0xffff) | ((righti & 0xffff) << 16);
         break;
-      case MIXT_MONOSLIDER:
-      case MIXT_MONODB:
-      case MIXT_MONOVU:
-      case MIXT_MONOPEAK:
-	if (lefti > 255) lefti = 255;
-	if (righti > 255) righti = 255;
-        break;
       case MIXT_3D:
+        if (vol < 0) vol = 0;
         if (vol > 255) vol = 255;
         if (righti > 0xffff) righti = 0xffff;
         if (dist < 0) dist = 0;
@@ -844,12 +873,17 @@ change_level (int dev, char *cname, char *arg)
         break;
       case MIXT_ENUM:
         break;
+      case MIXT_MONOSLIDER:
+      case MIXT_MONODB:
+      case MIXT_MONOVU:
+      case MIXT_MONOPEAK:
       default:
+	if (lefti > 255) lefti = 255;
+	if (righti > 255) righti = 255;
 	val.value = (lefti & 0x00ff) | ((righti & 0x00ff) << 8);
         break;
     }
 
-  val.timestamp = extrec.timestamp;
   if (ioctl (mixerfd, SNDCTL_MIX_WRITE, &val) == -1)
     {
       perror ("SNDCTL_MIX_WRITE");

@@ -25,8 +25,9 @@ default mixer device (usually the motherboard sound chip). This
 printout can also be used to find out the supported control names and
 their possible values. Currently all controls accept an ON/OFF value, a
 mono value (0 to 100) or a stereo value (left:right where both channel
-volumes can be between 0 and 100). The following is a sample printout
-produced by ossmix:
+volumes can be between 0 and 100). The value can also be expressed in a
+relative form (e.g. +1 to add 1 to the previous volume).
+The following is a sample printout produced by ossmix:
 
 	Selected mixer 0/Creative AudioPCI
 	Known controls are:
