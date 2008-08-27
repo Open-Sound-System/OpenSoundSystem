@@ -108,27 +108,7 @@ oss_kmem_free (void *addr)
   vfree (addr);
 }
 
-#define MAX_MEMBLOCK	4096
-static void *memblocks[MAX_MEMBLOCK];
-static int n_memblocks = 0;
-
-void *
-oss_pmalloc (size_t sz)
-{
-  void *ptr;
-
-  if ((ptr = vmalloc (sz)) == NULL)
-    {
-      oss_cmn_err (CE_WARN, "vmalloc(%d) failed (PMALLOC)\n", sz);
-      return NULL;
-    }
-  memset (ptr, 0, sz);
-
-  if (n_memblocks <= MAX_MEMBLOCK)
-    memblocks[n_memblocks++] = ptr;
-
-  return ptr;
-}
+/* oss_pmalloc() moved to os_linux.c */
 
 extern oss_native_word
 oss_virt_to_bus (void *addr)
@@ -348,13 +328,6 @@ osscore_exit (void)
 
   uninit_proc_fs ();
   oss_uninit_osscore (core_osdev);
-
-  for (i = 0; i < n_memblocks; i++)
-    if (memblocks[i] != NULL)
-      {
-	vfree (memblocks[i]);
-	memblocks[i] = NULL;
-      }
 }
 
 void

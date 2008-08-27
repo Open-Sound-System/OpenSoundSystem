@@ -1018,3 +1018,12 @@ oss_uninit_osscore (oss_device_t * osdev)
   // free_all_irqs ();          /* If something was left allocated by accident */
   oss_unregister_chrdev (osscore_major, "osscore");
 }
+
+/*
+ * oss_pmalloc() is only used by usb_wraper.inc.
+ */
+void *
+oss_pmalloc (size_t sz)
+{
+	return oss_memblk_malloc(&oss_global_memblk, sz);
+}
