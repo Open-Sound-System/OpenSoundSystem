@@ -76,7 +76,7 @@ extern int oss_register_poll (struct oss_wait_queue *wq, oss_mutex_t * mutex,
 extern void oss_wakeup (struct oss_wait_queue *wq, oss_mutex_t * mutex,
 			oss_native_word * flags, short events);
 
-extern void oss_cmn_err (int level, char *format, ...);
+extern void oss_cmn_err (int level, const char *format, ...);
 #define CE_CONT		0
 #define CE_NOTE		1
 #define CE_WARN		2

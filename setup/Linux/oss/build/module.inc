@@ -197,7 +197,7 @@ strcpy (char *s1, const char *s2)
 }
 
 void
-oss_cmn_err (int level, char *s, ...)
+oss_cmn_err (int level, const char *s, ...)
 {
   char tmp[1024], *a[6];
   va_list ap;

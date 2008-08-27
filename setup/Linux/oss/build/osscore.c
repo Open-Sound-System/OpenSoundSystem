@@ -643,7 +643,7 @@ oss_create_uio (uio_t * uio, char *buf, size_t count, uio_rw_t rw,
 }
 
 void
-oss_cmn_err (int level, char *s, ...)
+oss_cmn_err (int level, const char *s, ...)
 {
   char tmp[1024], *a[6];
   va_list ap;
