@@ -1017,6 +1017,7 @@ extern int hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int ca
 extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_travelmate4060_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
@@ -1061,6 +1062,11 @@ static const codec_desc_t subdevices[] = {
    * Assume the audio codec is identical with Vaio AGN (above).
    */
   {0x104d1e00, "Vaio/STAC9872AK", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d9008},
+
+/*
+ * Thinkpad R61
+ */
+  {0x17aa20bb, "Thinkpad R61", VF_NONE, (char**) &ad1984remap, 0, hdaudio_thinkpad_r61_mixer_init},
 
   {0, "Unknown"}
 };
