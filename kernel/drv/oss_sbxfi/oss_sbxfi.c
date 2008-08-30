@@ -828,6 +828,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
     case 0x002e:
     case 0x0032:
     case 0x0033:
+    case 0x0034: /* This is actually Auzentech Prelude (subvendor 415a) */
       /*
        * Original X-Fi hardware revision (SB046x/067x/076x)
        */
