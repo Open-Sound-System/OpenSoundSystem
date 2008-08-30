@@ -877,7 +877,7 @@ main (int argc, char *argv[])
  */
 
   if (!corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_NODE_COUNT, &a, &b))
-    return -EIO;
+    return -1;
 
   first_node = (a >> 16) & 0xff;
   num_nodes = a & 0xff;
