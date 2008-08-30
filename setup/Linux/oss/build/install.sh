@@ -31,13 +31,15 @@ UNAME=`uname -r`
 if test -f /lib/modules/$UNAME/kernel/oss/vmix.ko || test -f /lib/modules/$UNAME/kernel/oss/ich.ko
 then
 # Older versions of OSS modules exist under /lib/modules. This indicates that
-# previous version of OSS has not been properly uninstalled. Use brute force
-# to get rid of it.
+# previous version of OSS has not been properly uninstalled. Run osdetect
+# again to fix rthe situation
 
-	rm -f /lib/modules/$UNAME/kernel/oss/*.ko
-
+	/usr/sbin/soundoff > /dev/null 2>&1
 	/usr/sbin/ossdetect
 fi
+
+# Remove previous OSS modules from the system
+rm -rf /lib/modules/$UNAME/kernel/oss
 
 if test -f /usr/lib/oss/build/ich.c
 then
