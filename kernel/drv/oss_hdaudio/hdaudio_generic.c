@@ -177,7 +177,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		 ent->rgbcolor = widget->rgbcolor;
 
 	      /* Setup initial volume */
-	      val = (maxval * 9) / 10;	/* 90% of the maximum */
+	      val = (maxval * 8) / 10;	/* 80% of the maximum */
 	      val = val | (val << 16);
 
 	      hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE,
@@ -292,7 +292,7 @@ attach_amplifiers (int dev, hdaudio_mixer_t * mixer, codec_t * codec,
 		 ent->rgbcolor = widget->rgbcolor;
 
 	      /* setup volume */
-	      val = (maxval * 9) / 10;	/* 90% of the maximum */
+	      val = (maxval * 8) / 10;	/* 80% of the maximum */
 	      val = val | (val << 16);
 	      hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE,
 				   val);
