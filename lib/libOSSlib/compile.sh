@@ -66,6 +66,10 @@ case `uname` in
 	$MAKE libOSSlib.a CFLAGS=""
 	;;
 
+"BeOS"|"Haiku")
+	$MAKE libOSSlib.a CFLAGS=""
+	;;
+
 *)
       echo Can\'t recognize your operating system '('`uname`')'.
       echo;echo

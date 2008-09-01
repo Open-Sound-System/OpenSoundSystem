@@ -408,6 +408,10 @@ parse_config (FILE * f, conf_t * conf)
 #include "gen_driver_sco.inc"
 #endif
 
+#if defined(__BEOS__)
+#include "gen_driver_beos.inc"
+#endif
+
 static int
 is_cplusplus (char *fname)
 {
@@ -756,6 +760,10 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 # endif
 #endif
 
+#if defined(__BEOS__)
+      fprintf (f, "CFLAGS=-O2 -D_KERNEL -D_KERNEL_MODE=1 -no-fpic\n");
+#endif
+
     }
   else
     {
@@ -1008,6 +1016,10 @@ produce_output (conf_t * conf)
 #include "srcconf_solaris.inc"
 #endif
 
+#ifdef __BEOS__
+#include "srcconf_beos.inc"
+#endif
+
 static void
 check_endianess (conf_t * conf)
 {
@@ -1109,8 +1121,16 @@ produce_errno_h(void)
 	fprintf (f, " */\n");
 	fprintf (f, "\n");
 
+#ifndef EBADE
+#define EBADE EINVAL
+#endif
+
 #ifndef EIDRM
 #define EIDRM EFAULT
+#endif
+
+#ifndef ENOTSUP
+#define ENOTSUP ENOSYS
 #endif
 
 #ifndef EFAULT
