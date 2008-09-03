@@ -1050,9 +1050,10 @@ ich_init (ich_devc * devc)
       char tmp_name[100];
       int port_fmt = DF_PCM;
       int formats = AFMT_S16_LE | AFMT_AC3;
+      char *devfile_name = "";
+
       strcpy (tmp_name, devc->chip_name);
       opts = ADEV_AUTOMODE | ADEV_16BITONLY | ADEV_STEREOONLY | ADEV_COLD;
-      char *devfile_name = "";
 
       if (!ac97_varrate (&devc->ac97devc))
 	{
