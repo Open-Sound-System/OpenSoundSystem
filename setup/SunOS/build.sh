@@ -152,7 +152,7 @@ then
 
 	if ld -dy -r -Nmisc/usba -o prototype/kernel/misc/osscommon $KERNEL32/target/objects/*.o
 	then
-		$TXT2MAN -v "OSS Devices" -s 7 $KERNEL32/kernel/framework/osscore/osscore.man > prototype/usr/man/man7d/osscore.7d
+		$TXT2MAN -v "OSS Devices" -s 7 $KERNEL32/kernel/drv/osscore/osscore.man > prototype/usr/man/man7d/osscore.7d
 	else
 		exit 1
 	fi
