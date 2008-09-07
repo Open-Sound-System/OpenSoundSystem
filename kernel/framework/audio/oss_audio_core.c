@@ -5689,6 +5689,8 @@ chpoll_output (int dev, struct fileinfo *file, oss_poll_event_t * ev)
   adev = audio_engines[dev];
 
       dmap = adev->dmap_out;
+      if (dmap->mapping_flags & DMA_MAP_MAPPED)
+	{
 #if 1
       /*
        * It might actually be better to permit pollling in mmapped
@@ -5698,8 +5700,6 @@ chpoll_output (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	 ev->revents |= (POLLOUT | POLLWRNORM) & events;
       return 0;
 #else
-      if (dmap->mapping_flags & DMA_MAP_MAPPED)
-	{
 	  oss_audio_set_error (adev->engine_num, E_PLAY,
 			       OSSERR (1014,
 				       "select/poll called for an OSS device in mmap mode."),
@@ -5710,8 +5710,8 @@ chpoll_output (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   * when the device is in mmap mode.
 	   */
 	  return OSS_EPERM;
-	}
 #endif
+	}
 
       if (dmap->dma_mode == PCM_ENABLE_INPUT)
 	{
@@ -5772,6 +5772,8 @@ chpoll_input (int dev, struct fileinfo *file, oss_poll_event_t * ev)
   adev = audio_engines[dev];
 
   dmap = adev->dmap_in;
+      if (dmap->mapping_flags & DMA_MAP_MAPPED)
+	{
 #if 1
       /*
        * It might actually be better to permit pollling in mmapped
@@ -5781,8 +5783,6 @@ chpoll_input (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	 ev->revents |= (POLLOUT | POLLWRNORM) & events;
       return 0;
 #else
-      if (dmap->mapping_flags & DMA_MAP_MAPPED)
-	{
 	  oss_audio_set_error (adev->engine_num, E_REC,
 			       OSSERR (1013,
 				       "select/poll called for an OSS device in mmap mode."),
@@ -5793,8 +5793,8 @@ chpoll_input (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 	   * when the device is in mmap mode.
 	   */
 	  return OSS_EIO;
-	}
 #endif
+	}
 
       if (dmap->dma_mode != PCM_ENABLE_INPUT)
 	{
