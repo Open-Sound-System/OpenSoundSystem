@@ -34,6 +34,16 @@ then
    /usr/sbin/ossdetect -l >> $LOG
 fi
 
+OPTIONS=
+if test -f $OSSLIBDIR/conf/osscore.conf
+then
+	OPTIONS=`grep -v -h '^#' $OSSLIBDIR/conf/osscore.conf | sed 's/[ ]//g'`
+	if test "$OPTIONS " != " "
+	then
+		 echo $OPTIONS | xargs -I % kenv osscore.%
+	fi
+fi
+
 if ! /sbin/kldload $OSSLIBDIR/modules/osscore.ko
 then
 	echo Loading the osscore module failed
@@ -44,6 +54,16 @@ fi
 
 for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'`
 do
+	OPTIONS=
+	if test -f $OSSLIBDIR/conf/$n.conf
+	then
+		OPTIONS=`grep -v -h '^#' $OSSLIBDIR/conf/$n.conf | sed 's/[ ]//g'`
+		if test "$OPTIONS " != " "
+		then
+			 echo $OPTIONS | xargs -I % kenv $n.%
+		fi
+	fi
+
 	if ! /sbin/kldload $OSSLIBDIR/modules/$n.ko
 	then
 		echo Loading module $n failed '-' ignored >> $LOG

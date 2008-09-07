@@ -25,6 +25,21 @@ then
 	/usr/sbin/savemixer 
 fi
 
+PROGRAMS="`fstat /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null | sed"1 D"`"
+
+if test "$PROGRAMS " != " "
+then
+  echo
+  echo Some applications are still using OSS - cannot unload
+  echo
+
+  fstat /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null
+
+  echo
+  echo Please stop these applications and run soundoff again
+  exit 2
+fi
+
 for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'`
 do
     /sbin/kldunload $n > /dev/null 2>&1

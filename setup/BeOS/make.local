@@ -7,13 +7,4 @@ copy:	build
 package:	build
 		cd setup/BeOS && sh mkpkg.sh
 
-tarball:	build
-		sh setup/BeOS/mktarball.sh
-
-deb:		package
-		alien --to-deb --scripts --keep-version oss-linux*.rpm
-
 install:	copy
-	cd /usr/lib/oss/build && sh install.sh
-	sync
-	soundoff && sync && soundon

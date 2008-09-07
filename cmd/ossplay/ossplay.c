@@ -533,6 +533,11 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
       if (dsp->recsrc != NULL)	select_recsrc (dsp);
 #endif
     }
+  else
+    {
+      ioctl (dsp->fd, SNDCTL_SETSONG, dsp->current_songname);
+      return format;
+    }
 
   /*
    * Report the current filename as the song name.

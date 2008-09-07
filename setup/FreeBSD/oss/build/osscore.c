@@ -541,5 +541,26 @@ SYSUNINIT (oss_sysuninit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, oss_sysuninit,
 	   NULL);
 #endif // VDEV_SUPPORT
 
+extern int max_intrate;
+extern int detect_trace;
+extern int src_quality;
+extern int flat_device_model;
+extern int vmix_disabled;
+extern int vmix_loopdevs;
+extern int ac97_amplifier;
+extern int ac97_recselect;
+extern int cooked_enable;
+extern int dma_buffsize;
+TUNABLE_INT("osscore.max_intrate", &max_intrate);
+TUNABLE_INT("osscore.detect_trace", &detect_trace);
+TUNABLE_INT("osscore.src_quality", &src_quality);
+TUNABLE_INT("osscore.flat_device_model", &flat_device_model);
+TUNABLE_INT("osscore.vmix_disabled", &vmix_disabled);
+TUNABLE_INT("osscore.vmix_loopdevs", &vmix_loopdevs);
+TUNABLE_INT("osscore.ac97_amplifier", &ac97_amplifier);
+TUNABLE_INT("osscore.ac97_recselect", &ac97_recselect);
+TUNABLE_INT("osscore.cooked_enable", &cooked_enable);
+TUNABLE_INT("osscore.dma_buffsize", &dma_buffsize);
+
 DECLARE_MODULE (osscore, osscore_mod, SI_SUB_KLD, SI_ORDER_ANY);
 MODULE_VERSION (osscore, 4);

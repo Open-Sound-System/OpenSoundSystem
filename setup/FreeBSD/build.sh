@@ -2,6 +2,15 @@
 
 . ./.directories
 
+if which gawk 2>/dev/null
+then
+   TXT2MAN=$SRCDIR/setup/txt2man
+else
+   echo "No gawk found. Using lesser replacement" >&2
+   cc -o txt2man origdir/setup/txt2man.c
+   TXT2MAN=./txt2man
+fi
+
 rm -rf prototype
 
 mkdir prototype
@@ -24,8 +33,25 @@ mkdir prototype/usr/share/man
 mkdir prototype/usr/share/man/man1
 mkdir prototype/usr/share/man/man7
 mkdir prototype/usr/share/man/man8
+mkdir prototype/usr/lib/oss/conf
 
 echo "OSSLIBDIR=/usr/lib/oss" > prototype/etc/oss.conf
+
+# Regenerating the config file templates
+rm -f /tmp/confgen
+if ! cc -o /tmp/confgen ./setup/FreeBSD/confgen.c
+then
+        echo Building confgen failed
+        exit -1
+fi
+
+if ! /tmp/confgen prototype/usr/lib/oss/conf \\/usr\\/lib\\/oss\\/conf kernel/drv/* kernel/nonfree/drv/*
+then
+        echo Running confgen failed
+        exit -1
+fi
+
+rm -f /tmp/confgen
 
 cp -r $SRCDIR/setup/FreeBSD/oss prototype/usr/lib/
 cp $SRCDIR/kernel/OS/FreeBSD/wrapper/bsddefs.h prototype/usr/lib/oss/build/
@@ -67,7 +93,7 @@ fi
 for i in target/bin/*
 do
 CMD=`basename $i`
-$SRCDIR/setup/txt2man -t "$CMD" -v "User Commands" -s 1 cmd/$CMD/$CMD.man > prototype/usr/share/man/man1/$CMD.1
+$TXT2MAN -t "$CMD" -v "User Commands" -s 1 cmd/$CMD/$CMD.man > prototype/usr/share/man/man1/$CMD.1
 echo done $CMD
 done
 
@@ -76,7 +102,7 @@ do
   CMD=`basename $i`
   if test -f cmd/$CMD/$CMD.man
   then
-	$SRCDIR/setup/txt2man -t "$CMD" -v "System Administration Commands" -s 8 cmd/$CMD/$CMD.man > prototype/usr/share/man/man8/$CMD.8
+	$TXT2MAN -t "$CMD" -v "System Administration Commands" -s 8 cmd/$CMD/$CMD.man > prototype/usr/share/man/man8/$CMD.8
 	echo done $CMD
   fi
 done
@@ -84,11 +110,11 @@ done
 for i in $SRCDIR/misc/man1m/*.man
 do
         N=`basename $i .man`
-        $SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/share/man/man1/$N.1
+        $TXT2MAN -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/share/man/man1/$N.1
 done
 
 rm -f prototype/usr/share/man/man8/ossdetect.8
-$SRCDIR/setup/txt2man -t "ossdetect" -v "User Commands" -s 8 os_cmd/FreeBSD/ossdetect/ossdetect.man > prototype/usr/share/man/man8/ossdetect.8
+$TXT2MAN -t "ossdetect" -v "User Commands" -s 8 os_cmd/FreeBSD/ossdetect/ossdetect.man > prototype/usr/share/man/man8/ossdetect.8
 echo done ossdetect
 
 for n in target/modules/*.o
@@ -103,18 +129,18 @@ do
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
 	then
 	  sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
-	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
+	  $TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 	else
 		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 		then
 	  		sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
-	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
+	  		$TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
 done
 
 sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
-$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
+$TXT2MAN -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
 rm -f /tmp/ossman.txt
 
 cp .version prototype/usr/lib/oss/version.dat

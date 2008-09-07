@@ -16,7 +16,7 @@ mkdir prototype
 
 TXT2MAN=$SRCDIR/setup/txt2man
 
-if test ! -f /usr/local/bin/gawk
+if gawk '' 2>/dev/null
 then
   # No gawk installed. Use the simple txt2man program instead of
   # the fully featured shell script which depends on gawk.
@@ -54,12 +54,11 @@ mkdir -p prototype/home/Desktop
 #cp -R $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
 #cp $SRCDIR/kernel/framework/include/midiparser.h prototype/usr/lib/oss/include/
 
+(cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp -f target/bin/* prototype/home/config/bin
 cp -f target/sbin/* prototype/home/config/bin
-#cp -f $SRCDIR/setup/SCO_SV/sbin/* prototype/usr/sbin
 
 #cp -R $SRCDIR/oss prototype/usr/lib
-#cp -R $SRCDIR/setup/SCO_SV/oss prototype/usr/lib
 
 # generate driver_settings file from the .params on stdin.
 function gensettings () {
@@ -117,17 +116,20 @@ do
 	grep "^$N[ 	]" ./devices.list >> devlist.txt
 done
 
-echo "Copying media node addon, make sure it's up to date! (cd lib/opensound.media_addon && make)"
-cp ../oss-*-gpl/lib/opensound.media_addon/obj.x86/opensound.media_addon prototype/$BEOS_SYSTEM/add-ons/media/
-copyattr -d ../oss-*-gpl/lib/opensound.media_addon/OpenSound_README.txt prototype/home/Desktop/
-
-(cd prototype/ && zip -ry9 ../oss-beos-v4.1test-bin.zip .)
-
+#echo "Copying media node addon, make sure it's up to date! (cd lib/opensound.media_addon && make)"
+#cp ../oss-*-gpl/lib/opensound.media_addon/obj.x86/opensound.media_addon prototype/$BEOS_SYSTEM/add-ons/media/
+#copyattr -d ../oss-*-gpl/lib/opensound.media_addon/OpenSound_README.txt prototype/home/Desktop/
+echo "make sure the opensound media addon is installed and up to date!"
+echo "(cd lib/opensound.media_addon && make)"
+echo "The addon is distributed as part of Haiku (www.haiku-os.org) source"
 
 #grep '^int' $SRCDIR/kernel/framework/osscore/options.c > prototype/usr/lib/oss/modules/osscore/Space.c
 
 #sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/OSR6
-cp devlist.txt $SRCDIR/devlists/BeOS
+if test -d kernel/nonfree
+then
+	cp devlist.txt $SRCDIR/devlists/BeOS
+fi
 
 exit 0
 ##########

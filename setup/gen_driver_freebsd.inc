@@ -51,7 +51,7 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 	    {
 	      char *s = line + 4, *p = s;
 
-	      while (*p && *p != '=' && *p != ';')
+	      while (*p && *p != '=' && *p != ';' && *p != ' ')
 		p++;
 	      *p = 0;
 	      if (nopts >= MAXOPTS)
@@ -237,16 +237,15 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 	       name);
     }
 
-#if 0
   for (i = 0; i < nopts; i++)
     {
-      fprintf (src, "module_param(%s, int, S_IRUGO);\n", options[i]);
+      fprintf (src, "TUNABLE_INT(\"%s.%s\", &%s);\n", name, options[i], options[i]);
+#if 0
       if (option_desc[i] != NULL)
 	fprintf (src, "MODULE_PARM_DESC(%s, %s);\n", options[i],
 		 option_desc[i]);
-    }
-  fprintf (src, "\n");
 #endif
+    }
   fprintf (src, "\n");
 
   fclose (src);

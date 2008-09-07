@@ -1121,15 +1121,15 @@ produce_errno_h(void)
 	fprintf (f, " */\n");
 	fprintf (f, "\n");
 
-#ifndef EBADE
+#ifndef EBADE /* Not in FreeBSD, Haiku */
 #define EBADE EINVAL
 #endif
 
-#ifndef EIDRM
+#ifndef EIDRM /* Not in POSIX, but is in SuS */
 #define EIDRM EFAULT
 #endif
 
-#ifndef ENOTSUP
+#ifndef ENOTSUP /* Not in Haiku */
 #define ENOTSUP ENOSYS
 #endif
 
@@ -1140,9 +1140,7 @@ produce_errno_h(void)
 	GEN_ERRNO(E2BIG);
 	GEN_ERRNO(EACCES);
 	GEN_ERRNO(EAGAIN);
-#ifdef EBADE /* Doesn't exist on FreeBSD */
 	GEN_ERRNO(EBADE);
-#endif
 	GEN_ERRNO(EBUSY);
 	GEN_ERRNO(ECONNRESET);
 	GEN_ERRNO(EDOM);
