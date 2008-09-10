@@ -266,9 +266,6 @@ create_dsplinks (void)
     {
       ai = audiodevs[dev];
 
-      if (ai->caps & PCM_CAP_SPECIAL)
-	continue;
-
       if (!(ai->caps & PCM_CAP_OUTPUT))
 	continue;
 
@@ -291,9 +288,6 @@ create_dsplinks (void)
     {
       ai = audiodevs[dev];
 
-      if (ai->caps & PCM_CAP_SPECIAL)
-	continue;
-
       if (!(ai->caps & PCM_CAP_OUTPUT))
 	continue;
 
@@ -315,9 +309,6 @@ create_dsplinks (void)
   for (dev = 0; dev < si.numaudios; dev++)
     {
       ai = audiodevs[dev];
-
-      if (ai->caps & PCM_CAP_SPECIAL)
-	continue;
 
       if (!(ai->caps & PCM_CAP_INPUT))
 	continue;
