@@ -130,54 +130,6 @@ scan_devdir (char *path)
   closedir (dir);
 }
 
-/*ARGSUSED*/
-static void
-scan_devices (char *path)
-{
-#if 1
-/*
- * For the time being use the devlinks method instead of creating
- * the links by ossdetect
- */
-  system ("/usr/sbin/devlinks");
-  system ("/usr/sbin/ossdevlinks");
-  return;
-#else
-  DIR *dir;
-  struct dirent *de;
-  struct stat st;
-
-  char fullname[256];
-
-  if ((dir = opendir (path)) == NULL)
-    {
-      perror (path);
-      exit (-1);
-    }
-
-  while ((de = readdir (dir)) != NULL)
-    {
-      if (de->d_name[0] == '.')
-	continue;
-
-      sprintf (fullname, "%s/%s", path, de->d_name);
-
-      if (stat (fullname, &st) == -1)
-	{
-	  perror (fullname);
-	  continue;
-	}
-
-      if (S_ISDIR (st.st_mode))
-	{
-	  scan_devdir (fullname);
-	}
-    }
-  closedir (dir);
-  symlink ("/dev/mixer0", "/dev/mixer");	/* Don't care about errors */
-#endif
-}
-
 typedef struct
 {
   char *driver;
@@ -639,8 +591,7 @@ main (int argc, char *argv[])
 	case 'u':
 	  install_userdev = 1;
 	  break;
-	case 'd':
-	  scan_devices ("/devices");	/* Create the device file links */
+	case 'd': /* Obolete under Solaris. */
 	  exit (0);
 	  break;
 	case 'l':
@@ -806,8 +757,6 @@ main (int argc, char *argv[])
 	  printf ("Attempting to reload %s\n", drivers[i].driver);
 	  add_drv (drivers[i].name, drivers[i].driver, parms);
 	}
-
-  scan_devices ("/devices");	/* Create the device file links */
 
 /*
  * Reload the previous default settings if they were ever saved.
