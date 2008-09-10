@@ -1104,7 +1104,8 @@ typedef struct audio_buf_info
  * both inputs/outputs (depending on the device). See the OSS Programmer's
  * Guide for full details.
  */
-#	define PCM_CAP_SHADOW		0x01000000	/* "Shadow" device */
+#	define PCM_CAP_SPECIAL		0x01000000	/* Not for ordinary "multimedia" use */
+#	define PCM_CAP_SHADOW		0x00000000	/* OBSOLETE */
 
 /*
  * Preferred channel usage. These bits can be used to

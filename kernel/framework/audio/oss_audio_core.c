@@ -3262,8 +3262,8 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 	    info |= PCM_CAP_DUPLEX;
 
 	if (dev > 0)
-	  if (adev->flags & ADEV_SHADOW)
-	    info |= PCM_CAP_SHADOW;
+	  if (adev->flags & ADEV_SPECIAL)
+	    info |= PCM_CAP_SPECIAL;
 
 	if (dev < num_audio_engines - 1)
 	  {
@@ -6179,6 +6179,11 @@ oss_install_audiodev_with_devname (int vers,
 
   for (i = 0; i < num_audio_engines; i++)
     {
+
+      if ((audio_engines[i]->flags & (ADEV_SHADOW|ADEV_HIDDEN)) !=
+		      (flags & (ADEV_SHADOW|ADEV_HIDDEN))) /* Different visibility */
+	 continue;
+
       if (audio_engines[i]->unloaded
 	  && audio_engines[i]->os_id == oss_get_osid (osdev))
 	{
@@ -6364,7 +6369,7 @@ oss_install_audiodev_with_devname (int vers,
       op->audio_devfile = devfile_num;
       audio_devfiles[devfile_num] = op;
       sprintf (op->devnode, "/dev/%s", name);
-      oss_install_chrdev (osdev, name, OSS_DEV_DSP, devfile_num,
+      oss_install_chrdev (master_osdev, name, OSS_DEV_DSP, devfile_num,
 			  &audio_cdev_drv, chdev_flags);
       osdev->num_audio_engines++;
 

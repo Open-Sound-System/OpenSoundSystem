@@ -1429,8 +1429,8 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
     info->caps |= PCM_CAP_INPUT;
   if (!(adev->flags & ADEV_NOOUTPUT))
     info->caps |= PCM_CAP_OUTPUT;
-  if (adev->flags & ADEV_SHADOW)
-    info->caps |= PCM_CAP_SHADOW;
+  if (adev->flags & ADEV_SPECIAL)
+    info->caps |= PCM_CAP_SPECIAL;
   if (adev->flags & ADEV_VIRTUAL)
     info->caps |= PCM_CAP_VIRTUAL;
 

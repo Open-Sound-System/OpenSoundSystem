@@ -501,12 +501,6 @@ test_device (int t, int flags)
 	return 1;
       }
 
-  if (ainfo.caps & PCM_CAP_SHADOW)
-    {
-      printf ("- Skipping device (card already tested)\n");
-      return 1;
-    }
-
   if ((ainfo.caps & DSP_CH_MASK) == DSP_CH_MULTI)
     {
       printf ("- Skipping multi channel device\n");
