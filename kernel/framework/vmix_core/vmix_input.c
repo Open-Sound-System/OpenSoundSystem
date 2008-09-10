@@ -205,6 +205,27 @@ vmix_record_callback (int dev, int parm)
   if (mixer == NULL) /* Houston, we have a problem. */
      return;
 
+  /*
+   * Check if any input applications are active. Skip input processing
+   * if it's not needed (to save CPU cycles).
+   */
+
+  for (i = 0; i < mixer->num_clientdevs; i++)
+    if (mixer->client_portc[i]->trigger_bits & PCM_ENABLE_INPUT)
+      do_input = 1;
+
+  if (!do_input) /* Skip all input processing */
+     {
+	  n = 0;
+	  while (n++ < dmap->nfrags
+		 && (int) (dmap->byte_counter - dmap->user_counter) >=
+		 dmap->fragment_size)
+	    {
+		  dmap->user_counter += dmap->fragment_size;
+	    }
+	  return;
+     }
+
   UP_STATUS (0x02);
   MUTEX_ENTER_IRQDISABLE (mixer->mutex, flags);
 #ifdef CONFIG_OSS_VMIX_FLOAT
@@ -221,15 +242,6 @@ vmix_record_callback (int dev, int parm)
 
   FP_SAVE (fp_env, fp_flags);
 #endif
-
-  /*
-   * Check if any input applications are active. Skip input processing
-   * if it's not needed (to save CPU cycles).
-   */
-
-  for (i = 0; i < mixer->num_clientdevs; i++)
-    if (mixer->client_portc[i]->trigger_bits & PCM_ENABLE_INPUT)
-      do_input = 1;
 
   n = 0;
   while (n++ < dmap->nfrags
@@ -375,6 +387,7 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
   int old_min;
   int frags = 0x7fff0007;	/* fragment size of 128 bytes */
 
+  mixer->record_engine.outvol = DB_SIZE * 5;
 /*
  * Sample format (and endianess) setup 
  *
