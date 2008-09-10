@@ -89,8 +89,14 @@ typedef struct
 	int inputdev;
 
 	int attach_flags;
-#define VMIX_INSTALL_NOPREALOC			0x00000001
-#define VMIX_INSTALL_NOINPUT			0x00000002
+
+/*
+ * 						0x000000xx reserved
+ * 						for #clients to prealloc
+ */
+#define VMIX_INSTALL_NOPREALLOC			0x00000100
+#define VMIX_INSTALL_NOINPUT			0x00000200
+#define VMIX_INSTALL_VISIBLE			0x00000400
 } vmixctl_attach_t;
 
 typedef struct

@@ -407,6 +407,12 @@ create_input_controls (int mixer_dev)
     {
       sprintf (name, "vmix%d-in", mixer->instance_num);
 
+      if ((err = mixer_ext_create_control (mixer_dev, 0, 0, vmix_invol,
+					   MIXT_MONOSLIDER16,
+					   name, DB_SIZE * 5,
+					   MIXF_READABLE | MIXF_WRITEABLE |
+					   MIXF_CENTIBEL | MIXF_PCMVOL)) < 0)
+	return err;
       if ((err = mixer_ext_create_control (mixer_dev, 0, 1, vmix_invol,
 					   MIXT_STEREOPEAK,
 					   name, 144,
@@ -1534,14 +1540,25 @@ create_vmix_engine (vmix_mixer_t * mixer)
   int n;
   char tmp[128];
   adev_t *adev, *master_adev;
-  int opts = ADEV_VIRTUAL | ADEV_DEFAULT | ADEV_HIDDEN | ADEV_VMIX;
+  int opts = ADEV_VIRTUAL | ADEV_DEFAULT | ADEV_VMIX;
+
+  n = mixer->num_clientdevs++;
 
   /*
    * ADEV_HIDDEN is used for the VMIX devices because they should not be
    * made visible to applications. The audio core will automatically
    * redirect applications opening the master device to use the
    * VMIX devices.
-   */
+   *
+   * However make the client devices visible if requested by vmixctl
+   */ 
+  if (!(mixer->attach_flags & VMIX_INSTALL_VISIBLE))
+     {
+     	opts |= ADEV_HIDDEN;
+
+  	if (n > 0)
+    	   opts |= ADEV_SHADOW;
+     }
 
   if (mixer->masterdev == -1)
     return OSS_ENXIO;
@@ -1564,13 +1581,9 @@ create_vmix_engine (vmix_mixer_t * mixer)
   memset (portc, 0, sizeof (*portc));
   portc->open_pending = 1; /* Reserve this engine to the client it was created for */
 
-  n = mixer->num_clientdevs++;
   portc->num = n;
 
   mixer->client_portc[n] = portc;
-
-  if (n > 0)
-    opts |= ADEV_SHADOW;
 
   if (mixer->inputdev == -1)
     opts |= ADEV_NOINPUT;
@@ -1618,7 +1631,8 @@ create_vmix_engine (vmix_mixer_t * mixer)
 
 #ifdef VDEV_SUPPORT
   /* Report device node of the master device */
-  strcpy (adev->devnode, master_adev->devnode);
+  if (opts & ADEV_HIDDEN)
+     strcpy (adev->devnode, master_adev->devnode);
   oss_add_audio_devlist (OPEN_READ | OPEN_WRITE, master_adev->audio_devfile);
 #endif
 
@@ -1766,7 +1780,10 @@ check_masterdev (void *mx)
     return OSS_EIO;
 
   if (adev->vmix_mixer != NULL) /* Already attached */
+  {
+     cmn_err(CE_CONT, "Vmix already attached to %s\n", adev->devnode);
      return OSS_EBUSY;
+  }
 
   if (adev->flags & ADEV_NOOUTPUT)
     return OSS_EIO;
@@ -1785,7 +1802,10 @@ check_masterdev (void *mx)
 
   if (mixer->inputdev != -1 && mixer->inputdev != mixer->masterdev)
      if (audio_engines[mixer->inputdev]->vmix_mixer != NULL) /* Input master already driven */
+     {
+        cmn_err(CE_CONT, "Vmix already attached to %s\n", audio_engines[mixer->inputdev]->devnode);
 	return OSS_EBUSY;
+     }
 
 /*
  * Good. Initialize all per-mixer variables
@@ -1868,14 +1888,25 @@ check_masterdev (void *mx)
 /*
  * Crate one client in advance so that that SNDCTL_AUDIOINFO can provide proper info.
  */
-  if (!(mixer->attach_flags & VMIX_INSTALL_NOPREALOC))
+  if (!(mixer->attach_flags & VMIX_INSTALL_NOPREALLOC))
      {
-	int cl;
+	int cl, n=4;
+
+	if ((mixer->attach_flags & 0xff) != 0) /* Number of clients given */
+	   {
+		   n = mixer->attach_flags & 0xff;
+		   if (n<1) n=1;
+		   if (n>=MAX_CLIENTS) n=MAX_CLIENTS-1; /* TODO: Why n=MAX_CLIENTS doesn't work? */
+	   }
 	
-	for (cl=0;cl<4;cl++)
+	for (cl=0;cl<n;cl++)
     	    vmix_create_client (mixer);
-	for (cl=0;cl<4;cl++)
-  	    mixer->client_portc[cl]->open_pending = 0; /* Mark this free engine to be free for use */
+
+	/*
+	 * Mark the engines to be free for use
+	 */
+	for (cl=0;cl<mixer->num_clientdevs;cl++)
+  	    mixer->client_portc[cl]->open_pending = 0;
      }
 
   if (vmix_loopdevs>0)
@@ -1907,7 +1938,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
  * inputdev:		Input master device (if different than masterdev). Value of -1 means that the
  * 			masterdev device should also be used as the input master device (if it supports
  * 			input).
- * attach_flags:	Flags like VMIX_INSTALL_NOPREALOC.
+ * attach_flags:	Flags like VMIX_INSTALL_NOPREALLOC.
  */
 
   vmix_mixer_t *mixer;
@@ -1940,6 +1971,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
    * Mixer default levels
    */
   mixer->play_engine.outvol = DB_SIZE * 5;
+  mixer->record_engine.outvol = DB_SIZE * 5;
 #ifndef CONFIG_OSS_VMIX_FLOAT
   mixer->play_engine.outvol -= 3;	/* For overflow protection */
 #endif

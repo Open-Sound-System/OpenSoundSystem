@@ -44,6 +44,9 @@ o	-p	Do not preallocate client engines. By default vmix will
 		to the device. The remaining engines will be allocated 
 		on-demand if there are more concurrent applications that
 		use the device.
+o	-V	Make client devices visible (have private device nodes under /dev).
+o	-c <n>	Preallocate <n> client engines instead of 4. However -p
+		option makes this option ineffective.
 
  EXAMPLES
 o	vmixctl attach /dev/oss/oss_envy240/pcm0

@@ -41,6 +41,8 @@ usage(void)
 	fprintf (stderr, "\n");
 	fprintf (stderr, "\t-r\tDisable recording\n");
 	fprintf (stderr, "\t-p\tDo not preallocate client engines\n");
+	fprintf (stderr, "\t-V\tMake clients visible by creating device files for them.\n");
+	fprintf (stderr, "\t-c<N>\tPrecreate <N> client engines (see -p).\n");
 
 	exit(-1);
 }
@@ -72,8 +74,10 @@ vmix_attach(int argc, char **argv)
 {
 	int masterfd, inputfd=-1;
 	int masterdev, inputdev=-1;
-	int c;
+	int c, n;
+	int relink_devices = 0;
   	extern int optind;
+  	extern char * optarg;
 
 	vmixctl_attach_t att={0};
 
@@ -82,7 +86,7 @@ vmix_attach(int argc, char **argv)
  */
 	argv++;argc--; /* Skip the initial command ("attach") */
 
-  	while ((c = getopt (argc, argv, "rp")) != EOF)
+  	while ((c = getopt (argc, argv, "rpVc:")) != EOF)
     	   {
       		switch (c)
         	{
@@ -91,8 +95,20 @@ vmix_attach(int argc, char **argv)
 			break;
 
 		case 'p': /* No client engine preallocation */
-			att.attach_flags |= VMIX_INSTALL_NOPREALOC;
+			att.attach_flags |= VMIX_INSTALL_NOPREALLOC;
 			break;
+
+		case 'V': /* Allocate private device files for all clients */
+			att.attach_flags |= VMIX_INSTALL_VISIBLE;
+			relink_devices=1;
+			break;
+
+		case 'c': /* Force prealloc of N client devices */
+			n = atoi(optarg);
+			if (n>255)n=255;
+			if (n<0)n=0;
+			att.attach_flags |= n;
+			break;		
 
 		default:
 			usage();
@@ -119,6 +135,12 @@ vmix_attach(int argc, char **argv)
 	}
 
 	fprintf (stderr, "Virtual mixer attached to device.\n");
+
+	if (relink_devices)
+	{
+		system("ossdetect -d");
+		system("ossdevlinks");
+	}
 
 	return 0;
 }
