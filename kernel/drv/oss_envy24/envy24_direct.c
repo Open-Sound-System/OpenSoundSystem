@@ -343,7 +343,7 @@ envy24d_install (envy24_devc * devc)
 				    ADEV_NOVIRTUAL | ADEV_NOINPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
 				    AFMT_S32_LE, NULL, -1,
-				    "multich_out")) >= 0)
+				    "10ch_out")) >= 0)
     {
       portc = &devc->direct_portc_out;
       audio_engines[adev]->devc = devc;
@@ -381,7 +381,7 @@ envy24d_install (envy24_devc * devc)
 				    ADEV_NOVIRTUAL | ADEV_NOOUTPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
 				    AFMT_S32_LE, NULL, -1,
-				    "multich_in")) >= 0)
+				    "12ch_in")) >= 0)
     {
       portc = &devc->direct_portc_in;
       audio_engines[adev]->devc = devc;
@@ -404,12 +404,4 @@ envy24d_install (envy24_devc * devc)
       portc->direction = OPEN_READ;
       audio_engines[adev]->port_number = 10;	/* First input channel */
     }
-
-#ifdef CONFIG_OSS_VMIX
-  if (in_dev<0)
-     in_dev = -1; /* Input not available */
-
-    if (out_dev >= 0)
-       vmix_attach_audiodev(devc->osdev, out_dev, in_dev, 0);
-#endif
 }
