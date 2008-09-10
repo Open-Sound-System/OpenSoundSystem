@@ -266,11 +266,17 @@ create_dsplinks (void)
     {
       ai = audiodevs[dev];
 
+      if (ai->caps & PCM_CAP_SPECIAL)
+	continue;
+
       if (!(ai->caps & PCM_CAP_OUTPUT))
 	continue;
 
       if (!(ai->caps & PCM_CAP_INPUT))
 	continue;
+
+      if (ai->min_channels > 2 || ai->max_channels < 2) /* No stereo */
+	 continue;
 
       printf ("%s is the default /dev/dsp device\n", ai->devnode);
       symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
@@ -284,6 +290,9 @@ create_dsplinks (void)
   for (dev = 0; dev < si.numaudios; dev++)
     {
       ai = audiodevs[dev];
+
+      if (ai->caps & PCM_CAP_SPECIAL)
+	continue;
 
       if (!(ai->caps & PCM_CAP_OUTPUT))
 	continue;
@@ -306,6 +315,9 @@ create_dsplinks (void)
   for (dev = 0; dev < si.numaudios; dev++)
     {
       ai = audiodevs[dev];
+
+      if (ai->caps & PCM_CAP_SPECIAL)
+	continue;
 
       if (!(ai->caps & PCM_CAP_INPUT))
 	continue;
