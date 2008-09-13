@@ -4,6 +4,9 @@
 #define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
 int i, ch;
+int vol;
+
+vol = vmix_db_table[eng->outvol / 5];
 
 for (ch = 0; ch < channels; ch++)
   {
@@ -22,6 +25,7 @@ for (ch = 0; ch < channels; ch++)
 	int tmp;
 
 	tmp = INT_IMPORT (VMIX_BYTESWAP (*op));
+	tmp = (tmp * vol) / VMIX_VOL_SCALE;
 
 	op += channels;
 

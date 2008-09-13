@@ -5,18 +5,20 @@
 #define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
 int i, ch;
+float vol;
+
+vol = vmix_db_table[eng->outvol / 5];
 
 for (ch = 0; ch < channels; ch++)
   {
     float vu;
+    float *chbuf;
 
     vu = eng->vu[ch % 2];
     vu = vu / 255.0;
 
     op = (SAMPLE_TYPE *) inbuf;
     op += ch;
-
-    float *chbuf;
 
     chbuf = chbufs[ch];
 
@@ -35,6 +37,7 @@ for (ch = 0; ch < channels; ch++)
 #else
 	tmp = VMIX_BYTESWAP (*op);
 	tmp /= SAMPLE_RANGE;
+	tmp *= vol;
 
 	if (tmp < -1.0)
 	  tmp = -1.0;
