@@ -16,7 +16,7 @@
  * applications running muted or playing silence.
  */
 
-#define MAX_CLIENTS		8	
+#define MAX_CLIENTS		9	
 
 #define MAX_LOOPDEVS		2	/* Maximum number of vmix loopback devices */
 
@@ -182,7 +182,7 @@ extern void vmix_rec_export_float (vmix_portc_t * portc, int nsamples);
 #endif
 
 #define DB_SIZE	50
-#define VMIX_VOL_SCALE	100
+#define VMIX_VOL_SCALE	127
 
 #ifdef CONFIG_OSS_VMIX_FLOAT
    extern const float vmix_db_table[DB_SIZE + 1];
