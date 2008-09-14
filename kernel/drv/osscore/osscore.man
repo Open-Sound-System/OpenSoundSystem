@@ -56,6 +56,14 @@ o vmix_loopdevs		Optionally the virtual mixer subsystem can create
 		Default: 0 - no loopback devices are created.
 		This setting should be left to 0 unless there are specific
 		reasons to enable the loopback devices.
+o vmix_no_autoattach	By default (0) the low level
+		drivers for most sound cards will automatically
+		attach virtual mixer (vmix) to the primary audio devices of the cards.
+		In some situations it may be necessary to attach virtual mixer using 
+		nonstandard parameters. If vmix_no_autoattach is set to 1 then user
+		can use vmixctl attach command to attach virtual mixer manually to
+		the device(s).
+		Default: 0 - Automatically attach virtual mixer.
 
 FILES
 CONFIGFILEPATH/osscore.conf Device configuration file

@@ -81,6 +81,7 @@ vmix_attach(int argc, char **argv)
 
 	vmixctl_attach_t att={0};
 
+	att.attach_flags = VMIX_INSTALL_MANUAL;
 /*
  * Simple command line switch handling.
  */

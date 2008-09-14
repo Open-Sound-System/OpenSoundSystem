@@ -31,6 +31,7 @@ int flat_device_model = 0;	/* 0=new audio device model, 1=old model */
 int detect_trace = 0;		/* Se to 1 if detection tracing is required */
 int vmix_disabled = 0;		/* 1=disable virtual mixer, 0=enable */
 int vmix_loopdevs = 0;		/* Number of vmix loopback devices for all instances (0 to 2) */
+int vmix_no_autoattach = 0;	/* Do not attach vmix devices during boot */
 
 oss_option_map_t oss_global_options[] = {
   {"max_intrate", &max_intrate},
@@ -43,6 +44,7 @@ oss_option_map_t oss_global_options[] = {
   {"flat_device_model", &flat_device_model},
   {"vmix_disabled", &vmix_disabled},
   {"vmix_loopdevs", &vmix_loopdevs},
+  {"vmix_no_autoattach", &vmix_no_autoattach},
   {NULL, NULL}
 };
 #endif

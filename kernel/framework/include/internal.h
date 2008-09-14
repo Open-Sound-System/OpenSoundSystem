@@ -97,6 +97,7 @@ typedef struct
 #define VMIX_INSTALL_NOPREALLOC			0x00000100
 #define VMIX_INSTALL_NOINPUT			0x00000200
 #define VMIX_INSTALL_VISIBLE			0x00000400
+#define VMIX_INSTALL_MANUAL			0x00000800 /* By vmxctl */
 } vmixctl_attach_t;
 
 typedef struct

@@ -14,6 +14,7 @@
 extern int vmix_disabled;	/* Configuration option (osscore.conf) */
 extern int vmix_loopdevs;	/* Configuration option (osscore.conf) */
 extern int flat_device_model;
+extern int vmix_no_autoattach;
 static vmix_mixer_t *mixer_list = NULL; /* List of all currently installed mixer instances */
 static int instance_num = 0;
 
@@ -1959,6 +1960,13 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 
   if (vmix_disabled) /* Vmix not available in the system */
      return OSS_EIO;
+
+  /*
+   * If the vmix_no_autoattach option is set in osscore.conf then attach
+   * vmix only when 'vmixctl attach' is executed manually (VMIX_INSTALL_MANUAL).
+   */
+  if (vmix_no_autoattach && !(attach_flags & VMIX_INSTALL_MANUAL))
+     return 0;
 
   if (flat_device_model)
   {

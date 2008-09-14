@@ -102,3 +102,12 @@ int vmix_loopdevs=0;
  * the same number of loopback devices. This setting should be left to 0 unless
  * there are specific reasons to enable the loopback devices.
  */
+int vmix_no_autoattach=0;
+/*
+ * By default (0) the low level drivers for most sound cards will automatically
+ * attach virtual mixer (vmix) to the primary audio devices of the cards.
+ * In some situations it may be necessary to attach virtual mixer using 
+ * nonstandard parameters. If vmix_no_autoattach is set to 1 then user
+ * can use vmixctl attach command to attach virtual mixer manually to
+ * the device(s).
+ */
