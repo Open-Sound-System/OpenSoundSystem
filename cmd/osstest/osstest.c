@@ -193,6 +193,7 @@ testdsp (char *devnode, int n, int flags)
   int sample_rate;
   int hd, delay;
   int test_bytes;
+  int open_flags = O_WRONLY;
   long long total_bytes = 0;
   unsigned int tmp, caps;
 
@@ -208,7 +209,13 @@ testdsp (char *devnode, int n, int flags)
  * If the device is busy we will try to open it without O_EXCL. 
  */
 
-  hd = open (devnode, O_WRONLY | O_EXCL, 0);
+/*
+ * If the -V option was set then don't use O_EXCL.
+ */
+  if (!(flags & TF_VIRTUAL))
+     open_flags |= O_EXCL;
+
+  hd = open (devnode, open_flags, 0);
   if (hd == -1 && errno == EBUSY)
     {
       /*
