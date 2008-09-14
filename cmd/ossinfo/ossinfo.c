@@ -580,7 +580,7 @@ print_mixer_info (void)
 	{
 	  if (errno == ENXIO || errno == ENODEV)
 	    {
-	      printf ("%2d: Device not available\n");
+	      printf ("%2d: Device not available\n", i);
 	      continue;
 	    }
 

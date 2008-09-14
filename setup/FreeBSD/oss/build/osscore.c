@@ -44,10 +44,6 @@ typedef struct _oss_device_t oss_device_t;
 #define OSS_DEV_MIDI		10	/* /dev/midi## */
 #define OSS_DEV_DSP		12	/* /dev/dsp# */
 
-#ifdef VDEV_SUPPORT
-static eventhandler_tag oss_ehtag;
-#endif
-
 extern int soundcard_attach (void);
 extern int soundcard_detach (void);
 
@@ -486,48 +482,48 @@ oss_fp_restore (short *envbuf, unsigned int flags[])
 
 #ifdef VDEV_SUPPORT
 static void
-oss_clone (void *arg, struct ucred *cred, char *name, int namelen,
-	   struct cdev **dev)
+oss_file_free_private (void *v)
 {
-  struct cdev *cd;
+  free (v, M_DEVBUF);
+}
 
-  if (*dev != NULL)
-    return;
+int
+oss_file_get_private (void **v)
+{
+  int error;
 
-  if (strcmp (name, "dsp") == 0)
+  error = devfs_get_cdevpriv (v);
+  if (error)
     {
-      if ((cd = oss_find_minor_info (OSS_DEV_DSP, 0)) != NULL)
-	{
-	  *dev = cd;
-	  dev_ref (*dev);
-	}
-      return;
+      cmn_err (CE_CONT, "Couldn't retrieve private data from file handle!\n");
+      return error;
     }
+  return 0;
+}
 
-  if (strcmp (name, "midi") == 0)
+int
+oss_file_set_private (struct thread *t, void *v, size_t l)
+{
+  int error;
+  void * p;
+
+  p = malloc (l, M_DEVBUF, M_WAITOK);
+  if (p == NULL)
     {
-      if ((cd = oss_find_minor_info (OSS_DEV_VMIDI, 0)) != NULL)
-	{
-	  *dev = cd;
-	  dev_ref (*dev);
-	}
-      return;
+      cmn_err (CE_CONT, "Couldn't allocate memory!\n");
+      return -1;
     }
+  memcpy (p, v, l);
+  error = devfs_set_cdevpriv (p, oss_file_free_private);
+  if (error)
+    {
+      cmn_err (CE_CONT, "Couldn't attach private data to file handle!\n");
+      return error;
+    }
+  return 0;
 }
 
-static void
-oss_sysinit (void *p)
-{
-  oss_ehtag = EVENTHANDLER_REGISTER (dev_clone, oss_clone, 0, 1000);
-}
-
-static void
-oss_sysuninit (void *p)
-{
-  if (oss_ehtag != NULL)
-    EVENTHANDLER_DEREGISTER (dev_clone, oss_ehtag);
-}
-
+#if 0
 int
 oss_get_procinfo(int what)
 {
@@ -535,11 +531,8 @@ oss_get_procinfo(int what)
 
 	return -EINVAL;
 }
-
-SYSINIT (oss_sysinit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, oss_sysinit, NULL);
-SYSUNINIT (oss_sysuninit, SI_SUB_DRIVERS, SI_ORDER_MIDDLE, oss_sysuninit,
-	   NULL);
-#endif // VDEV_SUPPORT
+#endif
+#endif
 
 extern int max_intrate;
 extern int detect_trace;

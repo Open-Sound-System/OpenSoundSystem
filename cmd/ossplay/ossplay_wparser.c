@@ -151,7 +151,7 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned int datalimit,
 
         if (datalimit <= 0) dl = (unsigned int)-1;
         memcpy ((char *) &ah.magic, ".snd", 4);
-	ah.offset = BE_INT (24);
+        ah.offset = BE_INT (24);
         ah.filelen = BE_INT (dl);
         switch (format)
           {

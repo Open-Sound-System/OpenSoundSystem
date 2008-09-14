@@ -201,6 +201,7 @@ struct fileinfo
   int mode;			/* Open mode */
   int acc_flags;
   int pid;
+  int dev;
   char *cmd;
 };
 #define ISSET_FILE_FLAG(fileinfo, flag)  (fileinfo->acc_flags & (flag) ? 1:0)

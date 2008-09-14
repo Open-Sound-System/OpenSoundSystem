@@ -25,7 +25,7 @@ then
 	/usr/sbin/savemixer 
 fi
 
-PROGRAMS="`fstat /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null | sed"1 D"`"
+PROGRAMS="`fstat /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null | sed '1 D'`"
 
 if test "$PROGRAMS " != " "
 then

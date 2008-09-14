@@ -28,7 +28,7 @@ static d_mmap_t oss_mmap;
 
 static struct cdevsw oss_cdevsw = {
   .d_version = D_VERSION,
-  .d_flags = 0,
+  .d_flags = D_TRACKCLOSE,
   .d_open = oss_open,
   .d_close = oss_close,
   .d_read = oss_read,
@@ -623,16 +623,25 @@ init_fileinfo (struct fileinfo *fi, int flags)
     fi->mode = OPEN_WRITE;
   fi->acc_flags = flags;
   fi->pid = -1;
+  fi->dev = -1;
   fi->cmd = NULL;
 }
 
 static int
 oss_read (struct cdev *bsd_dev, struct uio *buf, int flags)
 {
-  struct fileinfo fi;
   int retval;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
+#ifndef VDEV_SUPPORT
+  struct fileinfo _fi, * fi = &_fi;
+  dev = minor (bsd_dev);
+  init_fileinfo (fi, flags);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;
@@ -645,8 +654,7 @@ oss_read (struct cdev *bsd_dev, struct uio *buf, int flags)
       return ENODEV;
     }
 
-  init_fileinfo (&fi, flags);
-  retval = cdev->d->read (cdev->instance, &fi, buf, buf->uio_resid);
+  retval = cdev->d->read (cdev->instance, fi, buf, buf->uio_resid);
   if (retval < 0)
     return -retval;
   return 0;
@@ -656,10 +664,18 @@ oss_read (struct cdev *bsd_dev, struct uio *buf, int flags)
 static int
 oss_write (struct cdev *bsd_dev, struct uio *buf, int flags)
 {
-  struct fileinfo fi;
   int retval;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
+#ifndef VDEV_SUPPORT
+  struct fileinfo _fi, * fi = &_fi;
+  dev = minor (bsd_dev);
+  init_fileinfo (fi, flags);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;
@@ -672,8 +688,7 @@ oss_write (struct cdev *bsd_dev, struct uio *buf, int flags)
       return ENODEV;
     }
 
-  init_fileinfo (&fi, flags);
-  retval = cdev->d->write (cdev->instance, &fi, buf, buf->uio_resid);
+  retval = cdev->d->write (cdev->instance, fi, buf, buf->uio_resid);
   if (retval < 0)
     return -retval;
   return 0;
@@ -701,12 +716,20 @@ oss_open (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
   init_fileinfo (&fi, flags);
   fi.pid = p->td_proc->p_pid;
   fi.cmd = p->td_proc->p_comm;
+  tmpdev = dev;
 
   retval =
     cdev->d->open (cdev->instance, cdev->dev_class, &fi, 0, 0, &tmpdev);
 
+  if (tmpdev != -1) fi.dev = tmpdev;
+  else fi.dev = dev;
   if (retval < 0)
     return -retval;
+
+#ifdef VDEV_SUPPORT
+  if (oss_file_set_private (p, (void *)&fi, sizeof (struct fileinfo)))
+    return ENXIO;
+#endif
 
   open_devices++;
   return 0;
@@ -715,9 +738,17 @@ oss_open (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
 static int
 oss_close (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
 {
-  struct fileinfo fi;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
+#ifndef VDEV_SUPPORT
+  struct fileinfo _fi, * fi = &_fi;
+  dev = minor (bsd_dev);
+  init_fileinfo (fi, flags);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;
@@ -730,8 +761,7 @@ oss_close (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
       return ENODEV;
     }
 
-  init_fileinfo (&fi, flags);
-  cdev->d->close (cdev->instance, &fi);
+  cdev->d->close (cdev->instance, fi);
   open_devices--;
   return 0;
 }
@@ -740,10 +770,18 @@ static int
 oss_ioctl (struct cdev *bsd_dev, u_long cmd, caddr_t arg, int mode,
 	   struct thread *p)
 {
-  struct fileinfo fi;
   int retval;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
+#ifndef VDEV_SUPPORT
+  struct fileinfo _fi, * fi = &_fi;
+  dev = minor (bsd_dev);
+  init_fileinfo (fi, mode);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;
@@ -756,8 +794,7 @@ oss_ioctl (struct cdev *bsd_dev, u_long cmd, caddr_t arg, int mode,
       return ENODEV;
     }
 
-  init_fileinfo (&fi, mode);
-  retval = cdev->d->ioctl (cdev->instance, &fi, cmd, (ioctl_arg) arg);
+  retval = cdev->d->ioctl (cdev->instance, fi, cmd, (ioctl_arg) arg);
   if (retval < 0)
     return -retval;
   return 0;
@@ -767,11 +804,19 @@ static int
 oss_poll (struct cdev *bsd_dev, int events, struct thread *p)
 {
   int retval;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
   oss_poll_event_t ev;
-  struct fileinfo fi;
   int err;
+#ifndef VDEV_SUPPORT
+  struct fileinfo _fi, * fi = &_fi;
+  dev = minor (bsd_dev);
+  init_fileinfo (fi, 0);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;
@@ -784,14 +829,12 @@ oss_poll (struct cdev *bsd_dev, int events, struct thread *p)
       return ENODEV;
     }
 
-  init_fileinfo (&fi, 0);
-
   ev.events = events;
   ev.revents = 0;
   ev.p = p;
   ev.bsd_dev = bsd_dev;
 
-  err = cdev->d->chpoll (cdev->instance, &fi, &ev);
+  err = cdev->d->chpoll (cdev->instance, fi, &ev);
   if (err < 0)
     {
       return -err;
@@ -804,11 +847,18 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
 	  int nprot)
 {
   int retval;
-  int dev = minor (bsd_dev);
+  int dev;
   oss_cdev_t *cdev;
   oss_poll_event_t ev;
   dmap_p dmap = NULL;
   int err;
+#ifndef VDEV_SUPPORT
+  dev = minor (bsd_dev);
+#else
+  struct fileinfo * fi;
+  if (oss_file_get_private ((void **)&fi)) return ENXIO;
+  dev = fi->dev;
+#endif
 
   if (dev >= oss_num_cdevs)
     return ENXIO;

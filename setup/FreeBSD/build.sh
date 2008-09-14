@@ -2,7 +2,7 @@
 
 . ./.directories
 
-if which gawk 2>/dev/null
+if which gawk >/dev/null
 then
    TXT2MAN=$SRCDIR/setup/txt2man
 else

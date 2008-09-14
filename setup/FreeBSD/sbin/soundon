@@ -89,14 +89,9 @@ fi
 
 /usr/sbin/ossdevlinks -v >> $LOG 2>&1
 
-if test ! -f /dev/dsp
-then
-   ln -sf /dev/dsp0 /dev/dsp
-fi
-
 ls -l /dev/dsp* /dev/sndstat /dev/mixer* /dev/oss/*/* >> $LOG 2>&1
 
-/usr/sbin/savemixer -L >> $LOG 2>&1
+/usr/sbin/savemixer -L -v >> $LOG 2>&1
 
 if test -x $OSSLIBDIR/soundon.user
 then
