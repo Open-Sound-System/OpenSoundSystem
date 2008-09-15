@@ -136,4 +136,31 @@ config:
 THE_END_IS_NEAR
 fi
 
+#
+# Check if some mandatory Solaris packages have been installed
+#
+MISSING=""
+for n in SUNWgcc SUNWaudh SUNWusbu
+do
+  if pkginfo -q $n
+  then
+    OK=1
+  else
+    MISSING="$MISSING $n"
+  fi
+done
+
+if test "$MISSING " != " "
+then
+	echo
+	echo Some required Solaris packages may be missing. You can install them
+	echo by doing:
+	echo
+	
+	for n in $MISSING
+	do
+		echo pkg install $n
+	done
+fi
+
 exit 0

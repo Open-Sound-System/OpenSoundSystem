@@ -13,6 +13,7 @@
 #include "oss_sadasupport_cfg.h"
 #include <oss_pci.h>
 #include <sys/note.h>
+#include <sys/audioio.h>
 #include <sys/audio.h>
 #include <sys/audiovar.h>
 #include <sys/audio/audio_trace.h>

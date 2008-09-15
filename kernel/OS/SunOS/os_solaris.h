@@ -76,8 +76,6 @@ typedef unsigned long long oss_uint64_t;	/* Unsigned 64 bit integer */
 #include <sys/ddidmareq.h>
 #include <sys/ksynch.h>
 #include <sys/poll.h>
-#include <sys/audioio.h>
-#include <sys/mixer.h>
 #ifdef SOL9
 #include <sys/cred.h>
 #else
