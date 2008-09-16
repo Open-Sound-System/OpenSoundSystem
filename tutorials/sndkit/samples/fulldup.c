@@ -23,8 +23,8 @@
 #include <sys/select.h>
 #include <soundcard.h>
 
-char *devname = "/dev/dsp";
-char *devname_in = NULL;
+char *dspname = "/dev/dsp";
+char *dspname_in = NULL;
 
 int fd_out = -1, fd_in = -1;
 char buffer[32 * 1024];		/* Max 32k local buffer */
@@ -32,7 +32,7 @@ int rate = 48000;
 int fragsize;
 
 static void
-open_one_device (char *devname)
+open_one_device (char *dspname)
 {
 /*
  * Open the device file. The one device full duplex scheme requires that
@@ -47,9 +47,9 @@ open_one_device (char *devname)
   int format;
   int frag;
 
-  if ((fd = open (devname, O_RDWR, 0)) == -1)
+  if ((fd = open (dspname, O_RDWR, 0)) == -1)
     {
-      perror (devname);
+      perror (dspname);
       exit (-1);
     }
 
@@ -91,7 +91,7 @@ open_one_device (char *devname)
     {
       fprintf (stderr,
 	       "%s doesn't support one device based full duplex scheme\n",
-	       devname);
+	       dspname);
       fprintf (stderr, "Please use the two device scheme.\n");
       exit (-1);
     }
@@ -131,7 +131,7 @@ open_one_device (char *devname)
 
   if (tmp != channels)
     {
-      fprintf (stderr, "%s doesn't support stereo (%d)\n", devname, tmp);
+      fprintf (stderr, "%s doesn't support stereo (%d)\n", dspname, tmp);
       exit (-1);
     }
 
@@ -158,7 +158,7 @@ open_one_device (char *devname)
   if (tmp != AFMT_S16_NE && tmp != AFMT_S16_OE)
     {
       fprintf (stderr, "%s doesn't support 16 bit sample format (%x)\n",
-	       devname, tmp);
+	       dspname, tmp);
       exit (-1);
     }
 
@@ -180,7 +180,7 @@ open_one_device (char *devname)
 
   if (tmp != rate)
     {
-      fprintf (stderr, "%s doesn't support requested rate %d (%d)\n", devname,
+      fprintf (stderr, "%s doesn't support requested rate %d (%d)\n", dspname,
 	       rate, tmp);
       exit (-1);
     }
@@ -212,7 +212,7 @@ open_one_device (char *devname)
 }
 
 static void
-open_two_devices (char *devname_out, char *devname_in)
+open_two_devices (char *dspname_out, char *dspname_in)
 {
 /*
  * Open the device file. The one device full duplex scheme requires that
@@ -229,9 +229,9 @@ open_two_devices (char *devname_out, char *devname_in)
 /*
  * Open the output device
  */
-  if ((fd_out = open (devname_out, O_WRONLY, 0)) == -1)
+  if ((fd_out = open (dspname_out, O_WRONLY, 0)) == -1)
     {
-      perror (devname_out);
+      perror (dspname_out);
       exit (-1);
     }
 
@@ -245,9 +245,9 @@ open_two_devices (char *devname_out, char *devname_in)
 /*
  * Open the input device
  */
-  if ((fd_in = open (devname_in, O_RDONLY, 0)) == -1)
+  if ((fd_in = open (dspname_in, O_RDONLY, 0)) == -1)
     {
-      perror (devname_in);
+      perror (dspname_in);
       exit (-1);
     }
 
@@ -274,7 +274,7 @@ open_two_devices (char *devname_out, char *devname_in)
  */
       fprintf (stderr,
 	       "Note! %s and %s are not necessarily driven by the same clock.\n",
-	       devname_out, devname_in);
+	       dspname_out, dspname_in);
     }
 
 #ifdef USE_RAW_FORMATS
@@ -309,12 +309,12 @@ open_two_devices (char *devname_out, char *devname_in)
     {
       fprintf (stderr,
 	       "Device %s supports duplex so you may want to use the single device approach instead\n",
-	       devname_out);
+	       dspname_out);
     }
 
   if (!(devcaps & PCM_CAP_OUTPUT))
     {
-      fprintf (stderr, "%s doesn't support output\n", devname_out);
+      fprintf (stderr, "%s doesn't support output\n", dspname_out);
       fprintf (stderr, "Please use different device.\n");
 #if 0
       /*
@@ -338,12 +338,12 @@ open_two_devices (char *devname_out, char *devname_in)
     {
       fprintf (stderr,
 	       "Device %s supports duplex so you may want to use the single device approach instead\n",
-	       devname_in);
+	       dspname_in);
     }
 
   if (!(devcaps & PCM_CAP_INPUT))
     {
-      fprintf (stderr, "%s doesn't support input\n", devname_in);
+      fprintf (stderr, "%s doesn't support input\n", dspname_in);
       fprintf (stderr, "Please use different device.\n");
 #if 0
       /*
@@ -389,7 +389,7 @@ open_two_devices (char *devname_out, char *devname_in)
 
   if (tmp != channels)
     {
-      fprintf (stderr, "%s doesn't support stereo (%d)\n", devname_out, tmp);
+      fprintf (stderr, "%s doesn't support stereo (%d)\n", dspname_out, tmp);
       exit (-1);
     }
   if (ioctl (fd_in, SNDCTL_DSP_CHANNELS, &tmp) == -1)
@@ -400,7 +400,7 @@ open_two_devices (char *devname_out, char *devname_in)
 
   if (tmp != channels)
     {
-      fprintf (stderr, "%s doesn't support stereo (%d)\n", devname_in, tmp);
+      fprintf (stderr, "%s doesn't support stereo (%d)\n", dspname_in, tmp);
       exit (-1);
     }
 
@@ -427,7 +427,7 @@ open_two_devices (char *devname_out, char *devname_in)
   if (tmp != AFMT_S16_NE && tmp != AFMT_S16_OE)
     {
       fprintf (stderr, "%s doesn't support 16 bit sample format (%x)\n",
-	       devname_out, tmp);
+	       dspname_out, tmp);
       exit (-1);
     }
 
@@ -469,7 +469,7 @@ open_two_devices (char *devname_out, char *devname_in)
   if (tmp != rate)
     {
       fprintf (stderr, "%s doesn't support requested rate %d (%d)\n",
-	       devname_out, rate, tmp);
+	       dspname_out, rate, tmp);
       exit (-1);
     }
 
@@ -482,7 +482,7 @@ open_two_devices (char *devname_out, char *devname_in)
   if (tmp != rate)
     {
       fprintf (stderr, "%s doesn't support the same rate %d!=%d as %s\n",
-	       devname_out, rate, tmp, devname_in);
+	       dspname_out, rate, tmp, dspname_in);
       exit (-1);
     }
 
@@ -781,18 +781,18 @@ main (int argc, char *argv[])
  * Check if the device name is given on command line.
  */
   if (argc > 3)
-    devname = argv[3];
+    dspname = argv[3];
 
 /*
  * Check if anotherdevice name is given for input.
  */
   if (argc > 4)
-    devname_in = argv[4];
+    dspname_in = argv[4];
 
-  if (devname_in == NULL)
-    open_one_device (devname);
+  if (dspname_in == NULL)
+    open_one_device (dspname);
   else
-    open_two_devices (devname, devname_in);
+    open_two_devices (dspname, dspname_in);
 
   switch (method)
     {

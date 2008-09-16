@@ -44,7 +44,7 @@ oss_device_t *core_osdev = NULL;
 static int open_devices = 0;
 static int refcount = 0;
 
-#define MAX_CARDS	16
+#define MAX_CARDS	32
 int oss_num_cards = 0;
 static oss_device_t *cards[MAX_CARDS];
 static int oss_expired = 0;
@@ -306,6 +306,8 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
   if (cards[cardnum]->hw_info != NULL)
     strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info) - 1);
   ci->hw_info[sizeof (ci->hw_info) - 1] = 0;
+  ci->intr_count = cards[cardnum]->intrcount;
+  ci->ack_count = cards[cardnum]->ackcount;
 
   return 0;
 }
@@ -860,7 +862,7 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
   dev = fi->dev;
 #endif
 
-  if (dev >= oss_num_cdevs)
+  if (dev > oss_num_cdevs)
     return ENXIO;
 
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d == NULL)
@@ -869,7 +871,8 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
   if (nprot & PROT_EXEC)
     return EACCES;
 
-  if (cdev->dev_class != OSS_DEV_DSP)	/* Only /dev/dsp devices can be mmapped */
+  if ((cdev->dev_class != OSS_DEV_DSP) &&
+      (cdev->dev_class != OSS_DEV_DSP_ENGINE))	/* Only mmapable devices */
     {
       cmn_err (CE_NOTE, "mmap() is only possible with DSP devices (%d)\n",
 	       cdev->dev_class);
@@ -892,6 +895,14 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
   if (dmap->dmabuf_phys == 0)
     return EIO;
 
+  if (dmap->flags & DMAP_COOKED)
+    {
+      cmn_err (CE_WARN,
+	       "mmap() not possible with currently selected sample format.\n");
+      return EIO;
+    }
+
+  dmap->mapping_flags |= DMA_MAP_MAPPED;
   *paddr = dmap->dmabuf_phys + offset;
 
   return 0;
@@ -1019,4 +1030,13 @@ void *
 oss_get_osid (oss_device_t * osdev)
 {
   return osdev->osid;
+}
+
+void
+oss_inc_intrcount (oss_device_t * osdev, int claimed)
+{
+  osdev->intrcount++;
+
+  if (claimed)
+    osdev->ackcount++;
 }

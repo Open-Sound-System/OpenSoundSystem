@@ -23,7 +23,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <time.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 #undef  SHOW_DATA
 #define SHOW_STATUS

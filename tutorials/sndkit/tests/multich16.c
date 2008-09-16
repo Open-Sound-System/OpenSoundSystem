@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 static int sinedata[48] = {
 

@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 static short sinedata[] = {
   0x9080, 0xb0a0, 0xcdbf, 0xe4d9, 0xf5ed, 0xfdfa, 0xfdff, 0xf5fa,

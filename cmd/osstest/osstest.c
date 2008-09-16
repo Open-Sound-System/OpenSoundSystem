@@ -75,6 +75,7 @@ extern void describe_error (void);	/* From ../dsp/help.c */
 #define TF_SYSTEST	0x00000002	/* Test started by oss-install */
 #define TF_SNDCONF	0x00000004	/* Test started by sndconf */
 #define TF_QUICK	0x00000008	/* Shortened test */
+#define TF_SHARE	0x00000010	/* Don't open with O_EXCL */
 
 static int mixerfd;
 static int cardno = -1;
@@ -552,7 +553,7 @@ main (int argc, char *argv[])
  * Simple command line switch handling.
  */
 
-  while ((i = getopt (argc, argv, "CVfs")) != EOF)
+  while ((i = getopt (argc, argv, "CEVfs")) != EOF)
     {
       switch (i)
         {
@@ -568,6 +569,9 @@ main (int argc, char *argv[])
           case 'f':
             flags |= TF_QUICK;
             break;
+	  case 'E':
+	    flags |= TF_SHARE;
+	    break;
           default:
             printf ("Usage: osstest [options...] [device number]\n"
                     "	-V	Test virtual mixer devices as well\n"

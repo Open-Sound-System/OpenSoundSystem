@@ -10,7 +10,7 @@
  * The /dev/midi interface is recommended in the new applications. Please
  * see the "{!link MIDI}" section of the OSS Developer's manual.
  */
-#include <sys/soundcard.h>
+#include <soundcard.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

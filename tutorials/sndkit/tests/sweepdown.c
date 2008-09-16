@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
-char *devname = "/dev/dsp";
+char *dspname = "/dev/dsp";
 
 int fd;
 
@@ -35,17 +35,15 @@ static void
 sweeper (int speed, int channels, int fragsize)
 {
   short buf[4096], *p = buf;
-  int i, n, c;
+  int c, i, n, v, x;
 
   fragsize /= 2 * channels;
   speed /= 100;
 
   for (i = 0; i < fragsize; i++)
     {
-      int v;
-      int x;
-
       x = (phase + F_SCALE / 2) / F_SCALE;
+      if (x < 0) x = 0;
       v = sinebuf[x % SIN_STEPS] / 4;
 
       phase = phase + freq * 480 / speed;
@@ -72,12 +70,12 @@ main (int argc, char *argv[])
   int i, l;
 
   if (argc == 2)
-    devname = argv[1];
+    dspname = argv[1];
 
 
-  if ((fd = open (devname, O_WRONLY, 0)) == -1)
+  if ((fd = open (dspname, O_WRONLY, 0)) == -1)
     {
-      perror (devname);
+      perror (dspname);
       exit (-1);
     }
 
@@ -101,7 +99,7 @@ main (int argc, char *argv[])
     {
       fprintf (stderr,
 	       "Device %s doesn't support 16 bit (native endian) format\n",
-	       devname);
+	       dspname);
       exit (-1);
     }
 

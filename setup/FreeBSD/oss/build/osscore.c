@@ -38,12 +38,6 @@ typedef struct _oss_device_t oss_device_t;
 #define PCIBIOS_SUCCESSFUL		0x00
 #define PCIBIOS_FAILED			-1
 
-/* OSS_DEV_DSP, etc must match oss_config.h */
-#define OSS_DEV_VDSP		1	/* /dev/dsp (multiplexer device) */
-#define OSS_DEV_VMIDI           9	/* /dev/midi (multiplexer device) */
-#define OSS_DEV_MIDI		10	/* /dev/midi## */
-#define OSS_DEV_DSP		12	/* /dev/dsp# */
-
 extern int soundcard_attach (void);
 extern int soundcard_detach (void);
 
@@ -117,11 +111,13 @@ static void
 ossintr (void *arg)
 {
   osscore_intr_t *intr = arg;
+  int serviced;
 
   if (intr->top)
-    intr->top (intr->osdev);
+    serviced = intr->top (intr->osdev);
   if (intr->bottom)
     intr->bottom (intr->osdev);
+  oss_inc_intrcount (intr->osdev, serviced);
 }
 
 int

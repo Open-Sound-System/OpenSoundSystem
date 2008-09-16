@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
-char *devname = "/dev/dsp";
+char *dspname = "/dev/dsp";
 
 int fd;
 
@@ -29,14 +29,14 @@ main (int argc, char *argv[])
   int delay = 0;
 
   if (argc > 1)
-    devname = argv[1];
+    dspname = argv[1];
 
   if (argc > 2)
     delay = atoi (argv[2]);
 
-  if ((fd = open (devname, O_WRONLY, 0)) == -1)
+  if ((fd = open (dspname, O_WRONLY, 0)) == -1)
     {
-      perror (devname);
+      perror (dspname);
       exit (-1);
     }
 
@@ -60,7 +60,7 @@ main (int argc, char *argv[])
     {
       fprintf (stderr,
 	       "Device %s doesn't support 16 bit (native endian) format\n",
-	       devname);
+	       dspname);
       exit (-1);
     }
 

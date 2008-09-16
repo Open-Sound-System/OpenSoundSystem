@@ -778,7 +778,7 @@ main (int argc, char *argv[])
 	    if (argv[i][2])
 	      verbose = atoi (&argv[i][2]);
 	    else
-	      verbose = 1;
+	      verbose++;
 	    break;
 	  case 'p':
 	    phys_only = 1;

@@ -12,7 +12,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 #ifdef _AIX
 #include <sys/select.h>
 #endif

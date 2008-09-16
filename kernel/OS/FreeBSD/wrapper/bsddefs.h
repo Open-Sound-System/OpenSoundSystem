@@ -58,6 +58,8 @@ struct _oss_device_t
   int num_loopdevs;
   int first_mixer;	/* This must be set to -1 by osdev_create() */
 
+  int intrcount;
+  int ackcount;
   volatile int refcount;	/* Nonzero means that the device is needed by some other (virtual) driver. */
 
 };
@@ -122,6 +124,7 @@ extern void oss_register_module (char *name);
 extern void oss_unregister_module (char *name);
 extern void *oss_find_minor_info (int dev_class, int instance);
 extern int oss_find_minor (int dev_class, int instance);
+extern void oss_inc_intrcount (oss_device_t * osdev, int claimed);
 
 #define FP_SUPPORT
 

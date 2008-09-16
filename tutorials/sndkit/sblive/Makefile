@@ -1,6 +1,6 @@
 CC=cc -O
-SRCDIR=../..
-INCLUDE=-I$(SRCDIR)
+SRCDIR=../../..
+INCLUDE=-I$(SRCDIR)/include
 LDFLAGS=
 INSTALLDIR=/usr/local/bin
 INSTALLLIB=/usr/lib/oss

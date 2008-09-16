@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-#include <sys/soundcard.h>
+#include <soundcard.h>
 #ifdef USERLAND
 #define oss_native_word unsigned long
 #define oss_mutex_t unsigned long
