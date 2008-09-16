@@ -73,7 +73,7 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
  * Create the client side device.
  */
 	strcpy(crea.name, "Acme test");
-	crea.flags = USERDEV_F_VMIX_ATTACH;
+	crea.flags = USERDEV_F_VMIX_ATTACH | USERDEV_F_VMIX_PRIVATENODE;
 	crea.match_method = UD_MATCH_PGID;
 	crea.match_key = setpgrp();
 	crea.poll_interval = 10; /* In milliseconds */

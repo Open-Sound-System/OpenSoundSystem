@@ -573,7 +573,7 @@ main (int argc, char *argv[])
     sprintf (arch, "%s/", tmp);
 #endif
 
-  while ((c = getopt (argc, argv, "vfidlVS")) != EOF)
+  while ((c = getopt (argc, argv, "vfiudlVS")) != EOF)
       switch (c)
 	{
 	case 'v':

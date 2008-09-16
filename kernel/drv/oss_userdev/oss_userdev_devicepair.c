@@ -737,8 +737,12 @@ install_client (userdev_devc_t * devc)
   portc->devc = devc;
   portc->port_type = PT_CLIENT;
 
-  if (!userdev_visible_clientnodes)
+  if (!userdev_visible_clientnodes && !(devc->create_flags & USERDEV_F_VMIX_PRIVATENODE))
+  {
      opts |= ADEV_HIDDEN;
+cmn_err(CE_CONT, "Create hidden device (%x, %x)\n", userdev_visible_clientnodes,devc->create_flags);
+  }
+else cmn_err(CE_CONT, "Create visible device\n");
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,

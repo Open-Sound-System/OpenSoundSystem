@@ -162,8 +162,7 @@ cp devlist.txt prototype/usr/lib/oss/etc/devices.list
 
 if test -d kernel/nonfree
 then
-	sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/Linux
-	#cp devlist.txt $SRCDIR/devlists/Linux
+	cp devlist.txt $SRCDIR/devlists/Linux
 fi
 
 # Generate Man pages for commands

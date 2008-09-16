@@ -25,6 +25,7 @@ typedef struct
 #define USERDEV_F_VMIX_ATTACH		0x00000001	/* Attach vmix */
 #define USERDEV_F_VMIX_PRECREATE	0x00000002	/* Precreate vmix channels */
 #define USERDEV_F_ERROR_ON_NO_CLIENT	0x00000004	/* Return EIO from server read/write if no client is connected. */
+#define USERDEV_F_VMIX_PRIVATENODE	0x00000008	/* Create private device file for the client */
 
 	oss_devnode_t devnode;	/* Returns the device file name that clients should open */
 
