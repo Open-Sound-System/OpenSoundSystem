@@ -480,11 +480,14 @@ show_devinfo (int dev)
 
 	case MIXT_STEREOVU:
 	case MIXT_STEREOPEAK:
-	  printf ("%s [<leftVU>:<rightVU>]", thisrec->extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(stereo2)");
-	  printf (" (currently %d:%d)", val.value & 0xff,
-		  (val.value >> 8) & 0xff);
+	  if (verbose)
+	     {
+		  printf ("%s [<leftVU>:<rightVU>]", thisrec->extname);
+		  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
+		    perror ("SNDCTL_MIX_READ(stereo2)");
+		  printf (" (currently %d:%d)", val.value & 0xff,
+			  (val.value >> 8) & 0xff);
+	     }
 	  break;
 
 	case MIXT_ENUM:

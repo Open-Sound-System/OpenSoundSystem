@@ -367,7 +367,7 @@ create_output_controls (int mixer_dev)
        */
   if (!(mixer->vmix_flags & VMIX_NOMAINVOL))
     {
-      sprintf (tmp, "vmix%d-vol", mixer->instance_num);
+      sprintf (tmp, "vmix%d-outvol", mixer->instance_num);
       if ((ctl = mixer_ext_create_control (mixer_dev, 0, 0, vmix_outvol,
 					   MIXT_MONOSLIDER16,
 					   tmp, DB_SIZE * 5,
@@ -381,7 +381,7 @@ create_output_controls (int mixer_dev)
   else
     mixer->play_engine.outvol = DB_SIZE * 5;
 
-      sprintf (tmp, "vmix%d-out", mixer->instance_num);
+      sprintf (tmp, "vmix%d-outvu", mixer->instance_num);
       if ((ctl = mixer_ext_create_control (mixer_dev, 0, 1, vmix_outvol,
 					   MIXT_STEREOPEAK,
 					   tmp, 144,
@@ -391,7 +391,7 @@ create_output_controls (int mixer_dev)
   if (mixer->first_output_mixext == -1)
      mixer->first_output_mixext = ctl;
 
-  sprintf (tmp, "vmix%d-out", mixer->instance_num);
+  sprintf (tmp, "vmix%d", mixer->instance_num);
   if ((mixer->client_mixer_group = mixer_ext_create_group (mixer_dev, 0, tmp)) < 0)
     return mixer->client_mixer_group;
 
@@ -407,7 +407,7 @@ create_input_controls (int mixer_dev)
 
   if (!(mixer->vmix_flags & VMIX_NOMAINVOL))
     {
-      sprintf (name, "vmix%d-in", mixer->instance_num);
+      sprintf (name, "vmix%d-invol", mixer->instance_num);
 
       if ((err = mixer_ext_create_control (mixer_dev, 0, 0, vmix_invol,
 					   MIXT_MONOSLIDER16,
@@ -415,6 +415,8 @@ create_input_controls (int mixer_dev)
 					   MIXF_READABLE | MIXF_WRITEABLE |
 					   MIXF_CENTIBEL | MIXF_PCMVOL)) < 0)
 	return err;
+
+      sprintf (name, "vmix%d-invu", mixer->instance_num);
       if ((err = mixer_ext_create_control (mixer_dev, 0, 1, vmix_invol,
 					   MIXT_STEREOPEAK,
 					   name, 144,
