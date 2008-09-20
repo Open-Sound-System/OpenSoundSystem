@@ -424,6 +424,7 @@ show_devinfo (int dev)
   printf ("Known controls are:\n");
   for (i = 0; i < nrext; i++)
     {
+      int used_control=1;
 
       thisrec = &extrec[i];
       rflag = 1;
@@ -488,6 +489,8 @@ show_devinfo (int dev)
 		  printf (" (currently %d:%d)", val.value & 0xff,
 			  (val.value >> 8) & 0xff);
 	     }
+	  else
+	     used_control=0;
 	  break;
 
 	case MIXT_ENUM:
@@ -560,11 +563,13 @@ show_devinfo (int dev)
 	  printf ("Unknown mixer extension type %d", thisrec->type);
 	}
 
-      if (rflag)
+      if (rflag && used_control)
 	{
 	  if ((thisrec->flags & MIXF_WRITEABLE) == 0) printf(" (Read-only)");
-	  printf ("\n");
 	}
+      
+      if (used_control)
+         printf ("\n");
 
           if (verbose && (thisrec->flags & MIXF_DESCR))
   	    {
