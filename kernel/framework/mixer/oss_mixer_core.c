@@ -1926,7 +1926,8 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 	mdev = mixer_devs[dev];
 	info->dev = dev;
-	strcpy (info->name, mdev->name);
+	strncpy (info->name, mdev->name, sizeof (info->name));
+	info->name[sizeof (info->name) - 1] = '\0';
 	strcpy (info->id, mdev->id);
 	strcpy (info->handle, mdev->handle);
 	info->card_number = mdev->card_number;
@@ -2649,7 +2650,7 @@ oss_install_mixer (int vers,
 	  return OSS_ENOSPC;
 	}
 
-      memset ((char *) op, 0, sizeof (*op));
+      memset ((char *) op, 0, sizeof (mixer_operations_t));
       num = num_mixers++;
       sprintf (handle, "%s-mx%02d", osdev->handle, osdev->num_mixerdevs+1);
       op->port_number = osdev->num_mixerdevs++;
@@ -2659,13 +2660,13 @@ oss_install_mixer (int vers,
       strcpy (handle, op->handle);	/* Preserve the previous handle */
     }
 
-  memset ((char *) d, 0, sizeof (*d));
+  memset ((char *) d, 0, sizeof (mixer_driver_t));
   memcpy ((char *) d, (char *) driver, driver_size);
   strcpy (op->handle, handle);
   strcpy (op->id, osdev->nick);
   op->d = d;
 
-  strncpy (op->name, name, sizeof (op->name) - 1);
+  strncpy (op->name, name, sizeof (op->name));
   op->name[sizeof (op->name) - 1] = 0;
   op->devc = devc;
   op->osdev = osdev;

@@ -92,9 +92,17 @@
 #define OSS_LONGNAME_SIZE	64
 #define OSS_LABEL_SIZE		16
 #define OSS_DEVNODE_SIZE	32
+#define OSS_DEVNAME_SIZE	64
+#define OSS_CMD_SIZE		64
+#define OSS_ID_SIZE		16
+#define OSS_HANDLE_SIZE		32
 typedef char oss_longname_t[OSS_LONGNAME_SIZE];
 typedef char oss_label_t[OSS_LABEL_SIZE];
 typedef char oss_devnode_t[OSS_DEVNODE_SIZE];
+typedef char oss_devname_t[OSS_DEVNAME_SIZE];
+typedef char oss_cmd_t[OSS_CMD_SIZE];
+typedef char oss_id_t[OSS_ID_SIZE];
+typedef char oss_handle_t[OSS_HANDLE_SIZE];
 
 #ifndef DISABLE_SEQUENCER
 /*
@@ -1800,7 +1808,7 @@ typedef struct oss_mixext
 #	define MIXF_MONVOL	0x00002000	/* Input->output monitor volume */
 #	define MIXF_WIDE	0x00004000	/* Enum control has wide labels */
 #	define MIXF_DESCR	0x00008000	/* Description (tooltip) available */
-  char id[16];			/* Mnemonic ID (mainly for internal use) */
+  oss_id_t id;			/* Mnemonic ID (mainly for internal use) */
   int parent;			/* Entry# of parent (group) node (-1 if root) */
 
   int dummy;			/* Internal use */
@@ -1847,7 +1855,7 @@ typedef struct oss_mixext
 
 typedef struct oss_mixext_root
 {
-  char id[16];
+  oss_id_t id;
   char name[48];
 } oss_mixext_root;
 
@@ -1880,13 +1888,13 @@ typedef struct oss_mixer_enuminfo
 typedef struct oss_audioinfo
 {
   int dev;			/* Audio device number */
-  char name[64];
+  oss_devname_t name;
   int busy;			/* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
   int pid;
   int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
   int iformats, oformats;
   int magic;			/* Reserved for internal use */
-  char cmd[64];			/* Command using the device (if known) */
+  oss_cmd_t cmd;		/* Command using the device (if known) */
   int card_number;
   int port_number;
   int mixer_dev;
@@ -1897,7 +1905,7 @@ typedef struct oss_audioinfo
   int min_channels, max_channels;	/* Number of channels supported */
   int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
   int rate_source;
-  char handle[32];
+  oss_handle_t handle;
 #define OSS_MAX_SAMPLE_RATES	20	/* Cannot be changed  */
   unsigned int nrates, rates[OSS_MAX_SAMPLE_RATES];	/* Please read the manual before using these */
   oss_longname_t song_name;	/* Song name (if given) */
@@ -1912,14 +1920,14 @@ typedef struct oss_audioinfo
 typedef struct oss_mixerinfo
 {
   int dev;
-  char id[16];
-  char name[32];
+  oss_id_t id;
+  char name[32];		/* oss_devname_t is better, but may break compat */
   int modify_counter;
   int card_number;
   int port_number;
-  char handle[32];
+  oss_handle_t handle;
   int magic;			/* Reserved */
-  int enabled;			/* Reserved */
+  int enabled;
   int caps;
 #define MIXER_CAP_VIRTUAL	0x00000001
 #define MIXER_CAP_LAYOUT_B	0x00000002	/* For internal use only */
@@ -1941,10 +1949,10 @@ typedef struct oss_mixerinfo
 typedef struct oss_midi_info
 {
   int dev;			/* Midi device number */
-  char name[64];
+  oss_devname_t name;
   int busy;			/* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
   int pid;
-  char cmd[64];			/* Command using the device (if known) */
+  oss_cmd_t cmd;		/* Command using the device (if known) */
   int caps;
 #define MIDI_CAP_MPU401		0x00000001	/**** OBSOLETE ****/
 #define MIDI_CAP_INPUT		0x00000002
@@ -1963,7 +1971,7 @@ typedef struct oss_midi_info
   int port_number;
   int enabled;			/* 1=enabled, 0=device not ready at this moment */
   int flags;			/* For internal use only - no practical meaning */
-  char handle[32];
+  oss_handle_t handle;
   oss_longname_t song_name;	/* Song name (if known) */
   oss_label_t label;		/* Device label (if given) */
   int latency;			/* In usecs, -1=unknown */

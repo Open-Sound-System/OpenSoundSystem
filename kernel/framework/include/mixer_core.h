@@ -28,8 +28,8 @@ oss_mixext_desc;
 
 struct _mixer_operations_t
 {
-  char name[64];
-  char id[16];
+  oss_devname_t name;
+  oss_id_t id;
 
   mixer_driver_t *d;
 
@@ -55,7 +55,7 @@ struct _mixer_operations_t
   int magic;
   int caps;
   int flags;
-  char handle[32];
+  oss_handle_t handle;
   oss_device_t *osdev;
   oss_device_t *master_osdev;	/* osdev struct of the master device (for virtual drivers) */
   void *os_id;			/* The device ID (dip) given by the system. */

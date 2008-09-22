@@ -5,7 +5,7 @@
 INCLUDES=-I$(TOPDIR)/include -I$(TOPDIR)/kernel/framework/include \
 	 -I$(TOPDIR)/$(THISOS) \
 	 -I$(TOPDIR)/kernel/nonfree/include -I$(TOPDIR) \
- 	 -I/usr/src/uts/`uname -m`
+ 	 -I/usr/src/uts/${ARCH}
 
 subdirs: 
 	for n in $(SUBDIRS);do (echo $$n && cd $$n && $(MAKE) ARCH=$(ARCH)) || eval 'exit 1'; done

@@ -75,7 +75,7 @@ extern void describe_error (void);	/* From ../dsp/help.c */
 #define TF_SYSTEST	0x00000002	/* Test started by oss-install */
 #define TF_SNDCONF	0x00000004	/* Test started by sndconf */
 #define TF_QUICK	0x00000008	/* Shortened test */
-#define TF_SHARE	0x00000010	/* Don't open with O_EXCL */
+#define TF_LOOP		0x00000010	/* Loop until interrupted */
 
 static int mixerfd;
 static int cardno = -1;
@@ -553,7 +553,7 @@ main (int argc, char *argv[])
  * Simple command line switch handling.
  */
 
-  while ((i = getopt (argc, argv, "CEVfs")) != EOF)
+  while ((i = getopt (argc, argv, "CVfls")) != EOF)
     {
       switch (i)
         {
@@ -569,12 +569,13 @@ main (int argc, char *argv[])
           case 'f':
             flags |= TF_QUICK;
             break;
-	  case 'E':
-	    flags |= TF_SHARE;
+	  case 'l':
+	    flags |= TF_LOOP;
 	    break;
           default:
             printf ("Usage: osstest [options...] [device number]\n"
                     "	-V	Test virtual mixer devices as well\n"
+                    "	-l	Loop indefinately until interrupted\n"
                     "	-f	Faster test\n");
             exit (-1);
         }
@@ -620,30 +621,34 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  if (dev > -1)
-    {
-      if (dev >= maxdev)
-	{
-
-	  fprintf (stderr, "Bad device number %d\n", dev);
-	  exit (-1);
-	}
-      if (!test_device (dev, flags))
-	status++;
+  do {
+    if (dev > -1)
+      {
+	if (dev >= maxdev)
+  	  {
+	    fprintf (stderr, "Bad device number %d\n", dev);
+	    exit (-1);
+	  }
+	if (!test_device (dev, flags))
+	  status++;
     }
-  else
-    for (t = 0; t < maxdev; t++)
-      if (!test_device (t, flags))
-	status++;
+    else
+      for (t = 0; t < maxdev; t++)
+	if (!test_device (t, flags))
+	  status++;
+
+    if (!(flags & TF_SYSTEST))
+      {
+	if (status == 0)
+	  printf ("\n*** All tests completed OK ***\n");
+	else
+	  printf ("\n*** Some errors were detected during the tests ***\n");
+      }
+
+    cardno = -1;
+  } while (flags & TF_LOOP);
+
   close (mixerfd);
-
-  if (!(flags & TF_SYSTEST))
-    {
-      if (status == 0)
-	printf ("\n*** All tests completed OK ***\n");
-      else
-	printf ("\n*** Some errors were detected during the tests ***\n");
-    }
 
   return status;
 }
