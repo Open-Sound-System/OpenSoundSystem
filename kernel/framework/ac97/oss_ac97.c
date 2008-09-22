@@ -801,7 +801,7 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       strcpy (devc->name, "AD1981B");
       devc->spdifout_support = AD_SPDIFOUT;
       /* set jacksense to mute line if headphone is plugged */
-      /* codec_write (devc, 0x72, (codec_read (devc, 0x72) & (~0xe00)) | 0x400); */
+      codec_write (devc, 0x72, (codec_read (devc, 0x72) | 0x0800));
       break;
 
     case 0x41445375:		/* ADS74 */
