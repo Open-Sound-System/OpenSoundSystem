@@ -393,7 +393,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
   cdev->name[sizeof (cdev->name) - 1] = 0;
   oss_cdevs[num] = cdev;
 
-  if (!(flags & CHDEV_VIRTUAL))
+  if (!(flags & CHDEV_VIRTUAL) && (name != NULL))
     {
       bsd_cdev =
 	make_dev (&oss_cdevsw, num, UID_ROOT, GID_WHEEL, 0666, name, 0);

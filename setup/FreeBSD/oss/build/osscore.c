@@ -111,7 +111,7 @@ static void
 ossintr (void *arg)
 {
   osscore_intr_t *intr = arg;
-  int serviced;
+  int serviced = 0;
 
   if (intr->top)
     serviced = intr->top (intr->osdev);
