@@ -57,8 +57,15 @@ manually to test functionality of OSS and your sound hardware. When invoked
 without any command line parameters osstest performs the default test on all 
 devices. However it will skip some of the devices base on the following rules.
 
+o It is possible to test just one of the available audio devices by giving
+its number on command line (for example osstest 1). Use the device index
+numbers reported by "ossinfo -a".
+o Use the -l command line option to loop the test infinitely.
 o Virtual mixer devices will not be tested. Use the -V command line option to
 force test of virtual devices.
+o The actual (physical) audio devices will be tested directly (bypassing
+virtual mixer). If you want to test playback through vmix then use the
+-V option.
 o Multiple device files related with the same physical device will not
 be tested. Only the first one gets tested while the remaining ones will be
 skipped. At this moment there is no way to force osstest to test this kind of
