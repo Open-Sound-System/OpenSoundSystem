@@ -509,7 +509,7 @@ init_play_device (sbxfi_devc_t * devc,
   adev->min_rate = 48000;
   adev->max_rate = 92600;
   adev->min_block=4096;
-  //adev->vmix_flags |= VMIX_NOMAINVOL;
+  adev->dmabuf_maxaddr = MEMLIMIT_ISA;
 
   portc->dev = dev;
   portc->open_mode = 0;
@@ -594,6 +594,7 @@ init_rec_device (sbxfi_devc_t * devc,
   adev->min_rate = 48000;
   adev->max_rate = 96000;
   adev->min_block=4096;
+  adev->dmabuf_maxaddr = MEMLIMIT_ISA;
 
   portc->dev = dev;
   portc->open_mode = 0;
