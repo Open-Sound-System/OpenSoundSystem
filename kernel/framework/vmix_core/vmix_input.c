@@ -387,7 +387,6 @@ vmix_setup_record_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
   int old_min;
   int frags = 0x7fff0007;	/* fragment size of 128 bytes */
 
-  mixer->record_engine.outvol = DB_SIZE * 5;
 /*
  * Sample format (and endianess) setup 
  *
