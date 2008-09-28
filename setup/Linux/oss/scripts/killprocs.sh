@@ -1,5 +1,5 @@
 #!/bin/sh
-PROCS="`fuser /dev/mixer* /dev/dsp* /dev/audio* /dev/sequencer /dev/music /dev/midi*|sed 's/.* //'|sort|uniq`"
+PROCS="`fuser /dev/mixer* /dev/dsp* /dev/audio* /dev/sequencer /dev/music /dev/midi* 2>/dev/null`"
 
 if test "$PROCS " = " "
 then
@@ -8,8 +8,8 @@ fi
 
 for pid in $PROCS
 do
-	ps ax|grep "^ *$pid "
-	echo kill $pid
+	#ps ax|grep "^ *$pid "
+	echo killing $pid
 	kill $pid
 done
 

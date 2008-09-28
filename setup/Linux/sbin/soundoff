@@ -56,13 +56,6 @@ do
   done
 done
 
-#modprobe -r snd-pcm > /dev/null 2>&1
-
-for n in `egrep "^osscore" /proc/modules 2>/dev/null | cut -d ' ' -f 4 | sed 's/,/ /g'` `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'` osscore
-do
-    /sbin/modprobe -r $n
-done
-
 if ! test -f /proc/opensound/devfiles # OSS gone?
 then
   exit 0

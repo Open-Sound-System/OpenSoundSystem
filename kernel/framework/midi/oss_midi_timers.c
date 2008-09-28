@@ -56,7 +56,7 @@ oss_install_timer (int driver_version,
 
   op->max_instances = max_instances;
   op->num_instances = 0;
-  strncpy (op->name, name, sizeof (op->name) - 1);
+  strncpy (op->name, name, sizeof (op->name));
   op->name[sizeof (op->name) - 1] = 0;
   num = oss_num_timer_drivers++;
   op->driver_dev = num;

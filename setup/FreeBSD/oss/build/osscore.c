@@ -514,6 +514,7 @@ oss_file_set_private (struct thread *t, void *v, size_t l)
   if (error)
     {
       cmn_err (CE_CONT, "Couldn't attach private data to file handle!\n");
+      oss_file_free_private (p);
       return error;
     }
   return 0;

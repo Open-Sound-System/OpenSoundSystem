@@ -103,6 +103,7 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
   if (strcmp (conf->bus, "PCI") == 0)
     {
       fprintf (src, "#include <linux/mod_devicetable.h>\n\n");
+      fprintf (src, "#include <linux/pci_ids.h>\n\n");
       fprintf (src, "static struct pci_device_id id_table[] = {\n");
 
       while (fgets (line, sizeof (line) - 1, f) != NULL)
@@ -137,7 +138,7 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 		}
 
 	      fprintf (src,
-		       "\t{.vendor=0x%x,\t.device=0x%x,\t.subvendor=PCI_ANY_ID,\t.subdevice=PCI_ANY_ID},\n",
+		       "\t{.vendor=0x%x,\t.device=0x%x,\t.subvendor=PCI_ANY_ID,\t.subdevice=PCI_ANY_ID,\t.class=PCI_CLASS_MULTIMEDIA_AUDIO},\n",
 		       vendor, product);
 	    }
 

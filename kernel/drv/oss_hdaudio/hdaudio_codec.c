@@ -933,7 +933,7 @@ hdaudio_mixer_create (char *name, void *devc,
   mixer->devc = devc;
   mixer->osdev = osdev;
   mixer->mixer_dev = 0;
-  strncpy (mixer->name, name, sizeof (mixer->name) - 1);
+  strncpy (mixer->name, name, sizeof (mixer->name));
   mixer->name[sizeof (mixer->name) - 1] = 0;
 
   for (i = 0; i < MAX_CODECS; i++)

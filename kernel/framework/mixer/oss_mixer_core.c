@@ -51,8 +51,7 @@ get_mixer_info (int dev, ioctl_arg arg)
     return OSS_ENXIO;
 
   strcpy (info->id, mixer_devs[dev]->id);
-  strncpy (info->name, mixer_devs[dev]->name, 31);
-  info->name[31] = 0;
+  strncpy (info->name, mixer_devs[dev]->name, 32)[31] = '\0';
   info->modify_counter = mixer_devs[dev]->modify_counter;
 
   return 0;
@@ -294,7 +293,8 @@ mixer_ext_get_description (oss_mixer_enuminfo * ent)
 
   s = mixer_devs[dev]->extensions[ctrl].description;
 
-  strncpy(ent->strings, s, sizeof(ent->strings)-1);
+  strncpy (ent->strings, s, sizeof (ent->strings));
+  ent->strings [sizeof (ent->strings) - 1] = '\0';
   ent->ctrl = ctrl;
   return 0;
 }
@@ -399,17 +399,15 @@ mixer_ext_set_description (int dev, int ctrl, const char *desc)
   if (ctrl < 0 || ctrl >= mixer_devs[dev]->nr_ext)
     return OSS_EIDRM;
 
-  if (l >= OSS_ENUM_STRINGSIZE)
-     l = OSS_ENUM_STRINGSIZE-1;
+  if (l > OSS_ENUM_STRINGSIZE) l = OSS_ENUM_STRINGSIZE;
 
     mixer_devs[dev]->extensions[ctrl].description =
-      PMALLOC (mixer_devs[dev]->osdev, l+1);
+      PMALLOC (mixer_devs[dev]->osdev, l);
 
   if (mixer_devs[dev]->extensions[ctrl].description == NULL)
     return OSS_EIO;
 
-  strncpy (mixer_devs[dev]->extensions[ctrl].description,
-	  desc, l);
+  strncpy (mixer_devs[dev]->extensions[ctrl].description, desc, l)[l-1] = '\0';
 
   mixer_devs[dev]->extensions[ctrl].ext.flags |= MIXF_DESCR;
 
@@ -851,8 +849,7 @@ store_name (oss_mixext * thisrec, char *name)
 
   while (*name == '.')
     name++;
-  strncpy (thisrec->extname, name, 31);
-  thisrec->extname[31] = 0;
+  strncpy (thisrec->extname, name, 32)[31] = '\0';
 
   name = thisrec->extname;
   for (i = 0; i < strlen (name); i++)
@@ -1455,7 +1452,7 @@ get_engineinfo (int dev, oss_audioinfo * info, int combine_slaves)
   info->pid = adev->pid;
   info->latency = adev->latency;
   *info->cmd = 0;
-  strncpy (info->cmd, adev->cmd, sizeof (info->cmd) - 2);
+  strncpy (info->cmd, adev->cmd, sizeof (info->cmd));
   info->cmd[sizeof (info->cmd) - 1] = 0;
 
   strcpy (info->devnode, adev->devnode);
@@ -1610,14 +1607,14 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 
 	memset (info, 0, sizeof (*info));
 	strcpy (info->product, "OSS");
-	strncpy (info->version, OSS_VERSION_STRING,
-		 sizeof (info->version) - 1);
+	strncpy (info->version, OSS_VERSION_STRING, sizeof (info->version));
+	info->version [sizeof (info->version) - 1] = '\0';
 	strcpy (info->license, OSS_LICENSE);
 	info->versionnum = OSS_VERSION;
 
 #ifdef OSS_HG_INFO
 	/* Detailed Mercurial version */
-	strncpy (info->revision_info, OSS_HG_INFO, sizeof(info->revision_info)-1);
+	strncpy (info->revision_info, OSS_HG_INFO, sizeof(info->revision_info));
 	info->revision_info[sizeof(info->revision_info)-1]=0;
 #endif
 
@@ -1829,7 +1826,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	info->pid = mdev->pid;
 	info->busy = mdev->open_mode;
 	*info->cmd = 0;
-	strncpy (info->cmd, mdev->cmd, sizeof (info->cmd) - 2);
+	strncpy (info->cmd, mdev->cmd, sizeof (info->cmd));
 	info->cmd[sizeof (info->cmd) - 1] = 0;
 	info->magic = mdev->magic;
 	info->card_number = mdev->card_number;

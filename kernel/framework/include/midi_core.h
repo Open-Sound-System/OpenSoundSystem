@@ -317,9 +317,11 @@ extern int oss_num_timers;
 { \
       char *cmd; \
       md->open_mode=mode; \
-      memset (md->cmd, 0, sizeof (md->cmd)); \
       if ((cmd = GET_PROCESS_NAME ()) != NULL) \
-	strncpy (md->cmd, cmd, 15); \
+	{ \
+	  strncpy (md->cmd, cmd, sizeof (md->cmd)); \
+	  md->cmd [sizeof (md->cmd) - 1] = '\0'; \
+	} \
       md->pid = GET_PROCESS_PID (); \
 }
 

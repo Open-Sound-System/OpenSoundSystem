@@ -392,7 +392,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
   ci->shortname[15] = 0;
 
   if (cards[cardnum]->hw_info != NULL)
-    strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info) - 1);
+    strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info));
   ci->hw_info[sizeof (ci->hw_info) - 1] = 0;
   ci->intr_count = cards[cardnum]->intrcount;
   ci->ack_count = cards[cardnum]->ackcount;
@@ -964,7 +964,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
   cdev->d = drv;
   cdev->osdev = osdev;
   if (name != NULL)
-    strncpy (cdev->name, name, sizeof (cdev->name) - 1);
+    strncpy (cdev->name, name, sizeof (cdev->name));
   else
     strcpy (cdev->name, "NONE");
   cdev->name[sizeof (cdev->name) - 1] = 0;
@@ -977,7 +977,6 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
     {
       strcpy (cdev->name, name);
       oss_register_minor (osdev->major, num, name);
-
     }
 }
 

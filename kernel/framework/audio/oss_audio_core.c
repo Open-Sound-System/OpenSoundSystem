@@ -1431,8 +1431,8 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
 
       if ((cmd = GET_PROCESS_NAME (file)) != NULL)
 	{
-	  strncpy (audio_engines[dev]->cmd, cmd, 15);
-	  strncpy (audio_engines[dev]->label, cmd, 15);
+	  strncpy (audio_engines[dev]->cmd, cmd, 16)[15] = '\0';
+	  strncpy (audio_engines[dev]->label, cmd, 16)[15] = '\0';
 	}
       audio_engines[dev]->pid = GET_PROCESS_PID (file);
     }
@@ -3723,7 +3723,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       if (adev->d->adrv_ioctl != NULL
 	  && adev->d->adrv_ioctl (dev, cmd, arg) >= 0)
 	return 0;
-      strncpy (adev->song_name, (char *) arg, sizeof (adev->song_name) - 1);
+      strncpy (adev->song_name, (char *) arg, sizeof (adev->song_name));
       adev->song_name[sizeof (adev->song_name) - 1] = 0;
       return 0;
       break;
@@ -3732,7 +3732,7 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       if (adev->d->adrv_ioctl != NULL
 	  && adev->d->adrv_ioctl (dev, cmd, arg) >= 0)
 	return 0;
-      strncpy (adev->label, (char *) arg, sizeof (adev->label) - 1);
+      strncpy (adev->label, (char *) arg, sizeof (adev->label));
       adev->label[sizeof (adev->label) - 1] = 0;
       if (*adev->cmd == 0)	/* Command name not known */
 	strcpy (adev->cmd, adev->label);
@@ -6253,7 +6253,7 @@ oss_install_audiodev_with_devname (int vers,
   op->outputintr = dummy_outputintr;
   op->inputintr = dummy_inputintr;
 
-  strncpy (op->name, name, sizeof (op->name) - 1);
+  strncpy (op->name, name, sizeof (op->name));
   op->name[sizeof (op->name) - 1] = 0;
   op->caps = 0;
 

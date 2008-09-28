@@ -1125,7 +1125,7 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
     }
 
 #ifdef DO_TIMINGS
-    oss_timing_printf ("Setting up format conversios for device %d",
+    oss_timing_printf ("Setting up format conversions for device %d",
 	     adev->engine_num);
     oss_timing_printf ("  Speed %d->%d", source->rate, target->rate);
     oss_timing_printf ("  Channels %d->%d", source->channels, target->channels);
@@ -1133,7 +1133,7 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
 	     target->fmt, tgt_f->name);
 #endif
   DDB (cmn_err
-       (CE_CONT, "Setting up format conversios for device %d\n",
+       (CE_CONT, "Setting up format conversions for device %d\n",
 	adev->engine_num));
   DDB (cmn_err (CE_CONT, "  Speed %d->%d\n", source->rate, target->rate));
   DDB (cmn_err

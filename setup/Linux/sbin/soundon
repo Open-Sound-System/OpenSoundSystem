@@ -6,6 +6,12 @@ else
   OSSLIBDIR=/usr/lib/oss
 fi
 
+if ! test -d /proc
+then
+	echo soundon script requires procfs to be mounted at /proc!
+	exit 200
+fi
+
 if test -f /proc/opensound/devfiles
 then
 	echo OSS is already loaded.
@@ -128,15 +134,18 @@ then
    /usr/sbin/ossdetect -l >> $LOG
 fi
 
-if ! sh $OSSLIBDIR/scripts/remove_drv.sh>> $LOG
+if grep -q '^ *14 ' < /proc/devices
 then
-	echo Failed to disable conflicting sound drivers >> $LOG
-	echo Failed to disable conflicting sound drivers 
-	echo Reboot and try running soundon again
-	echo
-	echo Also check that you have not compiled sound support statically
-	echo into the kernel.
-	exit 50
+	if ! sh $OSSLIBDIR/scripts/remove_drv.sh>> $LOG
+	then
+		echo Failed to disable conflicting sound drivers >> $LOG
+		echo Failed to disable conflicting sound drivers 
+		echo Reboot and try running soundon again
+		echo
+		echo Also check that you have not compiled sound support statically
+		echo into the kernel.
+		exit 50
+	fi
 fi
 
 echo >> $LOG

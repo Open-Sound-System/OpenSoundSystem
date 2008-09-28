@@ -304,7 +304,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
   ci->shortname[15] = 0;
 
   if (cards[cardnum]->hw_info != NULL)
-    strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info) - 1);
+    strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info));
   ci->hw_info[sizeof (ci->hw_info) - 1] = 0;
   ci->intr_count = cards[cardnum]->intrcount;
   ci->ack_count = cards[cardnum]->ackcount;
