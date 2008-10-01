@@ -185,6 +185,33 @@ case `uname` in
 			export HAVE_ALSA=1
 		fi
 	fi
+
+  	if grep -q Ubuntu /etc/issue # Ubuntu?
+  	then
+		MISSING=
+		for n in build-essential
+		do
+		  if ! apt-cache show $n > /dev/null 2>&1
+		  then
+			MISSING=$MISSING $n"
+		  fi
+		done
+
+		if test "$MISSING " != " "
+		then
+			echo Missing one or more required install packages are missing
+			echo
+			echo You can install them by doing
+			echo
+
+			for n in $MISSING
+			do
+			   echo apt-get install $n
+			done
+
+			exit 1
+		fi
+	fi
 	
 	if test "$USE_REGPARM " != "1 " && test "$NO_REGPARM " != "1 "
 	then
