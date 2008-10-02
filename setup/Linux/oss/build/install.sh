@@ -169,8 +169,8 @@ then
 	echo 
 	echo "  sudo apt-get install linux-headers-$UNAME"
         echo "  cd /usr/src/linux-headers-$UNAME/"
-        echo "  sudo make prepare"
-        echo "  sudo make prepare scripts"
+#        echo "  sudo make prepare"
+#        echo "  sudo make prepare scripts"
 	echo
   fi
 fi
