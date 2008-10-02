@@ -900,7 +900,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
   devc->dwPageTableSize = 1024; /* For up to 4M of memory */
   devc->pdwPageTable = CONTIG_MALLOC (devc->osdev,
 				      devc->dwPageTableSize,
-				      MEMLIMIT_32BITS, &devc->dwPTBPhysAddx, devc->pgtable_dma_handle);
+				      MEMLIMIT_ISA, &devc->dwPTBPhysAddx, devc->pgtable_dma_handle);
 
   HwWrite20K1 (devc, PTPALX, devc->dwPTBPhysAddx);
   HwWrite20K1 (devc, PTPAHX, 0);
