@@ -1022,7 +1022,7 @@ extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, in
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
   {0x104381e1, "Asus P4B-E/AD1988A", VF_NONE, (char **) &ad1988remap, 0x76015432, hdaudio_Asus_P4B_E_mixer_init},
-  {0x1043e601, "ScaleoP/ALC888", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_scaleoP_mixer_init}, 
+  // {0x1043e601, "ScaleoP/ALC888", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_scaleoP_mixer_init}, 
 
   /* Abit AA8 (at least some revisions) have bogus codec config information,
    * including the subvendor ID. 0x08800000 is used by many other motherboards

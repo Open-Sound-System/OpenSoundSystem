@@ -2,7 +2,7 @@ NAME
 oss_geode - National Semiconductor Geode audio driver.
 
 DESCRIPTION
-Open Sound System driver for National Semiconductor Geode/CX5530 audio 
+Open Sound System driver for National Semiconductor Geode/CS5530/CS5536 audio 
 controllers.
 
 Geode device characteristics:
@@ -10,20 +10,12 @@ Geode device characteristics:
         o mono/stereo playback/recording
         o 8KHz to 48Khz sample rate.
 
-OPTIONS
-o geode_use_src=0|1 
-The Geode CPU is a 486 class processor that is not able to handle heavy 
-computational loads. If your audio streams are use a lot of CPU, you can
-start getting garbled audio since the OSS Sample Rate Convertor is CPU
-intensive. Disabling the SRC will allow you to play audio but only at
-48Khz.
-
-o geode_use_pollmode=0|1
-The BIOS in certain Geode systems doesn't setup the Audio interrupts correctly.
-Only machines with the Xpress BIOS from Insyde have proper working IRQs. So
-setting up the audio processor to use polling fixes the IRQ problem but
-you can get dropouts in audio since the system is using polling.
-
+NOTES
+Some old Geode CPUs are not able to handle heavy computational loads.
+If your audio streams are use a lot of CPU, you can start getting garbled audio
+since the OSS Sample Rate Convertor is CPU intensive. Setting vmix0-src to
+OFF will allow you to play audio but only at a fixed rate set via vmixctl
+(Default: 48Khz).
 
 FILES
 CONFIGFILEPATH/oss_geode.conf Device configuration file

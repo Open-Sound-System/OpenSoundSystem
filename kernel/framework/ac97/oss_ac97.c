@@ -945,6 +945,13 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       devc->mixer_ext = CMI9739_MIXER_EXT;
       break;
 
+    case 0x434d4983:
+      strcpy (devc->name, "CMI9761A");
+      devc->spdifout_support = CMI_SPDIFOUT;
+      devc->spdifin_support = CMI_SPDIFIN;
+      devc->mixer_ext = CMI9739_MIXER_EXT;
+      break;
+
     case 0x434d4969:
       strcpy (devc->name, "CMI9780");
 #if 0

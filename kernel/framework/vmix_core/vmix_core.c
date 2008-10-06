@@ -349,7 +349,7 @@ create_output_controls (int mixer_dev)
          "using the 'vmixctl rate' command (usually 48 kHz by default). Applications\n"
          "that want to use different rates will be handled by performing automatic\n"
          "sample rate conversions (SRC) in software. This operation will consume\n"
-         "some additional CPU ti,e depending on the quality. The following\n"
+         "some additional CPU time depending on the quality. The following\n"
          "alternatives are availabe:\n"
          "\n"
          "Fast:	Use fast linear interpolation algorithm (low quality).\n"

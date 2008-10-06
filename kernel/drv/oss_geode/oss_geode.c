@@ -20,11 +20,6 @@
 #define CS_WRITEL(devc,addr,val) OUTL((devc)->osdev, (val), (unsigned int)((devc)->physaddr) + (addr))
 #define CS_WRITEB(devc,addr,val) OUTB((devc)->osdev, (val), (unsigned int)((devc)->physaddr) + (addr))
 
-#ifdef USE_POLL
-static void geode_poll (unsigned long dummy);
-DEFINE_TIMER (geode_timer, geode_poll);
-#endif
-
 #define MAX_PORTC 2
 
 typedef struct
@@ -74,13 +69,6 @@ typedef struct
 }
 geode_devc;
 
-#ifdef USE_POLL
-static int poll_started = 0, poll_interval = 1;
-#endif
-
-extern int geode_use_pollmode;
-extern int geode_use_src;
-
 static int
 geodeintr_5530 (oss_device_t * osdev)
 {
@@ -91,14 +79,6 @@ geodeintr_5530 (oss_device_t * osdev)
   int serviced = 0;
   unsigned int pos;
   int ptr;
-
-#if 0
-  if (poll_started)
-    {
-      poll_started = 0;
-      REMOVE_TIMER (geode_timer, geode_poll);
-    }
-#endif
 
   for (i = 0; i < MAX_PORTC; i++)
     {
@@ -230,78 +210,6 @@ geodeintr_5536 (oss_device_t * osdev)
     }
   return serviced;
 }
-
-#ifdef USE_POLL
-static void
-geode_poll (unsigned long dummy)
-{
-  unsigned int pos;
-  int ptr;
-  int i, n, devno;
-
-  for (devno = 0; devno < ngeodedevs; devno++)
-    {
-      geode_devc *devc = &geode_info[devno];
-      oss_native_word flags;
-
-      for (i = 0; i < MAX_PORTC; i++)
-	{
-	  geode_portc *portc;
-	  portc = &devc->portc[i];
-
-	  if (portc->trigger_bits & PCM_ENABLE_OUTPUT)
-	    {
-	      dmap_t *dmap;
-
-	      MUTEX_ENTER (devc->mutex, flags);
-	      dmap = audio_engines[portc->audiodev]->dmap_out;
-	      pos = CS_READL (devc, 0x24);
-	      pos = (pos - devc->prdout_phys) / 8;
-	      ptr = pos;
-	      ptr--;
-
-	      if (ptr < 0)
-		ptr = 0;
-	      ptr %= dmap->nfrags;
-
-	      n = 0;
-	      MUTEX_EXIT (devc->mutex, flags);
-
-	      while (ptr != dmap_get_qhead (dmap) && n++ < dmap->nfrags)
-		oss_audio_outputintr (portc->audiodev, 0);
-	    }
-
-
-	  if (portc->trigger_bits & PCM_ENABLE_INPUT)
-	    {
-	      dmap_t *dmap;
-
-	      MUTEX_ENTER (devc->mutex, flags);
-	      dmap = audio_engines[portc->audiodev]->dmap_in;
-
-	      pos = CS_READL (devc, 0x2c);
-	      pos = (pos - devc->prdin_phys) / 8;
-	      ptr = pos;
-	      ptr--;
-
-	      if (ptr < 0)
-		ptr = 0;
-	      ptr %= dmap->nfrags;
-
-	      n = 0;
-
-	      MUTEX_EXIT (devc->mutex, flags);
-	      while (ptr != dmap_get_qtail (dmap) && n++ < dmap->nfrags)
-		oss_audio_inputintr (portc->audiodev, 0);
-	    }
-	}
-    }
-  if (poll_interval < 1)
-    poll_interval = 1;
-  ACTIVATE_TIMER (geode_timer, geode_poll, poll_interval);
-}
-#endif
-
 
 static int
 codec_valid_data (geode_devc * devc, int command, unsigned int *data)
@@ -501,20 +409,6 @@ geode_audio_open (int dev, int mode, int open_flags)
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 
-#ifdef USE_POLL
-/* Startup the poll timer, if interruts work, the poll timer is disabled in
- *  the interrupt service routine otherwise geode_poll() is called */
-  if (geode_use_pollmode)
-    if (!poll_started)
-      {
-	poll_interval = OSS_HZ / 50;
-	if (poll_interval < 1)
-	  poll_interval = 1;
-	INIT_TIMER (geode_timer, geode_poll);
-	ACTIVATE_TIMER (geode_timer, geode_poll, poll_interval);
-	poll_started = 1;
-      }
-#endif
   return 0;
 }
 
@@ -653,18 +547,12 @@ geode_audio_prepare_for_input (int dev, int bsize, int bcount)
   for (i = 0; i < dmap->nfrags; i++)
     {
       devc->prdin[i].ptr = dmap->dmabuf_phys + (i * dmap->fragment_size);
-      if (geode_use_pollmode)
-	devc->prdin[i].size = dmap->fragment_size;
-      else
 	devc->prdin[i].size = dmap->fragment_size | PRD_EOP;
     }
 
   /* Initialize the JMP entry back to the beginning */
   devc->prdin[dmap->nfrags].ptr = devc->prdin_phys;
-  if (geode_use_pollmode)
-    devc->prdin[dmap->nfrags].size = PRD_JMP;
-  else
-    devc->prdin[dmap->nfrags].size = PRD_JMP | PRD_EOP;
+  devc->prdin[dmap->nfrags].size = PRD_JMP | PRD_EOP;
 
   CS_WRITEL (devc, 0x2c, devc->prdin_phys);
 
@@ -701,18 +589,12 @@ geode_audio_prepare_for_output (int dev, int bsize, int bcount)
   for (i = 0; i < dmap->nfrags; i++)
     {
       devc->prdout[i].ptr = dmap->dmabuf_phys + (i * dmap->fragment_size);
-      if (geode_use_pollmode)
-	devc->prdout[i].size = dmap->fragment_size;
-      else
-	devc->prdout[i].size = dmap->fragment_size | PRD_EOP;
+      devc->prdout[i].size = dmap->fragment_size | PRD_EOP;
     }
 
   /* Initialize the JMP entry back to the beginning */
   devc->prdout[dmap->nfrags].ptr = devc->prdout_phys;
-  if (geode_use_pollmode)
-    devc->prdout[dmap->nfrags].size = PRD_JMP;
-  else
-    devc->prdout[dmap->nfrags].size = PRD_JMP | PRD_EOP;
+  devc->prdout[dmap->nfrags].size = PRD_JMP | PRD_EOP;
 
   CS_WRITEL (devc, 0x24, devc->prdout_phys);
 
@@ -810,18 +692,15 @@ init_geode (geode_devc * devc)
 
   devc->prdout_phys = phaddr;
 
-  if (!geode_use_pollmode)
-    {
-      /* VSA2 IRQ config method */
-      OUTW (devc->osdev, 0xFC53, 0xAC1C);
-      OUTW (devc->osdev, 0x108, 0xAC1C);
-      OUTW (devc->osdev, devc->irq, 0xAC1E);
+  /* VSA2 IRQ config method */
+  OUTW (devc->osdev, 0xFC53, 0xAC1C);
+  OUTW (devc->osdev, 0x108, 0xAC1C);
+  OUTW (devc->osdev, devc->irq, 0xAC1E);
 
-      /* VSA1 IRQ config method */
-      OUTL (devc->osdev, 0x800090D0, 0x0CF8);
-      OUTL (devc->osdev, (devc->irq << 16) | 0xA00A, 0x0CFC);
-      oss_udelay (10000);
-    }
+  /* VSA1 IRQ config method */
+  OUTL (devc->osdev, 0x800090D0, 0x0CF8);
+  OUTL (devc->osdev, (devc->irq << 16) | 0xA00A, 0x0CFC);
+  oss_udelay (10000);
 
   /* Now configure the OSS devices */
 
@@ -844,11 +723,6 @@ init_geode (geode_devc * devc)
   opts = ADEV_AUTOMODE | ADEV_STEREOONLY | ADEV_16BITONLY;
 
   if (!ac97_varrate (&devc->ac97devc))
-    {
-      opts |= ADEV_FIXEDRATE;
-    }
-
-  if (geode_use_src)
     {
       opts |= ADEV_FIXEDRATE;
     }
@@ -1001,14 +875,6 @@ int
 oss_geode_detach (oss_device_t * osdev)
 {
   geode_devc *devc = (geode_devc *) osdev->devc;
-
-#ifdef USE_POLL
-  if (poll_started)
-    {
-      poll_started = 0;
-      REMOVE_TIMER (geode_timer, geode_poll);
-    }
-#endif
 
   if (oss_disable_device (osdev) < 0)
     return 0;
