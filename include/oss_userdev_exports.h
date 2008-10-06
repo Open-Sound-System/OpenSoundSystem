@@ -21,7 +21,7 @@
 typedef struct
 {
 	char name[50]; /* Audio device name to be shown to the users */
-	unsigned int flags;
+	unsigned int flags; /* Not suported for the time being */
 #define USERDEV_F_VMIX_ATTACH		0x00000001	/* Attach vmix */
 #define USERDEV_F_VMIX_PRECREATE	0x00000002	/* Precreate vmix channels */
 #define USERDEV_F_ERROR_ON_NO_CLIENT	0x00000004	/* Return EIO from server read/write if no client is connected. */
