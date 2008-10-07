@@ -904,6 +904,8 @@ envy24ht_mix_init (int dev)
 				       "ENVY24_RATE", n,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return err;
+  mixer_ext_set_strings (dev, err, 
+   "8000 9600 11025 12000 16000 22050 24000 32000 44100 48000 64000 88200 96000 176400 192000", 0);
 
   if ((err = mixer_ext_create_control (dev, group,
 				       2, envy24ht_set_control,

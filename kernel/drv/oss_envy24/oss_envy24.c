@@ -98,7 +98,7 @@ static struct speed_sel speed_tab[] = {
   {
    48000, 0x00}
   ,
-  /* {64000, 0x0f}, */
+  /* {64000, 0x0f}, doesn't work */
   {
    88200, 0x0b}
   ,
@@ -3015,6 +3015,8 @@ envy24_mix_init (int dev)
 				       "ENVY24_RATE", 12,
 				       MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return err;
+  mixer_ext_set_strings (dev, err, 
+   "8000 9600 11025 12000 16000 22050 24000 32000 44100 48000 88200 96000", 0);
 
   if (devc->model_data->flags & (MF_SPDIF | MF_WCLOCK))
     {
