@@ -90,6 +90,10 @@ do
 		export DO_TIMINGS
 		;;
 
+	"--only-drv="*)
+		ONLY_DRVS=`echo $1 | sed 's/--only-drv=/,/'`
+		export ONLY_DRVS
+		;;
 	*)
 
 		echo $0: Unrecognized command line option $1
@@ -117,6 +121,7 @@ do
 		echo "   --config-vmix=NO|FLOAT|FIXEDPOINT	- Configure vmix to use float/int arithmetic or disable it."
 		echo "     (Check possible limitations caused by the OS or the CPU/arch)."
 		echo "   --config-midi=NO|YES		- Enable/disable MIDI support."
+		echo "   --only-drv=[list]		- Only compile the drivers named in the comma delimited list."
 		echo "   --enable-timings		- Enable internal timings (for the readtimings utility)."
 		exit 1
 	esac

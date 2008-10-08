@@ -2261,6 +2261,7 @@ oss_mixer_ioctl (int dev, struct fileinfo *bogus,
       case SNDCTL_MIX_ENUMINFO:
       case SNDCTL_MIX_READ:
       case SNDCTL_MIX_WRITE:
+      case SNDCTL_MIX_NRMIX:
       case VMIXCTL_ATTACH:
       case VMIXCTL_DETACH:
       case VMIXCTL_RATE:

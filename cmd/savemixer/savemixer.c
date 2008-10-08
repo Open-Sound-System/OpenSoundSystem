@@ -494,7 +494,7 @@ open_device (const char * dev_name, int mode)
   if (nummixers < 1)
     {
       fprintf (stderr, "No mixers in the system\n");
-      exit (0);
+      exit (-1);
     }
 
 }

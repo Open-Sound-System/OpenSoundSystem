@@ -94,6 +94,36 @@ then
 	rm -rf kernel/nonfree
 fi
 
+if test "$ONLY_DRVS " != " "
+then
+	cd kernel/drv
+	for drv in *
+	do
+		if echo $ONLY_DRVS | grep ",$drv" >/dev/null
+		then
+			:
+		else
+			touch "$drv"/.nomake
+		fi
+	done
+	cd ../..
+
+	if test "$CLOSED_SOURCE " = "YES "
+	then
+		cd kernel/nonfree/drv
+		for drv in *
+		do
+			if echo $ONLY_DRVS | grep ",$drv" >/dev/null
+			then
+				:
+			else
+				touch "$drv"/.nomake
+			fi
+		done
+		cd ../../../
+	fi
+fi
+
 cc -D`uname -s` -o srcconf $SRCDIR/setup/srcconf.c
 
 if ./srcconf $*
