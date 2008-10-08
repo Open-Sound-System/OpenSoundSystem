@@ -516,13 +516,17 @@ userdev_trigger (int dev, int state)
 
       if (portc->output_triggered || portc->input_triggered)	/* Something is going on */
 	if (devc->timeout_id == 0)
+	{
 	  devc->timeout_id = timeout (userdev_cb, portc, tmout);
+cmn_err(CE_CONT, "Timeout ID = %d\n", devc->timeout_id);
+	}
     }
   else
     {
       if (portc->port_type == PT_SERVER)
 	if (devc->timeout_id != 0)
 	  {
+cmn_err(CE_CONT, "Untimeout = %d\n", devc->timeout_id);
 	    untimeout (devc->timeout_id);
 	    devc->timeout_id = 0;
 	  }
@@ -785,6 +789,7 @@ userdev_create_device_pair(void)
 
   devc->osdev = userdev_osdev;
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
+  devc->active=1;
 
   devc->rate = 48000;
   devc->fmt = AFMT_S16_NE;
@@ -865,6 +870,10 @@ cmn_err(CE_CONT, "Removed %p from active devices\n", devc);
 void
 userdev_delete_device_pair(userdev_devc_t *devc)
 {
+  if (!devc->active)
+     return;
+
+  devc->active = 0;
   MUTEX_CLEANUP(devc->mutex);
 }
 

@@ -27,6 +27,7 @@ struct _userdev_portc_t
 struct _userdev_devc_t
 {
   oss_device_t *osdev;
+  int active;
   oss_mutex_t mutex;
 
   int open_count;	/* 0=not in use, 2=both client and server in use */
