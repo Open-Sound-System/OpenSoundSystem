@@ -849,6 +849,12 @@ oss_sbxfi_attach (oss_device_t * osdev)
       devc->hw_family = HW_055x;
       break;
 
+    case 0x0018:
+      devc->name = "Sound Blaster X-Fi (PCI-E)";
+      devc->hw_family = HW_055x;
+      oss_pcie_init (osdev);
+      break;
+
     default:
       if (subdevice >= 0x6000 && subdevice <= 0x6fff)	/* "Vista compatible" HW */
 	{

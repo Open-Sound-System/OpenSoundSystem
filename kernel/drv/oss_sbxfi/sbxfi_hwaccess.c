@@ -205,6 +205,11 @@ InitHardware (sbxfi_devc_t * devc)
       // Vista compatible cards
       HwWrite20K1 (devc, GPIOCTL, 0x00c2);
     }
+  else if ((wSSID == 0x0018))
+    {
+      // PCI-E model
+      HwWrite20K1 (devc, GPIOCTL, 0x00c2);
+    }
   else
     {
       HwWrite20K1 (devc, GPIOCTL, 0x01e6);

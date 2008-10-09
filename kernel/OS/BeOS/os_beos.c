@@ -644,6 +644,12 @@ oss_pci_byteswap (oss_device_t * osdev, int mode)
   // NOP
 }
 
+void
+oss_pcie_init (oss_device_t * osdev, int flags)
+{
+	/* TODO: Should we do something? */
+}
+
 int
 pci_read_config_byte (oss_device_t * osdev, offset_t where,
 		      unsigned char *val)

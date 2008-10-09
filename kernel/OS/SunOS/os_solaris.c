@@ -1001,6 +1001,12 @@ oss_pci_byteswap (oss_device_t * osdev, int mode)
   osdev->swap_mode = mode;
 }
 
+void
+oss_pcie_init (oss_device_t * osdev, int flags)
+{
+	/* TODO: Should we do something? */
+}
+
 /*ARGSUSED*/
 caddr_t
 oss_map_pci_ioaddr (oss_device_t * osdev, int nr, int io)

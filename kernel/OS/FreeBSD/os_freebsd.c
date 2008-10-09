@@ -554,6 +554,12 @@ oss_pci_byteswap (oss_device_t * osdev, int mode)
   // NOP
 }
 
+void
+oss_pcie_init (oss_device_t * osdev, int flags)
+{
+	/* TODO: Should we do something? */
+}
+
 static time_t
 oss_get_walltime (void)
 {

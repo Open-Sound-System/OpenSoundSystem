@@ -324,6 +324,8 @@ extern void osdev_delete (oss_device_t * osdev);
  */
 extern void oss_pci_byteswap (oss_device_t * osdev, int mode);
 
+extern void oss_pcie_init (oss_device_t * osdev, int flags);
+
 /*
  * Process information routines
  */
