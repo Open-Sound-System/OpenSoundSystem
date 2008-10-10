@@ -1431,8 +1431,10 @@ oss_audio_open_engine (int dev, int no_worries, struct fileinfo *file,
 
       if ((cmd = GET_PROCESS_NAME (file)) != NULL)
 	{
-	  strncpy (audio_engines[dev]->cmd, cmd, 16)[15] = '\0';
-	  strncpy (audio_engines[dev]->label, cmd, 16)[15] = '\0';
+	  strncpy (audio_engines[dev]->cmd, cmd, 16);
+	  strncpy (audio_engines[dev]->label, cmd, 16);
+	  audio_engines[dev]->cmd[15] = '\0';
+	  audio_engines[dev]->label[15] = '\0';
 	}
       audio_engines[dev]->pid = GET_PROCESS_PID (file);
     }

@@ -51,7 +51,8 @@ get_mixer_info (int dev, ioctl_arg arg)
     return OSS_ENXIO;
 
   strcpy (info->id, mixer_devs[dev]->id);
-  strncpy (info->name, mixer_devs[dev]->name, 32)[31] = '\0';
+  strncpy (info->name, mixer_devs[dev]->name, 32);
+  info->name[31] = '\0';
   info->modify_counter = mixer_devs[dev]->modify_counter;
 
   return 0;
@@ -407,7 +408,8 @@ mixer_ext_set_description (int dev, int ctrl, const char *desc)
   if (mixer_devs[dev]->extensions[ctrl].description == NULL)
     return OSS_EIO;
 
-  strncpy (mixer_devs[dev]->extensions[ctrl].description, desc, l)[l-1] = '\0';
+  strncpy (mixer_devs[dev]->extensions[ctrl].description, desc, l);
+  mixer_devs[dev]->extensions[ctrl].description[l-1] = '\0';
 
   mixer_devs[dev]->extensions[ctrl].ext.flags |= MIXF_DESCR;
 
@@ -849,7 +851,8 @@ store_name (oss_mixext * thisrec, char *name)
 
   while (*name == '.')
     name++;
-  strncpy (thisrec->extname, name, 32)[31] = '\0';
+  strncpy (thisrec->extname, name, 32);
+  thisrec->extname[31] = '\0';
 
   name = thisrec->extname;
   for (i = 0; i < strlen (name); i++)
