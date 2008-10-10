@@ -6,7 +6,7 @@ OSSNAME=oss-beos
 PKGNAME=$OSSNAME-$VERSION-$RELEASE
 
 echo building $PKGNAME.zip
-(cd prototype; zip -ry9 ../$PKGNAME.zip)
+(cd prototype; zip -ry9 ../$PKGNAME.zip *)
 
 #if test -f 4front-private/export_package.sh
 #then

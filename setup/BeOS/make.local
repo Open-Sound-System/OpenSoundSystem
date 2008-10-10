@@ -5,6 +5,6 @@ copy:	build
 	cp -R prototype/* /
 
 package:	build
-		cd setup/BeOS && sh mkpkg.sh
+		sh setup/BeOS/mkpkg.sh
 
 install:	copy
