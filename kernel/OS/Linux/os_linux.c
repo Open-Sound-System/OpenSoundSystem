@@ -872,7 +872,7 @@ oss_request_major (oss_device_t * osdev, int major, char *module)
 }
 
 static int
-resize_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
+grow_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
 {
 	oss_cdev_t **old=*arr, **new = *arr;
 	int old_size = *size;
@@ -942,7 +942,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
     {
       if (oss_num_cdevs >= OSS_MAX_CDEVS)
 	{
-	   if (!resize_array(osdev, &oss_cdevs, &oss_max_cdevs, 100))
+	   if (!grow_array(osdev, &oss_cdevs, &oss_max_cdevs, 100))
 	   {
 	  	cmn_err (CE_WARN, "Out of minor numbers.\n");
 	  	return;

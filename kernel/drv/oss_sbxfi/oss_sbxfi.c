@@ -852,7 +852,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
     case 0x0018:
       devc->name = "Sound Blaster X-Fi (PCI-E)";
       devc->hw_family = HW_055x;
-      oss_pcie_init (osdev);
+      oss_pcie_init (osdev, 0);
       break;
 
     default:
