@@ -486,7 +486,8 @@ extern void *oss_memcpy (void *s1, const void *s2, size_t n);
 #define memcpy oss_memcpy
 #endif
 
-#if !defined(SOL9) && defined(DDI_FM_DEVICE)
+#define DISABLE_FMA
+#if !defined(SOL9) && defined(DDI_FM_DEVICE) && !defined(DISABLE_FMA)
 /*
  * Fault management (FMA) support.
  */

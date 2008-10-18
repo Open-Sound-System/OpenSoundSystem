@@ -1354,7 +1354,7 @@ free_all_contig_memory (void)
   contig_list = NULL;
 }
 
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
 /*ARGSUSED*/
 static int
 oss_fm_error_cb(dev_info_t *dip, ddi_fm_error_t *err, const void *osdev_)
@@ -1464,7 +1464,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
     case DRV_PCI:
       if (pci_config_setup (dip, &osdev->pci_config_handle) != DDI_SUCCESS)
 	cmn_err (CE_NOTE, "pci_config_setup() failed\n");
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
       osdev->fm_capabilities =	DDI_FM_EREPORT_CAPABLE | DDI_FM_DMACHK_CAPABLE |
 	      			DDI_FM_ERRCB_CAPABLE;
       ddi_fm_init(dip, &osdev->fm_capabilities, &iblk);
@@ -1476,7 +1476,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
     case DRV_VIRTUAL:
     case DRV_VMIX:
     case DRV_STREAMS:
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
       osdev->fm_capabilities=DDI_FM_EREPORT_CAPABLE;
       ddi_fm_init(dip, &osdev->fm_capabilities, &iblk);
 #endif
@@ -1553,12 +1553,12 @@ osdev_delete (oss_device_t * osdev)
   switch (osdev->dev_type)
     {
     case DRV_PCI:
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
       ddi_fm_handler_unregister(osdev->dip);
       pci_ereport_teardown(osdev->dip);
 #endif
       pci_config_teardown (&osdev->pci_config_handle);
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
       ddi_fm_fini(osdev->dip);
 #endif
       osdev->pci_config_handle = NULL;
@@ -1567,7 +1567,7 @@ osdev_delete (oss_device_t * osdev)
     case DRV_VIRTUAL:
     case DRV_VMIX:
     case DRV_STREAMS:
-#ifndef SOL9
+#if !defined(SOL9) && !defined(DISABLE_FMA)
       ddi_fm_fini(osdev->dip);
 #endif
       break;
