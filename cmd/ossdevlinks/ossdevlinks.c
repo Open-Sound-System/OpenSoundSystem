@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <fnmatch.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,6 +37,52 @@ int mixerfd = -1;
 int verbose = 0;
 
 static int recreate_all = 0;
+static int err = 0;
+/*
+ * Some gccs bundled with Ubuntu will error out if output of some functions
+ * isn't checked and -Wall is used. They won't accept casting to void.
+ */
+
+static int
+remove_nodes (const char * dirname, const char * pattern)
+{
+#if PATH_MAX == -1
+#undef PATH_MAX
+#endif 
+#ifndef PATH_MAX
+#define PATH_MAX 64
+#endif
+  char path[PATH_MAX];
+  DIR * dr;
+  struct dirent * de;
+  struct stat st;
+
+  if ((dr = opendir (dirname)) == NULL)
+    {
+      if (errno == ENOENT) return 0;
+      fprintf (stderr, "Cannot open %s\n", dirname);
+      perror ("opendir");
+      return -1;
+    }
+
+  while ((de = readdir (dr)) != NULL)
+    {
+      if (fnmatch (pattern, de->d_name, FNM_PATHNAME | FNM_PERIOD)) continue;
+
+      snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
+
+      /* We want to remove dangling symlinks and such, so no error check here */
+      stat (path, &st);
+      /* No nodes that ossdevlinks may need to remove are directories */
+      if (S_ISDIR (st.st_mode)) continue;
+      if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
+      if ((unlink (path) == -1) && (errno != ENONET))
+        fprintf (stderr, "unlink %s: %s\n", path, strerror(errno));
+    }
+
+  closedir (dr);
+  return 0;
+}
 
 /*
  *****************************
@@ -93,9 +141,14 @@ create_dsplinks (void)
   oss_renumber_t renum = { 0 };
 
   if (recreate_all)
-    system ("rm -f /dev/dsp /dev/dsp[0-9]* /dev/dsp_*");
+    {
+      if ((unlink ("/dev/dsp") == -1) && (errno != ENOENT))
+	fprintf (stderr, "Couldn't remove /dev/dsp link!\n");
+      remove_nodes ("/dev", "dsp[0-9]*");
+      remove_nodes ("/dev", "dsp_*");
+    }
 
-  printf ("%d audio devices\n", si.numaudios);
+  if (verbose) printf ("%d audio devices\n", si.numaudios);
 
   if (si.numaudios < 1)
     return;
@@ -114,7 +167,7 @@ create_dsplinks (void)
 
       audiodevs[dev] = ai;
 
-      /* printf ("Adev %d = %s\n", dev, ai->devnode); */
+      /* if (verbose) printf ("Adev %d = %s\n", dev, ai->devnode); */
     }
 
   for (dev = 0; dev < MAXDEV; dev++)
@@ -130,7 +183,7 @@ create_dsplinks (void)
 	}
     }
 
-  printf ("/dev/dsp%d is the next free legacy device\n", numfiles);
+  if (verbose) printf ("/dev/dsp%d is the next free legacy device\n", numfiles);
 
   for (dev = 0; dev < si.numaudios; dev++)
     {
@@ -148,14 +201,14 @@ create_dsplinks (void)
 
       if (lstat (devname, &st) == -1)
 	{
-	  printf ("%s: %s\n", devname, strerror (errno));
+	  if (verbose) printf ("%s: %s\n", devname, strerror (errno));
 	  recreate = 1;
 	}
       else
 	{
 	  if (S_ISCHR (st.st_mode))
 	    {
-	      printf ("%s: character device\n", devname);
+	      if (verbose) printf ("%s: character device\n", devname);
 	      recreate = 1;
 	    }
 	  else if (S_ISLNK (st.st_mode))
@@ -174,25 +227,27 @@ create_dsplinks (void)
 		  linkdev[l] = 0;
 		}
 
-	      printf ("%s: symlink -> %s ", devname, linkdev);
+	      if (verbose) printf ("%s: symlink -> %s ", devname, linkdev);
 
 	      if (strcmp (linkdev, audiodevs[dev]->devnode) != 0)
 		{
-		  printf ("(should be %s)\n", audiodevs[dev]->devnode);
+		  if (verbose) printf ("(should be %s)\n",
+				       audiodevs[dev]->devnode);
 		  if ((newdev = find_dsplink (audiodevs[dev])) == -1)
 		    {
 		      recreate = 1;
 		      newdev = numfiles++;
 		    }
 		  else
-		    printf ("\tAlready linked to /dev/dsp%d\n", newdev);
+		    if (verbose) printf ("\tAlready linked to /dev/dsp%d\n",
+					 newdev);
 		}
 	      else
-		printf ("OK\n");
+		if (verbose) printf ("OK\n");
 	    }
 	  else
 	    {
-	      printf ("%s: unknown file type\n", devname);
+	      if (verbose) printf ("%s: unknown file type\n", devname);
 	      recreate = 1;
 	    }
 
@@ -214,14 +269,14 @@ create_dsplinks (void)
 		  exit (-1);
 		}
 
-	      printf ("Created new legacy device %s -> %s\n", devname,
-		      audiodevs[dev]->devnode);
+	      if (verbose) printf ("Created new legacy device %s -> %s\n",
+				   devname, audiodevs[dev]->devnode);
 	      audiodevs[dev]->legacy_device = newdev;
 	    }
 	}
     }
 
-  printf ("%d legacy dsp device files\n", numfiles);
+  if (verbose) printf ("%d legacy dsp device files\n", numfiles);
 
   renum.n = si.numaudios;
 
@@ -229,8 +284,9 @@ create_dsplinks (void)
     {
       if (audiodevs[dev]->legacy_device != dev)
 	if (audiodevs[dev]->legacy_device >= 0)
-	  printf ("Adev %d (%s) is legacy device file /dev/dsp%d\n", dev,
-		  audiodevs[dev]->devnode, audiodevs[dev]->legacy_device);
+	  if (verbose) printf ("Adev %d (%s) is legacy device file "
+			       "/dev/dsp%d\n", dev, audiodevs[dev]->devnode,
+			       audiodevs[dev]->legacy_device);
 
       renum.map[dev] = audiodevs[dev]->legacy_device;
     }
@@ -275,8 +331,8 @@ create_dsplinks (void)
       if (ai->min_channels > 2 || ai->max_channels < 2) /* No stereo */
 	 continue;
 
-      printf ("%s is the default /dev/dsp device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
+      if (verbose) printf ("%s is the default /dev/dsp device\n", ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
       break;
     }
 
@@ -291,14 +347,14 @@ create_dsplinks (void)
       if (!(ai->caps & PCM_CAP_OUTPUT))
 	continue;
 
-      printf ("%s is the default dsp_out device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_out");	/* Ignore errors */
+      if (verbose) printf ("%s is the default dsp_out device\n", ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_out");	/* Ignore errors */
 
       /*
        * Also link /dev/dsp just in case the link doesn't
        * exist yet.
        */
-      symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
+      err = symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
       break;
     }
 
@@ -313,14 +369,14 @@ create_dsplinks (void)
       if (!(ai->caps & PCM_CAP_INPUT))
 	continue;
 
-      printf ("%s is the default dsp_in device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_in");	/* Ignore errors */
+      if (verbose) printf ("%s is the default dsp_in device\n", ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_in");	/* Ignore errors */
 
       /*
        * Also link /dev/dsp just in case the link doesn't
        * exist yet.
        */
-      symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
+      err = symlink (ai->devnode, "/dev/dsp");	/* Ignore errors */
       break;
     }
 
@@ -338,8 +394,9 @@ create_dsplinks (void)
       if (!(ai->oformats & AFMT_AC3))
 	continue;
 
-      printf ("%s is the default AC3 output device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_ac3");	/* Ignore errors */
+      if (verbose) printf ("%s is the default AC3 output device\n",
+			   ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_ac3");	/* Ignore errors */
       break;
     }
 
@@ -366,8 +423,9 @@ create_dsplinks (void)
       if (ai->min_channels > 2)
 	continue;
 
-      printf ("%s is the default mmap output device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_mmap");	/* Ignore errors */
+      if (verbose) printf ("%s is the default mmap output device\n",
+			   ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_mmap");	/* Ignore errors */
       break;
     }
 
@@ -385,8 +443,9 @@ create_dsplinks (void)
       if (ai->max_channels < 4)
 	continue;
 
-      printf ("%s is the default multichan output device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_multich");	/* Ignore errors */
+      if (verbose) printf ("%s is the default multichan output device\n",
+			   ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_multich");	/* Ignore errors */
       break;
     }
 
@@ -404,9 +463,9 @@ create_dsplinks (void)
       if (!(ai->caps & PCM_CAP_DIGITALOUT))
 	continue;
 
-      printf ("%s is the default S/PDIF digital output device\n",
-	      ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_spdifout");	/* Ignore errors */
+      if (verbose) printf ("%s is the default S/PDIF digital output device\n",
+			   ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_spdifout");	/* Ignore errors */
       break;
     }
 
@@ -424,8 +483,9 @@ create_dsplinks (void)
       if (!(ai->caps & PCM_CAP_DIGITALIN))
 	continue;
 
-      printf ("%s is the default S/PDIF digital input device\n", ai->devnode);
-      symlink (ai->devnode, "/dev/dsp_spdifin");	/* Ignore errors */
+      if (verbose) printf ("%s is the default S/PDIF digital input device\n",
+			   ai->devnode);
+      err = symlink (ai->devnode, "/dev/dsp_spdifin");	/* Ignore errors */
       break;
     }
 }
@@ -487,9 +547,9 @@ create_mixerlinks (void)
   oss_renumber_t renum = { 0 };
 
   if (recreate_all)
-    system ("rm -f /dev/mixer[0-9]*");
+    remove_nodes ("/dev", "mixer[0-9]*");
 
-  printf ("%d mixer devices\n", si.nummixers);
+  if (verbose) printf ("%d mixer devices\n", si.nummixers);
 
   if (si.nummixers < 1)
     return;
@@ -508,7 +568,7 @@ create_mixerlinks (void)
 
       mixerdevs[dev] = xi;
 
-      /* printf ("Mixdev %d = %s\n", dev, xi->devnode); */
+      /* if (verbose) printf ("Mixdev %d = %s\n", dev, xi->devnode); */
     }
 
   for (dev = 0; dev < MAXDEV; dev++)
@@ -527,7 +587,8 @@ create_mixerlinks (void)
   if (numfiles < si.nummixers)
     numfiles = si.nummixers;
 
-  printf ("/dev/mixer%d is the next free legacy device\n", numfiles);
+  if (verbose) printf ("/dev/mixer%d is the next free legacy device\n",
+		       numfiles);
 
   for (dev = 0; dev < si.nummixers; dev++)
     {
@@ -538,14 +599,14 @@ create_mixerlinks (void)
 
       if (lstat (devname, &st) == -1)
 	{
-	  printf ("%s: %s\n", devname, strerror (errno));
+	  if (verbose) printf ("%s: %s\n", devname, strerror (errno));
 	  recreate = 1;
 	}
       else
 	{
 	  if (S_ISCHR (st.st_mode))
 	    {
-	      printf ("%s: character device\n", devname);
+	      if (verbose) printf ("%s: character device\n", devname);
 	      recreate = 1;
 	    }
 	  else if (S_ISLNK (st.st_mode))
@@ -564,25 +625,27 @@ create_mixerlinks (void)
 		  linkdev[l] = 0;
 		}
 
-	      printf ("%s: symlink -> %s ", devname, linkdev);
+	      if (verbose) printf ("%s: symlink -> %s ", devname, linkdev);
 
 	      if (strcmp (linkdev, mixerdevs[dev]->devnode) != 0)
 		{
-		  printf ("(should be %s)\n", mixerdevs[dev]->devnode);
+		  if (verbose) printf ("(should be %s)\n",
+				       mixerdevs[dev]->devnode);
 		  if ((newdev = find_mixerlink (mixerdevs[dev])) == -1)
 		    {
 		      recreate = 1;
 		      newdev = numfiles++;
 		    }
 		  else
-		    printf ("\tAlready linked to /dev/mixer%d\n", newdev);
+		    if (verbose) printf ("\tAlready linked to /dev/mixer%d\n",
+					 newdev);
 		}
 	      else
-		printf ("OK\n");
+		if (verbose) printf ("OK\n");
 	    }
 	  else
 	    {
-	      printf ("%s: unknown file type\n", devname);
+	      if (verbose) printf ("%s: unknown file type\n", devname);
 	      recreate = 1;
 	    }
 
@@ -604,21 +667,21 @@ create_mixerlinks (void)
 		  exit (-1);
 		}
 
-	      printf ("Created new legacy device %s -> %s\n", devname,
-		      mixerdevs[dev]->devnode);
+	      if (verbose) printf ("Created new legacy device %s -> %s\n",
+				   devname, mixerdevs[dev]->devnode);
 	    }
 	}
     }
 
-  printf ("%d legacy mixer device files\n", numfiles);
+  if (verbose) printf ("%d legacy mixer device files\n", numfiles);
 
   renum.n = si.nummixers;
 
   for (dev = 0; dev < si.nummixers; dev++)
     {
       if (mixerdevs[dev]->legacy_device != dev)
-	printf ("Mixdev %d is legacy device file /dev/mixer%d\n", dev,
-		mixerdevs[dev]->legacy_device);
+	if (verbose) printf ("Mixdev %d is legacy device file /dev/mixer%d\n",
+			     dev, mixerdevs[dev]->legacy_device);
       renum.map[dev] = mixerdevs[dev]->legacy_device;
     }
 
@@ -685,12 +748,12 @@ create_midilinks (void)
   oss_renumber_t renum = { 0 };
 
   if (recreate_all)
-    system ("rm -f /dev/midi[0-9]*");
+    remove_nodes ("/dev", "midi[0-9]*");
 
   if (si.nummidis < 1)		/* No MIDI devices in the system */
     return;
 
-  printf ("%d midi devices\n", si.nummidis);
+  if (verbose) printf ("%d midi devices\n", si.nummidis);
   for (dev = 0; dev < si.nummidis; dev++)
     {
       xi = malloc (sizeof (*xi));
@@ -705,7 +768,7 @@ create_midilinks (void)
 
       mididevs[dev] = xi;
 
-      /* printf ("Mididev %d = %s\n", dev, xi->devnode); */
+      /* if (verbose) printf ("Mididev %d = %s\n", dev, xi->devnode); */
     }
 
   for (dev = 0; dev < MAXDEV; dev++)
@@ -724,7 +787,7 @@ create_midilinks (void)
   if (numfiles < si.nummidis)
     numfiles = si.nummidis;
 
-  printf ("/dev/midi%d is the next free legacy device\n", numfiles);
+  if (verbose) printf ("/dev/midi%d is the next free legacy device\n",numfiles);
 
   for (dev = 0; dev < si.nummidis; dev++)
     {
@@ -735,14 +798,14 @@ create_midilinks (void)
 
       if (lstat (devname, &st) == -1)
 	{
-	  printf ("%s: %s\n", devname, strerror (errno));
+	  if (verbose) printf ("%s: %s\n", devname, strerror (errno));
 	  recreate = 1;
 	}
       else
 	{
 	  if (S_ISCHR (st.st_mode))
 	    {
-	      printf ("%s: character device\n", devname);
+	      if (verbose) printf ("%s: character device\n", devname);
 	      recreate = 1;
 	    }
 	  else if (S_ISLNK (st.st_mode))
@@ -761,25 +824,27 @@ create_midilinks (void)
 		  linkdev[l] = 0;
 		}
 
-	      printf ("%s: symlink -> %s ", devname, linkdev);
+	      if (verbose) printf ("%s: symlink -> %s ", devname, linkdev);
 
 	      if (strcmp (linkdev, mididevs[dev]->devnode) != 0)
 		{
-		  printf ("(should be %s)\n", mididevs[dev]->devnode);
+		  if (verbose) printf ("(should be %s)\n",
+				       mididevs[dev]->devnode);
 		  if ((newdev = find_midilink (mididevs[dev])) == -1)
 		    {
 		      recreate = 1;
 		      newdev = numfiles++;
 		    }
 		  else
-		    printf ("\tAlready linked to /dev/midi%d\n", newdev);
+		    if (verbose) printf ("\tAlready linked to /dev/midi%d\n",
+					 newdev);
 		}
 	      else
-		printf ("OK\n");
+		if (verbose) printf ("OK\n");
 	    }
 	  else
 	    {
-	      printf ("%s: unknown file type\n", devname);
+	      if (verbose) printf ("%s: unknown file type\n", devname);
 	      recreate = 1;
 	    }
 
@@ -801,21 +866,21 @@ create_midilinks (void)
 		  exit (-1);
 		}
 
-	      printf ("Created new legacy device %s -> %s\n", devname,
-		      mididevs[dev]->devnode);
+	      if (verbose) printf ("Created new legacy device %s -> %s\n",
+				   devname, mididevs[dev]->devnode);
 	    }
 	}
     }
 
-  printf ("%d legacy MIDI device files\n", numfiles);
+  if (verbose) printf ("%d legacy MIDI device files\n", numfiles);
 
   renum.n = si.nummidis;
 
   for (dev = 0; dev < si.nummidis; dev++)
     {
       if (mididevs[dev]->legacy_device != dev)
-	printf ("Mididev %d is legacy device file /dev/midi%d\n", dev,
-		mididevs[dev]->legacy_device);
+	if (verbose) printf ("Mididev %d is legacy device file /dev/midi%d\n",
+			     dev, mididevs[dev]->legacy_device);
       renum.map[dev] = mididevs[dev]->legacy_device;
     }
 
@@ -939,9 +1004,6 @@ main (int argc, char *argv[])
       verbose++;
       break;
     }
-
-  if (verbose < 1)
-    freopen ("/dev/null", "w", stdout);
 
   create_dsplinks ();
   create_mixerlinks ();

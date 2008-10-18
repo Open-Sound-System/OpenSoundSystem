@@ -243,7 +243,8 @@ finalize_head (FILE * wave_fp, fctypes_t type, unsigned int datalimit,
   if (!flag)
     {
       fseek (wave_fp, 0, SEEK_END);
-      fwrite (&flag , 1, 1, wave_fp);
+      if (fwrite (&flag , 1, 1, wave_fp) == -1)
+        print_msg (ERRORM, "Couldn't add padding byte to SSND chunk!\n");
     }
   return 0;
 }

@@ -4,11 +4,12 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
@@ -55,6 +56,7 @@ static void load_devlist (const char *, int);
 static void pci_checkdevice (char *);
 static void pci_detect (char *);
 static drvlist_t * prepend_drvlist (const char *);
+static int remove_devlinks (const char *);
 static void usb_checkdevice (char *);
 static void usb_scandir (char *);
 static void usb_detect (void);
@@ -121,7 +123,8 @@ load_license (const char *fname)
   n = snprintf (cmd, sizeof (cmd), "/usr/sbin/osslic -q %s/%s", osslibdir,
 		fname);
   if (n >= sizeof (cmd) || n < 0) return;
-  system (cmd);
+  if (((n = system (cmd)) == -1))
+    fprintf (stderr, "Cannot run osslic!\n");
 }
 
 static void
@@ -324,7 +327,7 @@ usb_scandir (char *dirname)
       if (de->d_name[0] < '0' || de->d_name[0] > '9')	/* Ignore non-numeric names */
 	continue;
 
-      sprintf (path, "%s/%s", dirname, de->d_name);
+      snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
 
       if (stat (path, &st) == -1)
 	continue;
@@ -346,14 +349,17 @@ usb_detect (void)
 {
   struct stat st;
 #if 0
-  char path[512];
+  char path[OSSLIBDIRLEN + 25];
 
-  sprintf (path, "%s/modules/oss_usb", osslibdir);
+  sprintf (path, "%s/modules/oss_usb.o", osslibdir);
 
   if (stat (path, &st) == -1)	/* USB module not available */
-    return;
-
+    {
+      fprintf (stderr, "USB module not available, aborting USB detect\n");
+      return;
+    }
 #endif
+
   if (stat ("/proc/bus/usb", &st) == -1)
     return;
   usb_ok = 1;
@@ -416,7 +422,7 @@ pci_detect (char *dirname)
       if (de->d_name[0] < '0' || de->d_name[0] > '9')	/* Ignore non-numeric names */
 	continue;
 
-      sprintf (path, "%s/%s", dirname, de->d_name);
+      snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
 
       if (stat (path, &st) == -1)
 	continue;
@@ -431,6 +437,46 @@ pci_detect (char *dirname)
     }
 
   closedir (dr);
+}
+
+static int
+remove_devlinks (const char * dirname)
+{
+  char path[PATH_MAX];
+  DIR * dr;
+  struct dirent * de;
+  struct stat st;
+
+  if ((dr = opendir (dirname)) == NULL)
+    {
+      if (errno == ENONET) return 0;
+      perror ("opendir");
+      return -1;
+    }
+
+  while ((de = readdir (dr)) != NULL)
+    {
+      if ((!strcmp (de->d_name, ".")) || (!strcmp (de->d_name, ".."))) continue;
+
+      snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
+
+      stat (path, &st);
+      if (S_ISDIR (st.st_mode)) remove_devlinks (path);
+      else
+	{
+	  if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
+	  unlink (path);
+	}
+    }
+
+  closedir (dr);
+  if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
+  if (rmdir (dirname) == -1)
+    {
+      fprintf (stderr, "Couldn't remove %s\n", path);
+      return -1;
+    }
+  return 0;
 }
 
 static void
@@ -448,7 +494,7 @@ create_devlinks (void)
       exit (-1);
     }
 
-  system ("rm -rf /dev/oss");
+  remove_devlinks ("/dev/oss");
   mkdir ("/dev/oss", 0755);
 
   while (fgets (line, sizeof (line), f) != NULL)

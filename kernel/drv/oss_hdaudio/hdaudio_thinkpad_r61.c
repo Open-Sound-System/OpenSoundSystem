@@ -166,7 +166,7 @@ hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int 
 
 			HDA_GROUP(amp_group, group, "mute");
 			HDA_INMUTE(0x07, 0, amp_group, "headphone-sel", UNMUTE);	/* From widget 0x22 */
-			HDA_INMUTE(0x07, 1, amp_group, "input-mix", UNMUTE);	/* From widget 0x21 */
+			HDA_INMUTE(0x07, 1, amp_group, "input-mix", MUTE);	/* From widget 0x21 */
 		}
 
 		/* Widget 0x22 (headphone-sel) */

@@ -114,7 +114,8 @@ load_license (const char *fname)
   n = snprintf (cmd, sizeof (cmd), "/usr/sbin/osslic -q %s/%s", osslibdir,
 		fname);
   if (n >= sizeof (cmd) || n < 0) return;
-  system (cmd);
+  if (((n = system (cmd)) == -1))
+    fprintf (stderr, "Cannot run osslic!\n");
 }
 
 static void

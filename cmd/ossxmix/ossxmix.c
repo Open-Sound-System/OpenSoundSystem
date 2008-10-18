@@ -1991,7 +1991,7 @@ main (int argc, char **argv)
   if (dev == -1)
     dev = find_default_mixer ();
 
-  chdir ("/");
+  v = chdir ("/"); /* We don't really care if this fails */
 
   /* Create the app's main window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);

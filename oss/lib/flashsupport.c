@@ -826,24 +826,25 @@ FPX_SoundOutput_Latency (void *ptr)
 struct SoundOutput_Instance
 {
   int oss_fd;
-  pthread_t thread;
   int signal;
+  int blen;
+  pthread_t thread;
+  char *buffer;
 };
 
 static void *
 oss_thread (void *ptr)
 {
   struct SoundOutput_Instance *instance = (struct SoundOutput_Instance *) ptr;
-  char buffer[4096];
   int len = 0;
   int written = 0;
   for (;;)
     {
-      FPI_SoundOutput_FillBuffer (ptr, buffer, 4096);
-      len = 4096;
+      FPI_SoundOutput_FillBuffer (ptr, instance->buffer, instance->blen);
+      len = instance->blen;
       while (len)
 	{
-	  written = write (instance->oss_fd, buffer + 4096 - len, len);
+	  written = write (instance->oss_fd, instance->buffer + instance->blen - len, len);
 	  if (written >= 0)
 	    {
 	      len -= written;
@@ -866,7 +867,7 @@ FPX_SoundOutput_Open ()
 {
   struct SoundOutput_Instance *instance = 0;
   int format = AFMT_S16_LE;
-  int stereo = 1;
+  int channels = 2;
   int speed = 44100;
   int frags = 0x0004000c;	/* 4 fragments of 4k -> 16k total */
 
@@ -885,14 +886,22 @@ FPX_SoundOutput_Open ()
 
   if (ioctl (instance->oss_fd, SNDCTL_DSP_SETFRAGMENT, &frags) < 0)
     goto fail;
-  if (ioctl (instance->oss_fd, SNDCTL_DSP_SETFMT, &format) < 0)
+
+  if ((ioctl (instance->oss_fd, SNDCTL_DSP_SETFMT, &format) < 0) ||
+      (format != AFMT_S16_LE))
     goto fail;
 
-  if (ioctl (instance->oss_fd, SNDCTL_DSP_STEREO, &stereo) < 0)
+  if ((ioctl (instance->oss_fd, SNDCTL_DSP_CHANNELS, &channels) < 0) ||
+      (channels != 2))
     goto fail;
 
   if (ioctl (instance->oss_fd, SNDCTL_DSP_SPEED, &speed) < 0)
     goto fail;
+
+  instance->blen = 4096;
+  instance->buffer = (char *)FPI_Mem_Alloc (instance->blen);
+  memset (instance->buffer, 0, instance->blen);
+  if (!instance->buffer) goto fail;
 
   if (pthread_create (&instance->thread, 0, oss_thread, instance) < 0)
     goto fail;
@@ -902,7 +911,10 @@ fail:
   if (instance)
     {
       if (FPI_Mem_Free)
-	FPI_Mem_Free (instance);
+	{
+	  if (instance->buffer) FPI_Mem_Free (instance->buffer);
+	  FPI_Mem_Free (instance);
+	}
     }
   return 0;
 }

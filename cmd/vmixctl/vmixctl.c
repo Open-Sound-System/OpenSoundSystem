@@ -139,8 +139,8 @@ vmix_attach(int argc, char **argv)
 
 	if (relink_devices)
 	{
-		system("ossdetect -d");
-		system("ossdevlinks");
+		n = system("ossdetect -d");
+		n = system("ossdevlinks");
 	}
 
 	return 0;
