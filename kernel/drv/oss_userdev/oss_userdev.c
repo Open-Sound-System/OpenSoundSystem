@@ -60,6 +60,12 @@ userdev_client_redirect (int dev, int mode, int open_flags)
 
   userdev_devc_t *devc;
   oss_native_word flags;
+
+  uid_t uid;
+
+  uid = oss_get_procinfo(OSS_GET_PROCINFO_UID);
+
+cmn_err(CE_CONT, "UID=%d\n", uid);
   
 cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags);
 
@@ -69,6 +75,15 @@ cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags)
   while (devc != NULL)
   {
 	  int ok=1;
+
+	  switch (devc->match_method)
+	  {
+	  case UD_MATCH_UID:
+cmn_err(CE_CONT, "UID %d / %d\n", devc->match_key, uid);
+		if (devc->match_key != uid)	/* Wrong UID */
+		   ok=0;
+		break;
+	  }
 
 	  if (ok)
 	     {

@@ -469,6 +469,14 @@ userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 	    	return create_instance(dev, crea);
 	    }
 	    break;
+
+    case USERDEV_GET_CLIENTCOUNT:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+
+		return *arg = (devc->client_portc.open_mode != 0);
+	    }
+	    break;
     }
 
   return userdev_ioctl(dev, cmd, arg);
@@ -518,7 +526,6 @@ userdev_trigger (int dev, int state)
 	if (devc->timeout_id == 0)
 	{
 	  devc->timeout_id = timeout (userdev_cb, portc, tmout);
-cmn_err(CE_CONT, "Timeout ID = %d\n", devc->timeout_id);
 	}
     }
   else
@@ -526,7 +533,6 @@ cmn_err(CE_CONT, "Timeout ID = %d\n", devc->timeout_id);
       if (portc->port_type == PT_SERVER)
 	if (devc->timeout_id != 0)
 	  {
-cmn_err(CE_CONT, "Untimeout = %d\n", devc->timeout_id);
 	    untimeout (devc->timeout_id);
 	    devc->timeout_id = 0;
 	  }

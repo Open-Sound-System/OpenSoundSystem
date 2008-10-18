@@ -6,10 +6,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 /*
  * OSS specific includes. Use correct -I setting when compiling. Typically
@@ -74,10 +76,10 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
  */
 	strcpy(crea.name, "Acme test");
 	crea.flags = USERDEV_F_VMIX_ATTACH | USERDEV_F_VMIX_PRIVATENODE; /* Doesn't work at this moment */
-	crea.match_method = UD_MATCH_PGID;
-	crea.match_key = setpgrp();
+	crea.match_method = UD_MATCH_UID;
+	crea.match_key = geteuid();
 	crea.poll_interval = 10; /* In milliseconds */
-printf("PGID=%d\n", crea.match_key);
+printf("UID=%d\n", crea.match_key);
 
 	if (ioctl(server_fd, USERDEV_CREATE_INSTANCE, &crea)==-1)
 	{

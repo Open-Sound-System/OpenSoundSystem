@@ -44,5 +44,6 @@ typedef struct
 } userdev_create_t;
 
 #define USERDEV_CREATE_INSTANCE		__SIOWR('u', 1, userdev_create_t)
+#define USERDEV_GET_CLIENTCOUNT		__SIOR ('u', 2, int)
 
 #endif
