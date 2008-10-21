@@ -74,12 +74,11 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 /*
  * Create the client side device.
  */
-	strcpy(crea.name, "Acme test");
+	strcpy(crea.name, "OSS user space device driver example");
 	crea.flags = USERDEV_F_VMIX_ATTACH | USERDEV_F_VMIX_PRIVATENODE; /* Doesn't work at this moment */
 	crea.match_method = UD_MATCH_UID;
 	crea.match_key = geteuid();
 	crea.poll_interval = 10; /* In milliseconds */
-printf("UID=%d\n", crea.match_key);
 
 	if (ioctl(server_fd, USERDEV_CREATE_INSTANCE, &crea)==-1)
 	{
@@ -87,6 +86,14 @@ printf("UID=%d\n", crea.match_key);
 		exit(-1);
 	}
 
+	/*
+	 * TODO: Setting the environment variables doesn't seem to work. Why?
+	 */
+	sprintf(cmd, "OSS_AUDIODEV=%s", crea.devnode);
+	if (putenv(cmd) == -1)
+	   perror("putenv OSS_AUDIODEV");
+	sprintf(cmd, "OSS_MIXERDEV=%s", crea.devnode);
+	putenv(cmd);
 /*
  * Set up the master side parameters such as sampling rate and sample format.
  * The server application can select whatever format is best for its
@@ -145,9 +152,6 @@ printf("Created instance, devnode=%s\n", crea.devnode);
  * Client side code. Simply execute the command that was given in
  * argv[1]. However replace all %s's by the client side device node name.
  */
-
-	sprintf(cmd, "OSS_AUDIODEV=%s", crea.devnode);
-	putenv(cmd);
 
 	sprintf(cmd, argv[1], crea.devnode, crea.devnode, crea.devnode);
 	printf("Running '%s'\n", cmd);

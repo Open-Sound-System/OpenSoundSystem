@@ -42,7 +42,6 @@ userdev_server_redirect (int dev, int mode, int open_flags)
  */
   int server_engine;
 
-cmn_err(CE_CONT, "userdev_server_redirect(%d, %d, %x)\n", dev, mode, open_flags);
 
   if ((server_engine=usrdev_find_free_device_pair()) >= 0)
      return server_engine;
@@ -65,8 +64,6 @@ userdev_client_redirect (int dev, int mode, int open_flags)
 
   uid = oss_get_procinfo(OSS_GET_PROCINFO_UID);
 
-cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags);
-
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
   devc=userdev_active_device_list;
 
@@ -77,7 +74,6 @@ cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags)
 	  switch (devc->match_method)
 	  {
 	  case UD_MATCH_UID:
-cmn_err(CE_CONT, "UID %d / %d\n", devc->match_key, uid);
 		if (devc->match_key != uid)	/* Wrong UID */
 		   ok=0;
 		break;

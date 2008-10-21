@@ -140,7 +140,6 @@ setup_sample_format (userdev_portc_t * portc)
   fragsize = (devc->rate * frame_size * devc->poll_ticks) / OSS_HZ;	/* Number of bytes/fragment */
   devc->rate = fragsize * 100 / frame_size;
 
-cmn_err(CE_CONT, "Rate = %d, frag=%d\n", devc->rate, fragsize);
 /* Setup the server side */
   adev = audio_engines[portc->audio_dev];
   adev->min_block = adev->max_block = fragsize;
@@ -284,7 +283,6 @@ userdev_server_open (int dev, int mode, int open_flags)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
-cmn_err(CE_CONT, "Server open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
     return OSS_ENXIO;
@@ -313,7 +311,6 @@ userdev_client_open (int dev, int mode, int open_flags)
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
   oss_native_word flags;
-cmn_err(CE_CONT, "Client open %d\n", dev);
 
   if (portc == NULL || portc->peer == NULL)
     return OSS_ENXIO;
@@ -434,7 +431,6 @@ create_instance(int dev, userdev_create_t *crea)
   devc->create_flags = crea->flags;
 
   devc->poll_ticks = (crea->poll_interval * OSS_HZ) / 1000;
-cmn_err(CE_CONT, "Set poll_ticks=%u, interval=%u, HZ=%d\n", devc->poll_ticks, crea->poll_interval, OSS_HZ);
 
   if (devc->poll_ticks < 1) 
      devc->poll_ticks = 1;
@@ -443,7 +439,6 @@ cmn_err(CE_CONT, "Set poll_ticks=%u, interval=%u, HZ=%d\n", devc->poll_ticks, cr
 
   if (crea->poll_interval<1)
      crea->poll_interval = 1;
-cmn_err(CE_CONT, "Return poll interval %u\n", crea->poll_interval);
 
   crea->name[sizeof(crea->name)-1]=0; /* Overflow protectgion */
 
@@ -451,7 +446,6 @@ cmn_err(CE_CONT, "Return poll interval %u\n", crea->poll_interval);
   tmp_name[49]=0;
   set_adev_name (devc->client_portc.audio_dev, crea->name);
   set_adev_name (devc->server_portc.audio_dev, tmp_name);
-cmn_err(CE_CONT, "Match method %d, key %d\n", devc->match_method, devc->match_key);
 
   strcpy(crea->devnode, audio_engines[devc->client_portc.audio_dev]->devnode);
 
@@ -642,28 +636,136 @@ userdev_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 static int
 userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 {
+/*
+ * Purpose of this ioctl override function is to intercept mixer
+ * ioctl calls made on the client side and to hide everything
+ * outside the userdev instance from the application.
+ *
+ * Note that this ioctl is related with the client side audio device. However
+ * if /dev/mixer points to this (audio) device then all mixer acess will
+ * be redirected too. Also the vmix driver will redirect mixer/system ioctl
+ * calls to this function.
+ */
   int err;
+  userdev_devc_t *devc = audio_engines[dev]->devc;
+  adev_t *adev = audio_engines[devc->client_portc.audio_dev];
 
-cmn_err(CE_CONT, "userdev_ioctl_override(%d, %08x)\n", dev, cmd);
   switch (cmd)
   {
   case SNDCTL_MIX_NRMIX:
 	  return *arg=1;
 	  break;
 
+  case SNDCTL_MIX_NREXT:
+	  /*
+	   * TODO: This should be handled separately for each
+	   * client/server pair.
+	   */
+	  *arg = my_mixer;
+	  return OSS_EAGAIN; /* Continue with the default handler */
+	  break;
+
   case SNDCTL_SYSINFO:
 	  {
+	  /*
+	   * Fake SNDCTL_SYSINFO to report just one mixer device which is
+	   * the one associated with the client.
+	   */
 	    oss_sysinfo *info = (oss_sysinfo *) arg;
+	    int i;
 
 	    if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
 	       return err;
 
+	    /*
+	     * Hide all non-oss_userdev devices
+	     */
 	    strcpy (info->product, "OSS (userdev)");
 	    info->nummixers = 1;
+	    info->numcards = 1;
+	    info->numaudios = 1;
+	    for (i = 0; i < 8; i++)
+	       info->openedaudio[i] = 0;
 
 	    return 0;
 	  }
 	  break;
+
+  case SNDCTL_MIXERINFO:
+	{
+		oss_mixerinfo *info = (oss_mixerinfo *) arg;
+
+		info->dev = my_mixer; /* Redirect to oss_userdev mixer */
+
+	    	if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
+	           return err;
+
+		strcpy(info->name, adev->name);
+		info->card_number = 0;
+		return 0;
+	}
+
+  case SNDCTL_AUDIOINFO:
+  case SNDCTL_AUDIOINFO_EX:
+	{
+		oss_audioinfo *info = (oss_audioinfo *) arg;
+
+		info->dev = devc->client_portc.audio_dev;
+
+		cmd = SNDCTL_ENGINEINFO;
+
+	    	if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
+	           return err;
+
+		info->card_number = 0;
+		return 0;
+	}
+
+    case SNDCTL_CARDINFO:
+      {
+	oss_card_info *info = (oss_card_info *) arg;
+
+	info->card = adev->card_number; /* Redirect to oss_userdev0 */
+
+    	if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
+           return err;
+
+	info->card = 0;
+	return 0;
+      }
+
+  case SNDCTL_MIX_EXTINFO:
+      {
+	      /* TODO: Redirect this to the actual userdev instance */
+	      oss_mixext *ext = (oss_mixext*)arg;
+
+	      ext->dev = my_mixer;
+
+	      if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
+	           return err;
+
+	      if (ext->type == MIXT_DEVROOT)
+	      {
+		oss_mixext_root *root = (oss_mixext_root *) ext->data;
+		strncpy(root->name, adev->name, 48);
+		root->name[47]=0;
+	      }
+
+	      return 0;
+      }
+      break;
+
+  case SNDCTL_MIX_READ:
+  case SNDCTL_MIX_WRITE:
+      {
+	      /* TODO: Redirect this to the actual userdev instance */
+	      oss_mixer_value *ent = (oss_mixer_value*)arg;
+
+	      ent->dev = my_mixer;
+
+	      return OSS_EAGAIN; 	/* Redirect */
+      }
+      break;
 
   default:
 	  return OSS_EAGAIN;
@@ -836,9 +938,7 @@ install_client (userdev_devc_t * devc)
   if (!userdev_visible_clientnodes && !(devc->create_flags & USERDEV_F_VMIX_PRIVATENODE))
   {
      opts |= ADEV_HIDDEN;
-cmn_err(CE_CONT, "Create hidden device (%x, %x)\n", userdev_visible_clientnodes,devc->create_flags);
   }
-else cmn_err(CE_CONT, "Create visible device\n");
 
   if ((adev = oss_install_audiodev (OSS_AUDIO_DRIVER_VERSION,
 				    devc->osdev,
@@ -906,7 +1006,6 @@ userdev_create_device_pair(void)
   devc->next_instance = userdev_active_device_list;
   userdev_active_device_list = devc;
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
-cmn_err(CE_CONT, "Created new device pair, server=%d, client=%d\n", server_engine, client_engine);
 
   return server_engine;
 }
@@ -919,7 +1018,6 @@ userdev_free_device_pair (userdev_devc_t *devc)
   set_adev_name(devc->client_portc.audio_dev, "User space audio device");
   set_adev_name(devc->server_portc.audio_dev, "User space audio device server side");
 
-cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
 
   devc->match_method = 0;
@@ -938,7 +1036,6 @@ cmn_err(CE_CONT, "userdev_free_device_pair(%p)\n", devc);
   if (userdev_active_device_list == devc) /* First device in the list */
      {
 	     userdev_active_device_list = userdev_active_device_list->next_instance;
-cmn_err(CE_CONT,"Removed %p from active devices (first)\n", devc);
      }
   else
      {
@@ -949,7 +1046,6 @@ cmn_err(CE_CONT,"Removed %p from active devices (first)\n", devc);
 		     if (this == devc)
 			{
 				prev->next_instance = this->next_instance; /* Remove */
-cmn_err(CE_CONT, "Removed %p from active devices\n", devc);
 				break;
 			}
 
@@ -976,8 +1072,6 @@ usrdev_find_free_device_pair(void)
   oss_native_word flags;
   userdev_devc_t *devc;
 
-cmn_err(CE_CONT, "usrdev_find_free_device_pair()\n");
-
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
 
   if (userdev_free_device_list != NULL)
@@ -989,7 +1083,6 @@ cmn_err(CE_CONT, "usrdev_find_free_device_pair()\n");
   	userdev_active_device_list = devc;
 
   	MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
-cmn_err(CE_CONT, "Reuse %d\n", devc->server_portc.audio_dev);
 	return devc->server_portc.audio_dev;
      }
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
