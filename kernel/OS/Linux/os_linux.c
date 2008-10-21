@@ -286,6 +286,19 @@ oss_get_osid (oss_device_t * osdev)
 }
 
 int
+oss_get_procinfo(int what)
+{
+	switch (what)
+	{
+	case OSS_GET_PROCINFO_UID:
+		return oss_get_uid();
+		break;
+	}
+
+	return OSS_EINVAL;
+}
+
+int
 oss_disable_device (oss_device_t * osdev)
 {
   int i;
