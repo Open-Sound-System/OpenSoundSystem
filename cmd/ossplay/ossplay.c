@@ -259,11 +259,15 @@ void
 open_device (dspdev_t * dsp)
 {
   dsp->fd = -1; dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
+  char *devdsp;
+
+  if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
+     devdsp = "/dev/dsp";
 
   if (raw_mode)
     dsp->flags |= O_EXCL;	/* Disable redirection to the virtual mixer */
 
-  if (dsp->dname[0] == '\0') strcpy (dsp->dname, "/dev/dsp");
+  if (dsp->dname[0] == '\0') strcpy (dsp->dname, devdsp);
 
   if ((dsp->fd = open (dsp->dname, dsp->flags, 0)) == -1)
     {

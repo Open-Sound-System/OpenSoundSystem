@@ -236,6 +236,10 @@ snd_pcm_open (snd_pcm_t ** pcmp, const char *name,
   snd_pcm_t *pcm;
   int oss_mode = O_WRONLY;
   char dspname[32];
+  char *devdsp;
+
+  if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
+     devdsp = "/dev/dsp";
 
   ALIB_INIT ();
 
@@ -250,7 +254,7 @@ snd_pcm_open (snd_pcm_t ** pcmp, const char *name,
     dbg_printf2 ("snd_pcm_open: mode=0x%x - not emulated.\n", mode);
 
   if (strcmp (name, "default") == 0)
-    name = "/dev/dsp";
+    name = devdsp;
   else
     {
       if (!parse_device (name, dspname))
@@ -259,7 +263,7 @@ snd_pcm_open (snd_pcm_t ** pcmp, const char *name,
 	  fprintf (stderr, "OSS asound - Bad PCM device '%s'\n", name);
 	  return -ENOENT;
 #else
-	  strcpy (dspname, "/dev/dsp");
+	  strcpy (dspname, devdsp);
 #endif
 	}
 
