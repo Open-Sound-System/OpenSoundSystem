@@ -636,6 +636,22 @@ userdev_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 }
 #endif
 
+/*ARGSUSED*/
+static int
+userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
+{
+//cmn_err(CE_CONT, "userdev_ioctl_override(%d, %08x)\n", dev, cmd);
+  switch (cmd)
+  {
+  case SNDCTL_MIX_NRMIX:
+	  return *arg=1;
+	  break;
+
+  default:
+	  return OSS_EAGAIN;
+  }
+}
+
 static audiodrv_t userdev_server_driver = {
   userdev_server_open,
   userdev_server_close,
@@ -689,7 +705,16 @@ static audiodrv_t userdev_client_driver = {
   userdev_free_buffer,
   NULL,
   NULL,
-  NULL				/* userdev_get_buffer_pointer */
+  NULL,	// userdev_get_buffer_pointer
+  NULL,	// userdev_calibrate_speed
+  NULL,	// userdev_sync_control
+  NULL,	// userdev_prepare_to_stop
+  NULL,	// userdev_get_input_pointer
+  NULL,	// userdev_get_output_pointer
+  NULL,	// userdev_bind
+  NULL,	// userdev_setup_fragments
+  NULL,	// userdev_redirect
+  userdev_ioctl_override
 };
 
 

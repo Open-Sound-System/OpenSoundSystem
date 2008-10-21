@@ -3051,6 +3051,19 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
     return OSS_ENODEV;
   if (!adev->enabled)
     return OSS_ENXIO;
+
+  if (adev->d->adrv_ioctl_override != NULL)
+  {
+  /*
+   * Use the ioctl override function if available. However process the request
+   * in the usual way if the override function returned OSS_EAGAIN. It may
+   * be possible that the override function has modified the parameters
+   * before returning.
+   */
+	  if ((err = adev->d->adrv_ioctl_override(dev, cmd, arg)) != OSS_EAGAIN)
+	     return err;
+  }
+
   dmapout = adev->dmap_out;
   dmapin = adev->dmap_in;
 

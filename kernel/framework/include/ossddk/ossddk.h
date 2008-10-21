@@ -100,6 +100,7 @@ typedef struct _audiodrv_t
   int (*adrv_bind) (int dev, unsigned int cmd, int *arg);
   void (*adrv_setup_fragments) (int dev, dmap_t * dmap, int direction);
   int (*adrv_redirect) (int dev, int mode, int open_flags);
+  int (*adrv_ioctl_override) (int dev, unsigned int cmd, int *arg);
 } audiodrv_t;
 #endif
 

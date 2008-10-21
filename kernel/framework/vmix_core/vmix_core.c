@@ -536,6 +536,33 @@ export_names (oss_mixer_enuminfo * ei, char *names)
 }
 
 static int
+vmix_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
+{
+/*
+ * Redirect all mixer (also legacy) ioctl calls to the master device
+ * if the master device driver has exported its ioctl override method.
+ *
+ * All other ioctl calls will be processed in normal way (by oss_audio_core.c)
+ * because we return OSS_EAGAIN.
+ */
+
+  if ((((cmd >> 8) & 0xff) == 'M') || (((cmd >> 8) & 0xff) == 'X'))
+  {
+  	vmix_mixer_t *mixer = audio_engines[dev]->devc;
+	adev_t *adev;
+
+	adev=audio_engines[mixer->masterdev];
+
+	if (adev->d->adrv_ioctl_override == NULL)
+	   return OSS_EAGAIN;
+
+	return adev->d->adrv_ioctl_override(adev->engine_num, cmd, arg);
+  }
+
+  return OSS_EAGAIN;
+}
+
+static int
 vmix_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 {
   vmix_portc_t *portc = audio_engines[dev]->portc;
@@ -1618,6 +1645,9 @@ create_vmix_engine (vmix_mixer_t * mixer)
     }
 
   adev = audio_engines[portc->audio_dev];
+
+  if (master_adev->d->adrv_ioctl_override != NULL)
+     adev->d->adrv_ioctl_override = vmix_ioctl_override;
 
   adev->mixer_dev = mixer->output_mixer_dev;
   adev->portc = portc;
