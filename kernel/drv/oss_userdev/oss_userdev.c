@@ -65,8 +65,6 @@ userdev_client_redirect (int dev, int mode, int open_flags)
 
   uid = oss_get_procinfo(OSS_GET_PROCINFO_UID);
 
-cmn_err(CE_CONT, "UID=%d\n", uid);
-  
 cmn_err(CE_CONT, "userdev_client_redirect(%d, %d, %x)\n", dev, mode, open_flags);
 
   MUTEX_ENTER_IRQDISABLE(userdev_global_mutex, flags);
@@ -90,6 +88,8 @@ cmn_err(CE_CONT, "UID %d / %d\n", devc->match_key, uid);
   	  	MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
 	  	return devc->client_portc.audio_dev;
 	     }
+
+	  devc = devc->next_instance;
   }
 
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
