@@ -11,6 +11,8 @@ static void userdev_free_device_pair (userdev_devc_t *devc);
 
 extern int userdev_visible_clientnodes;
 
+static int my_mixer = -1;
+
 static void
 transfer_audio (userdev_portc_t * server_portc, dmap_t * dmap_from,
 		dmap_t * dmap_to)
@@ -640,11 +642,27 @@ userdev_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 static int
 userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 {
-//cmn_err(CE_CONT, "userdev_ioctl_override(%d, %08x)\n", dev, cmd);
+  int err;
+
+cmn_err(CE_CONT, "userdev_ioctl_override(%d, %08x)\n", dev, cmd);
   switch (cmd)
   {
   case SNDCTL_MIX_NRMIX:
 	  return *arg=1;
+	  break;
+
+  case SNDCTL_SYSINFO:
+	  {
+	    oss_sysinfo *info = (oss_sysinfo *) arg;
+
+	    if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
+	       return err;
+
+	    strcpy (info->product, "OSS (userdev)");
+	    info->nummixers = 1;
+
+	    return 0;
+	  }
 	  break;
 
   default:
@@ -717,6 +735,29 @@ static audiodrv_t userdev_client_driver = {
   userdev_ioctl_override
 };
 
+static int
+userdev_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
+{
+
+  if (cmd == SOUND_MIXER_READ_CAPS)
+    return *arg = SOUND_CAP_NOLEGACY;
+
+#if 0
+  if (cmd == SOUND_MIXER_READ_DEVMASK ||
+      cmd == SOUND_MIXER_READ_RECMASK || cmd == SOUND_MIXER_READ_RECSRC)
+    return *arg = 0;
+
+  if (cmd == SOUND_MIXER_READ_VOLUME || cmd == SOUND_MIXER_READ_PCM)
+    return *arg = 100 | (100 << 8);
+  if (cmd == SOUND_MIXER_WRITE_VOLUME || cmd == SOUND_MIXER_WRITE_PCM)
+    return *arg = 100 | (100 << 8);
+#endif
+  return OSS_EINVAL;
+}
+
+static mixer_driver_t userdev_mixer_driver = {
+  userdev_mixer_ioctl
+};
 
 static int
 install_server (userdev_devc_t * devc)
@@ -757,6 +798,21 @@ install_server (userdev_devc_t * devc)
 }
 
 
+static void
+userdev_create_mixer(userdev_devc_t * devc)
+{
+  if ((my_mixer = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
+				     devc->osdev,
+				     devc->osdev,
+				     "Pseudo mixer",
+				     &userdev_mixer_driver,
+				     sizeof (mixer_driver_t), devc)) < 0)
+    {
+	my_mixer = -1;
+	return;
+    }
+}
+
 static int
 install_client (userdev_devc_t * devc)
 {
@@ -768,6 +824,11 @@ install_client (userdev_devc_t * devc)
     ADEV_FIXEDRATE | ADEV_SPECIAL | ADEV_LOOP;
 
   memset (portc, 0, sizeof (*portc));
+
+  if (my_mixer == -1)
+  {
+	  userdev_create_mixer(devc);
+  }
 
   portc->devc = devc;
   portc->port_type = PT_CLIENT;
@@ -794,6 +855,7 @@ else cmn_err(CE_CONT, "Create visible device\n");
      strcpy(audio_engines[adev]->devnode, userdev_client_devnode);
 
   audio_engines[adev]->portc = portc;
+  audio_engines[adev]->mixer_dev = my_mixer;
   audio_engines[adev]->min_rate = 5000;
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
