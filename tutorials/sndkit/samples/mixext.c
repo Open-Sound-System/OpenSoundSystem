@@ -233,12 +233,17 @@ set_control (int mixer_dev, char *name, int value)
 int
 main (int argc, char *argv[])
 {
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
+
   if (argc > 1)
     mixer_dev = atoi (argv[1]);
 
-  if ((mixerfd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((mixerfd = open (devmixer, O_RDWR, 0)) == -1)
     {
-      perror ("/dev/mixer");
+      perror (devmixer);
       exit (-1);
     }
 

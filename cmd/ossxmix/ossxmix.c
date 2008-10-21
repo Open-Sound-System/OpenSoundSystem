@@ -1923,6 +1923,11 @@ main (int argc, char **argv)
   GdkBitmap *icon_mask;
 #endif /* !GTK1_ONLY */
 
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
+
   /* Get Gtk to process the startup arguments */
   gtk_init (&argc, &argv);
 
@@ -1980,9 +1985,9 @@ main (int argc, char **argv)
   if (width_adjust > 4)
     width_adjust = 4;
 
-  if ((mixer_fd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((mixer_fd = open (devmixer, O_RDWR, 0)) == -1)
     {
-      perror ("/dev/mixer");
+      perror (devmixer);
       exit (-1);
     }
 

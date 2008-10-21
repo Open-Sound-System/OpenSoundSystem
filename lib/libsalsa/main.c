@@ -36,13 +36,17 @@ int
 alib_init (void)
 {
   char *p;
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
 
   if ((p = getenv ("ALIB_DEBUG")) != NULL)
     alib_verbose = atoi (p);
 
   if (mixer_fd == -1)
     {
-      if ((mixer_fd = open ("/dev/mixer", O_RDONLY, 0)) == -1)
+      if ((mixer_fd = open (devmixer, O_RDONLY, 0)) == -1)
 	return -errno;
     }
 

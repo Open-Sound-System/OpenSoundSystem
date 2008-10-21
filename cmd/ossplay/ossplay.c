@@ -165,6 +165,10 @@ find_devname (char * devname, const char * num)
   int dev;
   int mixer_fd;
   oss_audioinfo ai;
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
 
   if (sscanf (num, "%d", &dev) != 1)
     {
@@ -172,9 +176,9 @@ find_devname (char * devname, const char * num)
       exit (-1);
     }
 
-  if ((mixer_fd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((mixer_fd = open (devmixer, O_RDWR, 0)) == -1)
     {
-      perror_msg ("/dev/mixer");
+      perror_msg (devmixer);
       print_msg (WARNM, "Warning: Defaulting to /dev/dsp%s\n", num);
       snprintf (devname, OSS_DEVNODE_SIZE, "/dev/dsp%s", num);
       return;
@@ -184,7 +188,7 @@ find_devname (char * devname, const char * num)
 
   if (ioctl (mixer_fd, SNDCTL_AUDIOINFO, &ai) == -1)
     {
-      perror_msg ("/dev/mixer SNDCTL_AUDIOINFO");
+      perror_msg ("SNDCTL_AUDIOINFO");
       print_msg (WARNM, "Warning: Defaulting to /dev/dsp%s\n", num);
       snprintf (devname, OSS_DEVNODE_SIZE, "/dev/dsp%s", num);
       close (mixer_fd);

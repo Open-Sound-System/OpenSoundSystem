@@ -224,6 +224,10 @@ main (int argc, char *argv[])
   int recvol_ctls[MAX_CTL];
   int monvol_ctls[MAX_CTL];
   int n_mainvol=0, n_pcmvol=0, n_recvol=0, n_monvol=0;
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
 
 /*
  * Get the mixer device number from command line.
@@ -236,9 +240,9 @@ main (int argc, char *argv[])
  * mixer device number.
  */
 
-  if ((mixer_fd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((mixer_fd = open (devmixer, O_RDWR, 0)) == -1)
     {
-      perror ("Cannot open /dev/mixer");
+      perror (devmixer);
       exit (-1);
     }
 

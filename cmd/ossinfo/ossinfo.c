@@ -723,7 +723,12 @@ main (int argc, char *argv[])
 {
   int i;
 
-  if ((mixerfd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
+
+  if ((mixerfd = open (devmixer, O_RDWR, 0)) == -1)
     {
       switch (errno)
 	{
@@ -735,13 +740,13 @@ main (int argc, char *argv[])
 
 	case ENOENT:
 	  fprintf (stderr,
-		   "No /dev/mixer device available in your system.\n");
+		   "No %s device available in your system.\n", devmixer);
 	  fprintf (stderr,
 		   "Perhaps Open Sound System is not installed or running.\n");
 	  break;
 
 	default:
-	  perror ("/dev/mixer");
+	  perror (devmixer);
 	}
       exit (-1);
     }

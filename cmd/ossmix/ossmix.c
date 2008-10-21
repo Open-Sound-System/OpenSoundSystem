@@ -1177,13 +1177,17 @@ main (int argc, char *argv[])
 {
   int dev = 0, c;
   progname = argv[0];
+  char *devmixer;
+
+  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+     devmixer = "/dev/mixer";
 
 /*
  *	Open the mixer device
  */
-  if ((mixerfd = open ("/dev/mixer", O_RDWR, 0)) == -1)
+  if ((mixerfd = open (devmixer, O_RDWR, 0)) == -1)
     {
-      perror ("/dev/mixer");
+      perror (devmixer);
       exit (-1);
     }
 
