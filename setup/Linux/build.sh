@@ -49,7 +49,7 @@ cp .version prototype/usr/lib/oss/version.dat
 if ! test -f regparm
 then
   echo Error: ./regparm is missing
-  exit -1
+  exit 1
 fi
 
 cp regparm prototype/usr/lib/oss/build
@@ -59,13 +59,13 @@ rm -f /tmp/confgen
 if ! cc -o /tmp/confgen ./setup/Linux/confgen.c
 then
 	echo Building confgen failed
-	exit -1
+	exit 1
 fi
 
 if ! /tmp/confgen prototype/usr/lib/oss/conf.tmpl \\/usr\\/lib\\/oss\\/conf kernel/drv/* kernel/nonfree/drv/*
 then
 	echo Running confgen failed
-	exit -1
+	exit 1
 fi
 
 rm -f /tmp/confgen

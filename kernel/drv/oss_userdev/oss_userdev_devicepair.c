@@ -11,8 +11,6 @@ static void userdev_free_device_pair (userdev_devc_t *devc);
 
 extern int userdev_visible_clientnodes;
 
-static int my_mixer = -1;
-
 static void
 transfer_audio (userdev_portc_t * server_portc, dmap_t * dmap_from,
 		dmap_t * dmap_to)
@@ -661,7 +659,7 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 	   * TODO: This should be handled separately for each
 	   * client/server pair.
 	   */
-	  *arg = my_mixer;
+	  *arg = devc->mixer_dev;
 	  return OSS_EAGAIN; /* Continue with the default handler */
 	  break;
 
@@ -695,7 +693,7 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 	{
 		oss_mixerinfo *info = (oss_mixerinfo *) arg;
 
-		info->dev = my_mixer; /* Redirect to oss_userdev mixer */
+		info->dev = devc->mixer_dev; /* Redirect to oss_userdev mixer */
 
 	    	if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
 	           return err;
@@ -739,7 +737,7 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 	      /* TODO: Redirect this to the actual userdev instance */
 	      oss_mixext *ext = (oss_mixext*)arg;
 
-	      ext->dev = my_mixer;
+	      ext->dev = devc->mixer_dev;
 
 	      if ((err=oss_mixer_ext(dev, OSS_DEV_DSP_ENGINE, cmd, arg))<0)
 	           return err;
@@ -761,7 +759,7 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 	      /* TODO: Redirect this to the actual userdev instance */
 	      oss_mixer_value *ent = (oss_mixer_value*)arg;
 
-	      ent->dev = my_mixer;
+	      ent->dev = devc->mixer_dev;
 
 	      return OSS_EAGAIN; 	/* Redirect */
       }
@@ -903,14 +901,14 @@ install_server (userdev_devc_t * devc)
 static void
 userdev_create_mixer(userdev_devc_t * devc)
 {
-  if ((my_mixer = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
+  if ((devc->mixer_dev = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
 				     devc->osdev,
 				     devc->osdev,
 				     "Pseudo mixer",
 				     &userdev_mixer_driver,
 				     sizeof (mixer_driver_t), devc)) < 0)
     {
-	my_mixer = -1;
+	devc->mixer_dev = -1;
 	return;
     }
 }
@@ -927,10 +925,7 @@ install_client (userdev_devc_t * devc)
 
   memset (portc, 0, sizeof (*portc));
 
-  if (my_mixer == -1)
-  {
-	  userdev_create_mixer(devc);
-  }
+  userdev_create_mixer(devc);
 
   portc->devc = devc;
   portc->port_type = PT_CLIENT;
@@ -955,7 +950,7 @@ install_client (userdev_devc_t * devc)
      strcpy(audio_engines[adev]->devnode, userdev_client_devnode);
 
   audio_engines[adev]->portc = portc;
-  audio_engines[adev]->mixer_dev = my_mixer;
+  audio_engines[adev]->mixer_dev = devc->mixer_dev;
   audio_engines[adev]->min_rate = 5000;
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;

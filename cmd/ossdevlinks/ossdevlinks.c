@@ -76,7 +76,7 @@ remove_nodes (const char * dirname, const char * pattern)
       /* No nodes that ossdevlinks may need to remove are directories */
       if (S_ISDIR (st.st_mode)) continue;
       if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
-      if ((unlink (path) == -1) && (errno != ENONET))
+      if ((unlink (path) == -1) && (errno != ENOENT))
         fprintf (stderr, "unlink %s: %s\n", path, strerror(errno));
     }
 

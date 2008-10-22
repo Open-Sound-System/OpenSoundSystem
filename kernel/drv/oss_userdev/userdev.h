@@ -38,6 +38,7 @@ struct _userdev_devc_t
 
   unsigned int match_method;
   unsigned int match_key;
+  int mixer_dev;
 
   userdev_devc_t *next_instance;
 

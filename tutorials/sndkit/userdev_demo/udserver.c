@@ -74,7 +74,7 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 /*
  * Create the client side device.
  */
-	strcpy(crea.name, "OSS user space device driver example");
+	sprintf(crea.name, "OSS user space device for %s", getenv("USER"));
 	crea.flags = USERDEV_F_VMIX_ATTACH | USERDEV_F_VMIX_PRIVATENODE; /* Doesn't work at this moment */
 	crea.match_method = UD_MATCH_UID;
 	crea.match_key = geteuid();

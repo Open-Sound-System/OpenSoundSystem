@@ -16,4 +16,4 @@ deb:		build
 install:	copy
 	cd /usr/lib/oss/build && sh install.sh
 	sync
-	soundoff && sync && soundon
+	soundoff && sync && soundon && echo "OSS has started OK"

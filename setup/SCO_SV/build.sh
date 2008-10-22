@@ -106,7 +106,7 @@ if cp lib/libOSSlib/libOSSlib.a prototype/usr/lib/oss/lib
 then
   ok=1
 else
-  exit -1
+  exit 1
 fi
 
 cp devlist.txt prototype/usr/lib/oss/etc/devices.list

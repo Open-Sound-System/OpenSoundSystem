@@ -50,7 +50,7 @@ then
 	echo Error: Older OSS version seems to be installed in your system.
 	echo Please remove previous /usr/lib/oss directory and the install OSS v4.1 again.
 	soundoff
-	exit -1
+	exit 127
 fi
 
 if ! test -f $OSSLIBDIR/objects/osscore.o

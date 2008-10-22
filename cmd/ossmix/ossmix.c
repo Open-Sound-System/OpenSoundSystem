@@ -28,17 +28,17 @@ static int mixerfd = -1, nrext = 0, quiet = 0, verbose = 0;
 static oss_mixext *extrec;
 static oss_mixext_root *root;
 
-static void change_level (int, char *, char *);
+static void change_level (int, const char *, const char *);
 static void dump_all (void);
 static void dump_devinfo (int);
-static int findenum (char *, oss_mixext *, char *);
-static int find_name (char *);
+static int find_enum (const char *, oss_mixext *, const char *);
+static int find_name (const char *);
 static void load_devinfo (int);
 static void print_description (char *);
 static void show_devinfo (int);
 static void show_level (int, char *);
-static char * showchoices (char *, oss_mixext *);
-static char * showenum (char *, oss_mixext *, int);
+static char * show_choices (const char *, oss_mixext *);
+static char * show_enum (const char *, oss_mixext *, int);
 static void usage (void);
 static void verbose_devinfo (int);
 #ifdef CONFIG_OSS_MIDI
@@ -267,7 +267,7 @@ verbose_devinfo (int dev)
 
 /*ARGSUSED*/
 static char *
-showenum (char *extname, oss_mixext * rec, int val)
+show_enum (const char * extname, oss_mixext * rec, int val)
 {
   static char tmp[512];
   oss_mixer_enuminfo ei;
@@ -300,7 +300,7 @@ showenum (char *extname, oss_mixext * rec, int val)
 
 /*ARGSUSED*/
 static char *
-showchoices (char *extname, oss_mixext * rec)
+show_choices (const char * extname, oss_mixext * rec)
 {
   int i;
   static char tmp[4096], *s = tmp;
@@ -351,7 +351,7 @@ showchoices (char *extname, oss_mixext * rec)
 
 /*ARGSUSED*/
 static int
-findenum (char *extname, oss_mixext * rec, char *arg)
+find_enum (const char *extname, oss_mixext * rec, const char *arg)
 {
   int i, n;
   oss_mixer_enuminfo ei;
@@ -415,7 +415,7 @@ print_description (char *descr)
 static void
 show_devinfo (int dev)
 {
-  int i, vl, vr;
+  int i, mask = 0xff, shift = 8, vl, vr;
   oss_mixext *thisrec;
   oss_mixer_value val;
 
@@ -443,29 +443,34 @@ show_devinfo (int dev)
 	  continue;
 	  break;
 
+	case MIXT_STEREOSLIDER16:
+	  shift = 16; mask = 0xffff;
 	case MIXT_STEREOSLIDER:
 	case MIXT_STEREODB:
 	  printf ("%s [<leftvol>:<rightvol>]", thisrec->extname);
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
-	  printf (" (currently %d:%d)", val.value & 0xff,
-		  (val.value >> 8) & 0xff);
-	  break;
-
-	case MIXT_STEREOSLIDER16:
-	  printf ("%s [<leftvol>:<rightvol>]", thisrec->extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(stereo2)");
 	  if (thisrec->flags & MIXF_CENTIBEL)
 	    {
-	      vl = val.value & 0xffff;
-	      vr = (val.value >> 16) & 0xffff;
+	      vl = val.value & mask;
+	      vr = (val.value >> shift) & 0xffff;
 	      printf (" (currently %d.%d:%d.%d dB)", vl / 10, vl % 10,
 		      vr / 10, vr % 10);
 	    }
 	  else
-	    printf (" (currently %d:%d)", val.value & 0xffff,
-		    (val.value >> 16) & 0xffff);
+	    printf (" (currently %d:%d)", val.value & mask,
+		    (val.value >> shift) & mask);
+	  if ((*thisrec->id != '\0') &&
+              (sscanf(thisrec->id + 1, "pcm%d", &vl) == 1))
+	    {
+	      oss_audioinfo ainfo;
+
+	      ainfo.dev = vl;
+	      if ((ioctl (mixerfd, SNDCTL_ENGINEINFO, &ainfo) != -1) &&
+		   *ainfo.label != '\0')
+		printf (" (\"%s\")", ainfo.label);
+	    }
+	  shift = 8; mask = 0xff;
 	  break;
 
 	case MIXT_3D:
@@ -492,39 +497,30 @@ show_devinfo (int dev)
 
 	case MIXT_ENUM:
 	  printf ("%s <%s>", thisrec->extname,
-		  showchoices (thisrec->extname, thisrec));
+		  show_choices (thisrec->extname, thisrec));
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(enum2)");
 	  printf (" (currently %s)",
-		  showenum (extrec[i].extname, thisrec, val.value & 0xff));
+		  show_enum (extrec[i].extname, thisrec, val.value & 0xff));
 	  break;
 
+	case MIXT_SLIDER:
+	  mask = ~0;
+	case MIXT_MONOSLIDER16:
+	  if (thisrec->type == MIXT_MONOSLIDER16) mask = 0xffff;
 	case MIXT_MONOSLIDER:
 	case MIXT_MONODB:
 	  printf ("%s <monovol>", thisrec->extname);
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
-	  printf (" (currently %d)", val.value & 0xff);
-	  break;
-
-	case MIXT_SLIDER:
-	  printf ("%s <monovol>", thisrec->extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(mono2)");
-	  printf (" (currently %d)", val.value);
-	  break;
-
-	case MIXT_MONOSLIDER16:
-	  printf ("%s <monovol>", thisrec->extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(mono2)");
 	  if (thisrec->flags & MIXF_CENTIBEL)
 	    {
-	      vl = val.value & 0xffff;
+	      vl = val.value & mask;
 	      printf (" (currently %d.%d dB)", vl / 10, vl % 10);
 	    }
 	  else
-	    printf (" (currently %d)", val.value & 0xffff);
+	    printf (" (currently %d)", val.value & mask);
+	  mask = 0xff;
 	  break;
 
 	case MIXT_MONOVU:
@@ -653,7 +649,7 @@ dump_devinfo (int dev)
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(enum2)");
 	  printf ("%s\n",
-		  showenum (extrec[i].extname, thisrec, val.value & 0xff));
+		  show_enum (extrec[i].extname, thisrec, val.value & 0xff));
 	  break;
 
 	case MIXT_MONOSLIDER:
@@ -711,9 +707,9 @@ dump_devinfo (int dev)
 }
 
 static int
-find_name (char *name)
+find_name (const char * name)
 {
-  int i;
+  int i, tmp;
 
   if (name == NULL)
     return -1;
@@ -721,15 +717,27 @@ find_name (char *name)
   for (i = 0; i < nrext; i++)
     if (extrec[i].type != MIXT_DEVROOT &&
 	extrec[i].type != MIXT_GROUP && extrec[i].type != MIXT_MARKER)
-      if (extrec[i].extname != NULL)
-	if (strncmp (extrec[i].extname, name, 60) == 0)
-	  return i;
+      {
+	if (extrec[i].extname != NULL)
+	  if (strncmp (extrec[i].extname, name, 32) == 0)
+	    return i;
+	if ((extrec[i].id != NULL) && (*extrec[i].id != '\0') && 
+	    (sscanf (extrec[i].id + 1, "pcm%d", &tmp) == 1))
+	  {
+	    oss_audioinfo ainfo;
+
+	    ainfo.dev = tmp;
+	    if ((ioctl (mixerfd, SNDCTL_ENGINEINFO, &ainfo) != -1) &&
+	        (strcmp (ainfo.label, name) == 0))
+	      return i;
+	  }
+      }
 
   return -1;
 }
 
 static void
-change_level (int dev, char *cname, char *arg)
+change_level (int dev, const char * cname, const char * arg)
 {
   enum {
     RELLEFT = 1,
@@ -765,7 +773,7 @@ change_level (int dev, char *cname, char *arg)
 
   if (extrec.type == MIXT_ENUM)
     {
-      val.value = findenum (cname, &extrec, arg);
+      val.value = find_enum (cname, &extrec, arg);
       if (val.value < 0) exit (1);
     }
   else if (extrec.type == MIXT_HEXVALUE)
@@ -933,7 +941,7 @@ change_level (int dev, char *cname, char *arg)
         break;
       case MIXT_ENUM:
         printf ("Value of mixer control %s set to %s\n", cname,
-                showenum (cname, &extrec, val.value));
+                show_enum (cname, &extrec, val.value));
         break;
       case MIXT_STEREOSLIDER:
       case MIXT_STEREOSLIDER16:
@@ -1003,7 +1011,7 @@ show_level (int dev, char *cname)
         break;
       case MIXT_ENUM:
         printf ("Value of mixer control %s set to %s\n", cname,
-	        showenum (cname, &extrec, val.value));
+	        show_enum (cname, &extrec, val.value));
         break;
       case MIXT_STEREOSLIDER:
       case MIXT_STEREOSLIDER16:
