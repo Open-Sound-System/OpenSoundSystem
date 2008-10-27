@@ -22,6 +22,8 @@
 #define DEFAULT_REC_RATE	96000	/* Default rate of rec devices */
 #define HARDWARE_RATE	96000	/* Internal rate used by the hardware */
 
+extern int sbxfi_type;
+
 static void
 set_interval_timer(sbxfi_devc_t *devc, int msecs)
 {
@@ -813,7 +815,35 @@ oss_sbxfi_attach (oss_device_t * osdev)
   devc->wSubsystemID = subdevice;
   devc->wChipRevision = revision;
 
-  switch (subdevice)
+  switch (sbxfi_type)
+    {
+    case 1:
+      devc->name = "Sound Blaster X-Fi (SB046x/067x/076x)";
+      devc->hw_family = HW_ORIG;
+      break;
+
+    case 2:
+      devc->name = "Sound Blaster X-Fi (SB073x)";
+      devc->hw_family = HW_073x;
+      break;
+
+    case 3:
+      devc->name = "Sound Blaster X-Fi (SB055x)";
+      devc->hw_family = HW_055x;
+      break;
+
+    case 4:
+      devc->name = "Sound Blaster X-Fi (UAA)";
+      devc->hw_family = HW_UAA;
+      break;
+
+    case 0:
+    default:
+      devc->hw_family = 0;
+      break;
+    }
+
+  if (!devc->hw_family) switch (subdevice)
     {
     case 0x0021:		/* SB0460 */
     case 0x0023:
@@ -851,8 +881,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
 
     case 0x0018:
       devc->name = "Sound Blaster X-Fi (PCI-E)";
-      devc->hw_family = HW_055x;
-      oss_pcie_init (osdev, 0);
+      devc->hw_family = HW_055x_PCIE;
       break;
 
     default:
@@ -861,7 +890,14 @@ oss_sbxfi_attach (oss_device_t * osdev)
 	  devc->name = "Sound Blaster X-Fi (UAA)";
 	  devc->hw_family = HW_UAA;
 	}
+      else
+	{
+	  /* Default guess. User can modify sbxfi_type to try the others */
+	  devc->hw_family = HW_ORIG;
+	}
     }
+
+  if (subdevice == 0x0018) oss_pcie_init (osdev, 0);
 
   oss_register_device (osdev, devc->name);
 

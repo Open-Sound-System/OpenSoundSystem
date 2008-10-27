@@ -103,6 +103,7 @@ typedef struct
 #define HW_073x		0x0002
 #define HW_055x		0x0004
 #define HW_UAA		0x0008
+#define HW_055x_PCIE	0x0010
 
   unsigned int interrupt_count;
 

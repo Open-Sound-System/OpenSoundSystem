@@ -150,7 +150,6 @@ CTSTATUS
 InitHardware (sbxfi_devc_t * devc)
 {
   unsigned int gctlorg;
-  unsigned short wSSID;
   unsigned int dwIterCount, dwData;
 
 
@@ -187,32 +186,23 @@ InitHardware (sbxfi_devc_t * devc)
   osDelayms (40000);
   dwData = HwRead20K1 (devc, PLLCTL);
 
-  // detect the card ID and configure GPIO accordingly.
-  wSSID = devc->wSubsystemID;
-
-  if ((wSSID == 0x0022) || (wSSID == 0x002F))
+  // configure GPIO per the card's family.
+  switch (devc->hw_family)
     {
-      // SB055x cards
+    case HW_055x:
       HwWrite20K1 (devc, GPIOCTL, 0x13fe);
-    }
-  else if ((wSSID == 0x0029) || (wSSID == 0x0031))
-    {
-      // SB073x cards
+      break;
+    case HW_073x:
       HwWrite20K1 (devc, GPIOCTL, 0x00e6);
-    }
-  else if ((wSSID & 0xf000) == 0x6000)
-    {
-      // Vista compatible cards
+      break;
+    case HW_055x_PCIE:
+    case HW_UAA:
       HwWrite20K1 (devc, GPIOCTL, 0x00c2);
-    }
-  else if ((wSSID == 0x0018))
-    {
-      // PCI-E model
-      HwWrite20K1 (devc, GPIOCTL, 0x00c2);
-    }
-  else
-    {
+      break;
+    case HW_ORIG:
+    default:
       HwWrite20K1 (devc, GPIOCTL, 0x01e6);
+      break;
     }
 
   return CTSTATUS_SUCCESS;
@@ -1220,7 +1210,7 @@ StopRecordSRC (sbxfi_devc_t * devc, sbxfi_portc_t * portc)
   HwWrite20K1 (devc, SRCCTL(srcch2), dwData);
 
 #ifdef INTERNAL_LOOPBACK
-  StopPlay (devc);
+  StopPlay (devc, portc);
 #endif
 
   // Disable SRC inputs from Audio Ring
