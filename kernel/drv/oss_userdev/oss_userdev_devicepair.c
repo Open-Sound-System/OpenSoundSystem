@@ -1,6 +1,9 @@
 /*
  * Purpose: Client/server audio device pair for oss_userdev
  *
+ * This file implements the actual client/server device pair. There will be
+ * separate oss_userdev instance for each process that has opened the
+ * client side.
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 
@@ -158,6 +161,7 @@ userdev_server_set_rate (int dev, int arg)
 {
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
+  adev_t *client_adev = audio_engines[portc->peer->audio_dev];
 
   if (arg == 0)
     return devc->rate;
@@ -174,6 +178,9 @@ userdev_server_set_rate (int dev, int arg)
   arg = (arg / 100) * 100;
 
   devc->rate = arg;
+
+  client_adev->min_rate = arg;
+  client_adev->max_rate = arg;
 
   setup_sample_format (portc);
 
@@ -194,6 +201,7 @@ userdev_server_set_channels (int dev, short arg)
 {
   userdev_portc_t *portc = audio_engines[dev]->portc;
   userdev_devc_t *devc = audio_engines[dev]->devc;
+  adev_t *client_adev = audio_engines[portc->peer->audio_dev];
 
   if (arg == 0)
     return devc->channels;
@@ -207,6 +215,7 @@ userdev_server_set_channels (int dev, short arg)
     arg = MAX_CHANNELS;
 
   devc->channels = arg;
+  client_adev->min_channels=client_adev->max_channels=arg;
 
   setup_sample_format (portc);
 
@@ -227,6 +236,7 @@ userdev_server_set_format (int dev, unsigned int arg)
 {
   userdev_devc_t *devc = audio_engines[dev]->devc;
   userdev_portc_t *portc = audio_engines[dev]->portc;
+  adev_t *client_adev = audio_engines[portc->peer->audio_dev];
 
   if (arg == 0)
     return devc->fmt;
@@ -251,6 +261,9 @@ userdev_server_set_format (int dev, unsigned int arg)
     }
 
   devc->fmt = arg;
+
+  client_adev->oformat_mask = arg;
+  client_adev->iformat_mask = arg;
 
   setup_sample_format (portc);
 
@@ -904,7 +917,7 @@ userdev_create_mixer(userdev_devc_t * devc)
   if ((devc->mixer_dev = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
 				     devc->osdev,
 				     devc->osdev,
-				     "Pseudo mixer",
+				     "OSS userdev mixer",
 				     &userdev_mixer_driver,
 				     sizeof (mixer_driver_t), devc)) < 0)
     {
