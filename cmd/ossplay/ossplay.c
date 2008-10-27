@@ -258,8 +258,9 @@ format2bits (int format)
 void
 open_device (dspdev_t * dsp)
 {
-  dsp->fd = -1; dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
   char *devdsp;
+
+  dsp->fd = -1; dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
 
   if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
      devdsp = "/dev/dsp";

@@ -1001,8 +1001,8 @@ expand_names (int dev)
 
       if (dupes > 0)		/* Need to fix duplicates */
 	{
-	  int count = 1;
-	  char *s;
+	  int count = 1, len;
+	  char tmp2[32];
 
 	  for (j = i; j < n; j++)
 	    {
@@ -1014,8 +1014,12 @@ expand_names (int dev)
 	      if (thisrec2->type != MIXT_GROUP)
 		if (strcmp (thisrec2->extname, tmp) == 0)
 		  {
-		    s = thisrec2->extname + strlen (thisrec2->extname);
-		    sprintf (s, "%d", count++);
+		    sprintf (tmp2, "%d", count++);
+		    tmp2[31] = '\0';
+		    len = strlen (thisrec2->extname);
+		    if (len >= sizeof (thisrec2->extname) - strlen (tmp2))
+		      len = sizeof (thisrec2->extname) - strlen (tmp2) - 1;
+		    strcpy (thisrec2->extname + len, tmp2);
 		  }
 	    }
 	}

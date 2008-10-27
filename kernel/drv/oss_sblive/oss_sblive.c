@@ -2742,7 +2742,8 @@ init_emu10k1 (sblive_devc * devc)
   /* Switch the shared SPDIF/OUT3 to DIGITAL or ANALOG mode */
   /* depending on whether the port is SPDIF or analog */
 
-  if ((devc->feature_mask & SB_AUDIGY) && !(devc->feature_mask & SB_AUDIGY2VAL))
+  if ((devc->feature_mask == SB_AUDIGY) ||
+      ((devc->feature_mask & SB_AUDIGY2) && (audigy_digital_din == 0)))
     {
       reg = INL (devc->osdev, devc->base + 0x18) & ~A_IOCFG_GPOUT0;
       val = (audigy_digital_din) ? 0x4 : 0;
