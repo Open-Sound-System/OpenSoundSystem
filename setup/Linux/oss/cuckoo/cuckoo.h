@@ -29,13 +29,17 @@
  */
 
 #define _KERNEL
-#include "/usr/lib/oss/include/sys/soundcard.h"
+#include <include/sys/soundcard.h>
 
 #include <linux/version.h>
 
 #define _LOOSE_KERNEL_NAMES
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,18)
 #include <linux/config.h>
+#else
+#include <linux/autoconf.h>
+#endif
 
 #if !defined(__SMP__) && defined(CONFIG_SMP)
 #define __SMP__
@@ -84,13 +88,13 @@ struct _oss_mutex_t
 
 #define audio_devs dummy_audio_devs
 
-#include "/usr/lib/oss/include/sys/ossddk/oss_exports.h"
-#include "/usr/lib/oss/build/wrap.h"
-#include "/usr/lib/oss/include/sys/ossddk/ossddk.h"
+#include <include/sys/ossddk/oss_exports.h>
+#include <build/wrap.h>
+#include <include/sys/ossddk/ossddk.h>
 
 typedef struct oss_wait_queue oss_wait_queue_t;	/* This must match oss_config.h */
 
-#include "/usr/lib/oss/include/sys/ossddk/ossddk.h"
+#include <include/sys/ossddk/ossddk.h>
 
 #include <sound/driver.h>
 #include <sound/core.h>
@@ -107,8 +111,8 @@ typedef int sound_os_info;
 
 #define WR_BUF_CONST	const
 
-#include "/usr/lib/oss/include/internals/audio_core.h"
-#include "/usr/lib/oss/include/internals/mixer_core.h"
+#include <include/internals/audio_core.h>
+#include <include/internals/mixer_core.h>
 
 typedef struct _snd_cuckoo cuckoo_t, chip_t;
 

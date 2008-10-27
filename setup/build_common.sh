@@ -1,6 +1,7 @@
 #!/bin/sh
 
 SRCDIR=$1
+OSSLIBDIR=$2
 
 if test ! -d $SRCDIR
 then
@@ -15,8 +16,8 @@ then
 fi
 
 # Copy common files to the prototype tree
-(cd $SRCDIR;tar cf - oss) | (cd prototype/usr/lib;tar xf -)
-rm -f prototype/usr/lib/oss/.nomake
+cp -pRf $SRCDIR/* prototype/$OSSLIBDIR/
+rm -f prototype/$OSSLIBDIR/.nomake
 
 chmod 700 prototype/usr/sbin/*
 

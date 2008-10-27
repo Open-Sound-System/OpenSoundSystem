@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. ./.directories
+
 VERSION=`sh showversion.sh`
 VERSION=${VERSION#v}
 RELEASE=`cat buildid.dat`
@@ -64,7 +66,7 @@ rm -rf /tmp/prototype $DEBNAME.deb
 
 cp -pRf prototype /tmp
 cp setup/Linux/preinst setup/Linux/postinst setup/Linux/prerm setup/Linux/postrm control/
-if test -e prototype/usr/lib/oss/lib/libsalsa.so*
+if test -e prototype/$OSSLIBDIR/lib/libsalsa.so*
 then
   cp setup/Linux/shlibs control/
 fi

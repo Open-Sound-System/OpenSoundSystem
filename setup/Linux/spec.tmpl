@@ -19,14 +19,14 @@ order a license key from http://www.opensound.com/order.html
 %pre
 %post
 echo "Building OSS Modules for Linux-`uname -p` `uname -r`"
-cd /usr/lib/oss/build
+cd OSSLIBDIR/build
 sh install.sh
 echo "Starting Open Sound System"
 /usr/sbin/soundoff >> /dev/null 2>&1
 /usr/sbin/soundon
 exit 0
 %preun
-sh /usr/lib/oss/scripts/restore_drv.sh
+sh OSSLIBDIR/scripts/restore_drv.sh
 %postun
-rm -rf /usr/lib/oss/*
+rm -rf OSSLIBDIR/*
 rm -f /usr/lib/libflashsupport.so

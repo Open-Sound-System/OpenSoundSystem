@@ -2,6 +2,7 @@
 
 CONFIGURE=YES
 COPY_OPTIONS=
+OSSLIBDIR="/usr/lib/oss"
 
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
@@ -132,8 +133,7 @@ done
 DIR=`pwd`
 SRCDIR=`dirname $0`
 SRCDIR=`cd $SRCDIR && pwd`
-export SRCDIR
-export COPY_OPTIONS
+export SRCDIR COPY_OPTIONS OSSLIBDIR
 
 if test "$DIR " = " " || test "$DIR " = ". "
 then

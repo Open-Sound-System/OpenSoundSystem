@@ -71,6 +71,7 @@ fi
 
 echo BLDDIR=$BLDDIR > .directories
 echo SRCDIR=$SRCDIR >> .directories
+echo OSSLIBDIR=$OSSLIBDIR >> .directories
 
 cc -o dirsetup $SRCDIR/setup/dirsetup.c
 

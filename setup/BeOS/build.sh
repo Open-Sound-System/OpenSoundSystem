@@ -12,7 +12,7 @@ rm -rf prototype
 
 mkdir prototype
 #mkdir prototype/etc
-#echo OSSLIBDIR=/usr/lib/oss > prototype/etc/oss.conf
+#echo "OSSLIBDIR=$OSSLIBDIR" > prototype/etc/oss.conf
 
 TXT2MAN=$SRCDIR/setup/txt2man
 
@@ -49,16 +49,16 @@ mkdir -p prototype/home/Desktop
 
 #cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 
-#cp .version prototype/usr/lib/oss/version.dat
+#cp .version prototype/$OSSLIBDIR/version.dat
 
-#cp -R $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
-#cp $SRCDIR/kernel/framework/include/midiparser.h prototype/usr/lib/oss/include/
+#cp -R $SRCDIR/include/* prototype/$OSSLIBDIR/include/sys/
+#cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp -f target/bin/* prototype/home/config/bin
 cp -f target/sbin/* prototype/home/config/bin
 
-#cp -R $SRCDIR/oss prototype/usr/lib
+#cp -R $SRCDIR/oss/* prototype/$OSSLIBDIR
 
 # generate driver_settings file from the .params on stdin.
 function gensettings () {
@@ -80,7 +80,7 @@ function setvermime () {
 	mimeset -f "$1"
 }
 
-#ld -r -o prototype/usr/lib/oss/modules/osscore/Driver.o target/objects/*.o $SRCDIR/setup/SCO_SV/*.o $FPSUPPORT
+#ld -r -o prototype/$OSSLIBDIR/modules/osscore/Driver.o target/objects/*.o $SRCDIR/setup/SCO_SV/*.o $FPSUPPORT
 
 #core=prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss/${DRVPREFIX}core
 #must match internal module name...
@@ -123,7 +123,7 @@ echo "make sure the opensound media addon is installed and up to date!"
 echo "(cd lib/opensound.media_addon && make)"
 echo "The addon is distributed as part of Haiku (www.haiku-os.org) source"
 
-#grep '^int' $SRCDIR/kernel/framework/osscore/options.c > prototype/usr/lib/oss/modules/osscore/Space.c
+#grep '^int' $SRCDIR/kernel/framework/osscore/options.c > prototype/$OSSLIBDIR/modules/osscore/Space.c
 
 #sed 's/.*	//' <  devlist.txt|sort|uniq >$SRCDIR/devlists/OSR6
 if test -d kernel/nonfree
@@ -137,9 +137,9 @@ exit 0
 for n in target/modules/*.o
 do
 	N=`basename $n .o`
-	#mkdir prototype/usr/lib/oss/modules/$N
-	#cp target/build/$N/* prototype/usr/lib/oss/modules/$N
-	#ld -r -o prototype/usr/lib/oss/modules/$N/Driver.o $n
+	#mkdir prototype/$OSSLIBDIR/modules/$N
+	#cp target/build/$N/* prototype/$OSSLIBDIR/modules/$N
+	#ld -r -o prototype/$OSSLIBDIR/modules/$N/Driver.o $n
 
 	#drv=prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin/${DRVPREFIX}$N
 	#gcc -o $drv $n -nostdlib /boot/develop/lib/x86/_KERNEL_ || exit 1
@@ -154,19 +154,19 @@ do
 # Now copy the man pages
 #	if test -f $SRCDIR/kernel/drv/$N/$N.man
 #        then
-#	     sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
+#	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
 #             $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 #	fi
 
 #        if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 #	then
-#	     sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
+#	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
 #	     $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 #	fi
 
 done
 
-#cp devlist.txt prototype/usr/lib/oss/etc/devices.list
+#cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 
 
@@ -209,7 +209,7 @@ done
 #	cc -o prototype/usr/sbin/osslic -Isetup -Ikernel/nonfree/include -Ikernel/framework/include -Iinclude -Ikernel/OS/SCO_SV -I$SRCDIR $SRCDIR/4front-private/osslic.c
 #	strip prototype/usr/sbin/osslic
 #	
-#	prototype/usr/sbin/osslic -q -u -3prototype/usr/lib/oss/modules/osscore/Driver.o
+#	prototype/usr/sbin/osslic -q -u -3prototype/$OSSLIBDIR/modules/osscore/Driver.o
 #	
 #fi
 
@@ -222,9 +222,9 @@ done
 #chmod 700 prototype/usr/sbin/*
 #chmod 755 prototype/usr/bin/*
 
-#cp setup/SCO_SV/S89oss prototype/usr/lib/oss/etc
-#chmod 744 prototype/usr/lib/oss/etc/S89oss
+#cp setup/SCO_SV/S89oss prototype/$OSSLIBDIR/etc
+#chmod 744 prototype/$OSSLIBDIR/etc/S89oss
 
-#exec sh $SRCDIR/setup/build_common.sh $SRCDIR
+#exec sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
 
 exit 0

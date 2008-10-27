@@ -19,23 +19,21 @@ mkdir prototype/etc/rc.d
 mkdir prototype/usr
 mkdir prototype/usr/bin
 mkdir prototype/usr/sbin
-mkdir prototype/usr/lib
-mkdir prototype/usr/lib/oss
-mkdir prototype/usr/lib/oss/etc
-mkdir prototype/usr/lib/oss/lib
-mkdir prototype/usr/lib/oss/include
-mkdir prototype/usr/lib/oss/include/sys
-mkdir prototype/usr/lib/oss/logs
-mkdir prototype/usr/lib/oss/modules
-mkdir prototype/usr/lib/oss/objects
+mkdir -p prototype/$OSSLIBDIR
+mkdir prototype/$OSSLIBDIR/etc
+mkdir prototype/$OSSLIBDIR/lib
+mkdir prototype/$OSSLIBDIR/include
+mkdir prototype/$OSSLIBDIR/include/sys
+mkdir prototype/$OSSLIBDIR/modules
+mkdir prototype/$OSSLIBDIR/objects
 mkdir prototype/usr/share
 mkdir prototype/usr/share/man
 mkdir prototype/usr/share/man/man1
 mkdir prototype/usr/share/man/man7
 mkdir prototype/usr/share/man/man8
-mkdir prototype/usr/lib/oss/conf
+mkdir prototype/$OSSLIBDIR/conf
 
-echo "OSSLIBDIR=/usr/lib/oss" > prototype/etc/oss.conf
+echo "OSSLIBDIR=$OSSLIBDIR" > prototype/etc/oss.conf
 
 # Regenerating the config file templates
 rm -f /tmp/confgen
@@ -45,7 +43,7 @@ then
         exit 1
 fi
 
-if ! /tmp/confgen prototype/usr/lib/oss/conf \\/usr\\/lib\\/oss\\/conf kernel/drv/* kernel/nonfree/drv/*
+if ! /tmp/confgen prototype/$OSSLIBDIR/conf $OSSLIBDIR/conf kernel/drv/* kernel/nonfree/drv/*
 then
         echo Running confgen failed
         exit 1
@@ -53,15 +51,15 @@ fi
 
 rm -f /tmp/confgen
 
-cp -r $SRCDIR/setup/FreeBSD/oss prototype/usr/lib/
-cp $SRCDIR/kernel/OS/FreeBSD/wrapper/bsddefs.h prototype/usr/lib/oss/build/
-cp $SRCDIR/kernel/framework/include/ossddk/oss_exports.h prototype/usr/lib/oss/build/
+cp -r $SRCDIR/setup/FreeBSD/oss/* prototype/$OSSLIBDIR/
+cp $SRCDIR/kernel/OS/FreeBSD/wrapper/bsddefs.h prototype/$OSSLIBDIR/build/
+cp $SRCDIR/kernel/framework/include/ossddk/oss_exports.h prototype/$OSSLIBDIR/build/
 
-cp $SRCDIR/include/soundcard.h prototype/usr/lib/oss/include/sys/
-cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/usr/lib/oss/include/
-cp kernel/framework/include/timestamp.h prototype/usr/lib/oss/build/
+cp $SRCDIR/include/soundcard.h prototype/$OSSLIBDIR/include/sys/
+cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/$OSSLIBDIR/include/
+cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/build/
 
-ld -r -o prototype/usr/lib/oss/build/osscore.lib target/objects/*.o
+ld -r -o prototype/$OSSLIBDIR/build/osscore.lib target/objects/*.o
 
 rm -f devlist.txt
 
@@ -73,15 +71,15 @@ echo Check devices for $N
 done
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
-cp target/modules/*.o prototype/usr/lib/oss/objects
-cp target/build/*.c prototype/usr/lib/oss/build/
+cp target/modules/*.o prototype/$OSSLIBDIR/objects
+cp target/build/*.c prototype/$OSSLIBDIR/build/
 cp target/bin/* prototype/usr/bin/
 cp target/sbin/* prototype/usr/sbin/
 cp $SRCDIR/setup/FreeBSD/sbin/* prototype/usr/sbin/
 cp $SRCDIR/setup/FreeBSD/etc/rc.d/oss prototype/etc/rc.d
-cp lib/libOSSlib/libOSSlib.so prototype/usr/lib/oss/lib
+cp lib/libOSSlib/libOSSlib.so prototype/$OSSLIBDIR/lib
 
-cp devlist.txt prototype/usr/lib/oss/etc/devices.list
+cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 if test -d kernel/nonfree
 then
@@ -120,7 +118,7 @@ echo done ossdetect
 for n in target/modules/*.o
 do
 	N=`basename $n .o`
-	ld -r -o prototype/usr/lib/oss/$MODULES/$N.o $n
+	ld -r -o prototype/$OSSLIBDIR/$MODULES/$N.o $n
 	echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 
@@ -128,22 +126,22 @@ do
 
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
 	then
-	  sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
+	  sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
 	  $TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 	else
 		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 		then
-	  		sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
+	  		sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
 	  		$TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
 done
 
-sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
+sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
 $TXT2MAN -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
 rm -f /tmp/ossman.txt
 
-cp .version prototype/usr/lib/oss/version.dat
+cp .version prototype/$OSSLIBDIR/version.dat
 
 # Licensing stuff
 if test -f $SRCDIR/4front-private/osslic.c
@@ -157,7 +155,7 @@ then
            BITS=6 # Use 64 bit ELF format
         fi
 
-	prototype/usr/sbin/osslic -q -u -$BITS./prototype/usr/lib/oss/build/osscore.lib
+	prototype/usr/sbin/osslic -q -u -$BITS./prototype/$OSSLIBDIR/build/osscore.lib
 	
 fi
 
@@ -169,8 +167,8 @@ fi
 
 chmod 700 prototype/usr/sbin/*
 chmod 755 prototype/usr/bin/*
-chmod 700 prototype/usr/lib/oss
+chmod 700 prototype/$OSSLIBDIR
 
-(cd prototype;ls usr/sbin/* usr/bin/* etc/* usr/share/man/man*/* > usr/lib/oss/sysfiles.list)
+(cd prototype;ls usr/sbin/* usr/bin/* etc/* usr/share/man/man*/*) > prototype/$OSSLIBDIR/sysfiles.list
 
 exit 0

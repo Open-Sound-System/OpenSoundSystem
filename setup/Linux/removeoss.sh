@@ -5,20 +5,27 @@ then
   exit 0
 fi
 
+if test -f /etc/oss.conf
+then
+  . /etc/oss.conf
+else
+  OSSLIBDIR=/usr/lib/oss
+fi
+
 echo "Uninstalling OSS...."
 echo "Running soundoff...."
 /usr/sbin/soundoff
 echo "Restoring previously install sound drivers..."
-sh /usr/lib/oss/scripts/restore_drv.sh
+sh "$OSSLIBDIR"/scripts/restore_drv.sh
 echo "Removing OSS Files in MANIFEST"
 cd /
-for i in `cat /usr/lib/oss/MANIFEST`
+for i in `cat "$OSSLIBDIR"/MANIFEST`
 do
 # echo "Removing file $i"
 rm -f $i
 done
 
-echo "Removing /usr/lib/oss directory"
-rm -rf /usr/lib/oss
+echo "Removing $OSSLIBDIR directory"
+rm -rf "$OSSLIBDIR"
 
 echo "OSS Uninstalled. However you may need to reboot the system."

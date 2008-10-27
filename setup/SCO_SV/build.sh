@@ -6,7 +6,7 @@ rm -rf prototype
 
 mkdir prototype
 mkdir prototype/etc
-echo OSSLIBDIR=/usr/lib/oss > prototype/etc/oss.conf
+echo "OSSLIBDIR=$OSSLIBDIR" > prototype/etc/oss.conf
 
 TXT2MAN=$SRCDIR/setup/txt2man
 
@@ -33,27 +33,27 @@ mkdir prototype/usr/man/man1
 mkdir prototype/usr/man/man7
 mkdir prototype/usr/man/man8
 mkdir prototype/usr/sbin
-mkdir prototype/usr/lib/oss
-mkdir prototype/usr/lib/oss/etc
-echo "autosave_mixer yes" > prototype/usr/lib/oss/etc/userdefs
-mkdir prototype/usr/lib/oss/lib
-mkdir prototype/usr/lib/oss/logs
-mkdir prototype/usr/lib/oss/modules
-mkdir prototype/usr/lib/oss/modules/osscore
-mkdir prototype/usr/lib/oss/include
-mkdir prototype/usr/lib/oss/include/sys
-mkdir prototype/usr/lib/oss/conf
+mkdir prototype/$OSSLIBDIR
+mkdir prototype/$OSSLIBDIR/etc
+echo "autosave_mixer yes" > prototype/$OSSLIBDIR/etc/userdefs
+mkdir prototype/$OSSLIBDIR/lib
+mkdir prototype/$OSSLIBDIR/logs
+mkdir prototype/$OSSLIBDIR/modules
+mkdir prototype/$OSSLIBDIR/modules/osscore
+mkdir prototype/$OSSLIBDIR/include
+mkdir prototype/$OSSLIBDIR/include/sys
+mkdir prototype/$OSSLIBDIR/conf
 mkdir prototype/usr/include
 mkdir prototype/usr/include/sys
 
-chmod 700 prototype/usr/lib/oss/modules
+chmod 700 prototype/$OSSLIBDIR/modules
 
 cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 
-cp .version prototype/usr/lib/oss/version.dat
+cp .version prototype/$OSSLIBDIR/version.dat
 
-cp -R $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
-cp $SRCDIR/kernel/framework/include/midiparser.h prototype/usr/lib/oss/include/
+cp -R $SRCDIR/include/* prototype/$OSSLIBDIR/include/sys/
+cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
 cp -f target/bin/* prototype/usr/bin
@@ -68,29 +68,29 @@ then
   FPSUPPORT=fpsupport.o
 fi
 
-ld -r -o prototype/usr/lib/oss/modules/osscore/Driver.o target/objects/*.o $SRCDIR/setup/SCO_SV/*.o $FPSUPPORT
+ld -r -o prototype/$OSSLIBDIR/modules/osscore/Driver.o target/objects/*.o $SRCDIR/setup/SCO_SV/*.o $FPSUPPORT
 
-grep '^int' $SRCDIR/kernel/framework/osscore/oss_core_options.c > prototype/usr/lib/oss/modules/osscore/Space.c
+grep '^int' $SRCDIR/kernel/framework/osscore/oss_core_options.c > prototype/$OSSLIBDIR/modules/osscore/Space.c
 
 rm -f devlist.txt
 
 for n in target/modules/*.o
 do
 	N=`basename $n .o`
-	mkdir prototype/usr/lib/oss/modules/$N
-	cp target/build/$N/* prototype/usr/lib/oss/modules/$N
-	ld -r -o prototype/usr/lib/oss/modules/$N/Driver.o $n
+	mkdir prototype/$OSSLIBDIR/modules/$N
+	cp target/build/$N/* prototype/$OSSLIBDIR/modules/$N
+	ld -r -o prototype/$OSSLIBDIR/modules/$N/Driver.o $n
 
 # Now copy the man pages
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
         then
-	     sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
+	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
              $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 	fi
 
         if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 	then
-	     sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
+	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
 	     $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 	fi
 
@@ -98,18 +98,18 @@ echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 done
 
-sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.tmp
+sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.tmp
 $TXT2MAN -t "osscore" -v "Devices" -s 7 > prototype/usr/share/man/man7/osscore.7
 rm -f /tmp/ossman.tmp
 
-if cp lib/libOSSlib/libOSSlib.a prototype/usr/lib/oss/lib
+if cp lib/libOSSlib/libOSSlib.a prototype/$OSSLIBDIR/lib
 then
   ok=1
 else
   exit 1
 fi
 
-cp devlist.txt prototype/usr/lib/oss/etc/devices.list
+cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 if test -d kernel/nonfree
 then
@@ -151,7 +151,7 @@ then
 	cc -o prototype/usr/sbin/osslic -Isetup -Ikernel/nonfree/include -Ikernel/framework/include -Iinclude -Ikernel/OS/SCO_SV -I$SRCDIR $SRCDIR/4front-private/osslic.c
 	strip prototype/usr/sbin/osslic
 	
-	prototype/usr/sbin/osslic -q -u -3prototype/usr/lib/oss/modules/osscore/Driver.o
+	prototype/usr/sbin/osslic -q -u -3prototype/$OSSLIBDIR/modules/osscore/Driver.o
 	
 fi
 
@@ -164,7 +164,7 @@ fi
 chmod 700 prototype/usr/sbin/*
 chmod 755 prototype/usr/bin/*
 
-cp setup/SCO_SV/S89oss prototype/usr/lib/oss/etc
-chmod 744 prototype/usr/lib/oss/etc/S89oss
+cp setup/SCO_SV/S89oss prototype/$OSSLIBDIR/etc
+chmod 744 prototype/$OSSLIBDIR/etc/S89oss
 
 exit 0

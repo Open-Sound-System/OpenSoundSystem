@@ -1,4 +1,6 @@
 #!/bin/sh
-if [ -e /tmp/OSS_UPGRADE ]; then echo "Upgrading OSS - will not purge /usr/lib/oss."; else rm -rf /usr/lib/oss/*; fi
+OSSLIBDIR=/usr/lib/oss
+if [ -e /etc/oss.conf ]; then source /etc/oss.conf; fi
+if [ -e /tmp/OSS_UPGRADE ]; then echo "Upgrading OSS - will not purge $OSSLIBDIR."; else rm -rf "$OSSLIBDIR"/*; fi
 rm -f /usr/lib/libflashsupport.so
 if [ -x /usr/bin/update-menus ]; then /usr/bin/update-menus; fi

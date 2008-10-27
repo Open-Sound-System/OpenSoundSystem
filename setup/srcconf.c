@@ -721,6 +721,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   fprintf (f, "MODDIR=$(TOPDIR)/target/modules\n");
   fprintf (f, "BINDIR=$(TOPDIR)/target/bin\n");
   fprintf (f, "SBINDIR=$(TOPDIR)/target/sbin\n");
+  if ((p = getenv("OSSLIBDIR")) != NULL)
+    fprintf (f, "OSSLIBDIR=\"%s\"\n", p);
 
   fprintf (f, "THISOS=%s\n", this_os);
 

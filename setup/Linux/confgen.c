@@ -134,7 +134,7 @@ scan_dir (const char *srcdir, const char *modnam)
     }
 #if 0
   /* copy the man pages */
-  sprintf (syscmd, "sed 's/CONFIGFILEPATH/%s/' < %s/%s.man > /tmp/ossman.man",
+  sprintf (syscmd, "sed 's:CONFIGFILEPATH:%s:g' < %s/%s.man > /tmp/ossman.man",
 	   confpath, srcdir, module);
   printf ("%s\n", syscmd);
   unlink ("/tmp/ossman.man");

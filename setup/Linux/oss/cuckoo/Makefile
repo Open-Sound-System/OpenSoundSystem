@@ -1,3 +1,4 @@
+ccflags-y += -I/usr/lib/oss
 
 ifneq ($(KERNELRELEASE),)
 

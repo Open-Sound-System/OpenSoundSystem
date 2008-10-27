@@ -6,9 +6,8 @@ rm -rf prototype
 
 mkdir prototype
 mkdir prototype/etc
-echo OSSLIBDIR=/usr/lib/oss > prototype/etc/oss.conf
+echo "OSSLIBDIR=$OSSLIBDIR" > prototype/etc/oss.conf
 mkdir prototype/usr
-mkdir prototype/usr/lib
 mkdir prototype/usr/bin
 mkdir prototype/usr/share
 mkdir prototype/usr/share/man
@@ -16,24 +15,24 @@ mkdir prototype/usr/share/man/man1
 mkdir prototype/usr/share/man/man7
 mkdir prototype/usr/share/man/man8
 mkdir prototype/usr/sbin
-mkdir prototype/usr/lib/oss
-mkdir prototype/usr/lib/oss/etc
-mkdir prototype/usr/lib/oss/save
-mkdir prototype/usr/lib/oss/conf.tmpl
-mkdir prototype/usr/lib/oss/lib
-mkdir prototype/usr/lib/oss/modules.regparm
-mkdir prototype/usr/lib/oss/modules.noregparm
-mkdir prototype/usr/lib/oss/objects.regparm
-mkdir prototype/usr/lib/oss/objects.noregparm
-mkdir prototype/usr/lib/oss/include
-mkdir prototype/usr/lib/oss/include/sys
-mkdir prototype/usr/lib/oss/include/internals
-mkdir prototype/usr/lib/oss/build
+mkdir -p prototype/$OSSLIBDIR
+mkdir prototype/$OSSLIBDIR/etc
+mkdir prototype/$OSSLIBDIR/save
+mkdir prototype/$OSSLIBDIR/conf.tmpl
+mkdir prototype/$OSSLIBDIR/lib
+mkdir prototype/$OSSLIBDIR/modules.regparm
+mkdir prototype/$OSSLIBDIR/modules.noregparm
+mkdir prototype/$OSSLIBDIR/objects.regparm
+mkdir prototype/$OSSLIBDIR/objects.noregparm
+mkdir prototype/$OSSLIBDIR/include
+mkdir prototype/$OSSLIBDIR/include/sys
+mkdir prototype/$OSSLIBDIR/include/internals
+mkdir prototype/$OSSLIBDIR/build
 
-chmod 700 prototype/usr/lib/oss/modules.*
-chmod 700 prototype/usr/lib/oss/objects.*
-chmod 700 prototype/usr/lib/oss/build
-chmod 700 prototype/usr/lib/oss/save
+chmod 700 prototype/$OSSLIBDIR/modules.*
+chmod 700 prototype/$OSSLIBDIR/objects.*
+chmod 700 prototype/$OSSLIBDIR/build
+chmod 700 prototype/$OSSLIBDIR/save
 
 if test "`cat regparm` " = "1 "
 then
@@ -44,7 +43,7 @@ else
   OBJECTS=objects.noregparm
 fi
 
-cp .version prototype/usr/lib/oss/version.dat
+cp .version prototype/$OSSLIBDIR/version.dat
 
 if ! test -f regparm
 then
@@ -52,7 +51,7 @@ then
   exit 1
 fi
 
-cp regparm prototype/usr/lib/oss/build
+cp regparm prototype/$OSSLIBDIR/build
 
 # Regenerating the config file templates
 rm -f /tmp/confgen
@@ -62,7 +61,7 @@ then
 	exit 1
 fi
 
-if ! /tmp/confgen prototype/usr/lib/oss/conf.tmpl \\/usr\\/lib\\/oss\\/conf kernel/drv/* kernel/nonfree/drv/*
+if ! /tmp/confgen prototype/$OSSLIBDIR/conf.tmpl $OSSLIBDIR/conf kernel/drv/* kernel/nonfree/drv/*
 then
 	echo Running confgen failed
 	exit 1
@@ -70,15 +69,15 @@ fi
 
 rm -f /tmp/confgen
 
-cp -a $SRCDIR/include/* prototype/usr/lib/oss/include/sys/
-cp $SRCDIR/kernel/framework/include/midiparser.h prototype/usr/lib/oss/include/
-cp -f $SRCDIR/kernel/OS/Linux/wrapper/wrap.h prototype/usr/lib/oss/build/
-cp -f $SRCDIR/kernel/framework/include/udi.h prototype/usr/lib/oss/build/
-cp -a $SRCDIR/kernel/framework/include/*_core.h kernel/framework/include/local_config.h prototype/usr/lib/oss/include/internals
-cp -a $SRCDIR/kernel/framework/include/ossddk prototype/usr/lib/oss/include/sys
-cp kernel/framework/include/timestamp.h prototype/usr/lib/oss/include/internals
+cp -a $SRCDIR/include/* prototype/$OSSLIBDIR/include/sys/
+cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
+cp -f $SRCDIR/kernel/OS/Linux/wrapper/wrap.h prototype/$OSSLIBDIR/build/
+cp -f $SRCDIR/kernel/framework/include/udi.h prototype/$OSSLIBDIR/build/
+cp -a $SRCDIR/kernel/framework/include/*_core.h kernel/framework/include/local_config.h prototype/$OSSLIBDIR/include/internals
+cp -a $SRCDIR/kernel/framework/include/ossddk prototype/$OSSLIBDIR/include/sys
+cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/include/internals
 
-cat > prototype/usr/lib/oss/include/internals/WARNING.txt << EOF
+cat > prototype/$OSSLIBDIR/include/internals/WARNING.txt << EOF
 Caution: All header files included in this directory are there only because
          some parts of OSS may need to be re-compiled. It is not safe to use
          these files for any purposes because they will change between OSS
@@ -86,14 +85,14 @@ Caution: All header files included in this directory are there only because
 EOF
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
-cp -f target/build/* prototype/usr/lib/oss/build/
+cp -f target/build/* prototype/$OSSLIBDIR/build/
 cp -f target/bin/* prototype/usr/bin
 cp -f target/sbin/* prototype/usr/sbin
 
-cp -a $SRCDIR/setup/Linux/oss prototype/usr/lib
+cp -a $SRCDIR/setup/Linux/oss/* prototype/$OSSLIBDIR/
 cp -a $SRCDIR/setup/Linux/sbin prototype/usr/
 
-ld -r -o prototype/usr/lib/oss/$OBJECTS/osscore.o target/objects/*.o
+ld -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
 
 rm -f devlist.txt devices.list
 
@@ -105,7 +104,7 @@ done
 for n in target/modules/*.o
 do
 	N=`basename $n .o`
-	ld -r -o prototype/usr/lib/oss/$MODULES/$N.o $n
+	ld -r -o prototype/$OSSLIBDIR/$MODULES/$N.o $n
 	echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 
@@ -113,30 +112,30 @@ do
 
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
 	then
-	  sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
+	  sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
 	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 	else
 		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 		then
-	  		sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
+	  		sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
 	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
 done
 
-sed 's/CONFIGFILEPATH/\/usr\/lib\/oss\/conf/' < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
+sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
 $SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
 rm -f /tmp/ossman.txt
 
 # Link the optional NOREGPARM modules
 if test -d noregparm
 then
-   ld -r -o prototype/usr/lib/oss/objects.noregparm/osscore.o noregparm/target/objects/*.o
+   ld -r -o prototype/$OSSLIBDIR/objects.noregparm/osscore.o noregparm/target/objects/*.o
 
    for n in noregparm/target/modules/*.o
    do
 	N=`basename $n .o`
-	ld -r -o prototype/usr/lib/oss/modules.noregparm/$N.o $n
+	ld -r -o prototype/$OSSLIBDIR/modules.noregparm/$N.o $n
    done
 fi
 
@@ -153,12 +152,12 @@ do
 	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $n |gzip -9 > prototype/usr/share/man/man1/$N.1.gz
 done
 
-if ! cp lib/libOSSlib/libOSSlib.so lib/libsalsa/.libs/libsalsa.so.2.0.0 prototype/usr/lib/oss/lib
+if ! cp lib/libOSSlib/libOSSlib.so lib/libsalsa/.libs/libsalsa.so.2.0.0 prototype/$OSSLIBDIR/lib
 then
   echo Warning: No libsalsa library compiled
 fi
 
-cp devlist.txt prototype/usr/lib/oss/etc/devices.list
+cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 if test -d kernel/nonfree
 then
@@ -187,7 +186,7 @@ rm -f prototype/usr/share/man/man8/ossdetect.8
 $SRCDIR/setup/txt2man -t "ossdetect" -v "User Commands" -s 8 os_cmd/Linux/ossdetect/ossdetect.man|gzip -9 > prototype/usr/share/man/man8/ossdetect.8.gz
 echo done ossdetect
 
-cp -f $SRCDIR/oss/lib/flashsupport.c prototype/usr/lib/oss/lib
+cp -f $SRCDIR/oss/lib/flashsupport.c prototype/$OSSLIBDIR/lib
 
 # Licensing stuff
 if test -f $SRCDIR/4front-private/osslic.c
@@ -200,8 +199,8 @@ then
 	then
 	   BITS=6 # Use 64 bit ELF format
 	fi
-	prototype/usr/sbin/osslic -q -u -$BITS./prototype/usr/lib/oss/objects.regparm/osscore.o
-	prototype/usr/sbin/osslic -q -u -$BITS./prototype/usr/lib/oss/objects.noregparm/osscore.o
+	prototype/usr/sbin/osslic -q -u -$BITS./prototype/$OSSLIBDIR/objects.regparm/osscore.o
+	prototype/usr/sbin/osslic -q -u -$BITS./prototype/$OSSLIBDIR/objects.noregparm/osscore.o
 	
 fi
 
@@ -214,6 +213,6 @@ fi
 chmod 700 prototype/usr/sbin/*
 chmod 755 prototype/usr/bin/*
 
-(cd prototype;ls usr/sbin/* usr/bin/* etc/* usr/share/man/man*/* > usr/lib/oss/sysfiles.list)
+(cd prototype;ls usr/sbin/* usr/bin/* etc/* usr/share/man/man*/*) > prototype/$OSSLIBDIR/sysfiles.list
 
 exit 0

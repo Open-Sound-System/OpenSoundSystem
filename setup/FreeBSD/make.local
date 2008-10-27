@@ -8,4 +8,4 @@ package:	build
 		sh setup/FreeBSD/mkpkg.sh
 
 install:	copy
-		cd /usr/lib/oss/build && sh install.sh
+		cd ${OSSLIBDIR}/build && sh install.sh

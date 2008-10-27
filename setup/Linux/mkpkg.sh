@@ -1,5 +1,7 @@
 #!/bin/bash
 
+. ./.directories
+
 VERSION=`sh showversion.sh`
 RELEASE=`cat buildid.dat`
 ARCH=`uname -i`
@@ -14,7 +16,7 @@ mkdir $RPMNAME
 echo "Version: " $VERSION > spec
 echo "Release: " $RELEASE >> spec
 echo "Name: " $OSSNAME >> spec
-cat setup/Linux/spec.tmpl >> spec
+cat setup/Linux/spec.tmpl | sed "s:OSSLIBDIR:\"$OSSLIBDIR\":g" >> spec
 echo "%files" >> spec
 (cd prototype; find . -type f -print | sed 's/^.//g' > /tmp/filelist)
 cat /tmp/filelist >> spec
