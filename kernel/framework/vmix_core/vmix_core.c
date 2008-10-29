@@ -16,7 +16,7 @@ extern int vmix_loopdevs;	/* Configuration option (osscore.conf) */
 extern int flat_device_model;
 extern int vmix_no_autoattach;
 static vmix_mixer_t *mixer_list = NULL; /* List of all currently installed mixer instances */
-static int instance_num = 0;
+static int num_instances = 0;
 
 static const unsigned char peak_cnv[256] = {
   0, 18, 29, 36, 42, 47, 51, 54, 57, 60, 62, 65, 67, 69, 71, 72,
@@ -2023,7 +2023,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 	    }
 	
 	  memset (mixer, 0, sizeof (*mixer));
-  	  mixer->instance_num = instance_num++;
+  	  mixer->instance_num = num_instances++;
   	  if (mixer->instance_num > 0)
     	     mixer->osdev = osdev_clone (osdev, mixer->instance_num);
      }
@@ -2059,7 +2059,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   mixer->rate = 48000;
   mixer->attach_flags = attach_flags;
 
-  DDB (cmn_err (CE_CONT, "Create instance %d\n", instance_num));
+  DDB (cmn_err (CE_CONT, "Create instance %d\n", num_instances));
   DDB (cmn_err (CE_CONT, "vmix_masterdev=%d\n", masterdev));
   DDB (cmn_err (CE_CONT, "vmix_inputdev=%d\n", inputdev));
   DDB (cmn_err (CE_CONT, "vmix_rate=%d\n", mixer->rate));
@@ -2269,8 +2269,9 @@ void
 vmix_core_uninit (void)
 {
 	vmix_mixer_t *mixer = mixer_list;
+	int n = 0;
 
-  while (mixer != NULL)
+  while (mixer != NULL && n++ < num_instances)
     {
       uninit_vmix_instance(mixer);
       mixer = mixer->next;
