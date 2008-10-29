@@ -828,7 +828,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   if (conf.mode == MD_MODULE)
     {
       fprintf (f, "TARGETS=$(MODDIR)/%s $(MODDIR)/%s.o\n", name, name);
-      fprintf (f, "DEPDIR=\n");
+      fprintf (f, "DEPDIR=$(TMPDIR)\n");
     }
   else if ((conf.mode == MD_USERLAND) && nobjects > 0)
     {
