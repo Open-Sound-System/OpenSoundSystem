@@ -43,7 +43,44 @@ typedef struct
 	unsigned int poll_interval;
 } userdev_create_t;
 
+#define USERDEV_MAX_MIXERS	64
+
+typedef struct
+{
+	char name[16];
+	int parent;
+	int num;	/* Return parameter */
+} userdev_mixgroup_t;
+
+typedef struct
+{
+	char name[16];
+	int parent;
+	int num;	/* Return parameter */
+
+	int type;	/* MIXT_* */
+	int flags;	/* MIXF_* */
+	int index;	/* Index to the values[] array */
+	int maxvalue;
+	int offset;
+	char enum_choises[2048];
+  	unsigned char enum_present[32];	/* Mask of allowed enum values */
+  	int control_no;		/* SOUND_MIXER_VOLUME..SOUND_MIXER_MIDI */
+	int rgbcolor;		/* OSS_RGB_* */
+} userdev_mixctl_t;
+
+typedef struct
+{
+	int values[USERDEV_MAX_MIXERS];
+} userdev_mixvalues_t;
+
 #define USERDEV_CREATE_INSTANCE		__SIOWR('u', 1, userdev_create_t)
 #define USERDEV_GET_CLIENTCOUNT		__SIOR ('u', 2, int)
+
+#define USERDEV_CREATE_MIXGROUP		__SIOWR('u', 3, userdev_mixgroup_t)
+#define USERDEV_CREATE_MIXCTL		__SIOWR('u', 4, userdev_mixctl_t)
+#define USERDEV_GET_MIX_CHANGECOUNT	__SIOWR('u', 5, int)
+#define USERDEV_SET_MIXERS		__SIOWR('u', 6, userdev_mixvalues_t)
+#define USERDEV_GET_MIXERS		__SIOWR('u', 7, userdev_mixvalues_t)
 
 #endif

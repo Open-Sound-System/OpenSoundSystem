@@ -31,6 +31,110 @@ terminator(int sig)
 	exit(0);
 }
 
+static void
+create_mixer_interface(int fd)
+{
+	userdev_mixctl_t ctl;
+	userdev_mixgroup_t grp;
+	int group;
+
+/*
+ * Create a slider on the top level
+ */
+
+	memset(&ctl, 0, sizeof(ctl));
+	strcpy(ctl.name, "volumitaz");
+	ctl.parent	=	0; /* Device root group */
+	ctl.type	= 	MIXT_STEREOSLIDER16;
+	ctl.flags	= 	MIXF_READABLE|MIXF_WRITEABLE;
+	ctl.index	= 	0;	/* Use position 0 of the value array */
+	ctl.maxvalue	= 	100;
+	ctl.offset	= 	0;
+	ctl.rgbcolor	=	OSS_RGB_RED;
+
+	if (ioctl(fd, USERDEV_CREATE_MIXCTL, &ctl)==-1)
+	{
+		perror("USERDEV_CREATE_MIXCTL");
+		return;
+	}
+	
+/*
+ * Create a mixer group under the device root
+ */
+
+	memset(&grp, 0, sizeof(grp));
+
+	strcat(grp.name, "private");
+	grp.parent	=	0;
+	
+	if (ioctl(fd, USERDEV_CREATE_MIXGROUP, &grp)==-1)
+	{
+		perror("USERDEV_CREATE_MIXGROUP");
+		return;
+	}
+
+	group = grp.num;
+
+/*
+ * Create an enumerated control under the "private" group that was created above
+ */
+	memset(&ctl, 0, sizeof(ctl));
+	strcpy(ctl.name, "mode");
+	ctl.parent	=	group; /* See above */
+	ctl.type	= 	MIXT_ENUM;
+	ctl.flags	= 	MIXF_READABLE|MIXF_WRITEABLE;
+	ctl.index	= 	1;	/* Use position 1 of the value array */
+	ctl.maxvalue	= 	4;
+
+	memset (&ctl.enum_present, 0xff, sizeof(ctl.enum_present)); /* Mark all choices active */
+
+	strcpy(ctl.enum_choises, "stall crawl cruise warp");
+
+	if (ioctl(fd, USERDEV_CREATE_MIXCTL, &ctl)==-1)
+	{
+		perror("USERDEV_CREATE_MIXCTL");
+		return;
+	}
+}
+
+static void
+poll_mixer(int fd)
+{
+	static int prev_count=0;
+	int count;
+
+	if (ioctl(fd, USERDEV_GET_MIX_CHANGECOUNT, &count)==-1)
+	{
+		perror("USERDEV_GET_MIX_CHANGECOUNT");
+		return;
+	}
+
+	if (count > prev_count) /* Something has changed */
+	{
+		userdev_mixvalues_t rec;
+		int i;
+
+		if (ioctl(fd, USERDEV_GET_MIXERS, &rec)==-1)
+		{
+			perror("USERDEV_GET_MIXERS");
+			return;
+		}
+		
+
+		printf("Mixer change %d\n", count);
+
+		/*
+		 * Print only the contrlos that were allocated in
+		 * create_mixer_interface()
+		 */
+		for (i=0;i<2;i++)
+		    printf("%2d: %08x\n", i, rec.values[i]);
+		fflush(stdout);
+	}
+
+	prev_count = count;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -64,7 +168,6 @@ main(int argc, char *argv[])
  * gets called.
  */
 
-printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 	if ((server_fd = open(SERVER_DEVNAME, O_RDWR, 0))==-1)
 	{
 		perror(SERVER_DEVNAME);
@@ -86,14 +189,6 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 		exit(-1);
 	}
 
-	/*
-	 * TODO: Setting the environment variables doesn't seem to work. Why?
-	 */
-	sprintf(cmd, "OSS_AUDIODEV=%s", crea.devnode);
-	if (putenv(cmd) == -1)
-	   perror("putenv OSS_AUDIODEV");
-	sprintf(cmd, "OSS_MIXERDEV=%s", crea.devnode);
-	putenv(cmd);
 /*
  * Set up the master side parameters such as sampling rate and sample format.
  * The server application can select whatever format is best for its
@@ -115,9 +210,7 @@ printf("SERVER_DEVNAME=%s\n", SERVER_DEVNAME);
 	if (ioctl(server_fd, SNDCTL_DSP_GETBLKSIZE, &fragsize)==-1)
 	   fragsize = 1024;
 
-printf("Fragment size = %d bytes\n", fragsize);
-
-printf("Created instance, devnode=%s\n", crea.devnode);
+	create_mixer_interface(server_fd);
 
 	if (fork())
 	{
@@ -126,6 +219,7 @@ printf("Created instance, devnode=%s\n", crea.devnode);
 		 * that writes back everything everything received from the client side.
 		 */
 		int l;
+		int poll_count=0;
 
 		char *buffer;
 		signal(SIGCHLD, terminator);
@@ -143,6 +237,12 @@ printf("Created instance, devnode=%s\n", crea.devnode);
 				perror("write");
 				exit(-1);
 			}
+
+			if (poll_count++ > 10)
+			{
+				poll_mixer(server_fd);
+				poll_count = 0;
+			}
 		}
 
 		exit(0);
@@ -152,6 +252,14 @@ printf("Created instance, devnode=%s\n", crea.devnode);
  * Client side code. Simply execute the command that was given in
  * argv[1]. However replace all %s's by the client side device node name.
  */
+
+	if (setenv("OSS_AUDIODEV", crea.devnode, 1) == -1)
+	   perror("setenv OSS_AUDIODEV");
+
+	if (setenv("OSS_MIXERDEV", crea.devnode, 1) == -1)
+	   perror("setenv OSS_MIXERDEV");
+
+	setenv("PS1", "udserver> ", 1);
 
 	sprintf(cmd, argv[1], crea.devnode, crea.devnode, crea.devnode);
 	printf("Running '%s'\n", cmd);

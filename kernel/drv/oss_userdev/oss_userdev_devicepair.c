@@ -463,6 +463,25 @@ create_instance(int dev, userdev_create_t *crea)
   return 0;
 }
 
+static int
+userdev_set_control (int dev, int ctl, unsigned int cmd, int value)
+{
+  	userdev_devc_t *devc = mixer_devs[dev]->devc;
+
+	if (ctl < 0 || ctl >= USERDEV_MAX_MIXERS)
+	   return OSS_EINVAL;
+
+	if (cmd == SNDCTL_MIX_READ)
+	   {
+		   return devc->mixer_values[ctl];
+	   }
+
+	devc->mixer_values[ctl] = value;
+	devc->modify_counter++;
+
+	return 0;
+}
+
 /*ARGSUSED*/
 static int
 userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
@@ -484,6 +503,91 @@ userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 		return *arg = (devc->client_portc.open_mode != 0);
 	    }
 	    break;
+
+   /*
+    * Mixer related ioctl calls
+    */
+
+    case USERDEV_CREATE_MIXGROUP:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+		userdev_mixgroup_t *grp=(userdev_mixgroup_t*)arg;
+		int group;
+
+		grp->name[sizeof(grp->name)-1]=0; /* Buffer overflow protection */
+		if ((group=mixer_ext_create_group(devc->mixer_dev, grp->parent, grp->name))<0)
+			return group;
+		grp->num = group;
+		return 0;
+	    }
+	    break;
+
+    case USERDEV_CREATE_MIXCTL:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+		userdev_mixctl_t *c=(userdev_mixctl_t*)arg;
+  		oss_mixext *ext;
+		int ctl;
+
+		c->name[sizeof(c->name)-1]=0; /* Buffer overflow protection */
+
+		if (c->index < 0 || c->index >= USERDEV_MAX_MIXERS)
+		   return OSS_EINVAL;
+
+		if ((ctl = mixer_ext_create_control (devc->mixer_dev,
+			       c->parent,
+			       c->index,
+			       userdev_set_control,
+			       c->type,
+			       c->name,
+			       c->maxvalue,
+			       c->flags)) < 0)
+	    		return ctl;
+
+		c->num = ctl;
+  		ext = mixer_find_ext (devc->mixer_dev, ctl);
+
+		ext->minvalue = c->offset;
+		ext->control_no= c->control_no;
+		ext->rgbcolor = c->rgbcolor;
+
+		if (c->type == MIXT_ENUM)
+		{
+			memcpy(ext->enum_present, c->enum_present, sizeof(ext->enum_present));
+  			mixer_ext_set_strings (devc->mixer_dev, ctl, c->enum_choises, 0);
+		}
+
+		return 0;
+	    }
+	    break;
+
+    case USERDEV_GET_MIX_CHANGECOUNT:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+
+		return *arg = devc->modify_counter;
+	    }
+	    break;
+
+    case USERDEV_SET_MIXERS:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+
+		memcpy(devc->mixer_values, arg, sizeof(devc->mixer_values));
+		mixer_devs[devc->mixer_dev]->modify_counter++;
+		return 0;
+	    }
+	    break;
+
+    case USERDEV_GET_MIXERS:
+	    {
+  		userdev_devc_t *devc = audio_engines[dev]->devc;
+
+		memcpy(arg, devc->mixer_values, sizeof(devc->mixer_values));
+		return 0;
+	    }
+	    break;
+
     }
 
   return userdev_ioctl(dev, cmd, arg);
@@ -910,6 +1014,11 @@ install_server (userdev_devc_t * devc)
   return adev;
 }
 
+static int 
+null_mixer_init(int de)
+{
+	return 0;
+}
 
 static void
 userdev_create_mixer(userdev_devc_t * devc)
@@ -924,6 +1033,7 @@ userdev_create_mixer(userdev_devc_t * devc)
 	devc->mixer_dev = -1;
 	return;
     }
+  mixer_ext_set_init_fn (devc->mixer_dev, null_mixer_init, USERDEV_MAX_MIXERS*2);
 }
 
 static int

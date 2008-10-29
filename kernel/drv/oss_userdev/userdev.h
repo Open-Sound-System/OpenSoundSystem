@@ -49,6 +49,12 @@ struct _userdev_devc_t
 
   userdev_portc_t client_portc;
   userdev_portc_t server_portc;
+
+  /*
+   * Mixer related fields
+   */
+  int modify_counter;
+  int mixer_values[USERDEV_MAX_MIXERS];
 };
 
 extern oss_device_t *userdev_osdev;
