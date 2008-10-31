@@ -214,18 +214,18 @@ oss_kmem_free (void *addr)
 }
 
 static const ddi_dma_attr_t dma_attr_pci = {
-  DMA_ATTR_V0,
-  0x00000000,
-  0xfffffff0,
-  0xffffff,
-  1,
-  0x7,
-  0x1,
-  0xffffffff,
-  0x0fffffff,
-  1,
-  1,
-  0
+  DMA_ATTR_V0,		// Version
+  0x00000000ULL,	// Address low
+  0xfffffff0ULL,	// Address high
+  0xffffffffULL,	// Counter max
+  1ULL,			// Default byte align
+  0x7f,			// Burst size
+  0x1,			// Minimum xfer size
+  0xffffffffULL,	// Maximum xfer size
+  0xffffffffULL,	// Max segment size
+  1,			// S/G list length
+  1,			// Granularity
+  0			// Flag
 };
 
 #if !defined(SOL9) && !defined(SOL8)
