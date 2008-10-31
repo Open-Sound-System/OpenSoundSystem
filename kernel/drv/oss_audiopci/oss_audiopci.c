@@ -1391,7 +1391,6 @@ init_apci (apci_devc * devc)
 	}
       else
 	{
-	  audio_engines[adev]->devc = devc;
 	  audio_engines[adev]->portc = portc;
 	  if (i == 0)
 	    {

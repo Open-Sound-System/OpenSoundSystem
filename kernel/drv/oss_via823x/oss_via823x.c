@@ -822,7 +822,6 @@ via8233_init (via8233_devc * devc)
 	{
 	  if (i == 0)
 	    first_dev = adev;
-	  audio_engines[adev]->devc = devc;
 	  audio_engines[adev]->portc = portc;
 	  audio_engines[adev]->rate_source = first_dev;
 	  audio_engines[adev]->mixer_dev = my_mixer;

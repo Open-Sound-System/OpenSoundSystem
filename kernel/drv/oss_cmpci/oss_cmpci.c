@@ -2220,7 +2220,6 @@ init_cmpci (cmpci_devc * devc)
 	{
 	  if (i == 0)
 	    first_dev = portc->audiodev;
-	  audio_engines[portc->audiodev]->devc = devc;
 	  audio_engines[portc->audiodev]->portc = portc;
 	  audio_engines[portc->audiodev]->rate_source = first_dev;
 	  audio_engines[portc->audiodev]->caps =

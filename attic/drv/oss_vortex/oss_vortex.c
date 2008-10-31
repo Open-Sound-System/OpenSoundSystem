@@ -1458,7 +1458,6 @@ attach_channel (vortex_devc * devc, int my_mixer)
 	{
 	  if (i == 0)
 	    first_dev = adev;
-	  audio_engines[adev]->devc = devc;
 	  audio_engines[adev]->portc = portc;
 	  audio_engines[adev]->vmix_flags = VMIX_MULTIFRAG;
 	  audio_engines[adev]->rate_source = first_dev;

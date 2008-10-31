@@ -701,7 +701,6 @@ attach_channel (digi32_devc * devc, int chnum, char *name,
     }
 
   audio_engines[adev]->mixer_dev = devc->mixer_dev;
-  audio_engines[adev]->devc = devc;
   audio_engines[adev]->portc = portc;
   audio_engines[adev]->caps |= DSP_CH_STEREO;
   audio_engines[adev]->min_block = 8 * 1024;

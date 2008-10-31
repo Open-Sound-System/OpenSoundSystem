@@ -1047,7 +1047,6 @@ install_audio_devices (emu10k1x_devc * devc)
       if (i == 0)
 	firstdev = adev;
       audio_engines[adev]->portc = portc;
-      audio_engines[adev]->devc = devc;
       audio_engines[adev]->mixer_dev = devc->mixer_dev;
       audio_engines[adev]->rate_source = firstdev;
       audio_engines[adev]->min_rate = 48000;

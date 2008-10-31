@@ -738,7 +738,6 @@ neomagic_install (neomagic_devc * devc, unsigned int port1addr,
 
       else
 	{
-	  audio_engines[adev]->devc = devc;
 	  audio_engines[adev]->mixer_dev = devc->mixer_dev;
 	  audio_engines[adev]->min_rate = 6023;
 	  audio_engines[adev]->max_rate = 48000;

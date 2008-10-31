@@ -778,7 +778,6 @@ init_vibes (vibes_devc * devc)
 	}
 
       audio_engines[adev]->mixer_dev = devc->my_mixer;
-      audio_engines[adev]->devc = devc;
       audio_engines[adev]->portc = portc;
       audio_engines[adev]->dmabuf_maxaddr = MEMLIMIT_ISA;
       portc->open_mode = 0;

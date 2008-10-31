@@ -1240,7 +1240,6 @@ init_apci97 (apci97_devc * devc, int device_id)
 	{
 	  if (i == 0)
 	    first_dev = adev;
-	  audio_engines[adev]->devc = devc;
 	  audio_engines[adev]->portc = portc;
 	  audio_engines[adev]->rate_source = first_dev;
 	  audio_engines[adev]->min_rate = 5000;

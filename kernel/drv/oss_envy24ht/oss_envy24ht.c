@@ -1899,7 +1899,6 @@ init_play_device (envy24ht_devc * devc, int chmask, int offset,
 
   portc->name = port_id;
   audio_engines[dev]->portc = portc;
-  audio_engines[dev]->devc = devc;
   audio_engines[dev]->mixer_dev = devc->mixer_dev;
   audio_engines[dev]->rate_source = devc->first_dev;
   audio_engines[dev]->min_rate = 8000;
@@ -1987,7 +1986,6 @@ init_rec_device (envy24ht_devc * devc, int chmask, int offset,
     adev->rates[adev->nrates++] = speed_tab[i].speed;
 
   audio_engines[dev]->portc = portc;
-  audio_engines[dev]->devc = devc;
   audio_engines[dev]->mixer_dev = devc->mixer_dev;
   audio_engines[dev]->rate_source = devc->first_dev;
   audio_engines[dev]->min_rate = 8000;

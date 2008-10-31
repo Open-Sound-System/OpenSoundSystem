@@ -953,7 +953,6 @@ init_ATI (ATI_devc * devc)
 	}
       else
 	{
-	  audio_engines[my_dev]->devc = devc;
 	  audio_engines[my_dev]->portc = portc;
 	  audio_engines[my_dev]->mixer_dev = my_mixer;
 	  audio_engines[my_dev]->min_rate =

@@ -3164,7 +3164,6 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
 	}
 
       portc->flags = portc_flags;
-      audio_engines[dev]->devc = devc;
       audio_engines[dev]->portc = portc;
       audio_engines[dev]->rate_source = devc->first_dev;
 

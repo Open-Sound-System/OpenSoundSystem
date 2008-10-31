@@ -2404,7 +2404,6 @@ init_cmi8788 (cmi8788_devc * devc)
 	{
 	  if (first_dev == -1)
 	    first_dev = portc->audiodev;
-	  audio_engines[portc->audiodev]->devc = devc;
 	  audio_engines[portc->audiodev]->portc = portc;
 	  audio_engines[portc->audiodev]->rate_source = first_dev;
 	  if (caps & ADEV_FIXEDRATE)

@@ -346,7 +346,6 @@ envy24d_install (envy24_devc * devc)
 				    "10ch_out")) >= 0)
     {
       portc = &devc->direct_portc_out;
-      audio_engines[adev]->devc = devc;
       audio_engines[adev]->portc = portc;
       audio_engines[adev]->rate_source = devc->first_dev;
       audio_engines[adev]->caps |= DSP_CH_MULTI;
@@ -384,7 +383,6 @@ envy24d_install (envy24_devc * devc)
 				    "12ch_in")) >= 0)
     {
       portc = &devc->direct_portc_in;
-      audio_engines[adev]->devc = devc;
       audio_engines[adev]->portc = portc;
       audio_engines[adev]->rate_source = devc->first_dev;
       audio_engines[adev]->caps |= DSP_CH_MULTI;
