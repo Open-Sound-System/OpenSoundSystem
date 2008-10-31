@@ -750,7 +750,6 @@ init_vibes (vibes_devc * devc)
   else
     {
       devc->my_mixer = my_mixer;
-      mixer_devs[my_mixer]->devc = devc;
       devc->recdevs = 0;
       vibes_set_recmask (devc, SOUND_MASK_MIC);
       devc->levels = load_mixer_volumes ("S3VIBES", default_mixer_levels, 1);

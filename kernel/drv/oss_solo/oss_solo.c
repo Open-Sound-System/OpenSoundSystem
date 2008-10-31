@@ -1025,7 +1025,6 @@ init_solo (solo_devc * devc)
     {
       return 0;
     }
-  mixer_devs[my_mixer]->devc = devc;
   solo_mixer_reset (devc);
 
   for (i = 0; i < MAX_PORTC; i++)

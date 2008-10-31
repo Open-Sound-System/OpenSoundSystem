@@ -1070,7 +1070,6 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
 				     &ac97_mixer_driver,
 				     sizeof (mixer_driver_t), devc)) >= 0)
     {
-      mixer_devs[my_mixer]->devc = devc;
       mixer_devs[my_mixer]->hw_devc = hostparms;
       mixer_devs[my_mixer]->priority = 2;	/* Possible default mixer candidate */
       devc->recdevs = 0;

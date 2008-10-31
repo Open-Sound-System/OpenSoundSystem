@@ -840,7 +840,6 @@ init_digi32 (digi32_devc * devc)
     }
   else
     {
-      mixer_devs[my_mixer]->devc = devc;
       devc->mixer_dev = my_mixer;
       mixer_devs[my_mixer]->priority = -1;	/* Don't use as the default mixer */
       mixer_ext_set_init_fn (my_mixer, digi32_mix_init, 20);

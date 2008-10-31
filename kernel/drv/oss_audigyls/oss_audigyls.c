@@ -1709,7 +1709,6 @@ oss_audigyls_attach (oss_device_t * osdev)
 					   &audigyls_mixer_driver,
 					   sizeof (mixer_driver_t), devc);
       devc->has_ac97 = 0;	/* no ac97 */
-      mixer_devs[devc->mixer_dev]->devc = devc;
       mixer_devs[devc->mixer_dev]->hw_devc = devc;
       mixer_devs[devc->mixer_dev]->priority = 1;	/* Possible default mixer candidate */
     }

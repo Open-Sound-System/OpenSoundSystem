@@ -2175,7 +2175,6 @@ init_cmpci (cmpci_devc * devc)
       return 0;
     }
 
-  mixer_devs[devc->mixer_dev]->devc = devc;
   mixer_devs[devc->mixer_dev]->hw_devc = devc;
   mixer_devs[devc->mixer_dev]->priority = 1;	/* Possible default mixer candidate */
 

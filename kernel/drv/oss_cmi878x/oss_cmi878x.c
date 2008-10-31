@@ -2251,7 +2251,6 @@ init_cmi8788 (cmi8788_devc * devc)
       return 0;
     }
 
-  mixer_devs[devc->spi_mixer_dev]->devc = devc;
   mixer_devs[devc->spi_mixer_dev]->hw_devc = devc;
   mixer_devs[devc->spi_mixer_dev]->priority = 10;	/* Possible default mixer candidate */
   mixer_ext_set_init_fn (devc->spi_mixer_dev, cmi8788_mix_init, 25);

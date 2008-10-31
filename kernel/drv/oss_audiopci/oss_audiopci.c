@@ -1351,7 +1351,6 @@ init_apci (apci_devc * devc)
       char mxname[20];
 
       sprintf (mxname, "AudioPCI");
-      mixer_devs[my_mixer]->devc = devc;
       devc->recdevs = 0;
       apci_set_recmask (devc, SOUND_MASK_MIC);
       devc->levels = load_mixer_volumes (mxname, default_mixer_levels, 1);

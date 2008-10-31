@@ -930,7 +930,6 @@ init_digi96 (digi96_devc * devc)
   else
 
     {
-      mixer_devs[my_mixer]->devc = devc;
       mixer_devs[my_mixer]->priority = -1;	/* Don't use as the default mixer */
       devc->mixer_dev = my_mixer;
       mixer_ext_set_init_fn (my_mixer, digi96_mix_init, 20);

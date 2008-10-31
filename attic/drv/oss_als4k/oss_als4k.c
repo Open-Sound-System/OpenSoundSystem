@@ -992,7 +992,6 @@ init_als4000 (als4000_devc * devc)
     {
       return 0;
     }
-  mixer_devs[my_mixer]->devc = devc;
   als4000_mixer_reset (devc);
 
   for (i = 0; i < MAX_PORTC; i++)

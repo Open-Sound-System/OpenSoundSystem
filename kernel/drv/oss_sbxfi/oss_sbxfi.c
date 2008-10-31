@@ -973,7 +973,6 @@ oss_sbxfi_attach (oss_device_t * osdev)
 					    sizeof (mixer_driver_t),
 					    devc)) >= 0)
     {
-      mixer_devs[devc->mixer_dev]->devc = devc;
       mixer_devs[devc->mixer_dev]->hw_devc = devc;
       mixer_devs[devc->mixer_dev]->priority = 1;	/* Possible default mixer candidate */
       mixer_ext_set_init_fn (devc->mixer_dev, sbxfi_mix_init, 10);

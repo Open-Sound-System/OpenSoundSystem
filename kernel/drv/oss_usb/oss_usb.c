@@ -1312,7 +1312,6 @@ init_mixer (ossusb_devc * devc)
       sprintf (mxname, "USB_%d", ndevs);
 
       devc->levels = load_mixer_volumes (mxname, NULL, 1);
-      mixer_devs[devc->mixer_dev]->devc = devc;
       mixer_devs[devc->mixer_dev]->hw_devc = devc;
       mixer_ext_set_init_fn (devc->mixer_dev, usb_mix_init, MAX_CONTROLS);
     }

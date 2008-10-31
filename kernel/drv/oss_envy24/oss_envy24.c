@@ -3205,7 +3205,6 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
 			       &envy24_mixer_driver,
 			       sizeof (mixer_driver_t), devc) >= 0)
 	  {
-	    mixer_devs[devc->mixer_dev]->devc = devc;
 	    mixer_devs[devc->mixer_dev]->priority = -1;	/* Don't use as the default mixer */
 	  }
     }
@@ -3667,7 +3666,6 @@ envy24_init (envy24_devc * devc)
 
       if (devc->skipdevs == 1)
 	n += 30;
-      mixer_devs[devc->mixer_dev]->devc = devc;
       mixer_ext_set_init_fn (devc->mixer_dev, envy24_mix_init, n);
     }
 
