@@ -483,6 +483,16 @@ oss_audio_set_channels (int dev, int ch)
       (adev->open_flags & OF_MMAP))
     return ret;
 
+  if (ret > 1 && (adev->flags & ADEV_NONINTERLEAVED))
+  {
+	  if (adev->dmask & DMASK_OUT)
+	      adev->dmap_out->flags |= DMAP_COOKED;
+	
+	  if (adev->dmask & DMASK_OUT)
+	      adev->dmap_in->flags |= DMAP_COOKED;
+  }
+     
+
 #ifdef NO_COOKED_MODE
   return ret;
 #else
@@ -4716,6 +4726,35 @@ store_tmp_data (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
   dmap->leftover_bytes = count;
 }
 
+static void
+copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbuf, int local_offs, int l)
+{
+// TODO: This function assumes 32 bit audio DATA
+	
+  int ch, i, nc = adev->hw_parms.channels;
+  int *inbuf, *outbuf;
+
+  l		/= sizeof(*inbuf);
+  dma_offs	/= sizeof(*inbuf);
+  local_offs	/= sizeof(*inbuf);
+
+  for (ch=0;ch<nc;ch++)
+  {
+  	inbuf = (int*)(localbuf+local_offs);
+	inbuf += ch;
+
+	outbuf = (int *)(dmap->dmabuf + (dmap->bytes_in_use * ch) / nc);
+	outbuf += dma_offs / nc;
+
+	for (i=0;i<l;i++)
+	{
+		*outbuf++ = *inbuf;
+		inbuf += nc;
+	}
+  }
+
+}
+
 static int
 write_copy (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 {
@@ -4741,7 +4780,12 @@ write_copy (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 
       VMEM_CHECK (&dmap->dmabuf[offs], l);
       VMEM_CHECK (buf + p, l);
-      memcpy (&dmap->dmabuf[offs], buf + p, l);
+
+      if (adev->flags & ADEV_NONINTERLEAVED)
+	 copy_write_noninterleaved(adev, dmap, offs, buf, p, l);
+      else
+         memcpy (&dmap->dmabuf[offs], buf + p, l);
+
       if ((err = move_wrpointer (adev, dmap, l)) < 0)
 	return err;
 

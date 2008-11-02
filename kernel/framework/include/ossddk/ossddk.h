@@ -56,6 +56,7 @@ typedef struct _dmap_t dmap_t;
 #define ADEV_COLD		0x0000000001000000LL	/* Reserved for a future feature - DO NOT USE */
 #define ADEV_HWMIX		0x0000000002000000LL	/* Device supports "hardware mixing" */
 #define ADEV_LOOP		0x0000000004000000LL	/* Loopback device */
+#define ADEV_NONINTERLEAVED	0x0000000008000000LL	/* DMA buffer _NOT_ interleaved  */
 
 #ifdef _KERNEL
 typedef struct _audiodrv_t
@@ -71,8 +72,7 @@ typedef struct _audiodrv_t
   int (*adrv_prepare_for_output) (int dev, int fragsize, int nfrags);
   void (*adrv_halt_io) (int dev);
   int (*adrv_local_qlen) (int dev);
-  int (*adrv_copy_user) (int dev, char *localbuf, int localoffs,
-		    uio_t *userbuf, int useroffs, int *len, int max_space);
+  void *not_used; /* Out of order */
   void (*adrv_halt_input) (int dev);
   void (*adrv_halt_output) (int dev);
   void (*adrv_trigger) (int dev, int bits);
@@ -87,7 +87,7 @@ typedef struct _audiodrv_t
   int (*adrv_alloc_buffer) (int dev, dmap_t * dmap, int direction);
   int (*adrv_free_buffer) (int dev, dmap_t * dmap, int direction);
   void (*adrv_lock_buffer) (int dev, int direction);
-  void *adrv_dummy;
+  void *dummy; /* Not used any more */
   int (*adrv_get_buffer_pointer) (int dev, dmap_t * dmap, int direction);
   int (*adrv_calibrate_speed) (int dev, int nominal_rate, int true_rate);
 #define SYNC_ATTACH	0
