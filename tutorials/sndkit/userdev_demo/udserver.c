@@ -17,7 +17,7 @@
  * OSS specific includes. Use correct -I setting when compiling. Typically
  * -I/usr/lib/oss/include/sys or -I/usr/include/sys
  */
-#include <soundcard.h>
+#include <sys/soundcard.h>
 #include <oss_userdev_exports.h>
 
 #define SERVER_DEVNAME		"/dev/oss/oss_userdev0/server"
