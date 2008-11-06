@@ -1703,6 +1703,7 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	      * Create a new vmix client instance.
 	      */
 
+cmn_err(CE_CONT, "Calling vmix_create_client(%p) for %d/%s\n", adev->vmix_mixer, adev->engine_num, adev->name);
 	     if ((vmix_dev=vmix_create_client(adev->vmix_mixer))>=0)
 	        {
 #ifdef DO_TIMINGS
@@ -4727,7 +4728,7 @@ store_tmp_data (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 }
 
 static void
-copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbuf, int local_offs, int l)
+copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned char *localbuf, int local_offs, int l)
 {
 // TODO: This function assumes 32 bit audio DATA
 	
@@ -6311,6 +6312,7 @@ oss_install_audiodev_with_devname (int vers,
   op->enabled = 0;
   op->outputintr = dummy_outputintr;
   op->inputintr = dummy_inputintr;
+  op->vmix_mixer = NULL;
 
   strncpy (op->name, name, sizeof (op->name));
   op->name[sizeof (op->name) - 1] = 0;

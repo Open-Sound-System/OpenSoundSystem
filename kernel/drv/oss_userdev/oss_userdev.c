@@ -44,7 +44,12 @@ userdev_server_redirect (int dev, int mode, int open_flags)
 
 
   if ((server_engine=usrdev_find_free_device_pair()) >= 0)
+  {
+     userdev_devc_t *devc = audio_engines[server_engine]->devc;
+
+     userdev_reinit_instance(devc);
      return server_engine;
+  }
   
   return userdev_create_device_pair();
 }
@@ -276,6 +281,7 @@ attach_control_device(void)
       return;
     }
   userdev_server_devnode = audio_engines[server_dev]->devnode;
+  audio_engines[client_dev]->vmix_mixer=NULL;
 
   if ((server_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    userdev_osdev,
@@ -289,6 +295,7 @@ attach_control_device(void)
       return;
     }
   audio_engines[server_dev]->caps |= PCM_CAP_HIDDEN;
+  audio_engines[server_dev]->vmix_mixer=NULL;
   userdev_client_devnode = audio_engines[client_dev]->devnode;
 }
 

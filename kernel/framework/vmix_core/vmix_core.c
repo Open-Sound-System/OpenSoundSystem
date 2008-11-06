@@ -430,6 +430,13 @@ create_input_controls (int mixer_dev)
   return 0;
 }
 
+static int
+create_duplex_controls (int mixer_dev)
+{
+	create_output_controls (mixer_dev);
+	create_input_controls (mixer_dev);
+}
+
 /*
  * Audio virtual device routines
  */
@@ -1919,10 +1926,19 @@ check_masterdev (void *mx, int reattach)
       {
 	  if (mixer->output_mixer_dev > -1)
 	    {
-	      mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
+		if (mixer->output_mixer_dev == mixer->input_mixer_dev)
+		   {
+	              mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
+					  create_duplex_controls, 20, mixer);
+		   }
+		else
+		   {
+	              mixer_ext_set_vmix_init_fn (mixer->output_mixer_dev,
 					  create_output_controls, 20, mixer);
+		   }
 	    }
 	
+	  if (mixer->output_mixer_dev != mixer->input_mixer_dev)
 	  if (mixer->inputdev >= 0 &&
 	      mixer->input_mixer_dev > -1)
 	    {

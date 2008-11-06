@@ -1007,6 +1007,7 @@ install_server (userdev_devc_t * devc)
   audio_engines[adev]->max_rate = MAX_RATE;
   audio_engines[adev]->min_channels = 1;
   audio_engines[adev]->max_channels = MAX_CHANNELS;
+  audio_engines[adev]->vmix_mixer=NULL;
   strcpy(audio_engines[adev]->devnode, userdev_server_devnode);
 
   portc->audio_dev = adev;
@@ -1172,6 +1173,15 @@ userdev_free_device_pair (userdev_devc_t *devc)
 	     }
      }
   MUTEX_EXIT_IRQRESTORE(userdev_global_mutex, flags);
+}
+
+void
+userdev_reinit_instance(userdev_devc_t *devc)
+{
+	if (devc->mixer_dev < 0)
+	   return;
+
+  mixer_ext_rebuild_all (devc->mixer_dev, null_mixer_init, USERDEV_MAX_MIXERS*2);
 }
 
 void

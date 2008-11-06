@@ -521,14 +521,17 @@ mixer_ext_create_device (int dev, int maxentries)
 
   maxentries++;			/* Needs space for the device root node */
 
-  if (mixer_devs[dev]->max_ext != 0)
-    {
-      cmn_err (CE_WARN, "Mixer%d (ext) initialization order is wrong\n", dev);
-      return OSS_EIO;
-    }
-
-  mixext_desc =
-    PMALLOC (mixer_devs[dev]->osdev, sizeof (*mixext_desc) * maxentries);
+  if (mixer_devs[dev]->max_ext == 0)
+     {
+        mixext_desc =
+          PMALLOC (mixer_devs[dev]->osdev, sizeof (*mixext_desc) * maxentries);
+        mixer_devs[dev]->max_ext = maxentries;
+  	mixer_devs[dev]->extensions = mixext_desc;
+     }
+  else
+     {
+  	mixext_desc = mixer_devs[dev]->extensions;
+     }
 
   if (mixext_desc == NULL)
     {
@@ -536,9 +539,7 @@ mixer_ext_create_device (int dev, int maxentries)
       return OSS_EIO;
     }
 
-  mixer_devs[dev]->extensions = mixext_desc;
   mixer_devs[dev]->nr_ext = 1;
-  mixer_devs[dev]->max_ext = maxentries;
   mixer_devs[dev]->timestamp = GET_JIFFIES ();
 
   mixext = &mixext_desc->ext;
@@ -1310,6 +1311,28 @@ mixer_ext_set_init_fn (int dev, mixer_create_controls_t func, int nextra)
 
   mixer_devs[dev]->nr_extra_ext = nextra;
   mixer_devs[dev]->create_controls = func;
+  return 0;
+}
+
+int
+mixer_ext_rebuild_all (int dev, mixer_create_controls_t func, int nextra)
+{
+/*
+ * Throw away all existing mixer controls and recreate the mixer.
+ */
+  if (dev < 0 || dev >= num_mixers)
+    return OSS_ENXIO;
+  mixer_devs[dev]->nr_ext = 0;
+
+  mixer_devs[dev]->nr_extra_ext = nextra;
+  mixer_devs[dev]->create_controls = func;
+
+  touch_mixer (dev);
+  if (mixer_devs[dev]->create_vmix_controls != NULL)
+     {
+        mixer_devs[dev]->create_vmix_controls(dev);
+     }
+
   return 0;
 }
 

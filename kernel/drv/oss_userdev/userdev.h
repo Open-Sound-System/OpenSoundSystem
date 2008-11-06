@@ -65,6 +65,7 @@ extern userdev_devc_t *userdev_free_device_list;
 extern int userdev_create_device_pair(void);
 extern void userdev_delete_device_pair(userdev_devc_t *devc);
 extern int usrdev_find_free_device_pair(void);
+extern void userdev_reinit_instance(userdev_devc_t *devc);
 
 extern char *userdev_client_devnode;
 extern char *userdev_server_devnode;
