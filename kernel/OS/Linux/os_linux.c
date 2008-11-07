@@ -801,6 +801,9 @@ oss_cdev_mmap (oss_file_handle_t * file, oss_vm_area_handle_t * vma)
   if (dev < 0 || dev >= num_audio_engines)
     return OSS_ENXIO;
 
+  if (audio_engines[dev]->flags & ADEV_NOMMAP)
+     return OSS_EIO;
+
   if (oss_vma_get_flags (vma) & VM_WRITE)	/* Map write and read/write to the output buf */
     {
       dmap = audio_engines[dev]->dmap_out;

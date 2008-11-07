@@ -4081,7 +4081,7 @@ launch_input (adev_p adev, dmap_p dmap)
 }
 
 static int
-find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
+find_raw_input_space (adev_p adev, dmap_p dmap, int *dmapos)
 {
   int count;
   int tmout, n = 0;
@@ -4094,7 +4094,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
   if (adev->nonblock)
     get_input_pointer (adev, dmap, 1);
   count = (int) (dmap->byte_counter - dmap->user_counter);
-  *dbuf = NULL;
+  *dmapos=0;
 
   if (dmap->flags & DMAP_COOKED)
     {
@@ -4186,7 +4186,7 @@ find_raw_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
   if (count == 0)
     count = dmap->bytes_in_use;
 
-  *dbuf = (unsigned char *) dmap->dmabuf + offs;
+  *dmapos = offs;
   MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 
   return count;
@@ -4209,15 +4209,50 @@ move_raw_rdpointer (adev_p adev, dmap_p dmap, int len)
   return ret;
 }
 
+static void
+copy_read_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbuf, int local_offs, int l)
+{
+/*
+ * Copy audio data from non-interleaved device buffer to interleaved
+ * local buffer.
+ */
+// TODO: This function assumes 32 bit audio DATA
+	
+  int ch, i, nc = adev->hw_parms.channels;
+  int *inbuf, *outbuf;
+
+  l		/= sizeof(*inbuf);
+  dma_offs	/= sizeof(*inbuf);
+  local_offs	/= sizeof(*inbuf);
+
+  for (ch=0;ch<nc;ch++)
+  {
+  	outbuf = (int*)(localbuf+local_offs);
+	outbuf += ch;
+
+	inbuf = (int *)(dmap->dmabuf + (dmap->bytes_in_use * ch) / nc);
+	inbuf += dma_offs / nc;
+
+	for (i=0;i<l;i++)
+	{
+		*outbuf = *inbuf++;
+		outbuf += nc;
+	}
+  }
+
+}
+
 static int
 find_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 {
   unsigned char *p, *p1 = dmap->tmpbuf1, *p2 = dmap->tmpbuf2;
-  int err, l, l2, max;
+  int err, l, l2, max, dmapos;
 
   if (!(dmap->flags & DMAP_COOKED))
     {
-      return find_raw_input_space (adev, dmap, dbuf);
+      err=find_raw_input_space (adev, dmap, &dmapos);
+      *dbuf=dmap->dmabuf+dmapos;
+      return err;
     }
 
   if (dmap->tmpbuf_len > dmap->tmpbuf_ptr)
@@ -4228,10 +4263,11 @@ find_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
 
   dmap->tmpbuf_len = dmap->tmpbuf_ptr = 0;
 
-  if ((l = find_raw_input_space (adev, dmap, &p)) < 0)
+  if ((l = find_raw_input_space (adev, dmap, &dmapos)) < 0)
     {
       return l;
     }
+  p=dmap->dmabuf;
 
   if (dmap->expand_factor > UNIT_EXPAND)
     max = (TMP_CONVERT_MAX * UNIT_EXPAND) / dmap->expand_factor;
@@ -4246,8 +4282,13 @@ find_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
   l = (l / dmap->frame_size) * dmap->frame_size;	/* Truncate to nearest frame size */
   l2 = l;
   VMEM_CHECK (p1, l);
-  VMEM_CHECK (p, l);
-  memcpy (p1, p, l);
+  VMEM_CHECK (p+dmapos, l);
+
+  if (adev->flags & ADEV_NONINTERLEAVED)
+     copy_read_noninterleaved(adev, dmap, dmapos, p1, 0, l);
+  else
+     memcpy (p1, p+dmapos, l);
+
   move_raw_rdpointer (adev, dmap, l);
 
   if ((err =
@@ -4729,6 +4770,9 @@ store_tmp_data (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 static void
 copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbuf, int local_offs, int l)
 {
+/*
+ * Copy interleaved N channel data to non-interleaved device buffer.
+ */
 // TODO: This function assumes 32 bit audio DATA
 	
   int ch, i, nc = adev->hw_parms.channels;
