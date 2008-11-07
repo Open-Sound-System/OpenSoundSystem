@@ -252,10 +252,8 @@ forceload_drivers (dev_t dev, cred_t * credp)
       return;
     }
 
-cmn_err(CE_CONT, "Forceload /dev/sndstat\n");
   if ((err = ldi_open_by_name ("/dev/sndstat", FWRITE, credp, &lh, li)) != 0)
     {
-cmn_err(CE_CONT, "Status %d\n", err);
       if (err != ENODEV)
 	cmn_err (CE_NOTE, "Forceload error %d (/dev/sndstat)\n", err);
     }
@@ -265,11 +263,9 @@ cmn_err(CE_CONT, "Status %d\n", err);
   for (i = 0; i < MAX_MIXER_DEV; i++)
     {
       sprintf (path, "/dev/mixer%d", i);
-cmn_err(CE_CONT, "Forceload %s\n", path);
 
       if ((err = ldi_open_by_name (path, FWRITE, credp, &lh, li)) != 0)
 	{
-cmn_err(CE_CONT, "Status %d\n", err);
 	  if (err != ENODEV)
 	    cmn_err (CE_NOTE, "Forceload error %d\n", err);
 	}
@@ -280,11 +276,9 @@ cmn_err(CE_CONT, "Status %d\n", err);
   for (i = 0; i < MAX_AUDIO_DEVFILES; i++)
     {
       sprintf (path, "/dev/dsp%d", i);
-cmn_err(CE_CONT, "Forceload %s\n", path);
 
       if ((err = ldi_open_by_name (path, FWRITE, credp, &lh, li)) != 0)
 	{
-cmn_err(CE_CONT, "Status %d\n", err);
 	  if (err != ENODEV)
 	    cmn_err (CE_NOTE, "Forceload error %d\n", err);
 	}
