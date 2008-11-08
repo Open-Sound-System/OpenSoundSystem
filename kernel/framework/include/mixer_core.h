@@ -111,6 +111,7 @@ extern int mixer_ext_rw (int dev, int ctrl, unsigned int cmd, int value);
 extern int mixer_ext_recrw (int dev, int ctrl, unsigned int cmd, int value);
 extern int mixer_ext_set_init_fn (int dev, mixer_create_controls_t func,
 				  int nextra);
+extern int mixer_ext_rebuild_all (int dev, mixer_create_controls_t func, int nextra);
 /*
  * mixer_ext_set_vmix_init_fn() is reserved for the vmix driver to create
  * additional virtual mixing related mixer controls.
