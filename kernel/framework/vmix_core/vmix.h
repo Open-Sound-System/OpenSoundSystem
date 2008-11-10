@@ -60,7 +60,7 @@ struct _vmix_portc_t		/* Audio device specific data */
   int play_choffs;		/* Index of the first channel on multich play engines */
   int rec_choffs;		/* Index of the first channel on multich rec engines */
 #ifdef CONFIG_OSS_VMIX_FLOAT
-  float play_dma_pointer_src;
+  double play_dma_pointer_src;
 #endif
   int rec_dma_pointer;
   int volume[2]; /* Left and right ch volumes */

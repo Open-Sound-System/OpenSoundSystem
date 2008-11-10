@@ -18,7 +18,7 @@ int frame_size;
 int inptr, inmax;
 int used_channels;
 int i, ch, nch;
-float vol;
+double vol;
 
 /*
  * Initial setup
@@ -49,8 +49,8 @@ if (nch<2)nch=2;
 for (ch = 0; ch < nch; ch++)
   {
     int ip = inptr + (ch%used_channels);
-    float vu = portc->vu[ch % 2];
-    float *chbuf = eng->chbufs[ch+portc->play_choffs];
+    double vu = portc->vu[ch % 2];
+    double *chbuf = eng->chbufs[ch+portc->play_choffs];
 
     i = portc->volume[ch%2];
     vol = vmix_db_table[i / 5];
@@ -59,7 +59,7 @@ for (ch = 0; ch < nch; ch++)
 
     for (i = 0; i < nsamples; i++)
       {
-	float tmp;
+	double tmp;
 
 #if 0 && defined(SINE_DEBUG)
 	if (ch > 1)

@@ -5,14 +5,14 @@
 #define COPYING4 Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
 int i, ch;
-float vol;
+double vol;
 
 vol = vmix_db_table[eng->outvol / 5];
 
 for (ch = 0; ch < channels; ch++)
   {
-    float vu;
-    float *chbuf;
+    double vu;
+    double *chbuf;
 
     op = (SAMPLE_TYPE *) outbuf;
     op += ch;
@@ -24,7 +24,7 @@ for (ch = 0; ch < channels; ch++)
 
     for (i = 0; i < samples; i++)
       {
-	float tmp;
+	double tmp;
 
 #if 0 && defined(SINE_DEBUG)
 	tmp = sine_table[sine_phase[ch]];

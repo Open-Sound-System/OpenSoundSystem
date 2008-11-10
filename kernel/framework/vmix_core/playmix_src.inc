@@ -20,13 +20,13 @@ int frame_size;
 int inptr, inmax;
 int used_channels;
 int i, ch, nch;
-float vol, step;
-float tmp;
+double vol, step;
+double tmp;
 
 /*
  * Initial setup
  */
-step = (float) portc->rate / (float) mixer->play_engine.rate;
+step = (double) portc->rate / (double) mixer->play_engine.rate;
 
 #if 1
 /*
@@ -63,9 +63,9 @@ if (nch<2)nch=2;
  */
 for (ch = 0; ch < nch; ch++)
   {
-    float ip = inptr + (ch%used_channels);
-    float vu = portc->vu[ch % 2];
-    float *chbuf = eng->chbufs[ch+portc->play_choffs];
+    double ip = inptr + (ch%used_channels);
+    double vu = portc->vu[ch % 2];
+    double *chbuf = eng->chbufs[ch+portc->play_choffs];
 
     inp = (BUFFER_TYPE) dmap->dmabuf;
     inp += ch;
@@ -77,7 +77,7 @@ for (ch = 0; ch < nch; ch++)
 
     for (i = 0; i < nsamples; i++)
       {
-	float frag, tmp_next;
+	double frag, tmp_next;
 	int ip_next;
 
 #if 0 && defined(SINE_DEBUG)

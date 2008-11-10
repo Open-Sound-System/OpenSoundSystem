@@ -433,8 +433,12 @@ create_input_controls (int mixer_dev)
 static int
 create_duplex_controls (int mixer_dev)
 {
-	create_output_controls (mixer_dev);
-	create_input_controls (mixer_dev);
+	int err;
+
+	if ((err=create_output_controls (mixer_dev)) < 0)
+	   return err;
+
+	return create_input_controls (mixer_dev);
 }
 
 /*
