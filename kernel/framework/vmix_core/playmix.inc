@@ -50,7 +50,7 @@ for (ch = 0; ch < nch; ch++)
   {
     int ip = inptr + (ch%used_channels);
     double vu = portc->vu[ch % 2];
-    double *chbuf = eng->chbufs[ch+portc->play_choffs];
+    float *chbuf = eng->chbufs[ch+portc->play_choffs];
 
     i = portc->volume[ch%2];
     vol = vmix_db_table[i / 5];

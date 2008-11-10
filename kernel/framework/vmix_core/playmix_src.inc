@@ -65,7 +65,7 @@ for (ch = 0; ch < nch; ch++)
   {
     double ip = inptr + (ch%used_channels);
     double vu = portc->vu[ch % 2];
-    double *chbuf = eng->chbufs[ch+portc->play_choffs];
+    float *chbuf = eng->chbufs[ch+portc->play_choffs];
 
     inp = (BUFFER_TYPE) dmap->dmabuf;
     inp += ch;

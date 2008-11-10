@@ -12,7 +12,7 @@ vol = vmix_db_table[eng->outvol / 5];
 for (ch = 0; ch < channels; ch++)
   {
     double vu;
-    double *chbuf;
+    float *chbuf;
 
     op = (SAMPLE_TYPE *) outbuf;
     op += ch;
