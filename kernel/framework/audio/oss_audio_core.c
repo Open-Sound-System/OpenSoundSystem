@@ -4123,7 +4123,8 @@ find_raw_input_space (adev_p adev, dmap_p dmap, int *dmapos)
 	}
 
       tmout = (dmap->fragment_size * OSS_HZ) / dmap->data_rate;
-      tmout += OSS_HZ / 10;
+      // tmout += OSS_HZ / 10;
+      tmout += OSS_HZ / 2;
 
       if (adev->go == 0)
 	tmout = 0;
@@ -4222,7 +4223,7 @@ copy_read_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbu
   int ch, i, nc = adev->hw_parms.channels;
   int *inbuf, *outbuf;
 
-  l		/= sizeof(*inbuf);
+  l		/= sizeof(*inbuf)*nc;
   dma_offs	/= sizeof(*inbuf);
   local_offs	/= sizeof(*inbuf);
 
@@ -4231,7 +4232,7 @@ copy_read_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbu
   	outbuf = (int*)(localbuf+local_offs);
 	outbuf += ch;
 
-	inbuf = (int *)(dmap->dmabuf + (dmap->bytes_in_use * ch) / nc);
+	inbuf = (int *)(dmap->dmabuf + dmap->buffsize*ch / nc);
 	inbuf += dma_offs / nc;
 
 	for (i=0;i<l;i++)
@@ -4779,7 +4780,7 @@ copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned cha
   int ch, i, nc = adev->hw_parms.channels;
   int *inbuf, *outbuf;
 
-  l		/= sizeof(*inbuf);
+  l		/= sizeof(*inbuf)*nc;
   dma_offs	/= sizeof(*inbuf);
   local_offs	/= sizeof(*inbuf);
 
@@ -4788,7 +4789,7 @@ copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned cha
   	inbuf = (int*)(localbuf+local_offs);
 	inbuf += ch;
 
-	outbuf = (int *)(dmap->dmabuf + (dmap->bytes_in_use * ch) / nc);
+	outbuf = (int *)(dmap->dmabuf + dmap->buffsize*ch / nc);
 	outbuf += dma_offs / nc;
 
 	for (i=0;i<l;i++)
