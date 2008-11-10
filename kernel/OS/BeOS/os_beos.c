@@ -985,6 +985,18 @@ oss_get_osid (oss_device_t * osdev)
   return NULL; // XXX:TODO
 }
 
+int
+oss_get_procinfo(int what)
+{
+	switch (what)
+	{
+	case OSS_GET_PROCINFO_UID:
+		return getuid();
+		break;
+	}
+
+	return OSS_EINVAL;
+}
 
 oss_device_t *
 osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,

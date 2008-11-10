@@ -20,6 +20,12 @@ then
 	OS=SCO_SV
 fi
 
+# Use the same source directories for Haiku and BeOS
+if test "$OS " = "Haiku "
+then
+	OS=BeOS
+fi
+
 # Use Linux24 as the OS name for Linux 2.4.x
 if test "$OS " = "Linux "
 then

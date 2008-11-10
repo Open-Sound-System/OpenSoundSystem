@@ -408,7 +408,7 @@ parse_config (FILE * f, conf_t * conf)
 #include "gen_driver_sco.inc"
 #endif
 
-#if defined(__BEOS__)
+#if defined(__BEOS__) || defined(__HAIKU__)
 #include "gen_driver_beos.inc"
 #endif
 
@@ -762,7 +762,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 # endif
 #endif
 
-#if defined(__BEOS__)
+#if defined(__BEOS__) || defined(__HAIKU__)
       fprintf (f, "CFLAGS=-O2 -D_KERNEL -D_KERNEL_MODE=1 -no-fpic\n");
 #endif
 
@@ -1018,7 +1018,7 @@ produce_output (conf_t * conf)
 #include "srcconf_solaris.inc"
 #endif
 
-#ifdef __BEOS__
+#if defined(__BEOS__) || defined(__HAIKU__)
 #include "srcconf_beos.inc"
 #endif
 
@@ -1182,6 +1182,8 @@ check_system (conf_t * conf)
 
   if (strcmp (un.sysname, "UnixWare") == 0)
     strcpy (un.sysname, "SCO_SV");
+  if (strcmp (un.sysname, "Haiku") == 0)
+    strcpy (un.sysname, "BeOS");
   printf ("System: %s\n", un.sysname);
   strcpy (conf->system, un.sysname);
   sprintf (this_os, "kernel/OS/%s", un.sysname);

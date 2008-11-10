@@ -71,7 +71,10 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 
   if (strcmp (conf->bus, "PCI") == 0)
     {
-      fprintf (src, "static struct { uint32 vendor, product; } id_table[] = {\n");
+      fprintf (src, "static struct {\n");
+      fprintf (src, "\tbool subsystem;\n");
+      fprintf (src, "\tuint32 vendor, product;\n");
+      fprintf (src, "} id_table[] = {\n");
 
       while (fgets (line, sizeof (line) - 1, f) != NULL)
 	{
@@ -97,24 +100,25 @@ generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
 	  if (*p == '\t')
 	    *p++ = 0;
 
-	  if (strncmp (s, "pci", 3) == 0)
+	  if (strncmp (s, "pci", 3) == 0 || strncmp (s, "pcs", 3) == 0)
 	    {
+	      const char *sub = (strncmp (s, "pcs", 3) == 0) ? "true" : "false";
 	      if (sscanf (s + 3, "%x,%x", &vendor, &product) != 2)
 		{
 		  fprintf (stderr, "Bad PCI id %s\n", s);
 		}
 
-	      fprintf (src, "\t{0x%x,\t0x%x},\n", vendor, product);
+	      fprintf (src, "\t{%s,\t0x%x,\t0x%x},\n", sub, vendor, product);
 	    }
 
 	}
-
-      fclose (f);
 
       fprintf (src, "\t{0}\n");
       fprintf (src, "};\n");
       fprintf (src, "\n");
     }
+
+  fclose (f);
 
 
 /*

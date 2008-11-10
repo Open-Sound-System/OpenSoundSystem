@@ -45,11 +45,30 @@ int DRIVER_PROBE()
       /* if we match a supported vendor */
       while (id_table[vendor].vendor)
         {
-          if (id_table[vendor].vendor == pcii.vendor_id &&
+          bool match = false;
+
+          /* check for function vendor & device id */
+          if (id_table[vendor].subsystem == false &&
+              id_table[vendor].vendor == pcii.vendor_id &&
               id_table[vendor].product == pcii.device_id)
             {
+              dprintf("oss: matching pci %04x,%04x\n", id_table[vendor].vendor, id_table[vendor].product);
+              match = true;
+            }
+
+          /* check for subsystem vendor & device id */
+          if (id_table[vendor].subsystem == true &&
+              pcii.header_type == 0 &&
+              id_table[vendor].vendor == pcii.u.h0.subsystem_vendor_id &&
+              id_table[vendor].product == pcii.u.h0.subsystem_id)
+            {
+              dprintf("oss: matching pci subsystem %04x,%04x\n", id_table[vendor].vendor, id_table[vendor].product);
+              match = true;
+            }
+
+          if (match)
+            {
               dev_info_t *di;
-              dprintf("oss: matching pci %04x,%04x\n", pcii.vendor_id, pcii.device_id);
               di = PMALLOC(NULL, sizeof(dev_info_t));
               if (!di)
                 break;

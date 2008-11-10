@@ -56,7 +56,7 @@
 #include <sys/param.h>
 #include <oss_errno.h>
 #include <sys/uio.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #ifdef __HAIKU__
 #include <poll.h>
 #endif
@@ -417,7 +417,6 @@ extern void oss_unmap_pci_mem (void *addr);
 #define UNMAP_PCI_IOADDR(osdev, ix)	{}
 
 #define GET_PROCESS_PID(f)  find_thread(NULL)
-//#define GET_PROCESS_UID()	getuid()
 #define GET_PROCESS_UID()	getuid()
 #define GET_PROCESS_NAME(f) NULL
 

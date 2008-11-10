@@ -2,9 +2,6 @@
 static void
 check_sysdep (conf_t * conf, struct utsname *un)
 {
-  if (strcmp (un->sysname, "Haiku") == 0)
-    strcpy (un->sysname, "BeOS");
-
   strcpy (conf->cplusplus, "g++ -fno-rtti -fno-exceptions -I.");
 
   /* fixup machine names */
@@ -22,10 +19,9 @@ check_sysdep (conf_t * conf, struct utsname *un)
   if (strcmp (un->machine, "BeMac") == 0 ||
       strcmp (un->machine, "BeBox") == 0)
     {
-      /* XXX: those are PPC 
+      /* seems to be what Linux uses */
+      /* XXX: check for ppc64 ? */
       strcpy (conf->arch, "ppc");
-      strcpy (conf->platform, "ppc");*/
-      fprintf(stderr, "FIXME: convert arch/machine BeMac/BeBox\n");
-      exit(1);
+      strcpy (conf->platform, "ppc");
     }
 }
