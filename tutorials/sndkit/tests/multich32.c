@@ -1,12 +1,17 @@
 /*
  * Multi channel audio test.
  *
- * NOTE! ***** THIS PROGRAM SEEMS TO BE BROKEN. DON'T USE IT AS A TEMPLATE FOR
- * 	 NEW PROGRAMS. *****
- *
- * This program is intended to test playback of 32 bit samples using 4 or more
+ * This program is intended to test playback of 16 bit samples using 4 or more
  * channels at 48000 Hz. The program plays sine wave pulses sequentially on
  * channels 0 to N-1.
+ *
+ * Arguments:
+ *
+ * 1:	Number of channelts (default is 8).
+ * 2:	Audio device (/dev/dsp by default).
+ * 3-N: Options
+ * 	  -b	Bypass virtual mixer
+ * 	  -r	Raw mode (disables automatic sample rate/format conversions)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,40 +20,59 @@
 #include <sys/ioctl.h>
 #include <soundcard.h>
 
-static short sinedata[] = {
-  0x9080, 0xb0a0, 0xcdbf, 0xe4d9, 0xf5ed, 0xfdfa, 0xfdff, 0xf5fa,
-  0xe4ed, 0xcdd9, 0xb0bf, 0x90a0, 0x6f7f, 0x4f5f, 0x3240, 0x1b26,
-  0x0a12, 0x0205, 0x0201, 0x0a05, 0x1b12, 0x3226, 0x4f40, 0x6f5f,
-  0x9080, 0xb0a0, 0xcdbf, 0xe4d9, 0xf5ed, 0xfdfa, 0xfdff, 0xf5fa,
-  0xe4ed, 0xcdd9, 0xb0bf, 0x90a0, 0x6f7f, 0x4f5f, 0x3240, 0x1b26,
-  0x0a12, 0x0205, 0x0201, 0x0a05, 0x1b12, 0x3226, 0x4f40, 0x6f5f,
-  0x9080, 0xb0a0, 0xcdbf, 0xe4d9, 0xf5ed, 0xfdfa, 0xfdff, 0xf5fa,
-  0xe4ed, 0xcdd9, 0xb0bf, 0x90a0, 0x6f7f, 0x4f5f, 0x3240, 0x1b26,
-  0x0a12, 0x0205, 0x0201, 0x0a05, 0x1b12, 0x3226, 0x4f40, 0x6f5f,
-  0x9080, 0xb0a0, 0xcdbf, 0xe4d9, 0xf5ed, 0xfdfa, 0xfdff, 0xf5fa,
-  0xe4ed, 0xcdd9, 0xb0bf, 0x90a0, 0x6f7f, 0x4f5f, 0x3240, 0x1b26,
-  0x0a12, 0x0205, 0x0201, 0x0a05, 0x1b12, 0x3226, 0x4f40, 0x6f5f,
+static int sinedata[48] = {
+
+  0, 4276, 8480, 12539, 16383, 19947, 23169, 25995,
+  28377, 30272, 31650, 32486, 32767, 32486, 31650, 30272,
+  28377, 25995, 23169, 19947, 16383, 12539, 8480, 4276,
+  0, -4276, -8480, -12539, -16383, -19947, -23169, -25995,
+  -28377, -30272, -31650, -32486, -32767, -32486, -31650, -30272,
+  -28377, -25995, -23169, -19947, -16383, -12539, -8480, -4276
 };
 
 int
 main (int argc, char *argv[])
 {
   char *dev = "/dev/dsp";
-  int fd, l, i, n = 0, ch, p = 0, arg, channels;
-  int nch = 10;
+  int fd, l, i, n = 0, ch, p = 0, phase = 0, arg, channels, srate, thisch = 0;
+  int tick = 0;
+  int nch = 8;
+  int bypass_vmix=0;
+  int disable_format_conversions=0;
 
   int buf[1024];
 
   if (argc > 1)
-    nch = atoi (argv[1]);
+    if (sscanf (argv[1], "%d", &nch) != 1)
+      nch = 2;
+
   if (argc > 2)
     dev = argv[2];
 
-  if ((fd = open (dev, O_WRONLY, 0)) == -1)
+  for (i=3;i<argc;i++)
+  if (argv[i][0]=='-')
+  switch (argv[i][1])
+  {
+  case 'b': /* Bypass virtual mixer */
+	  bypass_vmix = O_EXCL;
+	  break;
+
+  case 'r': /* Use raw mode (disable automatic format conversions) */
+	  disable_format_conversions=1;
+	  break;
+  }
+
+  if ((fd = open (dev, O_WRONLY|bypass_vmix, 0)) == -1)
     {
       perror (dev);
       exit (-1);
     }
+
+  if (disable_format_conversions)
+     {
+  	arg=0;
+  	ioctl(fd, SNDCTL_DSP_COOKEDMODE, &arg);
+     }
 
   arg = nch;
   if (ioctl (fd, SNDCTL_DSP_CHANNELS, &arg) == -1)
@@ -56,40 +80,43 @@ main (int argc, char *argv[])
   channels = arg;
   fprintf (stderr, "Channels %d\n", arg);
 
-  arg = AFMT_S32_LE;
+  arg = AFMT_S32_NE;
   if (ioctl (fd, SNDCTL_DSP_SETFMT, &arg) == -1)
     perror ("SNDCTL_DSP_SETFMT");
   fprintf (stderr, "Format %x\n", arg);
 
-  arg = 44100;
+  arg = 48000;
   if (ioctl (fd, SNDCTL_DSP_SPEED, &arg) == -1)
     perror ("SNDCTL_DSP_SPEED");
   printf ("Using sampling rate %d\n", arg);
-
-  l = sizeof (sinedata) / 2;
+  srate = arg;
 
   while (1)
     {
       for (ch = 0; ch < channels; ch++)
 	{
-#if 0
-	  i = n / (ch + 1);
-	  i %= l;
-	  buf[p] = sinedata[i] << 16;
-#else
-	  i = n % l;
-	  if (((n / 4800) % channels) == ch)
-	    buf[p] = sinedata[i] << 16;
+	  if (ch == thisch)
+	    {
+	      buf[p] = sinedata[phase]<<16;
+	      phase = (phase + 1 + (ch / 2)) % 48;
+	      if (phase == 0 && tick > 10 * channels)
+		{
+		  thisch = (thisch + 1) % channels;
+		  tick = 0;
+		}
+	    }
 	  else
 	    buf[p] = 0;
-#endif
+
 	  p++;
 
-	  if (p >= 1024)
+	  if (p >= sizeof (buf) / 4)
 	    {
 	      if (write (fd, buf, p * 4) != p * 4)
 		perror ("write");
 	      p = 0;
+	      tick++;
+
 	    }
 	}
       n++;

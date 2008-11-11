@@ -80,7 +80,7 @@ main (int argc, char *argv[])
   channels = arg;
   fprintf (stderr, "Channels %d\n", arg);
 
-  arg = AFMT_S16_LE;
+  arg = AFMT_S16_NE;
   if (ioctl (fd, SNDCTL_DSP_SETFMT, &arg) == -1)
     perror ("SNDCTL_DSP_SETFMT");
   fprintf (stderr, "Format %x\n", arg);
