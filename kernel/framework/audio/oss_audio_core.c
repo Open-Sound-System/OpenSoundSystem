@@ -1703,7 +1703,6 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
 	      * Create a new vmix client instance.
 	      */
 
-cmn_err(CE_CONT, "Calling vmix_create_client(%p) for %d/%s\n", adev->vmix_mixer, adev->engine_num, adev->name);
 	     if ((vmix_dev=vmix_create_client(adev->vmix_mixer))>=0)
 	        {
 #ifdef DO_TIMINGS
@@ -3250,6 +3249,10 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
 
     case SNDCTL_DSP_COOKEDMODE:
       val = *arg;
+
+      if (adev->flags & ADEV_NONINTERLEAVED)
+	 val=1;
+
       adev->cooked_enable = !!val;
       if (adev->d->adrv_ioctl != NULL)
 	adev->d->adrv_ioctl (dev, cmd, arg);
@@ -3797,6 +3800,8 @@ prepare_output (adev_p adev, dmap_p dmap)
     dmap->flags |= DMAP_COOKED;
   if (adev->user_parms.channels != adev->hw_parms.channels)
     dmap->flags |= DMAP_COOKED;
+  if ((adev->flags & ADEV_NONINTERLEAVED) && adev->hw_parms.channels > 1)
+    dmap->flags |= DMAP_COOKED;
 
 #if 1
   if (always_cooked && !(dmap->mapping_flags & DMA_MAP_MAPPED))
@@ -3919,6 +3924,8 @@ prepare_input (adev_p adev, dmap_p dmap)
   if (adev->user_parms.fmt != adev->hw_parms.fmt)
     dmap->flags |= DMAP_COOKED;
   if (adev->user_parms.channels != adev->hw_parms.channels)
+    dmap->flags |= DMAP_COOKED;
+  if ((adev->flags & ADEV_NONINTERLEAVED) && adev->hw_parms.channels > 1)
     dmap->flags |= DMAP_COOKED;
 
 #if 1
@@ -4286,7 +4293,7 @@ find_input_space (adev_p adev, dmap_p dmap, unsigned char **dbuf)
   VMEM_CHECK (p1, l);
   VMEM_CHECK (p+dmapos, l);
 
-  if (adev->flags & ADEV_NONINTERLEAVED)
+  if ((adev->flags & ADEV_NONINTERLEAVED) && adev->hw_parms.channels > 1)
      copy_read_noninterleaved(adev, dmap, dmapos, p1, 0, l);
   else
      memcpy (p1, p+dmapos, l);
@@ -4827,7 +4834,7 @@ write_copy (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
       VMEM_CHECK (&dmap->dmabuf[offs], l);
       VMEM_CHECK (buf + p, l);
 
-      if (adev->flags & ADEV_NONINTERLEAVED)
+      if ((adev->flags & ADEV_NONINTERLEAVED) && adev->hw_parms.channels > 1)
 	 copy_write_noninterleaved(adev, dmap, offs, buf, p, l);
       else
          memcpy (&dmap->dmabuf[offs], buf + p, l);
