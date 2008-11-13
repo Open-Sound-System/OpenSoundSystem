@@ -1918,6 +1918,7 @@ EXPORT_SYMBOL (oss_unregister_chrdev);
 EXPORT_SYMBOL (oss_reserve_pages);
 EXPORT_SYMBOL (oss_unreserve_pages);
 EXPORT_FUNC (ac97_install);
+EXPORT_FUNC (ac97_install_full);
 EXPORT_FUNC (ac97_playrate);
 EXPORT_FUNC (ac97_recrate);
 EXPORT_FUNC (ac97_varrate);

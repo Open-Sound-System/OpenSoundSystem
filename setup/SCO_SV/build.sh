@@ -84,13 +84,13 @@ do
 # Now copy the man pages
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
         then
-	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
+	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.tmp
              $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 	fi
 
         if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 	then
-	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g' < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
+	     sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.tmp
 	     $TXT2MAN -t "$N" -v "Devices" -s 7d /tmp/ossman.tmp > prototype/usr/man/man7/$N.7
 	fi
 
@@ -98,7 +98,7 @@ echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 done
 
-sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf/:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.tmp
+sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.tmp
 $TXT2MAN -t "osscore" -v "Devices" -s 7 > prototype/usr/share/man/man7/osscore.7
 rm -f /tmp/ossman.tmp
 

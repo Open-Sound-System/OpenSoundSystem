@@ -22,6 +22,9 @@ o intelpci_force_mmio=<0|1> (default is 0=Disable)
  This option can be used to force the ICH4/ICH5 and ICH6 controllers to 
  run in memory mapped mode to free up I/O address space.
 
+o ich_jacksense=<0|1> (default is 0)
+ Force use of jacksensing on some AD198x mixers.
+
 FILES
 CONFIGFILEPATH/oss_ich.conf  Device configuration file.
 

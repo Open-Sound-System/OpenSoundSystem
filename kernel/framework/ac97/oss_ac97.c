@@ -553,6 +553,15 @@ int
 ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
 	      ac97_writefunc_t writefn, void *hostparms, oss_device_t * osdev)
 {
+  return
+    ac97_install_full (devc, host_name, readfn, writefn, hostparms, osdev, 0);
+}
+
+int
+ac97_install_full (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
+		   ac97_writefunc_t writefn, void *hostparms,
+		   oss_device_t * osdev, int flags)
+{
   int my_mixer;
   int tmp, tmp2;
   unsigned int id, mask;
@@ -569,8 +578,10 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
     return OSS_EIO;
   codec_write (devc, 0x26, 0x00);	/* Power up */
   oss_udelay (1000);
+  if (ac97_amplifier != -1) tmp = ac97_amplifier;
+  else tmp = !(flags & AC97_INVERTED);
 
-  if (ac97_amplifier)
+  if (tmp)
     codec_write (devc, 0x26, codec_read (devc, 0x26) & ~0x8000);	/* Power up (external amplifier powered up) */
   else
     codec_write (devc, 0x26, codec_read (devc, 0x26) | 0x8000);	/* Power up (external amplifier powered down) */
@@ -794,21 +805,26 @@ ac97_install (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       strcpy (devc->name, "AD1981");
       devc->spdifout_support = AD_SPDIFOUT;
       /* set jacksense to mute line if headphone is plugged */
-      /* codec_write (devc, 0x72, (codec_read (devc, 0x72) & (~0xe00)) | 0x400); */
+      if (flags & AC97_FORCE_SENSE)
+	/* XXX */
+        codec_write (devc, 0x72, (codec_read (devc, 0x72) & (~0xe00)) | 0x400);
       break;
 
     case 0x41445374:		/* ADS74 */
       strcpy (devc->name, "AD1981B");
       devc->spdifout_support = AD_SPDIFOUT;
       /* set jacksense to mute line if headphone is plugged */
-      codec_write (devc, 0x72, (codec_read (devc, 0x72) | 0x0800));
+      if (flags & AC97_FORCE_SENSE)
+	codec_write (devc, 0x72, (codec_read (devc, 0x72) | 0x0800));
       break;
 
     case 0x41445375:		/* ADS74 */
       strcpy (devc->name, "AD1985");
       devc->spdifout_support = AD_SPDIFOUT;
       devc->mixer_ext = AD1980_MIXER_EXT;
-      /* codec_write (devc, 0x72, (codec_read (devc, 0x72) & (~0xe00)) | 0x400); */
+      if (flags & AC97_FORCE_SENSE)
+	/* XXX */
+        codec_write (devc, 0x72, (codec_read (devc, 0x72) & (~0xe00)) | 0x400);
       codec_write (devc, 0x76, 0xC420);
       break;
 

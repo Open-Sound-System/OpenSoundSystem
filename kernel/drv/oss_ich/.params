@@ -10,3 +10,7 @@ int intelpci_force_mmio = 0;
  * intelpci_force_mmio forces the driver to use Memory Mapped IO
  * (some bioses don't provide I/O mapped addresses).
  */
+int ich_jacksense = 0;
+/*
+ * Force enabling jacksense on some AD198x mixers.
+ */

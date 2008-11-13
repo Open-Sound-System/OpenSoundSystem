@@ -39,11 +39,13 @@ int src_quality=3;
  *    5 - P  production quality
  *    6 - PX production quality (prod quality with extra precision)
  */
-int ac97_amplifier=1;
+int ac97_amplifier=-1;
 /*
- * This option enables the speaker power amplifier feature of AC97 codec
- * (if available). If necessary this feature can be disabled by setting
- * this option to 0. Affects all AC97 based audio devices in the system.
+ * When set to 1 this option enables the speaker power amplifier feature of
+ * AC97 codec (if available). Some boards have this inverted, so if necessary
+ * this feature can be disabled by setting this option to 0.
+ * Affects all AC97 based audio devices in the system.
+ * Default: -1=autodetect correct setting.
  */
 int ac97_recselect=0;
 /*

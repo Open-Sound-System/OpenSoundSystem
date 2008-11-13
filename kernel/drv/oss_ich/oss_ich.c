@@ -44,6 +44,8 @@ extern int intelpci_rate_tuning;
 #define MAX_PORTC 3
 #define BDL_SIZE	32
 
+extern int ich_jacksense;
+
 typedef struct
 {
   int open_mode;
@@ -84,6 +86,7 @@ typedef struct ich_devc
   /* Mixer */
   ac97_devc ac97devc;
   int mixer_dev;
+  int inverted_amplifier;
 
   /* Audio parameters */
   int open_mode;
@@ -1012,8 +1015,9 @@ ich_init (ich_devc * devc)
    * Init mixer
    */
   my_mixer =
-    ac97_install (&devc->ac97devc, "ICH AC97 Mixer", ac97_read, ac97_write,
-		  devc, devc->osdev);
+    ac97_install_full (&devc->ac97devc, "ICH AC97 Mixer", ac97_read, ac97_write,
+		       devc, devc->osdev, devc->inverted_amplifier |
+		       (ich_jacksense?AC97_FORCE_SENSE:0));
   if (my_mixer == -1)
     {
       cmn_err (CE_WARN, "AC97 mixer installation failed\n");
@@ -1130,7 +1134,7 @@ int
 oss_ich_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /* , pci_latency */ ;
-  unsigned short pci_command, vendor, device;
+  unsigned short pci_command, vendor, device, sub_vendor, sub_id;
   unsigned int pci_ioaddr0, pci_ioaddr1;
   unsigned int dw;
 
@@ -1170,6 +1174,31 @@ oss_ich_attach (oss_device_t * osdev)
       cmn_err (CE_WARN, "Hardware not recognized (vendor=%x, dev=%x)\n",
 	       vendor, device);
       return 0;
+    }
+
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
+  dw = (sub_id << 8) | sub_vendor;
+
+  switch (dw)
+    {
+       case 0x202f161f:	/* Gateway 7326GZ */
+       case 0x203a161f:	/* Gateway 4028GZ or 4542GZ */
+       case 0x204c161f:	/* Kvazar-Micro Senator 3592XT */
+       case 0x8144104d:	/* Sony VAIO PCG-TR* */
+       case 0x8197104d:	/* Sony S1XP */
+       case 0x81c0104d:	/* Sony VAIO type T */
+       case 0x81c5104d:	/* Sony VAIO VGN B1VP/B1XP */
+       case 0x3089103c:	/* Compaq Presario B3800 */
+       case 0x309a103c:	/* HP Compaq nx4300 */
+       case 0x82131033:	/* NEC VersaPro VJ10F/BH */
+       case 0x82be1033:	/* NEC VersaPro VJ12F/CH */
+         devc->inverted_amplifier = AC97_INVERTED;
+         cmn_err (CE_CONT, "An inverted amplifier has been autodetected\n");
+         break;
+       default:
+         devc->inverted_amplifier = 0;
+         break;
     }
 
   pci_read_config_byte (osdev, PCI_REVISION_ID, &pci_revision);

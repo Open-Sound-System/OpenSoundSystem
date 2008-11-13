@@ -49,6 +49,7 @@ typedef struct
   /* Mixer */
   ac97_devc ac97devc;
   int mixer_dev;
+  int inverted;
 
   /* Audio parameters */
   int open_mode;
@@ -898,8 +899,8 @@ init_ATI (ATI_devc * devc)
  * Init mixer
  */
   my_mixer =
-    ac97_install (&devc->ac97devc, "AC97 Mixer", ac97_read, ac97_write, devc,
-		  devc->osdev);
+    ac97_install_full (&devc->ac97devc, "AC97 Mixer", ac97_read, ac97_write,
+		       devc, devc->osdev, devc->inverted);
 
   if (my_mixer == -1)
     return 0;			/* No mixer */
@@ -987,7 +988,7 @@ int
 oss_atiaudio_attach (oss_device_t * osdev)
 {
   unsigned char pci_irq_line, pci_revision /*, pci_latency */ ;
-  unsigned short pci_command, vendor, device;
+  unsigned short pci_command, vendor, device, sub_vendor, sub_id;
   unsigned int pci_ioaddr;
   ATI_devc *devc;
 
@@ -1028,6 +1029,20 @@ oss_atiaudio_attach (oss_device_t * osdev)
 
   devc->osdev = osdev;
   osdev->devc = devc;
+
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
+  pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
+  switch ((sub_id << 8) | sub_vendor)
+    {
+      case 0x11831043:  /* ASUS A6R */
+      case 0x2043161f:  /* Maxselect x710s */
+	devc->inverted = AC97_INVERTED;
+	cmn_err (CE_CONT, "An inverted amplifier has been autodetected\n");
+	break;
+      default:
+	devc->inverted = 0;
+	break;
+    }
 
   devc->membar_addr = pci_ioaddr;
   devc->membar_virt =

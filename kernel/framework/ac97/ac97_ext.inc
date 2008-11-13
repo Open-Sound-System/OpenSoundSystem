@@ -1092,8 +1092,6 @@ ac97_mixext_ctl (int dev, int ctrl, unsigned int cmd, int value)
 	    }
 	  break;
 
-	  break;
-
 	case MICBOOST:
 	  if (devc->mixer_ext == AD1980_MIXER_EXT)
 	    {

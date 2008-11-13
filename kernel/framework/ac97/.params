@@ -1,10 +1,11 @@
-int ac97_amplifier=1;
+int ac97_amplifier=-1;
 /*
  * AC97 codecs have a control output for an external audio output amplifier 
  * (necessary in some situations such as laptops). In some cases there may be
- * need to tuen this amplifier off.
+ * need to turn this amplifier off.
  *
- * ac97_amplifier=1 enables the output amplifier stage (default).
+ * ac97_amplifier=-1 enables autodetection (default).
+ * ac97_amplifier=1 always enables the output amplifier stage.
  * ac97_amplifier=0 disables it.
  */
 

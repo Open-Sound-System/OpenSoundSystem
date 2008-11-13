@@ -105,6 +105,11 @@ ac97_devc;
 extern int ac97_install (ac97_devc * devc, char *name, ac97_readfunc_t readfn,
 			 ac97_writefunc_t writefn, void *hostparms,
 			 oss_device_t * osdev);
+#define AC97_INVERTED		0x1
+#define AC97_FORCE_SENSE	0x2
+extern int ac97_install_full (ac97_devc * devc, char *name,
+			      ac97_readfunc_t readfn, ac97_writefunc_t writefn,
+			      void *hostparms, oss_device_t * osdev, int flags);
 extern int ac97_init_ext (int dev, ac97_devc * devc,
 			  mixer_create_controls_t func, int nextra);
 extern int ac97_varrate (ac97_devc * devc);
