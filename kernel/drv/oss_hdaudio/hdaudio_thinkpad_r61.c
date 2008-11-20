@@ -52,7 +52,7 @@ hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int 
 	   {
 		if (HDA_PINSELECT(0x14, ctl, group, "mode", -1))
 			HDA_CHOICES(ctl, "input");
-		HDA_INAMP(0x14, 0, group, "out", 90);	/* From widget 0x00 */
+		HDA_INAMP(0x14, 0, group, "out", 0);	/* From widget 0x00 */
 	   }
 
 	if (HDA_PIN_GROUP(0x15, group, pin_group, "int-mic", n, "jack", 4))	/* Pin widget 0x15 */
