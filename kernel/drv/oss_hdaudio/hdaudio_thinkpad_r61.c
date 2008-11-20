@@ -59,7 +59,7 @@ hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int 
 	   {
 		if (HDA_PINSELECT(0x15, ctl, group, "mode", -1))
 			HDA_CHOICES(ctl, "input");
-		HDA_INAMP(0x15, 0, group, "out", 90);	/* From widget 0x00 */
+		HDA_INAMP(0x15, 0, group, "out", 0);	/* From widget 0x00 */
 	   }
 
 	if (HDA_PIN_GROUP(0x16, group, pin_group, "int-cd", n, "jack", 4))	/* Pin widget 0x16 */
@@ -166,13 +166,13 @@ hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int 
 
 			HDA_GROUP(amp_group, group, "mute");
 			HDA_INMUTE(0x07, 0, amp_group, "headphone-sel", UNMUTE);	/* From widget 0x22 */
-			HDA_INMUTE(0x07, 1, amp_group, "input-mix", MUTE);	/* From widget 0x21 */
+			HDA_INMUTE(0x07, 1, amp_group, "input-mix", UNMUTE);	/* From widget 0x21 */
 		}
 
 		/* Widget 0x22 (headphone-sel) */
 		/* Src 0x3=headphone */
 		/* Src 0x4=front */
-		if (HDA_SELECT(0x22, "src", ctl, group, -1))
+		if (HDA_SELECT(0x22, "src", ctl, group, 1 /* Select front */))
 		   {
 			HDA_CHOICES(ctl, "headphone front");
 		   }
