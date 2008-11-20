@@ -4219,7 +4219,7 @@ move_raw_rdpointer (adev_p adev, dmap_p dmap, int len)
 }
 
 static void
-copy_read_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, char *localbuf, int local_offs, int l)
+copy_read_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned char *localbuf, int local_offs, int l)
 {
 /*
  * Copy audio data from non-interleaved device buffer to interleaved
@@ -4779,6 +4779,17 @@ store_tmp_data (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
 static void
 copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned char *localbuf, int local_offs, int l)
 {
+#if 1
+static int sinebuf[48] = {
+  0, 4276, 8480, 12539, 16383, 19947, 23169, 25995,
+  28377, 30272, 31650, 32486, 32767, 32486, 31650, 30272,
+  28377, 25995, 23169, 19947, 16383, 12539, 8480, 4276,
+  0, -4276, -8480, -12539, -16383, -19947, -23169, -25995,
+  -28377, -30272, -31650, -32486, -32767, -32486, -31650, -30272,
+  -28377, -25995, -23169, -19947, -16383, -12539, -8480, -4276
+};
+static int sinep = 0;
+#endif
 /*
  * Copy interleaved N channel data to non-interleaved device buffer.
  */
@@ -4786,6 +4797,7 @@ copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned cha
 	
   int ch, i, nc = adev->hw_parms.channels;
   int *inbuf, *outbuf;
+//cmn_err(CE_CONT, "Copy %d->%d, l=%d\n", local_offs, dma_offs, l);
 
   l		/= sizeof(*inbuf)*nc;
   dma_offs	/= sizeof(*inbuf);
@@ -4798,10 +4810,22 @@ copy_write_noninterleaved(adev_t *adev, dmap_t *dmap, int dma_offs, unsigned cha
 
 	outbuf = (int *)(dmap->dmabuf + dmap->buffsize*ch / nc);
 	outbuf += dma_offs / nc;
+//cmn_err(CE_CONT, "   Ch %d (ib=%d, ob=%d)\n", ch, (long long)inbuf-(long long)localbuf, (long long)outbuf-(long long)dmap->dmabuf);
 
 	for (i=0;i<l;i++)
 	{
+#if 1
+		// Debugging code
+		//*outbuf++ = (ch==0) ? ((i+local_offs)*128*1024) : 0;
+		//*outbuf++ = (ch==0) ? *inbuf : 0;
+		if (ch==0)
+		{
+			*outbuf++ = sinebuf[sinep]<<16;
+			sinep=(sinep+1)%48;
+		} else *outbuf++=0;
+#else
 		*outbuf++ = *inbuf;
+#endif
 		inbuf += nc;
 	}
   }
@@ -5665,7 +5689,7 @@ do_outputintr (int dev, int intr_flags)
 #ifdef DO_TIMINGS
 	      oss_do_timing ("Clearing the buffer");
 #endif
-	      memset (dmap->dmabuf, dmap->neutral_byte, dmap->bytes_in_use);
+	      memset (dmap->dmabuf, dmap->neutral_byte, dmap->buffsize);
 	    }
 	  dmap->underrun_flag = 1;
 #if 1
