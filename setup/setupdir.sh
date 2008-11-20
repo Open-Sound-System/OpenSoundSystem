@@ -98,7 +98,7 @@ rm -f dirsetup
 
 if test "$CLOSED_SOURCE " != "YES "
 then
-	rm -rf kernel/nonfree
+	rm -rf kernel/nonfree 4front-private
 fi
 
 if test "$ONLY_DRVS " != " "
