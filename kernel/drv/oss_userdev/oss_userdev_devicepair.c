@@ -341,6 +341,33 @@ userdev_client_open (int dev, int mode, int open_flags)
   return 0;
 }
 
+static void
+wipe_audio_buffers(userdev_devc_t *devc)
+{
+/*
+ * Write silence to the audio buffers when only one of the sides
+ * is open. This prevents the device from looping the last fragments
+ * written to the device.
+ */
+	dmap_t *dmap;
+
+	dmap = audio_engines[devc->client_portc.audio_dev]->dmap_out;
+	if (dmap != NULL && dmap->dmabuf != NULL)
+	   memset(dmap->dmabuf, 0, dmap->buffsize);
+
+	dmap = audio_engines[devc->client_portc.audio_dev]->dmap_in;
+	if (dmap != NULL && dmap->dmabuf != NULL)
+	   memset(dmap->dmabuf, 0, dmap->buffsize);
+
+	dmap = audio_engines[devc->server_portc.audio_dev]->dmap_out;
+	if (dmap != NULL && dmap->dmabuf != NULL)
+	   memset(dmap->dmabuf, 0, dmap->buffsize);
+
+	dmap = audio_engines[devc->server_portc.audio_dev]->dmap_in;
+	if (dmap != NULL && dmap->dmabuf != NULL)
+	   memset(dmap->dmabuf, 0, dmap->buffsize);
+}
+
 /*ARGSUSED*/
 static void
 userdev_server_close (int dev, int mode)
@@ -360,6 +387,8 @@ userdev_server_close (int dev, int mode)
 
   if (open_count == 0)
      userdev_free_device_pair (devc);
+  else
+     wipe_audio_buffers(devc);
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
@@ -379,6 +408,8 @@ userdev_client_close (int dev, int mode)
 
   if (open_count == 0)
      userdev_free_device_pair (devc);
+  else
+     wipe_audio_buffers(devc);
 
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
@@ -575,6 +606,7 @@ userdev_server_ioctl (int dev, unsigned int cmd, ioctl_arg arg)
 
 		memcpy(devc->mixer_values, arg, sizeof(devc->mixer_values));
 		mixer_devs[devc->mixer_dev]->modify_counter++;
+//cmn_err(CE_CONT, "Set %08x %08x\n", devc->mixer_values[0], devc->mixer_values[1]);
 		return 0;
 	    }
 	    break;

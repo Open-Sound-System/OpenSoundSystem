@@ -36,6 +36,7 @@ create_mixer_interface(int fd)
 {
 	userdev_mixctl_t ctl;
 	userdev_mixgroup_t grp;
+	userdev_mixvalues_t rec;
 	int group;
 
 /*
@@ -95,6 +96,22 @@ create_mixer_interface(int fd)
 		perror("USERDEV_CREATE_MIXCTL");
 		return;
 	}
+
+/*
+ * Finally set the initial values for all the controls
+ */
+	memset(&rec, 0, sizeof(rec)); /* Set all to zeroes */
+
+	rec.values[0] = 100 | (100<<16);	// volumitaz = 100:100
+	rec.values[1] = 2;			// private.mode = "cruise"
+
+/*
+ * Post the initial settings
+ */
+	if (ioctl(fd, USERDEV_SET_MIXERS, &rec)==-1)
+	{
+		perror("USERDEV_SET_MIXERS");
+	}
 }
 
 static void
@@ -119,12 +136,11 @@ poll_mixer(int fd)
 			perror("USERDEV_GET_MIXERS");
 			return;
 		}
-		
 
 		printf("Mixer change %d\n", count);
 
 		/*
-		 * Print only the contrlos that were allocated in
+		 * Print only the controls that were allocated in
 		 * create_mixer_interface()
 		 */
 		for (i=0;i<2;i++)
