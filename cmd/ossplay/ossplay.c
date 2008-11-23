@@ -32,7 +32,8 @@ double seek_time = 0;
 off_t (*ossplay_lseek) (int, off_t, int) = lseek;
 
 char script[512] = "";
-unsigned int level_meters = 0, nfiles = 1, datalimit = 0;
+unsigned int level_meters = 0, nfiles = 1;
+unsigned long long datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
 static const format_t format_a[] = {
@@ -598,8 +599,8 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
 
   if (tmp != channels)
     {
-      print_msg (ERRORM, "%s doesn't support %d channels.\n",
-	         dsp->dname, channels);
+      print_msg (ERRORM, "%s doesn't support %d channels (%d).\n",
+	         dsp->dname, channels, tmp);
       return 0;
     }
 
@@ -875,7 +876,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 't':
-          sscanf (optarg, "%u", &datalimit);
+          sscanf (optarg, "%ull", &datalimit);
           break;
 
         case 'w':
@@ -989,7 +990,7 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
 }
 
 int
-play (dspdev_t * dsp, int fd, unsigned int * datamark, unsigned int bsize,
+play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long bsize,
       double constant, decoders_queue_t * dec, seekfunc_t * seekf)
 {
 #define EXITPLAY(code) \
@@ -1001,8 +1002,8 @@ play (dspdev_t * dsp, int fd, unsigned int * datamark, unsigned int bsize,
     return code; \
   } while (0)
 
-  unsigned int rsize = bsize;
-  unsigned int filesize = *datamark;
+  unsigned long long rsize = bsize;
+  unsigned long long filesize = *datamark;
   ssize_t outl;
   unsigned char * buf, * obuf, contflag = 0;
   decoders_queue_t * d;
@@ -1075,7 +1076,7 @@ play (dspdev_t * dsp, int fd, unsigned int * datamark, unsigned int bsize,
 
 int
 record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
-        unsigned int datalimit, unsigned int * data_size,
+        unsigned long long datalimit, unsigned long long * data_size,
         decoders_queue_t * dec)
 {
 #define EXITREC(code) \
@@ -1105,6 +1106,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
   buf = ossplay_malloc (RECBUF_SIZE);
    /*LINTED*/ while (1)
     {
+//printf("datalimit %llu, *data_size %llu\n", datalimit, *data_size);
       if ((l = read (dsp->fd, buf, RECBUF_SIZE)) < 0)
 	{
           if ((errno == EINTR) && (eflag)) EXITREC (eflag);
@@ -1147,7 +1149,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
   return 0;
 }
 
-int silence (dspdev_t * dsp, unsigned int len, int speed)
+int silence (dspdev_t * dsp, unsigned long long len, int speed)
 {
   ssize_t i;
   unsigned char empty[1024];

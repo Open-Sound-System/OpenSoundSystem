@@ -51,7 +51,7 @@ static seekfunc_t seek_normal;
 static seekfunc_t seek_compressed;
 
 int
-decode_sound (dspdev_t * dsp, int fd, unsigned int filesize, int format,
+decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
               int channels, int speed, void * metadata)
 {
   decoders_queue_t * dec, * decoders;
@@ -219,9 +219,9 @@ exit:
 
 int
 encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
-              int channels, int speed, unsigned int datalimit)
+              int channels, int speed, unsigned long long datalimit)
 {
-  unsigned int datasize = 0;
+  unsigned long long datasize = 0;
   double constant;
   int ret;
   decoders_queue_t * dec, * decoders = NULL;
@@ -300,7 +300,8 @@ static ssize_t
 decode_24 (unsigned char ** obuf, unsigned char * buf,
            ssize_t l, void * metadata)
 {
-  unsigned int outlen = 0, i, * u32, v1;
+  unsigned long long outlen = 0;
+  unsigned int i, * u32, v1;
   int sample_s32, format = (int)(long)metadata, * outbuf = (int *) * obuf;
 
   if (format == AFMT_S24_PACKED) v1 = 8;
@@ -982,7 +983,7 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
 }
 
 verbose_values_t *
-setup_verbose (int format, double constant, unsigned int * filesize)
+setup_verbose (int format, double constant, unsigned long long * filesize)
 {
   verbose_values_t * val;
 
@@ -1014,8 +1015,8 @@ setup_verbose (int format, double constant, unsigned int * filesize)
 }
 
 static ssize_t
-seek_normal (int fd, unsigned int * datamark, unsigned int filesize,
-             double constant, unsigned int rsize, int channels)
+seek_normal (int fd, unsigned long long * datamark, unsigned long long filesize,
+             double constant, unsigned long long rsize, int channels)
 {
   off_t pos = seek_time * constant;
   int ret;
@@ -1032,14 +1033,14 @@ seek_normal (int fd, unsigned int * datamark, unsigned int filesize,
 }
 
 static ssize_t
-seek_compressed (int fd, unsigned int * datamark, unsigned int filesize,
-                 double constant, unsigned int rsize, int channels)
+seek_compressed (int fd, unsigned long long * datamark, unsigned long long filesize,
+                 double constant, unsigned long long rsize, int channels)
 /*
  * We have to use this method because some compressed formats depend on
  * the previous state of the decoder.
  */
 {
-  unsigned int pos = seek_time * constant;
+  unsigned long long pos = seek_time * constant;
 
   if (pos > filesize)
     {

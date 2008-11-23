@@ -117,8 +117,8 @@ msadpcm_values_t;
 
 typedef ssize_t (decfunc_t) (unsigned char **, unsigned char *,
                              ssize_t, void *);
-typedef ssize_t (seekfunc_t) (int, unsigned int *, unsigned int, double,
-                              unsigned int, int);
+typedef ssize_t (seekfunc_t) (int, unsigned long long *, unsigned long long, double,
+                              unsigned long long, int);
 
 typedef enum {
   FREE_OBUF = 1,
@@ -141,13 +141,13 @@ int le_int (const unsigned char *, int);
 off_t ossplay_lseek_stdin (int, off_t, int);
 int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);
-int play (dspdev_t *, int, unsigned int *, unsigned int, double,
+int play (dspdev_t *, int, unsigned long long *, unsigned long long, double,
           decoders_queue_t *, seekfunc_t *);
-int record (dspdev_t *, FILE *, const char *, double, unsigned int,
-            unsigned int *, decoders_queue_t * dec);
+int record (dspdev_t *, FILE *, const char *, double, unsigned long long,
+            unsigned long long *, decoders_queue_t * dec);
 const char * sample_format_name (int);
 int setup_device (dspdev_t *, int, int, int);
-int silence (dspdev_t *, unsigned int, int);
+int silence (dspdev_t *, unsigned long long, int);
 float format2bits (int);
 
 void select_playtgt (dspdev_t *);

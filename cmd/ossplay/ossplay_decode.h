@@ -16,14 +16,14 @@ typedef struct verbose_values {
   double tsecs;
   double constant;
   int format;
-  unsigned int * datamark;
+  unsigned long long * datamark;
 }
 verbose_values_t;
 
-int decode_sound (dspdev_t *, int, unsigned int, int, int, int, void *);
+int decode_sound (dspdev_t *, int, unsigned long long, int, int, int, void *);
 int encode_sound (dspdev_t *, fctypes_t, const char *, int, int, int,
-                  unsigned int);
+                  unsigned long long);
 int get_db_level (const unsigned char *, ssize_t, int);
-verbose_values_t * setup_verbose (int, double, unsigned int *);
+verbose_values_t * setup_verbose (int, double, unsigned long long *);
 
 #endif
