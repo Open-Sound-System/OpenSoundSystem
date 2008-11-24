@@ -17,3 +17,8 @@ int hdaudio_jacksense=0;
  * NOTE! hdaudio_jacksense=1 works only in some systems. Many laptops and
  *       motherboards don't support jack sensing.
  */
+int hdaudio_noskip=0;
+/*
+ * Disable checks to skip unconnected jack. Values: 0-7, where value is a
+ * bitmask - every bit disables another check. Can override hdaudio_jacksense.
+ */

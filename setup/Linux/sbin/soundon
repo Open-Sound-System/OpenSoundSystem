@@ -294,10 +294,19 @@ fi
 
 # Setup Flash 9 audio support plugin for OSS
 
-if test -f $OSSLIBDIR/lib/libflashsupport.so
+if test -d /usr/lib64 && test -f $OSSLIBDIR/lib/libflashsupport_64.so
 then
-  rm -f /usr/lib/libflashsupport.so
-  ln -sf $OSSLIBDIR/lib/libflashsupport.so /usr/lib/libflashsupport.so
+  ln -sf $OSSLIBDIR/lib/libflashsupport_64.so /usr/lib64/libflashsupport.so
+fi
+
+if test -d /usr/lib32 && test -f $OSSLIBDIR/lib/libflashsupport_32.so
+then
+  ln -sf $OSSLIBDIR/lib/libflashsupport_32.so /usr/lib32/libflashsupport.so
+fi
+
+if ! test -f /usr/lib/libflashsupport.so && test -f $OSSLIBDIR/lib/libflashsupport_32.so
+then
+  ln -sf $OSSLIBDIR/lib/libflashsupport_32.so /usr/lib/libflashsupport.so
 fi
 
 if test -x $OSSLIBDIR/soundon.user

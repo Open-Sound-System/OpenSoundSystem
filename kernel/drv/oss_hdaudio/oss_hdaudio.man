@@ -49,6 +49,26 @@ understand. To solve problems with volumes or signal routing you need to
 start ossxmix(1) and change the controls one at time until you get the desired
 effect.
 
+OPTIONS
+o hdaudio_jacksense	enables jack sensing mode when the hdaudio driver is
+			loaded. In this mode all I/O pin's that are not
+			in use will be disabled as well as the mixer controls
+			that are related with them. In this way the
+			mixer/control panel will become more intuitive.
+			However OSS will need to be restarted with soundoff;
+			soundon every time new inputs or outputs are attached
+			to the audio jacks. Default : 0.
+
+			NOTE! hdaudio_jacksense=1 works only in some systems.
+			Many laptops and motherboards don't support jack
+			sensing.
+
+o hdaudio_noskip	Disable skipping unconnected jack. All mixer controls
+			will be shown, even for disabled I/O pins.
+			Can get values 0-7. 1-7 is a bitmask, where every bit
+			masks a different check. Bit 3 (= value 4) overrides
+			jacksense check too.
+			Default: 0 - unconnected jacks are skipped.
 FILES
   CONFIGFILEPATH/oss_hdaudio.conf Device configuration file
 

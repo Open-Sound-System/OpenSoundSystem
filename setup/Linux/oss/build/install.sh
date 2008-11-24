@@ -59,12 +59,6 @@ then
 	exit 1
 fi
 
-if ! test -f $OSSLIBDIR/modules/oss_ich.o
-then
-	echo Error: OSS driver modules for $REGPARM kernel are not available
-	exit 1
-fi
-
 echo
 echo OSS build environment set up for $REGPARM kernels
 
@@ -336,7 +330,8 @@ rm -f `ls -l -d /dev/*|grep ^c|grep '    14, '|sed 's/.* //'`
 
 # Recompile libflashsupport.so if possible. Otherwise use the precompiled
 # version.
-(cd $OSSLIBDIR/lib;gcc -m32 -shared -fPIC -O2 -Wall -Werror flashsupport.c -o $OSSLIBDIR/lib/libflashsupport.so) > /dev/null 2>&1
+(cd $OSSLIBDIR/lib;cc -m64 -shared -fPIC -O2 -Wall -Werror flashsupport.c -o $OSSLIBDIR/lib/libflashsupport_64.so) > /dev/null 2>&1
+(cd $OSSLIBDIR/lib;cc -m32 -shared -fPIC -O2 -Wall -Werror flashsupport.c -o $OSSLIBDIR/lib/libflashsupport_32.so) > /dev/null 2>&1
 
 if test ! -f $OSSLIBDIR/etc/userdefs
 then

@@ -78,7 +78,7 @@ bswap (int x)
   *b++ = *a--;
   *b++ = *a--;
   *b++ = *a--;
-  *b++ = *a--;
+  *b = *a;
 
   return y;
 }
@@ -91,7 +91,7 @@ bswaps (short x)
   unsigned char *b = (unsigned char *) &y;
 
   *b++ = *a--;
-  *b++ = *a--;
+  *b = *a;
 
   return y;
 }
@@ -139,8 +139,8 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned int datalimit,
           }
         wh.modus = LE_SH (channels);
         wh.sample_fq = LE_INT (speed);
-        wh.block_align = LE_SH ((bits / 8) * channels);
-        wh.byte_p_sec = LE_INT (speed * channels * (bits / 8));
+        wh.block_align = LE_SH (channels * bits / 8);
+        wh.byte_p_sec = LE_INT (speed * channels * bits / 8);
         wh.bit_p_spl = LE_SH (bits);
         memcpy ((char *) &wh.data_chunk, "data", 4);
         wh.data_length = LE_INT (dl);

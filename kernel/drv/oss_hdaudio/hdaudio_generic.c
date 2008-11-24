@@ -25,6 +25,7 @@
 
 extern int hdaudio_snoopy;
 extern int hdaudio_jacksense;
+extern int hdaudio_noskip;
 
 static int
 count_linked_controls (hdaudio_mixer_t * mixer, codec_t * codec,

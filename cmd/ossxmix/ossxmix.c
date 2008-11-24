@@ -921,7 +921,7 @@ load_devinfo (int dev)
             pw = rootwid;
           else
             pw = widgets[parent];
-          if (pw == NULL)
+          if ((pw == NULL) && (show_all))
 	    fprintf (stderr, "Control %d/%s: Parent(%d)==NULL\n", i,
                      thisrec->extname, parent);
         }

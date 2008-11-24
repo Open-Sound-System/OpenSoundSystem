@@ -101,7 +101,7 @@ print_record_update (int v, double secs, const char * fname, int update)
 
       hours = mins / 60;
       mins = mins % 60;
-      fprintf (stderr, "] %02d:%02d:%02d", hours, mins, secs);
+      fprintf (stderr, "] %02d:%02d:%02d", hours, mins, (int)secs);
     }
 
   if (!level_meters)

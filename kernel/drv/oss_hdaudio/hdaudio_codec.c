@@ -10,6 +10,7 @@
 
 extern int hdaudio_snoopy;
 extern int hdaudio_jacksense;
+extern int hdaudio_noskip;
 
 static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
 
@@ -1534,7 +1535,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	      if ((default_loc & 0xf0) == 0x10)	/* Internal func - eg cd/tad/spk */
 		loc = "int-";
 
-	      if (conn == 1)	/* Pin not connected to anything */
+	      if (conn == 1 && !(hdaudio_noskip & 1))	/* Pin not connected to anything */
 		{
 		  widget->skip = 1;
 		  widget->skip_output = 1;
@@ -1606,6 +1607,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 		  no_color=1;
 		  break;
 		case 0xf:	/* Unused pin widget */
+		  if (hdaudio_noskip & 2) break;
 		  widget->skip = 1;
 		  widget->skip_output = 1;
 		  break;
@@ -1805,6 +1807,8 @@ polish_widget_list (hdaudio_mixer_t * mixer, int cad)
   int wid, conn, loop;
   int skip = 0;
   int do_jacksense = 0;
+
+  if (hdaudio_noskip & 4) return;
 
   if (mixer->codecs[cad] == &NULL_codec)
     {

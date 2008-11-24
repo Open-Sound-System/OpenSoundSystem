@@ -79,7 +79,7 @@ fctypes_t;
 typedef enum {
   CP = 0x1,
   CR = 0x2,
-  CRP = CR&CP
+  CRP = 0x3
 }
 direction_t;
 
