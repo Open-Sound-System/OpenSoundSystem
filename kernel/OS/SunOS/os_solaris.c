@@ -1,4 +1,4 @@
-	/*
+/*
  * Purpose: Operating system abstraction functions for Solaris
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
@@ -114,6 +114,10 @@ typedef struct
 static mem_block_t memblocks[MAX_MEMBLOCKS];
 static int num_memblocks = 0;
 #endif
+
+#define CDEV_NUMHASH	77
+static oss_cdev_t *cdev_hash[CDEV_NUMHASH] = {NULL};
+#define compute_cdev_hash(dev_class, instance) ((dev_class*13)+instance) % CDEV_NUMHASH)
 
 #if 1
 /*
@@ -1582,6 +1586,7 @@ osdev_delete (oss_device_t * osdev)
     if (oss_cdevs[i] != NULL)
     if (oss_cdevs[i]->osdev == osdev)
       {
+	unlink_cdev_hash(oss_cdevs[i]);
 	oss_cdevs[i]->d = NULL;
 	oss_cdevs[i]->osdev = NULL;
 	oss_cdevs[i]->active = 0;	/* Device removed */
@@ -1652,6 +1657,7 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
  */
 
   int num;
+  int hash_link;
   oss_cdev_t *cdev = NULL;
 
   if (dev_class != OSS_DEV_STATUS)
@@ -1704,6 +1710,15 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
   cdev->name[sizeof (cdev->name) - 1] = 0;
   oss_cdevs[num] = cdev;
 
+  cdev->minor = num;
+
+  /*
+   * Add to the cdev_hash list.
+   */
+  hash_link = compute_cdev_hash (dev_class, instance);
+  cdev->hl = chrdev_hash[hash_link];
+  chrdev_hash[hash_link] = cdev;
+
 /*
  * Export the device only if name != NULL
  */
@@ -1742,12 +1757,17 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 int
 oss_find_minor (int dev_class, int instance)
 {
-  int i;
+  oss_cdev_t *cdev;
 
-  for (i = 0; i < oss_num_cdevs; i++)
-    if (oss_cdevs[i]->d != NULL && oss_cdevs[i]->dev_class == dev_class
-	&& oss_cdevs[i]->instance == instance)
-      return i;
+  cdev = cdev_hash[compute_cdev_hash(dev_class, instance)];
+
+  while (cdev != NULL)
+  {
+	   if (cdev->d != NULL && cdev->dev_class == dev_class
+			           && cdev->instance == instance)
+		   return cdev->minor;
+	   cdev = cdev->hl; /* Next in the hash chain */
+  }
 
   return OSS_EIO;
 }
