@@ -115,9 +115,32 @@ static mem_block_t memblocks[MAX_MEMBLOCKS];
 static int num_memblocks = 0;
 #endif
 
-#define CDEV_NUMHASH	77
+#define CDEV_NUMHASH	79 // Prime number
 static oss_cdev_t *cdev_hash[CDEV_NUMHASH] = {NULL};
-#define compute_cdev_hash(dev_class, instance) ((dev_class*13)+instance) % CDEV_NUMHASH)
+#define compute_cdev_hash(dev_class, instance) (dev_class*13+instance) % CDEV_NUMHASH
+
+static void
+unlink_cdev_hash(oss_cdev_t *this_cdev)
+{
+	oss_cdev_t *cdev = cdev_hash[compute_cdev_hash(this_cdev->dev_class, this_cdev->instance)];
+
+	if (cdev == this_cdev) // First in the hash chain
+	   {
+		cdev_hash[compute_cdev_hash(this_cdev->dev_class, this_cdev->instance)] = cdev->hl;
+		return;
+	   }
+
+	while (cdev != NULL)
+	   {
+		if (cdev->hl == this_cdev)
+		   {
+			cdev->hl = this_cdev->hl;
+			return;
+		   }
+	   }
+
+	cmn_err(CE_WARN, "unlink_cdev_hash: Cannot find cdev %p\n", this_cdev);
+}
 
 #if 1
 /*
@@ -1716,8 +1739,8 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
    * Add to the cdev_hash list.
    */
   hash_link = compute_cdev_hash (dev_class, instance);
-  cdev->hl = chrdev_hash[hash_link];
-  chrdev_hash[hash_link] = cdev;
+  cdev->hl = cdev_hash[hash_link];
+  cdev_hash[hash_link] = cdev;
 
 /*
  * Export the device only if name != NULL
