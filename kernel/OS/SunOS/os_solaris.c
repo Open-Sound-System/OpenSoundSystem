@@ -137,6 +137,8 @@ unlink_cdev_hash(oss_cdev_t *this_cdev)
 			cdev->hl = this_cdev->hl;
 			return;
 		   }
+
+		cdev = cdev->hl;
 	   }
 
 	cmn_err(CE_WARN, "unlink_cdev_hash: Cannot find cdev %p\n", this_cdev);
