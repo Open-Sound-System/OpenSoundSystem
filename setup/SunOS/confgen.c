@@ -75,7 +75,6 @@ scan_dir (char *srcdir, char *module)
   int check_platform = 0;
   int platform_ok = 0;
 
-printf("scan_dir(%s, %s)\n", srcdir, module);
   if (stat (srcdir, &st) == -1)
   {
     // perror("stat");
