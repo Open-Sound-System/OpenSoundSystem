@@ -193,7 +193,7 @@ main(int argc, char *argv[])
 /*
  * Create the client side device.
  */
-	sprintf(crea.name, "OSS user space device for %s", getenv("USER"));
+	sprintf(crea.name, "udserver device for %s", getenv("USER"));
 	crea.flags = USERDEV_F_VMIX_ATTACH | USERDEV_F_VMIX_PRIVATENODE; /* Doesn't work at this moment */
 	crea.match_method = UD_MATCH_UID;
 	crea.match_key = geteuid();

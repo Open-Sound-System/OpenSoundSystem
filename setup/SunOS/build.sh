@@ -212,6 +212,7 @@ fi
 # Generate the config files
 rm -f confgen
 cc -o confgen -DTXT2MAN=\"$TXT2MAN\" $OSFLAGS $KERNEL32/setup/SunOS/confgen.c
+
 ./confgen prototype/kernel/drv \\/kernel\\/drv $KERNEL32/kernel/drv/* $KERNEL32/kernel/nonfree/drv/* $KERNEL32/kernel/framework/*
 rm -f confgen
 

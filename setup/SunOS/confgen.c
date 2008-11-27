@@ -75,11 +75,19 @@ scan_dir (char *srcdir, char *module)
   int check_platform = 0;
   int platform_ok = 0;
 
+printf("scan_dir(%s, %s)\n", srcdir, module);
   if (stat (srcdir, &st) == -1)
+  {
+    // perror("stat");
+    // fprintf(stderr, "confgen: Cannot access %s\n", srcdir);
     return;
+  }
 
   if (!S_ISDIR (st.st_mode))	/* Not a directory? */
+  {
+    // fprintf(stderr, "confgen: %s is not a directory\n", srcdir);
     return;
+  }
 
   sprintf (tmp, "%s/.nomake", srcdir);
   if (stat (tmp, &st) != -1)	/* File exists */
@@ -125,6 +133,10 @@ scan_dir (char *srcdir, char *module)
 	}
       fclose (f);
     }
+#if 0
+  else
+    perror (tmp);
+#endif
 
   if (check_platform && !platform_ok)
     {
@@ -135,7 +147,7 @@ scan_dir (char *srcdir, char *module)
 
   sprintf (tmp, "%s/%s.man", srcdir, module);
   if (stat (tmp, &st) != 0)	/* Man File doesn't exist */
-    return;			/* Skip this one */
+    goto no_manual;			/* Skip this one */
 
   sprintf (syscmd, "sed 's/CONFIGFILEPATH/%s/' < %s/%s.man > /tmp/ossman.man",
 	   confpath, srcdir, module);
@@ -150,6 +162,7 @@ scan_dir (char *srcdir, char *module)
   //printf ("%s\n", syscmd);
   system (syscmd);
 
+no_manual:
   sprintf (confname, "%s/%s.conf", targetdir, module);
 
   if ((conf = fopen (confname, "w")) == NULL)
