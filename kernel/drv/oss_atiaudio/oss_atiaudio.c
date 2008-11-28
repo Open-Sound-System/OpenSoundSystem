@@ -946,7 +946,7 @@ init_ATI (ATI_devc * devc)
 					  tmp_name,
 					  &ATI_audio_driver,
 					  sizeof (audiodrv_t),
-					  opts, formats, NULL, -1,
+					  opts, formats, devc, -1,
 					  devfile_name)) < 0)
 	{
 	  my_dev = -1;

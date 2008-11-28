@@ -1601,7 +1601,7 @@ attach_channel_vortex2 (vortex_devc * devc, int my_mixer)
 					&vortex2_driver,
 					sizeof (audiodrv_t),
 					caps,
-					AFMT_U8 | AFMT_S16_LE, NULL, -1)) < 0)
+					AFMT_U8 | AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return;

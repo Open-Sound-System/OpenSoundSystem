@@ -1470,7 +1470,7 @@ install_audio_devices (audigyls_devc * devc)
 					names[i],
 					&audigyls_audio_driver,
 					sizeof (audiodrv_t),
-					flags, fmts, NULL, -1)) < 0)
+					flags, fmts, devc, -1)) < 0)
 	{
 	  return 0;
 	}
@@ -1484,6 +1484,7 @@ install_audio_devices (audigyls_devc * devc)
       audio_engines[adev]->rate_source = frontdev;
       audio_engines[adev]->mixer_dev = devc->mixer_dev;
       audio_engines[adev]->binding = bindings[i];
+      audio_engines[adev]->dmabuf_maxaddr = MEMLIMIT_ISA;
       if (audio_engines[adev]->flags & ADEV_FIXEDRATE)
 	{
 	  audio_engines[adev]->fixed_rate = DEFAULT_RATE;

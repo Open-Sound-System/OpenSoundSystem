@@ -2396,7 +2396,7 @@ init_cmi8788 (cmi8788_devc * devc)
 				 devc->osdev, tmp_name,
 				 &cmi8788_audio_driver,
 				 sizeof (audiodrv_t), caps, fmt,
-				 NULL, -1)) < 0)
+				 devc, -1)) < 0)
 	{
 	  return 0;
 	}

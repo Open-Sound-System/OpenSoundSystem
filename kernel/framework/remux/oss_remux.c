@@ -508,7 +508,7 @@ remux_install (char *name, oss_device_t * osdev, int frontdev, int reardev,
 					       sizeof (audiodrv_t),
 					       ADEV_NOINPUT | ADEV_SPECIAL |
 					       ADEV_DISABLE_VIRTUAL |
-					       ADEV_NOSRC, AFMT_S16_NE, NULL,
+					       ADEV_NOSRC, AFMT_S16_NE, devc,
 					       -1)) < 0)
     {
       devc->audio_dev = -1;

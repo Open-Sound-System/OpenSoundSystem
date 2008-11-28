@@ -3114,7 +3114,7 @@ install_adev (envy24_devc * devc, char *name, int flags, int skip,
 				   ADEV_AUTOMODE | ADEV_NOMMAP |
 				   flags | ADEV_NOVIRTUAL,
 				   fmts | AFMT_S16_LE | AFMT_S32_LE |
-				   AFMT_S24_LE, NULL, -1,
+				   AFMT_S24_LE, devc, -1,
 				   devfile_name)) < 0)
     {
       dev = -1;

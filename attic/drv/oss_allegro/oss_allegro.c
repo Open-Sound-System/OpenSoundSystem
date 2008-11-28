@@ -876,7 +876,7 @@ init_allegro (allegro_devc * devc)
 					&allegro_audio_driver,
 					sizeof (audiodrv_t),
 					caps,
-					AFMT_U8 | AFMT_S16_LE, NULL, -1)) < 0)
+					AFMT_U8 | AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;

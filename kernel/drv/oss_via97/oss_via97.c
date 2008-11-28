@@ -742,7 +742,7 @@ init_via97 (via97_devc * devc)
 					&via97_audio_driver,
 					sizeof (audiodrv_t),
 					opts,
-					AFMT_U8 | AFMT_S16_LE, NULL, -1)) < 0)
+					AFMT_U8 | AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;

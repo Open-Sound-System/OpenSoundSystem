@@ -268,6 +268,7 @@ attach_control_device(void)
  * Create the control device files that are used to create client/server
  * device pairs and to redirect access to them.
  */
+  userdev_devc_t *devc = (userdev_devc_t*)0xdeadcafe; /* This should never get referenced */
 
   if ((client_dev = oss_install_audiodev_with_devname (OSS_AUDIO_DRIVER_VERSION,
 				    userdev_osdev,
@@ -275,7 +276,7 @@ attach_control_device(void)
 				    "User space audio device client side",
 				    &userdev_client_control_driver,
 				    sizeof (audiodrv_t),
-				    ADEV_AUTOMODE, AFMT_S16_NE, NULL, -1,
+				    ADEV_AUTOMODE, AFMT_S16_NE, devc, -1,
 				    "client")) < 0)
     {
       return;
@@ -289,7 +290,7 @@ attach_control_device(void)
 				    "User space audio device server side",
 				    &userdev_server_control_driver,
 				    sizeof (audiodrv_t),
-				    ADEV_AUTOMODE, AFMT_S16_NE, NULL, -1, 
+				    ADEV_AUTOMODE, AFMT_S16_NE, devc, -1, 
 				    "server")) < 0)
     {
       return;

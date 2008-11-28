@@ -1719,7 +1719,7 @@ init_cs461x (cs461x_devc * devc)
 					&cs461x_audio_driver,
 					sizeof (audiodrv_t),
 					caps,
-					AFMT_S16_LE | AFMT_U8, NULL, -1)) < 0)
+					AFMT_S16_LE | AFMT_U8, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;

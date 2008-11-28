@@ -6242,6 +6242,12 @@ oss_install_audiodev_with_devname (int vers,
   int chdev_flags = 0;
   int devfile_num = 0;
 
+  if (devc == NULL)
+     {
+	     cmn_err(CE_WARN, "devc==NULL for %s. Cannot install audio device\n", name);
+	     return OSS_EINVAL;
+     }
+
   if (name == NULL)
     cmn_err (CE_CONT, "Name is really NULL\n");
   if (master_osdev == NULL)

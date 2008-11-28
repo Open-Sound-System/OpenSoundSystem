@@ -3806,7 +3806,7 @@ oss_sblive_attach (oss_device_t * osdev)
 				 tmp,
 				 &sblive_audio_driver,
 				 sizeof (audiodrv_t), caps,
-				 fmts | AFMT_U8 | AFMT_S16_LE, NULL, -1)) < 0)
+				 fmts | AFMT_U8 | AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  portc->audiodev = -1;
 	  return (i > 0);

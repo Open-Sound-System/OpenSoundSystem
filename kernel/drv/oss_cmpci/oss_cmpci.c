@@ -2212,7 +2212,7 @@ init_cmpci (cmpci_devc * devc)
 						   sizeof (audiodrv_t),
 						   caps,
 						   AFMT_U8 | AFMT_S16_LE |
-						   AFMT_AC3, NULL, -1)) < 0)
+						   AFMT_AC3, devc, -1)) < 0)
 	{
 	  return 0;
 	}

@@ -750,7 +750,7 @@ init_geode (geode_devc * devc)
 					tmp_name,
 					&geode_audio_driver,
 					sizeof (audiodrv_t),
-					caps, AFMT_S16_LE, NULL, -1)) < 0)
+					caps, AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;

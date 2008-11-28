@@ -1442,7 +1442,7 @@ install_outputdevs (hda_devc_t * devc)
 					       tmp_name,
 					       &hda_audio_driver,
 					       sizeof (audiodrv_t),
-					       opts, formats, NULL, -1,
+					       opts, formats, devc, -1,
 					       devfile_name)) < 0)
 	  {
 	    return;
@@ -1564,7 +1564,7 @@ install_inputdevs (hda_devc_t * devc)
 					     tmp_name,
 					     &hda_audio_driver,
 					     sizeof (audiodrv_t),
-					     opts, formats, NULL, -1,
+					     opts, formats, devc, -1,
 					     devfile_name)) < 0)
 	{
 	  return;

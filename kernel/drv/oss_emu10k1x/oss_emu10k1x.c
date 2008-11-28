@@ -1038,7 +1038,7 @@ install_audio_devices (emu10k1x_devc * devc)
 					name,
 					&emu10k1x_audio_driver,
 					sizeof (audiodrv_t),
-					flags, AFMT_S16_LE | AFMT_AC3, NULL,
+					flags, AFMT_S16_LE | AFMT_AC3, devc,
 					-1)) < 0)
 	{
 	  return;

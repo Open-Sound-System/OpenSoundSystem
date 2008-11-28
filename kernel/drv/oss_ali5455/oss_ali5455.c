@@ -835,7 +835,7 @@ init_ALI (ALI_devc * devc)
 					  tmp_name,
 					  &ALI_audio_driver,
 					  sizeof (audiodrv_t), opts,
-					  formats, NULL, -1)) < 0)
+					  formats, devc, -1)) < 0)
 	{
 	  my_dev = -1;
 	  return 0;

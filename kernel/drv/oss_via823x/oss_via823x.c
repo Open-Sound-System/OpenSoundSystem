@@ -813,7 +813,7 @@ via8233_init (via8233_devc * devc)
 					sizeof (audiodrv_t),
 					opts,
 					AFMT_U8 | AFMT_S16_LE | AFMT_AC3,
-					NULL, -1)) < 0)
+					devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 1;

@@ -730,7 +730,7 @@ neomagic_install (neomagic_devc * devc, unsigned int port1addr,
 				 devc->chip_name,
 				 &neomagic_audio_driver,
 				 sizeof (audiodrv_t),
-				 0, AFMT_U8 | AFMT_S16_LE, NULL, -1)) < 0)
+				 0, AFMT_U8 | AFMT_S16_LE, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;

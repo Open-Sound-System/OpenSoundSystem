@@ -1348,7 +1348,7 @@ init_trident (trident_devc * devc)
 					sizeof (audiodrv_t),
 					caps,
 					AFMT_U8 | AFMT_S16_LE | AFMT_AC3,
-					NULL, -1)) < 0)
+					devc, -1)) < 0)
 
 	{
 	  adev = -1;

@@ -342,7 +342,7 @@ envy24d_install (envy24_devc * devc)
 				    sizeof (audiodrv_t),
 				    ADEV_NOVIRTUAL | ADEV_NOINPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
-				    AFMT_S32_LE, NULL, -1,
+				    AFMT_S32_LE, devc, -1,
 				    "10ch_out")) >= 0)
     {
       portc = &devc->direct_portc_out;
@@ -379,7 +379,7 @@ envy24d_install (envy24_devc * devc)
 				    sizeof (audiodrv_t),
 				    ADEV_NOVIRTUAL | ADEV_NOOUTPUT | ADEV_COLD
 				    | ADEV_SPECIAL | ADEV_32BITONLY,
-				    AFMT_S32_LE, NULL, -1,
+				    AFMT_S32_LE, devc, -1,
 				    "12ch_in")) >= 0)
     {
       portc = &devc->direct_portc_in;

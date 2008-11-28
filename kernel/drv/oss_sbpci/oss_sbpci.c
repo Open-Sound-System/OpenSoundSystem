@@ -1231,7 +1231,7 @@ init_apci97 (apci97_devc * devc, int device_id)
 					tmp_name,
 					&apci97_audio_driver,
 					sizeof (audiodrv_t),
-					caps, fmts, NULL, -1)) < 0)
+					caps, fmts, devc, -1)) < 0)
 	{
 	  adev = -1;
 	  return 0;
