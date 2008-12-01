@@ -2010,6 +2010,34 @@ typedef struct oss_card_info
 
 #define SNDCTL_MIX_DESCRIPTION	__SIOWR('X',14, oss_mixer_enuminfo)
 
+/*
+ * SNDCTL_MIX_MATRIX_WRITE and SNDCTL_MIX_MATRIX_READ are private ioctl
+ * calls that each driver can define in whatever way they like. They can
+ * be used _ONLY_ by device specific utilities. Each driver can define
+ * meaning of the fields of oss_mixermatrix_t as they like. This means
+ * that applications using this interface will depend on the specific device.
+ *
+ * This interface can be used for example to implement a (GUI) tool that can 
+ * set the signal routings of an on-board mixer matrix of some high end
+ * audio card. The application (designer) must have complete understanding
+ * of the device to be supported. The application will not be portable to any
+ * other device.
+ *
+ * Applications using this interface must verify that the magic field
+ * returned by SNDCTL_MIXERINFO matches the right device/driver.
+ */
+typedef struct
+{
+	int secret;	// Initialize this to driver spcified secret value
+	int source, target;
+	int function;
+	int value;
+	int options[16];
+} oss_mixermatrix_t;
+
+#define SNDCTL_MIX_MATRIX_WRITE	__SIOWR('X',15, oss_mixermatrix_t)
+#define SNDCTL_MIX_MATRIX_READ	__SIOWR('X',16, oss_mixermatrix_t)
+
 /* ioctl codes 'X', 200-255 are reserved for internal use */
 
 /*
