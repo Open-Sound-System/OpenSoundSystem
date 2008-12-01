@@ -19,7 +19,7 @@
 /*
  * Max number of audio channels currently supported by the sample format converter.
  */
-#define OSS_MAX_CONVERT_CHANNELS	8
+#define OSS_MAX_CONVERT_CHANNELS	64
 
 #define TMP_CONVERT_MAX		1024
 #define TMP_CONVERT_BUF_SIZE	(8*TMP_CONVERT_MAX+512)

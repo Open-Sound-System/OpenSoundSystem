@@ -2225,6 +2225,9 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 #endif
 #endif
     default:
+      if (mixer_devs[orig_dev]->d->ioctl != NULL)
+         return mixer_devs[orig_dev]->d->ioctl (orig_dev, -1, cmd, arg);
+
       return OSS_EINVAL;
     }
 }
@@ -2292,6 +2295,8 @@ oss_mixer_ioctl (int dev, struct fileinfo *bogus,
       case SNDCTL_MIX_READ:
       case SNDCTL_MIX_WRITE:
       case SNDCTL_MIX_NRMIX:
+      case SNDCTL_MIX_MATRIX_WRITE:
+      case SNDCTL_MIX_MATRIX_READ:
       case VMIXCTL_ATTACH:
       case VMIXCTL_DETACH:
       case VMIXCTL_RATE:

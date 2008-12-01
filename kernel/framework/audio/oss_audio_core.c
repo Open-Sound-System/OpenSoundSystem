@@ -4130,7 +4130,6 @@ find_raw_input_space (adev_p adev, dmap_p dmap, int *dmapos)
 	}
 
       tmout = (dmap->fragment_size * OSS_HZ) / dmap->data_rate;
-      // tmout += OSS_HZ / 10;
       tmout += OSS_HZ / 2;
 
       if (adev->go == 0)
@@ -5460,7 +5459,6 @@ audio_uninit_device (int dev)
 #ifdef CONFIG_OSS_VMIX
   if (adev->vmix_mixer != NULL)
      {
-	     vmix_delete_mixer(adev->vmix_mixer);
 	     adev->vmix_mixer = NULL;
      }
 #endif
