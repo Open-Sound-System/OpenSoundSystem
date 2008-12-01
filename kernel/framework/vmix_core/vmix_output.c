@@ -11,7 +11,7 @@
 #include "vmix.h"
 
 #if 0
-/* TODO: Disable this debugging stuff */
+/* Debugging macros*/
 extern unsigned char tmp_status;
 # define UP_STATUS(v) OUTB(NULL, (tmp_status=tmp_status|(v)), 0x378)
 # define DOWN_STATUS(v) OUTB(NULL, (tmp_status=tmp_status&~(v)), 0x378)

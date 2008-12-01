@@ -23,7 +23,7 @@
 #define EXTERNC extern
 #endif /* EXTERN_C_WRAPPERS */
 
-#define OSS_VERSION	0x040090 /* Pre 4.1 */
+#define OSS_VERSION	0x040100 /* 4.1 */
 
 #define SOUND_VERSION	OSS_VERSION
 #define OPEN_SOUND_SYSTEM

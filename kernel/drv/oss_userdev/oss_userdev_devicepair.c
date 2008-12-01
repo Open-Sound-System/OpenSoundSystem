@@ -804,10 +804,6 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 	  break;
 
   case SNDCTL_MIX_NREXT:
-	  /*
-	   * TODO: This should be handled separately for each
-	   * client/server pair.
-	   */
 	  *arg = devc->mixer_dev;
 	  return OSS_EAGAIN; /* Continue with the default handler */
 	  break;
@@ -883,7 +879,6 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
 
   case SNDCTL_MIX_EXTINFO:
       {
-	      /* TODO: Redirect this to the actual userdev instance */
 	      oss_mixext *ext = (oss_mixext*)arg;
 
 	      ext->dev = devc->mixer_dev;
@@ -905,7 +900,6 @@ userdev_ioctl_override (int dev, unsigned int cmd, ioctl_arg arg)
   case SNDCTL_MIX_READ:
   case SNDCTL_MIX_WRITE:
       {
-	      /* TODO: Redirect this to the actual userdev instance */
 	      oss_mixer_value *ent = (oss_mixer_value*)arg;
 
 	      ent->dev = devc->mixer_dev;

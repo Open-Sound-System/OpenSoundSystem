@@ -1888,7 +1888,6 @@ check_masterdev (void *mx, int reattach)
       DDB (cmn_err
 	   (CE_CONT, "Vmix masterdev=%d shared for input\n",
 	    mixer->masterdev));
-      /* TODO: Prevent the other virtual drivers from picking this one */
     }
 
 /*
@@ -2119,11 +2118,6 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   return OSS_EIO;
 }
 
-void
-vmix_delete_mixer(void * vmix_mixer)
-{
-}
-
 int
 vmix_detach_audiodev(int masterdev)
 {
@@ -2180,38 +2174,6 @@ vmix_set_master_rate(int masterdev, int rate)
 	mixer->rate = rate;
 
 	return 0;
-}
-
-void
-vmix_unplug_audiodev(int masterdev)
-{
-/*
- * Purpose: Temporarily disable the vmix subsystem for an unplugged audio device.
- *
- * Most drivers don't call this since vmix instances will be automatically detached when the 
- * master device is removed. However drivers that support hotpluggable devices must
- * call this when a device is deleted.
- *
- * Paramaters:
- *
- * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
- */
-}
-
-void
-vmix_replug_audiodev(int masterdev)
-{
-/*
- * Purpose: Reactivate vmix subsystem for an audio device that was previously unplugged
- *
- * A device which have vmix disabled by vmix_unplug_audiodev can be reactivated by calling this
- * function. Note that the device must have been registered with vmix by calling vmix_attach_audiodev
- * when the device was attached.
- *
- * Paramaters:
- *
- * masterdev:		The audio engine number of the master device (same as in vmix_attach_audiodev).
- */
 }
 
 int
