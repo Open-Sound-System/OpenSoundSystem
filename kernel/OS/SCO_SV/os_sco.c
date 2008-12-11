@@ -8,6 +8,7 @@
 #include <oss_pci.h>
 #include <sys/exec.h>
 #include <sys/user.h>
+#include <errno.h>
 
 /*
  * MAX_CARDS must be larger than life. The system will panic if there are
@@ -19,7 +20,6 @@ static oss_device_t *cards[MAX_CARDS];
 int oss_num_cards = 0;
 static int oss_expired = 0;
 
-static volatile int open_count[OSS_MAX_CDEVS] = { 0 };
 volatile int oss_open_devices = 0;
 
 static bcb_t *oss_bcb;
@@ -1373,7 +1373,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
       return;
     }
 
-  cdef->file.acc_flags = 0;
+  cdev->file.acc_flags = 0;
 
   if (bp->b_flags & B_READ)
     {
@@ -1385,7 +1385,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
 	  return;
 	}
       retval =
-	cdev->d->read (cdev->instance, &cdef->file, bp->b_un.b_uio, count);
+	cdev->d->read (cdev->instance, &cdev->file, bp->b_un.b_uio, count);
       if (retval < 0)
 	bioerror (bp, -retval);
       else if (retval < count)
@@ -1403,7 +1403,7 @@ oss_biostart (void *idata, channel_t channel, buf_t * bp)
       return;
     }
   retval =
-    cdev->d->write (cdev->instance, &cdef->file, bp->b_un.b_uio, count);
+    cdev->d->write (cdev->instance, &cdev->file, bp->b_un.b_uio, count);
   if (retval < 0)
     bioerror (bp, -retval);
   else if (retval < count)
@@ -1439,20 +1439,20 @@ oss_open (void *idata, channel_t * channelp,
       return ENODEV;
     }
 
-  memset (&cdef->file, 0, sizeof (cdef->file));
-  cdef->file.mode = 0;
-  cdef->file.acc_flags = open_flags;
+  memset (&cdev->file, 0, sizeof (cdev->file));
+  cdev->file.mode = 0;
+  cdev->file.acc_flags = open_flags;
 
   if (open_flags & FREAD && open_flags & FWRITE)
-    cdef->file.mode = OPEN_READWRITE;
+    cdev->file.mode = OPEN_READWRITE;
   else if (open_flags & FREAD)
-    cdef->file.mode = OPEN_READ;
+    cdev->file.mode = OPEN_READ;
   else if (open_flags & FWRITE)
-    cdef->file.mode = OPEN_WRITE;
+    cdev->file.mode = OPEN_WRITE;
 
   tmpdev = dev;
   retval =
-    cdev->d->open (cdev->instance, cdev->dev_class, &cdef->file, 0, 0, &tmpdev);
+    cdev->d->open (cdev->instance, cdev->dev_class, &cdev->file, 0, 0, &tmpdev);
   *channelp = tmpdev;
   dev = tmpdev;
 
@@ -1462,7 +1462,7 @@ oss_open (void *idata, channel_t * channelp,
     }
 
   oss_open_devices++;
-  open_count[dev]++;
+  cdev->open_count++;
 
   return 0;
 }
@@ -1479,16 +1479,16 @@ oss_close (void *idata, channel_t channel,
   if (dev >= OSS_MAX_CDEVS)
     return ENXIO;
 
-  if (open_count[dev] == 0)	/* Not opened */
-    return 0;
-
   if ((cdev = oss_cdevs[dev]) == NULL)
     return ENXIO;
 
-  cdev->d->close (cdev->instance, &cdef->file);
+  if (cdev->open_count == 0)    /* Not opened */
+    return 0;
+
+  cdev->d->close (cdev->instance, &cdev->file);
 
   oss_open_devices--;
-  open_count[dev]--;
+  cdev->open_count--;
   return 0;
 }
 
@@ -1545,7 +1545,7 @@ oss_ioctl (void *idata, channel_t channel, int cmd, void *arg,
 
     }
 
-  retval = cdev->d->ioctl (cdev->instance, &cdef->file, cmd, (ioctl_arg) buf);
+  retval = cdev->d->ioctl (cdev->instance, &cdev->file, cmd, (ioctl_arg) buf);
 
   if ((cmd & SIOC_OUT) && len > 0)
     {

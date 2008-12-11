@@ -767,10 +767,12 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #endif
 
     }
+/*
   else
     {
       fprintf (f, "CFLAGS=-O\n");
     }
+*/
 
 #if !defined(__SCO_VERSION__)
   if (*conf.cflags != 0)

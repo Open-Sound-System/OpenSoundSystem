@@ -5,7 +5,8 @@ lynxtwo	pci1621,22	LynxTWO-C Studio Interface
 lynxtwo	pci1621,23	Lynx-L22 Studio Interface
 lynxtwo	pci1621,24	Lynx AES16 Studio Interface
 lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
-lynxtwo	pci1621,28	Lynx AES16e Studio Interface (NOT SUPPORTED YET)
+lynxtwo	pci1621,28	Lynx AES16e Studio Interface 
+lynxtwo	pci1621,29	Lynx AES16e-SRC Studio Interface 
 oss_ali5455	pci10b9,5455	ALI M5455
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300

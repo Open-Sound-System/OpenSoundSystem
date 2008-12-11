@@ -7,6 +7,8 @@
  */
 #define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 1996-2007. All rights reserved.
 
+#include <errno.h>
+
 static int ossdrv_config (cfg_func_t func, void *idata, rm_key_t key);
 #if DRIVER_TYPE==DRV_VIRTUAL || DRIVER_TYPE==DRV_VMIX
 oss_device_t *osdev = NULL;

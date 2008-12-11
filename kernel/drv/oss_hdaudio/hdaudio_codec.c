@@ -1289,7 +1289,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 			  if (widget->nconn >= MAX_CONN)
 			    {
 			      cmn_err (CE_WARN,
-				       "Too many connectionsi(B) for widget %d (%d)\n",
+				       "Too many connections(B) for widget %d (%d)\n",
 				       widget->wid, widget->nconn);
 			      break;
 			    }
