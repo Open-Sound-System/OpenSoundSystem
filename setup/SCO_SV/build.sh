@@ -99,15 +99,15 @@ echo Check devices for $N
 done
 
 sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.tmp
-$TXT2MAN -t "osscore" -v "Devices" -s 7 > prototype/usr/share/man/man7/osscore.7
+$TXT2MAN -t "osscore" -v "Devices" -s 7 /tmp/ossman.tmp > prototype/usr/man/man7/osscore.7
 rm -f /tmp/ossman.tmp
 
-if cp lib/libOSSlib/libOSSlib.a prototype/$OSSLIBDIR/lib
-then
-  ok=1
-else
-  exit 1
-fi
+#if cp lib/libOSSlib/libOSSlib.a prototype/$OSSLIBDIR/lib
+#then
+#  ok=1
+#else
+#  exit 1
+#fi
 
 cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
