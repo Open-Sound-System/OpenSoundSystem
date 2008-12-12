@@ -21,8 +21,19 @@
  */
 #define OSS_MAX_CONVERT_CHANNELS	64
 
-#define TMP_CONVERT_MAX		1024
-#define TMP_CONVERT_BUF_SIZE	(8*TMP_CONVERT_MAX+512)
+/*
+ * Size of the temporary buffer used for audio conversions.
+ *
+ * TMP_CONVERT_MAX defines how many bytes can be fed to the converter in
+ * one call.
+ *
+ * TMP_CONVERT_BUF_SIZE defines how many bytes of buffer will be allocated.
+ * This is larger than TMP_CONVERT_MAX because amount of data may get expanded
+ * during the conversion (for example if the output sampling rate or #channels
+ * is larger than in the input side).
+ */
+#define TMP_CONVERT_MAX		(16*1024)
+#define TMP_CONVERT_BUF_SIZE	(8*TMP_CONVERT_MAX)
 
 /*
  * open_flags (for opening audio devices)

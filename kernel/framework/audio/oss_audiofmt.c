@@ -1244,12 +1244,12 @@ setup_format_conversions (adev_p adev, dmap_p dmap, sample_parms * source,
   dmap->tmpbuf_len = dmap->tmpbuf_ptr = 0;
   if (dmap->tmpbuf1 == NULL)
     {
-      dmap->tmpbuf1 = PMALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE);
+      dmap->tmpbuf1 = PMALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE+512);
     }
 
   if (dmap->tmpbuf2 == NULL)
     {
-      dmap->tmpbuf2 = PMALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE);
+      dmap->tmpbuf2 = PMALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE+512);
     }
 
   if (dmap->tmpbuf1 == NULL || dmap->tmpbuf2 == NULL)

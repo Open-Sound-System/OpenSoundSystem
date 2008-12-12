@@ -4834,7 +4834,9 @@ write_copy (adev_p adev, dmap_p dmap, unsigned char *buf, int count)
       VMEM_CHECK (buf + p, l);
 
       if ((adev->flags & ADEV_NONINTERLEAVED) && adev->hw_parms.channels > 1)
-	 copy_write_noninterleaved(adev, dmap, offs, buf + p, 0, l);
+	 {
+	    copy_write_noninterleaved(adev, dmap, offs, buf + p, 0, l);
+	 }
       else
          memcpy (&dmap->dmabuf[offs], buf + p, l);
 
@@ -5006,7 +5008,7 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 
 	      if (dmap->tmpbuf1 == NULL)
 		{
-		  dmap->tmpbuf1 = AUDIO_MALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE);
+		  dmap->tmpbuf1 = AUDIO_MALLOC (dmap->osdev, TMP_CONVERT_BUF_SIZE+512);
 		}
 
 /*
@@ -5060,14 +5062,25 @@ oss_audio_write (int dev, struct fileinfo *file, uio_t * buf, int count)
 	}
       else
 	{
+	  /*
+	   * Perform format conversions.
+	   */
 	  unsigned char *p1 = dmap->tmpbuf1, *p2 = dmap->tmpbuf2;
-	  int l2, max;
+	  int l2, max, out_max;
 
 	  if (spc > TMP_CONVERT_MAX)
 	    spc = TMP_CONVERT_MAX / 2;
 
 	  if (dmap->expand_factor > UNIT_EXPAND)
-	    max = (spc * UNIT_EXPAND) / dmap->expand_factor;
+	     {
+		max = spc;
+
+	    	out_max = (spc * dmap->expand_factor) / UNIT_EXPAND; /* Output size */
+		if (out_max > TMP_CONVERT_BUF_SIZE) /* Potential overflow */
+		   {
+			   max = (TMP_CONVERT_BUF_SIZE * UNIT_EXPAND) / dmap->expand_factor;
+		   }
+	     }
 	  else
 	    max = spc;
 	  if (max < dmap->frame_size)
