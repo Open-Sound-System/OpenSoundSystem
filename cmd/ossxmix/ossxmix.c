@@ -1536,7 +1536,7 @@ reload_gui (void)
   create_widgets ();
   fully_started = 1;
   add_timeout ((gpointer)poll_tag_list);
-#undef FREE
+#undef FREECTL
 }
 
 /*
