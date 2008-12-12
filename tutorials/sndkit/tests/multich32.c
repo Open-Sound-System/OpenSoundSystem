@@ -40,7 +40,7 @@ main (int argc, char *argv[])
   int bypass_vmix=0;
   int disable_format_conversions=0;
 
-  int buf[1024];
+  int buf[32*1024];
 
   if (argc > 1)
     if (sscanf (argv[1], "%d", &nch) != 1)
