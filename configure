@@ -7,8 +7,8 @@ OSSLIBDIR="/usr/lib/oss"
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
 
-# MIDI support is disabled by default. Use --config-midi=YES to enable
-CONFIG_MIDI=DISABLED
+# MIDI support is enabled by default. Use --config-midi=YES to disable
+CONFIG_MIDI=ENABLED
 
 export CONFIGURE CONFIG_MIDI
 
