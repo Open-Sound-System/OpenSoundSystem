@@ -1935,6 +1935,7 @@ EXPORT_FUNC (ac97_mixext_ctl);
 EXPORT_FUNC (ac97_spdifin_ctl);
 EXPORT_FUNC (oss_pci_byteswap);
 EXPORT_SYMBOL (mixer_ext_truncate);
+EXPORT_SYMBOL (mixer_ext_rebuild_all);
 EXPORT_FUNC (remux_install);
 EXPORT_SYMBOL (oss_strlen);
 EXPORT_SYMBOL (oss_strcmp);
