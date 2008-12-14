@@ -11,7 +11,7 @@
  * Copyright (C) 4Front Technologies 2005-2007. Released under BSD license.
  */
 
-#include "/usr/include/stdarg.h"
+#include <machine/stdarg.h>
 #include "timestamp.h"
 #include <sys/param.h>		/* defines used in kernel.h */
 #include <sys/module.h>

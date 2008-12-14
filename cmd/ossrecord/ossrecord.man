@@ -55,6 +55,7 @@ OPTIONS
 -t<maxsecs>	Do not record more than <maxsecs> seconds in a single recording
 		operation.
 -L<level>	Set the recording level to <level>.
+-O		Allow overwriting of file when recording.
 -h		Display usage instructions.
 
 COMMAND SCRIPT

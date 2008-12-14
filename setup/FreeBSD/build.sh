@@ -91,7 +91,7 @@ fi
 for i in target/bin/*
 do
 CMD=`basename $i`
-$TXT2MAN -t "$CMD" -v "User Commands" -s 1 cmd/$CMD/$CMD.man > prototype/usr/share/man/man1/$CMD.1
+$TXT2MAN -t "$CMD" -v "User Commands" -s 1 cmd/$CMD/$CMD.man | gzip -9 > prototype/usr/share/man/man1/$CMD.1.gz
 echo done $CMD
 done
 
@@ -100,7 +100,7 @@ do
   CMD=`basename $i`
   if test -f cmd/$CMD/$CMD.man
   then
-	$TXT2MAN -t "$CMD" -v "System Administration Commands" -s 8 cmd/$CMD/$CMD.man > prototype/usr/share/man/man8/$CMD.8
+	$TXT2MAN -t "$CMD" -v "System Administration Commands" -s 8 cmd/$CMD/$CMD.man | gzip -9 > prototype/usr/share/man/man8/$CMD.8.gz
 	echo done $CMD
   fi
 done
@@ -108,11 +108,10 @@ done
 for i in $SRCDIR/misc/man1m/*.man
 do
         N=`basename $i .man`
-        $TXT2MAN -t "$CMD" -v "OSS System Administration Commands" -s 1 $i > prototype/usr/share/man/man1/$N.1
+        $TXT2MAN -t "$CMD" -v "OSS System Administration Commands" -s 1 $i | gzip -9 > prototype/usr/share/man/man1/$N.1.gz
 done
 
-rm -f prototype/usr/share/man/man8/ossdetect.8
-$TXT2MAN -t "ossdetect" -v "User Commands" -s 8 os_cmd/FreeBSD/ossdetect/ossdetect.man > prototype/usr/share/man/man8/ossdetect.8
+$TXT2MAN -t "ossdetect" -v "User Commands" -s 8 os_cmd/FreeBSD/ossdetect/ossdetect.man | gzip -9 > prototype/usr/share/man/man8/ossdetect.8.gz
 echo done ossdetect
 
 for n in target/modules/*.o

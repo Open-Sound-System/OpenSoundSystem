@@ -7,7 +7,7 @@
  * In this way the same OSS binary package can be used with several FreeBSD
  * versions.
  */
-#include "/usr/include/stdarg.h"
+#include <machine/stdarg.h>
 #include <sys/param.h>		/* defines used in kernel.h */
 #include <sys/module.h>
 #include <sys/systm.h>
@@ -26,7 +26,7 @@
 #include <sys/param.h>		/* defines used in kernel.h */
 #include <dev/pci/pcivar.h>	/* For pci_get macros! */
 #include <dev/pci/pcireg.h>
-#include <i386/include/intr_machdep.h>
+#include <machine/intr_machdep.h>
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
@@ -537,6 +537,7 @@ extern int src_quality;
 extern int flat_device_model;
 extern int vmix_disabled;
 extern int vmix_loopdevs;
+extern int vmix_no_autoattach;
 extern int ac97_amplifier;
 extern int ac97_recselect;
 extern int cooked_enable;
@@ -547,6 +548,7 @@ TUNABLE_INT("osscore.src_quality", &src_quality);
 TUNABLE_INT("osscore.flat_device_model", &flat_device_model);
 TUNABLE_INT("osscore.vmix_disabled", &vmix_disabled);
 TUNABLE_INT("osscore.vmix_loopdevs", &vmix_loopdevs);
+TUNABLE_INT("osscore.vmix_no_autoattach", &vmix_no_autoattach);
 TUNABLE_INT("osscore.ac97_amplifier", &ac97_amplifier);
 TUNABLE_INT("osscore.ac97_recselect", &ac97_recselect);
 TUNABLE_INT("osscore.cooked_enable", &cooked_enable);

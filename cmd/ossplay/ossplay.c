@@ -26,7 +26,7 @@
 
 int force_speed = 0, force_fmt = 0, force_channels = 0;
 unsigned int amplification = 100;
-int eflag = 0, quiet = 0, verbose = 0, int_conv = 0;
+int eflag = 0, overwrite = 0, quiet = 0, verbose = 0, int_conv = 0;
 int raw_file = 0, raw_mode = 0, exitstatus = 0, loop = 0, from_stdin = 0;
 double seek_time = 0;
 off_t (*ossplay_lseek) (int, off_t, int) = lseek;
@@ -334,6 +334,7 @@ ossrecord_usage (const char * prog)
              " single recording.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
+  print_msg (HELPM, "            -O             Allow overwrite.\n");
   exit (-1);
 }
 
@@ -775,7 +776,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
   dsp->flags = O_RDONLY;
 
-  while ((c = getopt (argc, argv, "F:L:MRSb:c:d:f:g:hi:lm:r:s:t:wv")) != EOF)
+  while ((c = getopt (argc, argv, "F:L:MORSb:c:d:f:g:hi:lm:r:s:t:wv")) != EOF)
     switch (c)
       {
         case 'F':
@@ -876,7 +877,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 't':
-          sscanf (optarg, "%ull", &datalimit);
+          sscanf (optarg, "%llu", &datalimit);
           break;
 
         case 'w':
@@ -885,6 +886,10 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
         case 'v':
           verbose = 1;
           break;
+
+	case 'O':
+	  overwrite = 1;
+	  break;
 
         case 'h':
         default:

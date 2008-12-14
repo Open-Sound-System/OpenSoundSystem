@@ -19,7 +19,7 @@
 #define DEFAULT_CHANNELS	1
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
-#define MAX_CHANNELS		12
+#define MAX_CHANNELS		128
 /*
  * Every update of output in verbose mode while playing is separated by at
  * least PLAY_UPDATE_INTERVAL milliseconds.

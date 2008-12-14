@@ -135,11 +135,16 @@ then
  	fi
 
 	# SADA compatibility module
-	if ld -64 -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/$KERNEL64/oss_sadasupport $KERNEL64/target/modules/oss_sadasupport.o
+	if test -r $KERNEL64/target/modules/oss_sadasupport.o
 	then
-  		OK=1
+		if ld -64 -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/$KERNEL64/oss_sadasupport $KERNEL64/target/modules/oss_sadasupport.o
+		then
+  			OK=1
+		else
+			exit 1
+		fi
 	else
-		exit 1
+		OK=1
 	fi
 fi # 64 bit modules done
 
@@ -184,11 +189,16 @@ then
 	fi
 	
 	# SADA Compatibility
-	if ld -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/oss_sadasupport $KERNEL32/target/modules/oss_sadasupport.o
+	if test -r $KERNEL32/target/modules/oss_sadasupport.o
 	then
-		OK=1
+		if ld -dy -r -Nmisc/osscommon -Nmisc/$AMSRC -Nmisc/audiosup -Nmisc/mixer -o prototype/kernel/drv/oss_sadasupport $KERNEL32/target/modules/oss_sadasupport.o
+		then
+			OK=1
+		else
+			exit 1
+		fi
 	else
-		exit 1
+		OK=1
 	fi
 
 fi # 32 bit modules done

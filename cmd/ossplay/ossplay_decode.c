@@ -25,7 +25,7 @@ typedef struct fib_values {
 fib_values_t;
 
 extern int force_speed, force_fmt, force_channels, amplification;
-extern int verbose, int_conv;
+extern int overwrite, verbose, int_conv;
 extern char audio_devname[32];
 extern off_t (*ossplay_lseek) (int, off_t, int);
 extern double seek_time;
@@ -62,7 +62,12 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
   if (force_speed != 0) speed = force_speed;
   if (force_channels != 0) channels = force_channels;
   if (force_fmt != 0) format = force_fmt;
-  if (channels > MAX_CHANNELS) channels = MAX_CHANNELS;
+  if (channels > MAX_CHANNELS)
+    {
+      print_msg (ERRORM, "An unreasonably high number of channels (%d), "
+                         "aborting\n", channels);
+      return -2;
+    }
 
   constant = format2bits (format) * speed * channels / 8.0;
 #if 0
@@ -223,9 +228,29 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
 {
   unsigned long long datasize = 0;
   double constant;
-  int ret;
+  int fd = -1, ret;
   decoders_queue_t * dec, * decoders = NULL;
   FILE * wave_fp;
+
+  if (strcmp(fname, "-") == 0)
+    wave_fp = fdopen (1, "wb");
+  else
+    {
+      fd = open (fname, O_WRONLY | O_CREAT | (overwrite?0:O_EXCL), 0644);
+      if (fd == -1)
+        {
+          perror (fname);
+          return -2;
+        }
+      wave_fp = fdopen (fd, "wb");
+    }
+
+  if (wave_fp == NULL)
+    {
+      perror (fname);
+      if (fd != -1) close (fd);
+      return -2;
+    }
 
   if (setup_device (dsp, format, channels, speed) == -2) return -1;
   constant = format2bits (format) * speed * channels / 8.0;
@@ -242,20 +267,9 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
 
   if (datalimit != 0) datalimit *= constant;
 
-/* 
- * Write the initial RIFF header (practically unlimited length)
+ /* 
+ * Write the initial header (practically unlimited length)
  */
-  if (strcmp(fname, "-") == 0)
-    wave_fp = fdopen (1, "wb");
-  else
-    wave_fp = fopen (fname, "wb");
-
-  if (wave_fp == NULL)
-    {
-      perror (fname);
-      return -2;
-    }
-
   if (write_head (wave_fp, type, datalimit, format, channels, speed) == -1)
     return -2;
 

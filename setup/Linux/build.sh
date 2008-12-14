@@ -2,6 +2,15 @@
 
 . ./.directories
 
+if gawk '' >/dev/null
+then
+   TXT2MAN=$SRCDIR/setup/txt2man
+else
+   echo "No gawk found. Using lesser replacement" >&2
+   cc -o txt2man origdir/setup/txt2man.c
+   TXT2MAN=./txt2man
+fi
+
 rm -rf prototype
 
 mkdir prototype
@@ -113,18 +122,18 @@ do
 	if test -f $SRCDIR/kernel/drv/$N/$N.man
 	then
 	  sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/drv/$N/$N.man > /tmp/ossman.txt
-	  $SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
+	  $TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 /tmp/ossman.txt | gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 	else
 		if test -f $SRCDIR/kernel/nonfree/drv/$N/$N.man
 		then
 	  		sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/nonfree/drv/$N/$N.man > /tmp/ossman.txt
-	  		$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man|gzip -9 > prototype/usr/share/man/man7/$N.7.gz
+	  		$TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 $SRCDIR/kernel/nonfree/drv/$N/$N.man | gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 		fi
 	fi
 done
 
 sed "s:CONFIGFILEPATH:$OSSLIBDIR/conf:g" < $SRCDIR/kernel/drv/osscore/osscore.man > /tmp/ossman.txt
-$SRCDIR/setup/txt2man -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt|gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
+$TXT2MAN -t "osscore" -v "OSS Devices" -s 7 /tmp/ossman.txt | gzip -9 > prototype/usr/share/man/man7/osscore.7.gz
 rm -f /tmp/ossman.txt
 
 # Link the optional NOREGPARM modules
@@ -143,13 +152,13 @@ for n in $SRCDIR/misc/man7/*.man
 do
 	N=`basename $n .man`
 
-	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS Devices" -s 7 $n |gzip -9 > prototype/usr/share/man/man7/$N.7.gz
+	$TXT2MAN -t "$CMD" -v "OSS Devices" -s 7 $n | gzip -9 > prototype/usr/share/man/man7/$N.7.gz
 done
 
 for n in $SRCDIR/misc/man1m/*.man
 do
 	N=`basename $n .man`
-	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 1 $n |gzip -9 > prototype/usr/share/man/man1/$N.1.gz
+	$TXT2MAN -t "$CMD" -v "OSS System Administration Commands" -s 1 $n | gzip -9 > prototype/usr/share/man/man1/$N.1.gz
 done
 
 if ! cp lib/libOSSlib/libOSSlib.so lib/libsalsa/.libs/libsalsa.so.2.0.0 prototype/$OSSLIBDIR/lib
@@ -168,7 +177,7 @@ fi
 for i in target/bin/*
 do
 CMD=`basename $i`
-$SRCDIR/setup/txt2man -t "$CMD" -v "OSS User Commands" -s 1 cmd/$CMD/$CMD.man|gzip -9 > prototype/usr/share/man/man1/$CMD.1.gz
+$TXT2MAN -t "$CMD" -v "OSS User Commands" -s 1 cmd/$CMD/$CMD.man | gzip -9 > prototype/usr/share/man/man1/$CMD.1.gz
 echo done $CMD
 done
 
@@ -177,13 +186,12 @@ do
   CMD=`basename $i`
   if test -f cmd/$CMD/$CMD.man
   then
-	$SRCDIR/setup/txt2man -t "$CMD" -v "OSS System Administration Commands" -s 8 cmd/$CMD/$CMD.man|gzip -9 > prototype/usr/share/man/man8/$CMD.8.gz
+	$TXT2MAN -t "$CMD" -v "OSS System Administration Commands" -s 8 cmd/$CMD/$CMD.man | gzip -9 > prototype/usr/share/man/man8/$CMD.8.gz
 	echo done $CMD
   fi
 done
 
-rm -f prototype/usr/share/man/man8/ossdetect.8
-$SRCDIR/setup/txt2man -t "ossdetect" -v "User Commands" -s 8 os_cmd/Linux/ossdetect/ossdetect.man|gzip -9 > prototype/usr/share/man/man8/ossdetect.8.gz
+$TXT2MAN -t "ossdetect" -v "User Commands" -s 8 os_cmd/Linux/ossdetect/ossdetect.man | gzip -9 > prototype/usr/share/man/man8/ossdetect.8.gz
 echo done ossdetect
 
 cp -f $SRCDIR/oss/lib/flashsupport.c prototype/$OSSLIBDIR/lib
