@@ -34,16 +34,6 @@ oss_digi96	pci10ee,3fc1	RME Digi96/8
 oss_digi96	pci10ee,3fc2	RME Digi96/8 PRO
 oss_digi96	pci10ee,3fc3	RME Digi96/8 PAD
 oss_emu10k1x	pci1102,6	Creative Sound Blaster 5.1 (Dell)
-oss_envy24ht	pci1412,1724	Generic ENVY24HT based sound card
-oss_envy24ht	pcs1412,3630	M Audio Revolution 7.1
-oss_envy24ht	pcs1412,3631	M Audio Revolution 5.1
-oss_envy24ht	pcs1412,6321	M Audio Audiophile 192
-oss_envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
-oss_envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
-oss_envy24ht	pcs153b,1149	Terratec PHASE 28
-oss_envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
-oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
-oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 oss_envy24	pci1412,1712	Generic ENVY24 based device
 oss_envy24	pcs1412,d630	M Audio Delta 1010
 oss_envy24	pcs1412,d631	M Audio Delta DiO 2496
@@ -57,6 +47,16 @@ oss_envy24	pcs153b,1115	Terratec EWS88MT
 oss_envy24	pcs153b,112b	Terratec EWS88D
 oss_envy24	pcs153b,1130	Terratec EWX 24/96
 oss_envy24	pcs153b,1138	Terratec DMX 6Fire
+oss_envy24ht	pci1412,1724	Generic ENVY24HT based sound card
+oss_envy24ht	pcs1412,3630	M Audio Revolution 7.1
+oss_envy24ht	pcs1412,3631	M Audio Revolution 5.1
+oss_envy24ht	pcs1412,6321	M Audio Audiophile 192
+oss_envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
+oss_envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
+oss_envy24ht	pcs153b,1149	Terratec PHASE 28
+oss_envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
+oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
+oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 oss_fmedia	pci1319,801	ForteMedia FM 801
 oss_fmedia	pcs1489,7008	Genius Sound Maker Live
 oss_geode	pci100b,503	National Semiconductor Geode SC1200
