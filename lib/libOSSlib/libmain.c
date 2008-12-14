@@ -24,9 +24,6 @@ int synth_types[64] = { 0 };
 
 int nrsynths = 0;
 
-extern int gusload (int seqfd, int type, int dev, int pgm);
-extern int gusinit (int seqfd, int dev);
-
 extern void play_event (unsigned char *ev);
 
 void
