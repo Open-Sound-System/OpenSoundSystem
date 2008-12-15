@@ -40,7 +40,7 @@ extern "C"
 
 
   GtkWidget *gtk_vu_new (void);
-  guint gtk_vu_get_type (void);
+  GtkType gtk_vu_get_type (void);
   void gtk_vu_set_level (GtkVU * vu, guint new_level);
 
 #ifdef __cplusplus
