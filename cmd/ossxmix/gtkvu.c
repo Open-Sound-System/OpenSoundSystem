@@ -33,10 +33,10 @@ static gint gtk_vu_expose (GtkWidget * widget, GdkEventExpose * event);
 
 static GtkWidgetClass *parent_class = NULL;
 
-guint
-gtk_vu_get_type ()
+GtkType
+gtk_vu_get_type (void)
 {
-  static guint vu_type = 0;
+  static GType vu_type = 0;
 
   if (!vu_type)
     {
