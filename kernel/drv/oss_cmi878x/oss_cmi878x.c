@@ -2527,7 +2527,7 @@ oss_cmi878x_attach (oss_device_t * osdev)
         switch(sub_id)
         {
           case SUBID_XONAR_D1:
-            devc->chip_name = "Asus Xonar D1 (AV100);
+            devc->chip_name = "Asus Xonar D1 (AV100)";
             break;
           case SUBID_XONAR_DX:
             devc->chip_name = "Asus Xonar DX (AV100)";
