@@ -610,6 +610,7 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
 
   if (ok)			/* Still OK */
     {
+      client->mididev = midi_devs[dev];
       if (client->mididev == NULL)
       {
 	 cmn_err(CE_WARN, "client->mididev == NULL\n");
@@ -646,7 +647,6 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
       return err;
     }
 
-  client->mididev = midi_devs[dev];
   oss_midi_set_defaults (client->mididev);
 
   client->mididev->is_timing_master = 0;
