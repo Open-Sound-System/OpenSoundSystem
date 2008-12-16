@@ -92,7 +92,6 @@
 #define ASUS_VENDOR_ID		0x1043
 #define SUBID_XONAR_D2		0x8269
 #define SUBID_XONAR_D2X		0x82b7
-#define SUBID_XONAR_D1		0x834f
 #define SUBID_XONAR_DX		0x8275
 
 #define SUBID_GENERIC		0x0000
@@ -559,7 +558,6 @@ cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
 
   switch(devc->model)
   {
-    case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
       xonar_dx_set_play_volume(devc, codec_id, value);
       break;
@@ -2198,7 +2196,6 @@ init_cmi8788 (cmi8788_devc * devc)
 
   switch(devc->model)
   {
-    case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
       /* Two-Wire communication for Xonar DX DACs. */
       bVal |= 0x40;
@@ -2220,7 +2217,6 @@ init_cmi8788 (cmi8788_devc * devc)
   /* Non-generic DAC initialization */
   switch(devc->model)
   {
-    case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
       /* Front DAC. */
       cs4398_init(devc, XONAR_DX_FRONTDAC); 
@@ -2451,7 +2447,6 @@ init_cmi8788 (cmi8788_devc * devc)
   /* Enable Xonar output */
   switch(devc->model)
   {
-    case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
       OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_CONTROL);
       OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_DATA);
@@ -2526,9 +2521,6 @@ oss_cmi878x_attach (oss_device_t * osdev)
       {
         switch(sub_id)
         {
-          case SUBID_XONAR_D1:
-            devc->chip_name = "Asus Xonar D1 (AV100);
-            break;
           case SUBID_XONAR_DX:
             devc->chip_name = "Asus Xonar DX (AV100)";
             break;
