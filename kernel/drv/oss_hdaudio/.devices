@@ -11,6 +11,7 @@ oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
 oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci10de,774	Nvidia High Definition Audio (MCP78S)
 oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
 oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio
