@@ -15,6 +15,7 @@ oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
 oss_audiopci	pci1274,5000	Creative AudioPCI (ES1370)
 oss_cmi878x	pci13f6,8788	CMedia CMI8788
+oss_cmi878x	pci1043,834f	Asus Xonar D1 (AV100)
 oss_cmi878x	pci1043,8275    Asus Xonar DX (AV100)
 oss_cmpci	pci13f6,100	C-Media CM8338A
 oss_cmpci	pci13f6,100	MIDIMan DiO 2448
@@ -75,6 +76,7 @@ oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
 oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci10de,774	Nvidia High Definition Audio (MCP78S)
 oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
 oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio
