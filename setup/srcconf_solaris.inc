@@ -11,6 +11,8 @@ check_sysdep (conf_t * conf, struct utsname *un)
   conf->flags |= F_USEARCH;
 #ifdef USE_GCC
   strcpy (conf->ccomp, "gcc -Wall -O");
+#else
+  strcpy (conf->ccomp, "cc -xO2 -fast");
 #endif
   strcpy (conf->cplusplus,
 	  "CC -DNO_BUILTINS -I. -features=no%except -xvector=no");
