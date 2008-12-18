@@ -76,8 +76,15 @@ do
 	"--include-closed-source")
 		CLOSED_SOURCE=YES
 		NO_WARNING_CHECKS=YES
-		export CLOSED_SOURCE NO_WARNING_CHECKS
+		PORTABLE_BUILD=YES	# Produce binaries that work under generic CPU arch
+		export CLOSED_SOURCE NO_WARNING_CHECKS PORTABLE_BUILD
 		;;
+
+	"--portable-build")
+		PORTABLE_BUILD=YES	# Produce binaries that work under generic CPU arch
+		export PORTABLE_BUILD
+		;;
+		
 
 	"--enable-libsalsa=NO")
 		NOALSA=1
