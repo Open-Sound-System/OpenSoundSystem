@@ -807,7 +807,7 @@ hdaudio_mix_init (int dev)
 static void
 copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 {
-	int i, n;
+	int i;
 
 /*
  * Install output endpoints from the codec to the global endpoint table.
@@ -819,7 +819,6 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
     }
 
-	n=mixer->num_outendpoints;
 	for (i=0;i<codec->num_outendpoints;i++)
 	{
 	  int ix = (codec->multich_map >> (i * 4)) & 0x0f;
@@ -843,20 +842,10 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
-	  if (n >= HDA_MAX_OUTSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many output endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->outendpoints[n], ep, sizeof(*ep));
+	  memcpy(&mixer->outendpoints[mixer->copied_outendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
-
-	  n++;
 	}
-	mixer->num_outendpoints=n;
+        mixer->num_outendpoints = mixer->copied_outendpoints;
 
 /*
  * Install input endpoints from the codec to the global endpoint table.
@@ -868,7 +857,6 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
     }
 
-	n=mixer->num_inendpoints;
 	for (i=0;i<codec->num_inendpoints;i++)
 	{
           hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
@@ -891,20 +879,10 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
-	  if (n >= HDA_MAX_INSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many input endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->inendpoints[n], ep, sizeof(*ep));
+	  memcpy(&mixer->inendpoints[mixer->copied_inendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
-
-	  n++;
 	}
-	mixer->num_inendpoints=n;
+        mixer->num_inendpoints = mixer->copied_inendpoints;
 }
 
  /*ARGSUSED*/
@@ -1323,33 +1301,27 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
       case NT_ADC:		/* Audio input */
 	{
 	  unsigned int sizes;
-	  int j, s;
+	  int j;
 	  hdaudio_endpointinfo_t *endpoint;
 
 	  if (wid_type == 0)
 	    {			/* Output endpoint */
-	      if (codec->num_outendpoints >= HDA_MAX_OUTSTREAMS)
+	      if (mixer->num_outendpoints >= HDA_MAX_OUTSTREAMS)
 		{
-		  cmn_err (CE_WARN,
-			   "Too many output endpoints for codec %d (%d)\n",
-			   cad, codec->num_outendpoints);
+		  cmn_err (CE_WARN, "Too many output endpoints\n");
 		  return 0;
 		}
 
 	      endpoint = &codec->outendpoints[codec->num_outendpoints++];
 
-	      endpoint->ix = codec->num_outendpoints - 1;
-
-	      s = codec->num_outendpoints - 1;
-
 	      endpoint->stream_number = endpoint->default_stream_number =
-		s + 1;
-
+		++mixer->num_outendpoints;
+	      endpoint->ix = codec->num_outendpoints - 1;
 	      endpoint->iddle_stream = 0;
 	    }
 	  else
 	    {			/* Input endpoint */
-	      if (codec->num_inendpoints >= HDA_MAX_INSTREAMS)
+	      if (mixer->num_inendpoints >= HDA_MAX_INSTREAMS)
 		{
 		  cmn_err (CE_WARN, "Too many input endpoints\n");
 		  return 0;
@@ -1358,7 +1330,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	      endpoint = &codec->inendpoints[codec->num_inendpoints++];
 
 	      endpoint->stream_number = endpoint->default_stream_number =
-		codec->num_inendpoints;
+		++mixer->num_inendpoints;
 	      endpoint->ix = codec->num_inendpoints - 1;
 	      endpoint->iddle_stream = 0;
 	    }
