@@ -62,6 +62,7 @@ typedef struct
   unsigned int sizemask;
   int stream_number, default_stream_number, iddle_stream;
   int is_digital;
+  int is_modem;
   int auto_muted;
   int skip; /* Not connected to anywhere */
   int already_used;
@@ -127,6 +128,7 @@ typedef struct
 #define SET_GPIO_STICKY				0x71a
 #define GET_SUBSYSTEM_ID			0xf20
 #define GET_STRIPE_CONTROL			0xf24
+#define SET_CODEC_RESET				0x7ff
 
 /*
  * Parameters

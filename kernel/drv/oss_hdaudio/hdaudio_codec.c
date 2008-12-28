@@ -14,6 +14,13 @@ extern int hdaudio_noskip;
 
 static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
 
+
+/* Si3055 functions (implemented in hdaudio_si3055.c) */
+extern void hdaudio_si3055_endpoint_init(hdaudio_mixer_t *mixer, int cad);
+extern void hdaudio_si3055_set_rate(hdaudio_mixer_t *mixer, int cad, int rate);
+extern int hdaudio_si3055_set_offhook(hdaudio_mixer_t *mixer, int cad, int offhook);
+
+
 static int attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 		      unsigned int pci_subdevice, int group_type);
 int
@@ -1885,6 +1892,7 @@ polish_widget_list (hdaudio_mixer_t * mixer, int cad)
     }
 }
 
+
 /* ARGSUSED */
 static int
 attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
@@ -2104,6 +2112,12 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
       /* power up the AFG! */
       corb_write (mixer, cad, i, 0, SET_POWER_STATE, 0);
     }
+    
+  /* Initialize and setup manually endpoints for Si3055. */
+  if ((mixer->codecs[cad]->vendor_flags & VF_SI3055_HACK) && (group_type == 2))
+    {
+      hdaudio_si3055_endpoint_init(mixer, cad);
+    }
 
   if (has_audio_group)
     {
@@ -2234,6 +2248,11 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
       }
 
   *setupbits = tmp;
+  
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_SI3055_HACK)
+    {
+      hdaudio_si3055_set_rate(mixer, endpoint->cad, rate);
+    }
 
   corb_write (mixer, endpoint->cad, endpoint->base_wid, 0,
 	      SET_CONVERTER_FORMAT, tmp);
@@ -2595,6 +2614,23 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
 		     SET_GAIN (1, 0, 0, 1, 1), a);
 
       mixer_devs[mixer->mixer_dev]->modify_counter++;
+      return *arg = v;
+      break;
+
+    case SNDCTL_DSP_MODEM_OFFHOOK:
+      if (!endpoint->is_modem)
+        {
+          return OSS_EINVAL;
+        }
+      v = *arg;
+      if (mixer->codecs[endpoint->cad]->vendor_flags & VF_SI3055_HACK)
+        {
+          v = hdaudio_si3055_set_offhook(mixer, endpoint->cad, v);
+        }
+      else
+        {
+          return OSS_ENOTSUP;
+        }
       return *arg = v;
       break;
     }

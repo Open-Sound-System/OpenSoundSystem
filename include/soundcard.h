@@ -1447,6 +1447,12 @@ typedef unsigned short oss_peaks_t[MAX_PEAK_CHANNELS];
 #define X_SADA_SET_PLAYTGT	__SIOWR('P', 68, int)
 #endif
 
+/*
+ ****************************************************************************
+ * Modem interface
+ */
+#define SNDCTL_DSP_MODEM_OFFHOOK        __SIOWR('P', 69, int)
+
 #ifndef NO_LEGACY_MIXER
 /*
  ****************************************************************************
