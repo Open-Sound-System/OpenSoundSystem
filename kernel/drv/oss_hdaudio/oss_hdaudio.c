@@ -1742,6 +1742,10 @@ oss_hdaudio_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
+#if 0
+  // This check is not necessary because the kernel has already checked
+  // the vendor&device ID
+
   if ((vendor != INTEL_VENDOR_ID && vendor != NVIDIA_VENDOR_ID &&
        vendor != ATI_VENDOR_ID && vendor != SIS_VENDOR_ID &&
        vendor != VIA_VENDOR_ID && vendor != ULI_VENDOR_ID) ||
@@ -1759,9 +1763,9 @@ oss_hdaudio_attach (oss_device_t * osdev)
        device != ATI_DEVICE_SB450 && device != ATI_DEVICE_SB600))
 
     {
-
       return 0;
     }
+#endif
 
   pci_read_config_byte (osdev, PCI_REVISION_ID, &pci_revision);
   pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
