@@ -1178,7 +1178,7 @@ oss_ich_attach (oss_device_t * osdev)
 
   pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
   pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
-  dw = (sub_id << 8) | sub_vendor;
+  dw = (sub_id << 16) | sub_vendor;
 
   switch (dw)
     {
