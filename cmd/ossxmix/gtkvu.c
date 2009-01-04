@@ -36,7 +36,7 @@ static GtkWidgetClass *parent_class = NULL;
 GtkType
 gtk_vu_get_type (void)
 {
-  static GType vu_type = 0;
+  static GtkType vu_type = 0;
 
   if (!vu_type)
     {
