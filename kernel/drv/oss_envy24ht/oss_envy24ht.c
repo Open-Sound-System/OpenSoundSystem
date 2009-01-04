@@ -60,8 +60,6 @@ static card_spec models[] = {
   {SSID_AP192, "M-Audio Audiophile 192", 2, 2,
    MF_SPDIFOUT | MF_SPDIFIN | MF_192K | MF_NOAC97 | MF_MIDI,
    &envy24ht_ap192_auxdrv},
-  {0x24031412, "VIA Vinyl Tremor Audio", 6, 2,
-   MF_SPDIFOUT | MF_ENVY24PT, &envy24ht_ac97_auxdrv},
   {0}
 };
 

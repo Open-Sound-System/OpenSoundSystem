@@ -14,6 +14,13 @@ extern int hdaudio_noskip;
 
 static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
 
+
+/* Si3055 functions (implemented in hdaudio_si3055.c) */
+extern void hdaudio_si3055_endpoint_init(hdaudio_mixer_t *mixer, int cad);
+extern void hdaudio_si3055_set_rate(hdaudio_mixer_t *mixer, int cad, int rate);
+extern int hdaudio_si3055_set_offhook(hdaudio_mixer_t *mixer, int cad, int offhook);
+
+
 static int attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 		      unsigned int pci_subdevice, int group_type);
 int
@@ -807,7 +814,7 @@ hdaudio_mix_init (int dev)
 static void
 copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 {
-	int i, n;
+	int i;
 
 /*
  * Install output endpoints from the codec to the global endpoint table.
@@ -819,7 +826,6 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
     }
 
-	n=mixer->num_outendpoints;
 	for (i=0;i<codec->num_outendpoints;i++)
 	{
 	  int ix = (codec->multich_map >> (i * 4)) & 0x0f;
@@ -843,20 +849,10 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
-	  if (n >= HDA_MAX_OUTSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many output endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->outendpoints[n], ep, sizeof(*ep));
+	  memcpy(&mixer->outendpoints[mixer->copied_outendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
-
-	  n++;
 	}
-	mixer->num_outendpoints=n;
+        mixer->num_outendpoints = mixer->copied_outendpoints;
 
 /*
  * Install input endpoints from the codec to the global endpoint table.
@@ -868,7 +864,6 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
       ep->skip = mixer->codecs[ep->cad]->widgets[ep->base_wid].skip;
     }
 
-	n=mixer->num_inendpoints;
 	for (i=0;i<codec->num_inendpoints;i++)
 	{
           hdaudio_endpointinfo_t *ep = &codec->inendpoints[i];
@@ -891,20 +886,10 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
-	  if (n >= HDA_MAX_INSTREAMS)
-	     {
-		  cmn_err (CE_WARN,
-			   "Too many input endpoints (%d)\n",
-			   n);
-		  continue;
-	     }
-
-	  memcpy(&mixer->inendpoints[n], ep, sizeof(*ep));
+	  memcpy(&mixer->inendpoints[mixer->copied_inendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
-
-	  n++;
 	}
-	mixer->num_inendpoints=n;
+        mixer->num_inendpoints = mixer->copied_inendpoints;
 }
 
  /*ARGSUSED*/
@@ -1323,33 +1308,27 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
       case NT_ADC:		/* Audio input */
 	{
 	  unsigned int sizes;
-	  int j, s;
+	  int j;
 	  hdaudio_endpointinfo_t *endpoint;
 
 	  if (wid_type == 0)
 	    {			/* Output endpoint */
-	      if (codec->num_outendpoints >= HDA_MAX_OUTSTREAMS)
+	      if (mixer->num_outendpoints >= HDA_MAX_OUTSTREAMS)
 		{
-		  cmn_err (CE_WARN,
-			   "Too many output endpoints for codec %d (%d)\n",
-			   cad, codec->num_outendpoints);
+		  cmn_err (CE_WARN, "Too many output endpoints\n");
 		  return 0;
 		}
 
 	      endpoint = &codec->outendpoints[codec->num_outendpoints++];
 
-	      endpoint->ix = codec->num_outendpoints - 1;
-
-	      s = codec->num_outendpoints - 1;
-
 	      endpoint->stream_number = endpoint->default_stream_number =
-		s + 1;
-
+		++mixer->num_outendpoints;
+	      endpoint->ix = codec->num_outendpoints - 1;
 	      endpoint->iddle_stream = 0;
 	    }
 	  else
 	    {			/* Input endpoint */
-	      if (codec->num_inendpoints >= HDA_MAX_INSTREAMS)
+	      if (mixer->num_inendpoints >= HDA_MAX_INSTREAMS)
 		{
 		  cmn_err (CE_WARN, "Too many input endpoints\n");
 		  return 0;
@@ -1358,7 +1337,7 @@ attach_node (hdaudio_mixer_t * mixer, int cad, int wid, int parent)
 	      endpoint = &codec->inendpoints[codec->num_inendpoints++];
 
 	      endpoint->stream_number = endpoint->default_stream_number =
-		codec->num_inendpoints;
+		++mixer->num_inendpoints;
 	      endpoint->ix = codec->num_inendpoints - 1;
 	      endpoint->iddle_stream = 0;
 	    }
@@ -1913,6 +1892,7 @@ polish_widget_list (hdaudio_mixer_t * mixer, int cad)
     }
 }
 
+
 /* ARGSUSED */
 static int
 attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
@@ -2132,6 +2112,12 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
       /* power up the AFG! */
       corb_write (mixer, cad, i, 0, SET_POWER_STATE, 0);
     }
+    
+  /* Initialize and setup manually endpoints for Si3055. */
+  if ((mixer->codecs[cad]->vendor_flags & VF_SI3055_HACK) && (group_type == 2))
+    {
+      hdaudio_si3055_endpoint_init(mixer, cad);
+    }
 
   if (has_audio_group)
     {
@@ -2262,6 +2248,11 @@ hdaudio_codec_setup_endpoint (hdaudio_mixer_t * mixer,
       }
 
   *setupbits = tmp;
+  
+  if (mixer->codecs[endpoint->cad]->vendor_flags & VF_SI3055_HACK)
+    {
+      hdaudio_si3055_set_rate(mixer, endpoint->cad, rate);
+    }
 
   corb_write (mixer, endpoint->cad, endpoint->base_wid, 0,
 	      SET_CONVERTER_FORMAT, tmp);
@@ -2623,6 +2614,23 @@ hdaudio_codec_audio_ioctl (hdaudio_mixer_t * mixer,
 		     SET_GAIN (1, 0, 0, 1, 1), a);
 
       mixer_devs[mixer->mixer_dev]->modify_counter++;
+      return *arg = v;
+      break;
+
+    case SNDCTL_DSP_MODEM_OFFHOOK:
+      if (!endpoint->is_modem)
+        {
+          return OSS_EINVAL;
+        }
+      v = *arg;
+      if (mixer->codecs[endpoint->cad]->vendor_flags & VF_SI3055_HACK)
+        {
+          v = hdaudio_si3055_set_offhook(mixer, endpoint->cad, v);
+        }
+      else
+        {
+          return OSS_ENOTSUP;
+        }
       return *arg = v;
       break;
     }

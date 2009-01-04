@@ -615,9 +615,10 @@ main (int argc, char *argv[])
     {
       printf ("\n\nNOTICE! You don't have any audio devices available.\n"
 	      "        It looks like your audio hardware was not recognized\n"
-	      "        by OSS. Please contact 4Front technologies for help\n"
-	      "        (http://www.opensound.com/support.cgi). Don't forget to\n"
-	      "        include your soundon.log file to the support request.\n");
+	      "        by OSS.\n"
+	      "	       \n"
+	      "        If you have installed OSS just a moment ago then it may be necessary to.\n"
+	      "        to rebot the system before trying to use the device(s).\n");
       exit (-1);
     }
 

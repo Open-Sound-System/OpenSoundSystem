@@ -1447,6 +1447,12 @@ typedef unsigned short oss_peaks_t[MAX_PEAK_CHANNELS];
 #define X_SADA_SET_PLAYTGT	__SIOWR('P', 68, int)
 #endif
 
+/*
+ ****************************************************************************
+ * Modem interface
+ */
+#define SNDCTL_DSP_MODEM_OFFHOOK        __SIOWR('P', 69, int)
+
 #ifndef NO_LEGACY_MIXER
 /*
  ****************************************************************************
@@ -1881,9 +1887,17 @@ typedef struct oss_mixer_enuminfo
   char strings[OSS_ENUM_STRINGSIZE];
 } oss_mixer_enuminfo;
 
-#define OPEN_READ	PCM_ENABLE_INPUT
-#define OPEN_WRITE	PCM_ENABLE_OUTPUT
-#define OPEN_READWRITE	(OPEN_READ|OPEN_WRITE)
+#define OSS_OPEN_READ	PCM_ENABLE_INPUT
+#define OSS_OPEN_WRITE	PCM_ENABLE_OUTPUT
+#define OSS_OPEN_READWRITE	(OSS_OPEN_READ|OSS_OPEN_WRITE)
+
+/*
+ * Older names for the above (to be removed in the future since they
+ * may pollute the name space)
+ */
+#define OPEN_READ	OSS_OPEN_READ
+#define OPEN_WRITE	OSS_OPEN_WRITE
+#define OPEN_READWRITE	OSS_OPEN_READWRITE
 
 typedef struct oss_audioinfo
 {

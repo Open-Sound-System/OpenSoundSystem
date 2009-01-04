@@ -18,6 +18,8 @@ struct codec_desc
 S/PDIF */
 #define VF_VAIO_HACK    0x00000002      /* VAIO STAC9872 requires special
 handling for headphone DAC */
+#define VF_SI3055_HACK  0x00000004      /* Si3055 modem requires manual endpoint
+setuping and rate and ioctl hacks. */
   char **remap;
 
   /*
@@ -893,6 +895,16 @@ static const codec_desc_t codecs[] = {
   {0x14f15047, "CX20551", VF_NONE, NULL, 0x76543201},
   {0x14f12c06, "Conexant2c06", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Vaio) */
   {0x14f12bfa, "Conexant2bfa", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Acer Ferrari 5k) */
+
+  /* Si3055 and compatible modems */
+  {0x163c3055, "Si3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x163c3155, "Si3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13026, "Agere3026", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13055, "Agere3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13155, "Agere3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573055, "Motorola3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573057, "Motorola3057", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573155, "Motorola3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
 
   /* Unknown */
   {0, "Unknown"}

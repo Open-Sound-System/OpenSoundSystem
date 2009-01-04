@@ -1156,6 +1156,10 @@ oss_ich_attach (oss_device_t * osdev)
   DDB (cmn_err
        (CE_CONT, "oss_ich_attach(Vendor %x, device %x)\n", vendor, device));
 
+#if 0
+  // This check is not necessary because the kernel has already checked
+  // the vendor&device ID
+
   if ((vendor != INTEL_VENDOR_ID && vendor != SIS_VENDOR_ID &&
        vendor != NVIDIA_VENDOR_ID && vendor != AMD_VENDOR_ID) ||
       (device != INTEL_DEVICE_ICH1 && device != INTEL_DEVICE_ICH1R1 &&
@@ -1175,6 +1179,7 @@ oss_ich_attach (oss_device_t * osdev)
 	       vendor, device);
       return 0;
     }
+#endif
 
   pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
   pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
