@@ -19,6 +19,7 @@
 #define INTEL_DEVICE_ICH8       0x284b
 #define INTEL_DEVICE_ICH9       0x293f
 #define INTEL_DEVICE_ICH10	0x3a3e
+#define INTEL_DEVICE_ICH10_B	0x3a6e
 #define INTEL_DEVICE_P35        0x293e
 
 #define NVIDIA_VENDOR_ID        0x10de
@@ -1752,7 +1753,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
       (device != INTEL_DEVICE_ICH6 && device != INTEL_DEVICE_ICH7 &&
        device != INTEL_DEVICE_ESB2 && device != INTEL_DEVICE_ICH8 &&
        device != INTEL_DEVICE_ICH9 && device != INTEL_DEVICE_P35 &&
-       device != INTEL_DEVICE_ICH10 &&
+       device != INTEL_DEVICE_ICH10 && device != INTEL_DEVICE_ICH10_B &&
        device != NVIDIA_DEVICE_MCP51 && device != NVIDIA_DEVICE_MCP55 &&
        device != NVIDIA_DEVICE_MCP61 && device != NVIDIA_DEVICE_MCP61A &&
        device != NVIDIA_DEVICE_MCP65 && device != NVIDIA_DEVICE_MCP67 &&
@@ -1801,6 +1802,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case INTEL_DEVICE_ICH9:
     case INTEL_DEVICE_P35:
     case INTEL_DEVICE_ICH10:
+    case INTEL_DEVICE_ICH10_B:
       devc->chip_name = "Intel HD Audio";
       break;
 
