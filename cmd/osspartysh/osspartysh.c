@@ -32,7 +32,11 @@
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
+#ifdef __FreeBSD__
+#include <libutil.h>
+#else
 #include <pty.h>
+#endif
 #include <utmp.h>
 #include <errno.h>
 
