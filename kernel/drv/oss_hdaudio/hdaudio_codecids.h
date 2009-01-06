@@ -1031,6 +1031,7 @@ extern int hdaudio_travelmate4060_mixer_init (int dev, hdaudio_mixer_t * mixer, 
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_mac_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
@@ -1080,6 +1081,11 @@ static const codec_desc_t subdevices[] = {
  * Thinkpad R61
  */
   {0x17aa20bb, "Thinkpad R61", VF_NONE, (char**) &ad1984remap, 0, hdaudio_thinkpad_r61_mixer_init},
+
+/*
+ * Asus Eee PC (model 900 at least)
+ */
+  {0x10438337, "Asus Eee PC", VF_NONE, NULL, 0, hdaudio_eeepc_mixer_init},
 
 /*
  * Known Macintosh systems
