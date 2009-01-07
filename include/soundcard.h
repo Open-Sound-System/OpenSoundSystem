@@ -1789,6 +1789,17 @@ typedef struct oss_mixext
 #	define MIXT_STEREOSLIDER16	20
 #	define MIXT_MUTE	21	/* Mute=1, unmute=0 */
 
+/*
+ * MIXT_ENUM_MULTI is a multi choice variant of MIXT_ENUM. Bits 0 to 30
+ * of the value field are used as a bit mask (bit 31 is reserved and must be
+ * set to 0).
+ *
+ * This MIXT_ENUM_MULTI type is reserved for Sun's Boomer. The official OSS
+ * implementation will probably not use this feature. The same functionality
+ * can be implemented by using group of MIXT_ONOFF controls.
+ */
+#	define MIXT_ENUM_MULTI	22
+
   /**************************************************************/
 
   /* Possible value range (minvalue to maxvalue) */
@@ -1814,6 +1825,7 @@ typedef struct oss_mixext
 #	define MIXF_MONVOL	0x00002000	/* Input->output monitor volume */
 #	define MIXF_WIDE	0x00004000	/* Enum control has wide labels */
 #	define MIXF_DESCR	0x00008000	/* Description (tooltip) available */
+#	define MIXF_DISABLED	0x00010000	/* Control is not active at this moment (grayed out) */
   oss_id_t id;			/* Mnemonic ID (mainly for internal use) */
   int parent;			/* Entry# of parent (group) node (-1 if root) */
 
