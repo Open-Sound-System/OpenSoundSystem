@@ -3435,8 +3435,29 @@ hda_codec_add_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
       || widget->current_selector >= widget->nconn + 1)
     widget->current_selector = 0;
 
-  corb_write (mixer, widget->cad, widget->wid, 0, SET_SELECTOR,
-	      widget->current_selector);
+  if (widget->current_selector < widget->nconn)
+    {
+      /* Output source select */
+      corb_write (mixer, cad, wid, 0, SET_SELECTOR, widget->current_selector);
+      /* Enable output and HP amp. Set vref=Ground */
+      corb_write (mixer, cad, wid, 0, SET_PINCTL, 0xc0);
+    }
+  else
+    {
+      /* Input select
+       * Program the correct VRef Values
+       */
+
+      if (widget->pin_type == PIN_IN)	/* Line-in */
+	{
+	  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x20);	/*Ground*/
+	}
+      else		/* Mic-in */
+	{
+	  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x24);	/*Vref=8
+								   0% */
+	}
+    }
 
   return *ctl;
 }
@@ -3446,6 +3467,7 @@ hda_codec_set_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
 		      int value)
 {
   codec_t *codec;
+  widget_t *widget;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return;
@@ -3454,7 +3476,54 @@ hda_codec_set_select (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   if (wid < 0 || wid >= codec->nwidgets)
     return;
 
+  widget = &codec->widgets[wid];
+
+  widget->current_selector = value;
+
   corb_write (mixer, cad, wid, 0, SET_SELECTOR, value);
+}
+
+void
+hda_codec_set_pinselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
+		      int value)
+{
+  codec_t *codec;
+  widget_t *widget;
+
+  if (cad < 0 || cad >= mixer->ncodecs)
+    return;
+  codec = mixer->codecs[cad];
+
+  if (wid < 0 || wid >= codec->nwidgets)
+    return;
+
+  widget = &codec->widgets[wid];
+
+  widget->current_selector = value;
+
+  if (widget->current_selector < widget->nconn)
+    {
+      /* Output source select */
+      corb_write (mixer, cad, wid, 0, SET_SELECTOR, widget->current_selector);
+      /* Enable output and HP amp. Set vref=Ground */
+      corb_write (mixer, cad, wid, 0, SET_PINCTL, 0xc0);
+    }
+  else
+    {
+      /* Input select
+       * Program the correct VRef Values
+       */
+
+      if (widget->pin_type == PIN_IN)	/* Line-in */
+	{
+	  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x20);	/*Ground*/
+	}
+      else		/* Mic-in */
+	{
+	  corb_write (mixer, cad, wid, 0, SET_PINCTL, 0x24);	/*Vref=8
+								   0% */
+	}
+    }
 }
 
 int
