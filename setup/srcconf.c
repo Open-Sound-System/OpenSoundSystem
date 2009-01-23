@@ -72,6 +72,8 @@ typedef struct
   int suspend_resume;	/* Supports suspend/resume (under Solaris) */
 } conf_t;
 
+#define DEFAULT_CC "cc"
+
 static conf_t conf = {
   "Open Sound System",
   "Solaris",
@@ -82,7 +84,7 @@ static conf_t conf = {
   LIC_FREE,
   "PCI",			/* bus */
   "LITTLE",			/* Endianess */
-  "cc",				/* c compiler */
+  DEFAULT_CC,			/* c compiler */
   "c++"				/* cplusplus */
 };
 
@@ -91,8 +93,8 @@ static int kernelonly = 0;
 static int useronly = 0;
 static int do_warning_checks=1;
 
-char *hostcc="cc";
-char *targetcc="cc";
+char *hostcc;
+char *targetcc;
 
 static int nincludes = 0;
 static char *includes[MAX_INCLUDES];
@@ -767,12 +769,12 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #endif
 
     }
-/*
+#ifndef __SCO_VERSION__
   else
     {
       fprintf (f, "CFLAGS=-O\n");
     }
-*/
+#endif
 
 #if !defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
@@ -1262,6 +1264,11 @@ main (int argc, char *argv[])
 
   if (getenv("NO_WARNING_CHECKS")!=NULL)
      do_warning_checks = 0;
+
+  hostcc = getenv ("HOSTCC");
+  targetcc = getenv ("CC");
+  if (hostcc == NULL) hostcc = DEFAULT_CC;
+  if (targetcc == NULL) targetcc = DEFAULT_CC;
 
 #if defined(linux) || defined(__FreeBSD__) || defined(__SCO_VERSION__)
   mkdir ("target", 0755);

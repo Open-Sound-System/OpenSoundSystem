@@ -232,7 +232,12 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   decoders_queue_t * dec, * decoders = NULL;
   FILE * wave_fp;
 
-  if (strcmp(fname, "-") == 0)
+  if (setup_device (dsp, format, channels, speed) == -2) return -1;
+  constant = format2bits (format) * speed * channels / 8.0;
+
+  if (datalimit != 0) datalimit *= constant;
+
+  if (strcmp (fname, "-") == 0)
     wave_fp = fdopen (1, "wb");
   else
     {
@@ -252,9 +257,6 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
       return -2;
     }
 
-  if (setup_device (dsp, format, channels, speed) == -2) return -1;
-  constant = format2bits (format) * speed * channels / 8.0;
-
   if (channels == 1)
     print_msg (VERBOSEM, "Recording wav: Speed %dHz %d bits Mono\n",
                speed, (int)format2bits (format));
@@ -265,11 +267,9 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
     print_msg (VERBOSEM, "Recording wav: Speed %dHz %d bits %d channels\n",
                speed, (int)format2bits (format), channels);
 
-  if (datalimit != 0) datalimit *= constant;
-
- /* 
- * Write the initial header (practically unlimited length)
- */
+  /* 
+   * Write the initial header
+   */
   if (write_head (wave_fp, type, datalimit, format, channels, speed) == -1)
     return -2;
 

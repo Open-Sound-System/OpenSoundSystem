@@ -427,7 +427,11 @@ oss_get_pid (void)
 int
 oss_get_uid (void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,19)
+  return current->cred->uid;
+#else
   return current->uid;
+#endif
 }
 
 typedef struct tmout_desc

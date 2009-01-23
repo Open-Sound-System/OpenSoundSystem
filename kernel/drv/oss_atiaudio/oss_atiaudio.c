@@ -1032,10 +1032,11 @@ oss_atiaudio_attach (oss_device_t * osdev)
 
   pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &sub_vendor);
   pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &sub_id);
-  switch ((sub_id << 8) | sub_vendor)
+  switch ((sub_id << 16) | sub_vendor)
     {
       case 0x11831043:  /* ASUS A6R */
       case 0x2043161f:  /* Maxselect x710s */
+      case 0x0506107b:  /* Gateway 7510GX */
 	devc->inverted = AC97_INVERTED;
 	cmn_err (CE_CONT, "An inverted amplifier has been autodetected\n");
 	break;

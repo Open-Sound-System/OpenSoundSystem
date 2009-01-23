@@ -707,6 +707,7 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           if (!strcmp(optarg, "?"))
             {
               dsp->playtgt = optarg;
+              dsp->flags = O_WRONLY;
               open_device (dsp);
               select_playtgt (dsp);
             }
@@ -773,8 +774,6 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
   if (argc < 2)
     ossrecord_usage (argv[0]);
-
-  dsp->flags = O_RDONLY;
 
   while ((c = getopt (argc, argv, "F:L:MORSb:c:d:f:g:hi:lm:r:s:t:wv")) != EOF)
     switch (c)
@@ -847,6 +846,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           if (!strcmp(optarg, "?"))
             {
               dsp->recsrc = optarg;
+              dsp->flags = O_RDONLY;
               open_device (dsp);
               select_recsrc (dsp);
             }
