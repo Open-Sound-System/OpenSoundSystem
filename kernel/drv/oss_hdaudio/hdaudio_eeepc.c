@@ -21,6 +21,9 @@ hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_gro
 
   DDB(cmn_err(CE_CONT, "hdaudio_eeepc_mixer_init got called.\n"));
 
+  HDA_OUTAMP(0x02, top_group, "pcm-front", 100);
+  HDA_OUTAMP(0x04, top_group, "pcm-rear", 100);
+
   /* Handle PIN widgets */
   {
 	int n, group, pin_group;
@@ -143,7 +146,7 @@ hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_gro
 		{
 			int amp_group;
 
-			HDA_GROUP(amp_group, group, "src-mute");
+			HDA_GROUP(amp_group, group, "rec-mute");
 			HDA_INMUTE(0x23, 0, amp_group, "pink", MUTE);	/* From widget 0x18 */
 			HDA_INMUTE(0x23, 1, amp_group, "mic", UNMUTE);	/* From widget 0x19 */
 			HDA_INMUTE(0x23, 2, amp_group, "black", MUTE);	/* From widget 0x1a */
@@ -176,7 +179,7 @@ hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_gro
 		{
 			int amp_group;
 
-			HDA_GROUP(amp_group, group, "src-mute");
+			HDA_GROUP(amp_group, group, "rec-mute");
 			HDA_INMUTE(0x22, 0, amp_group, "pink", MUTE);	/* From widget 0x18 */
 			HDA_INMUTE(0x22, 1, amp_group, "mic", MUTE);	/* From widget 0x19 */
 			HDA_INMUTE(0x22, 2, amp_group, "black", MUTE);	/* From widget 0x1a */
@@ -237,6 +240,7 @@ hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_gro
 		}
 	   }
 
+#if 0
 	if (HDA_MISC_GROUP(0x02, group, misc_group, "pcm-front", n, "misc", 8))	/* Misc widget 0x02 */
 	   {
 		HDA_OUTAMP(0x02, group, "-", 90);
@@ -251,6 +255,7 @@ hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_gro
 	   {
 		HDA_OUTAMP(0x04, group, "-", 90);
 	   }
+#endif
 
 	if (HDA_MISC_GROUP(0x0b, group, misc_group, "input-mixer", n, "misc", 8))	/* Misc widget 0x0b */
 	   {

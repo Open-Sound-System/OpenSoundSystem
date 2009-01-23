@@ -1030,7 +1030,8 @@ extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int c
 extern int hdaudio_travelmate4060_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
-extern int hdaudio_mac_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
@@ -1090,19 +1091,20 @@ static const codec_desc_t subdevices[] = {
 /*
  * Known Macintosh systems
  */
-  {0x106b0800, "Intel Mac V1", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0700, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0600, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0200, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0f00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1600, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1700, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1a00, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  // {0x00000100, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, ?, hdaudio_mac_GPIO_init},
-  {0x106b0a00, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b2200, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
+  {0x106b0800, "Intel Mac V1", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0700, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0600, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0200, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0f00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1600, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1700, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1a00, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  // {0x00000100, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, ?, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0a00, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b2200, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b3200, "Intel iMac", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_mac_realtek_GPIO_init}, // ALC885
 
   {0, "Unknown"}
 };

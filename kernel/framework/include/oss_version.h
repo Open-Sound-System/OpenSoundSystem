@@ -1,7 +1,7 @@
 /*
  * Purpose: OSS version ID
  */
-#define COPYING12 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
+#define COPYING12 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
 #include <buildid.h>
 #include <timestamp.h>
 

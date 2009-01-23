@@ -63,9 +63,25 @@ hdaudio_mac_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
 	unsigned int subdevice = codec->subvendor_id;
 	unsigned int codec_id = codec->vendor_id;
 
+   	corb_write (mixer, cad, afg, 0, SET_GPIO_DATA, 0xffffffff);
+
 	// TODO: Populate this function with the real stuff
 	
 cmn_err(CE_CONT, "hdaudio_mac_GPIO_init() entered, afg=%d, subdevice=0x%08x, codec=0x%08x\n", afg, subdevice, codec_id);
 
 	return OSS_EAGAIN; /* Continue with the default mixer init */
+}
+
+int
+hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
+{
+cmn_err(CE_CONT, "iMac Sigmatel hdaudio initialization\n");
+	return hdaudio_mac_GPIO_init(dev, mixer, cad, top_group);
+}
+
+int
+hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
+{
+cmn_err(CE_CONT, "iMac Realtek hdaudio initialization\n");
+	return hdaudio_mac_GPIO_init(dev, mixer, cad, top_group);
 }
