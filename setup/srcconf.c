@@ -123,6 +123,13 @@ parse_config (FILE * f, conf_t * conf)
       if (*parms == '=')
 	*parms++ = 0;
 
+#if defined(__BEOS__) || defined(__HAIKU__)
+      if (strcmp (parms, "-lm") == 0)
+	{
+	  parms = "";
+	}
+#endif
+
       if (strcmp (parms, "$GTKCFLAGS") == 0)
 	{
 	  if (getenv ("GTK1") != NULL)

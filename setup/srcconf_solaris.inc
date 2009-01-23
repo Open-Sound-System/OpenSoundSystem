@@ -11,6 +11,11 @@ check_sysdep (conf_t * conf, struct utsname *un)
   conf->flags |= F_USEARCH;
 #ifdef USE_GCC
   strcpy (conf->ccomp, "gcc -Wall -O");
+#else
+  if (getenv("PORTABLE_BUILD") != NULL)
+     strcpy (conf->ccomp, "cc -xO5");	/* Produce code for generic target */
+  else
+     strcpy (conf->ccomp, "cc -fast");	/* Optimize for the current system/arch */
 #endif
   strcpy (conf->cplusplus,
 	  "CC -DNO_BUILTINS -I. -features=no%except -xvector=no");

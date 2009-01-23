@@ -7,6 +7,7 @@
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 
 #include "oss_config.h"
+#ifndef CONFIG_OSS_MIDI
 #include "midi_core.h"
 #include "midiparser.h"
 
@@ -69,3 +70,4 @@ void
 midiparser_input (midiparser_common_p synth, unsigned char data)
 {
 }
+#endif

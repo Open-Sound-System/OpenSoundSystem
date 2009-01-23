@@ -147,13 +147,13 @@ print_engine_info (oss_audioinfo * ainfo, int num)
 
   switch (ainfo->busy)
     {
-    case OPEN_READ:
+    case OSS_OPEN_READ:
       printf ("Busy (IN) ");
       break;
-    case OPEN_WRITE:
+    case OSS_OPEN_WRITE:
       printf ("Busy (OUT) ");
       break;
-    case OPEN_READWRITE:
+    case OSS_OPEN_READWRITE:
       printf ("Busy (IN/OUT) ");
       break;
     default:
@@ -507,13 +507,13 @@ print_midi_info (void)
 	{
 	  switch (minfo.busy)
 	    {
-	    case OPEN_READ:
+	    case OSS_OPEN_READ:
 	      printf ("Busy (IN) ");
 	      break;
-	    case OPEN_WRITE:
+	    case OSS_OPEN_WRITE:
 	      printf ("Busy (OUT) ");
 	      break;
-	    case OPEN_READWRITE:
+	    case OSS_OPEN_READWRITE:
 	      printf ("Busy (IN/OUT) ");
 	      break;
 	    default:
