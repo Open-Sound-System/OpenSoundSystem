@@ -40,6 +40,26 @@ const double dtmf_keypad_row[] = { 697.0,  770.0,  852.0,  941.0  };
 const double dtmf_keypad_col[] = { 1209.0, 1336.0, 1477.0, 1633.0 };
 const char *dtmf_keypad_keys = "123A456B789C*0#D";
 
+static void
+modem_write(int fd, const void *buf, size_t count)
+{
+	if (write(fd, buf, count) != count)
+	{
+		perror("Modem write");
+		exit(1);
+	}
+}
+
+static void
+modem_read(int fd, void *buf, size_t count)
+{
+	if (read(fd, buf, count) != count)
+	{
+		perror("Modem read");
+		exit(1);
+	}
+}
+
 static int
 dtmf_fill_digit(uint16_t *buf, size_t buf_len, int digit)
 {
@@ -122,7 +142,7 @@ static int wait_dialtone()
   printf("Waiting for dial tone...\n");
   while (dc_level < min_dc_level)
        {
-         read(modem_in_fd, buf, sizeof(buf));
+         modem_read(modem_in_fd, buf, sizeof(buf));
          write(dev_dsp_fd, buf, sizeof(buf));
 
          dc_level = evaluate_dc_level(buf, sizeof(buf)/sizeof(uint16_t));
@@ -160,12 +180,12 @@ dial_phone_number(const char *phone_number)
              printf("%c", *phone_number);
              fflush(stdout);
 
-             write (modem_out_fd, digit, digit_size);
-             read (modem_in_fd, digit, digit_size);
+             modem_write (modem_out_fd, digit, digit_size);
+             modem_read (modem_in_fd, digit, digit_size);
              write (dev_dsp_fd, digit, digit_size);
 
-             write (modem_out_fd, silence, silence_size);
-             read (modem_in_fd, buf, silence_size);
+             modem_write (modem_out_fd, silence, silence_size);
+             modem_read (modem_in_fd, buf, silence_size);
              write (dev_dsp_fd, buf, silence_size);
            }
          phone_number++;
@@ -362,13 +382,13 @@ main(int argc, char **argv)
              {
                if (FD_ISSET(modem_in_fd, &rfds))
                  {
-                   read(modem_in_fd, buf, sizeof(buf));
+                   modem_read(modem_in_fd, buf, sizeof(buf));
                    write(dev_dsp_fd, buf, sizeof(buf));
                  }
                if (FD_ISSET(dev_dsp_fd, &rfds))
                  {
                    read(dev_dsp_fd, buf, sizeof(buf));
-                   write(modem_out_fd, buf, sizeof(buf));
+                   modem_write(modem_out_fd, buf, sizeof(buf));
                  }
              }
          }
