@@ -212,7 +212,7 @@ shell_loop(int connfd, int infd, int outfd)
 				return;
 			}
 
-			write(1, buf, l); // Echo to the local terminal
+			(void)write(1, buf, l); // Echo to the local terminal
 		}
 
 		if (FD_ISSET(connfd, &readfds))
