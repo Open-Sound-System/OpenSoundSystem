@@ -23,11 +23,11 @@
 
 char *cmdname=NULL;
 
-int in_fd = -1;
-int out_fd = -1;
-int snd_fd = -1;
+int modem_in_fd = -1;
+int modem_out_fd = -1;
+int dev_dsp_fd = -1;
 
-char *snd_dev = "/dev/dsp";
+char *dspdev_name = "/dev/dsp"; /* Local audio device (headset) */
 int srate = 8000;
 double digit_duration = 0.2;
 double silence_duration = 0.1;
@@ -106,7 +106,7 @@ go_offhook()
   int offhook = 1;
 
   printf("Off-hook\n");
-  ioctl (out_fd, SNDCTL_DSP_MODEM_OFFHOOK, &offhook);
+  ioctl (modem_out_fd, SNDCTL_DSP_MODEM_OFFHOOK, &offhook);
 }
 
 static int wait_dialtone()
@@ -122,8 +122,8 @@ static int wait_dialtone()
   printf("Waiting for dial tone...\n");
   while (dc_level < min_dc_level)
        {
-         read(in_fd, buf, sizeof(buf));
-         write(snd_fd, buf, sizeof(buf));
+         read(modem_in_fd, buf, sizeof(buf));
+         write(dev_dsp_fd, buf, sizeof(buf));
 
          dc_level = evaluate_dc_level(buf, sizeof(buf)/sizeof(uint16_t));
 
@@ -160,13 +160,13 @@ dial_phone_number(const char *phone_number)
              printf("%c", *phone_number);
              fflush(stdout);
 
-             write (out_fd, digit, digit_size);
-             read (in_fd, digit, digit_size);
-             write (snd_fd, digit, digit_size);
+             write (modem_out_fd, digit, digit_size);
+             read (modem_in_fd, digit, digit_size);
+             write (dev_dsp_fd, digit, digit_size);
 
-             write (out_fd, silence, silence_size);
-             read (in_fd, buf, silence_size);
-             write (snd_fd, buf, silence_size);
+             write (modem_out_fd, silence, silence_size);
+             read (modem_in_fd, buf, silence_size);
+             write (dev_dsp_fd, buf, silence_size);
            }
          phone_number++;
        }
@@ -182,7 +182,7 @@ static void
 usage(void)
 {
   fprintf (stderr, "Usage: %s [options] mdmin-dev mdmout-dev [phone-number]\n", cmdname);
-  fprintf (stderr, "  Options:  -d<devname>    Change sound device (default: %s)\n", snd_dev);
+  fprintf (stderr, "  Options:  -d<devname>    Change sound device (default: %s)\n", dspdev_name);
   fprintf (stderr, "            -s<rate>       Change sampling rate (default: %d)\n", srate);
   fprintf (stderr, "            -t<duration>   Change DTMF digit duration (default: %.1f s)\n", digit_duration);
   fprintf (stderr, "            -l<duration>   Change DTMF silence duration (default: %.1f s)\n", silence_duration);
@@ -192,23 +192,23 @@ usage(void)
 static void
 exit_handler(void)
 {
-  if (in_fd >= 0)
+  if (modem_in_fd >= 0)
     {
-      close (in_fd);
-      in_fd = -1;
+      close (modem_in_fd);
+      modem_in_fd = -1;
     }
-  if (out_fd >= 0)
+  if (modem_out_fd >= 0)
     {
       int offhook = 0;
       printf("On-hook\n");
-      ioctl (out_fd, SNDCTL_DSP_MODEM_OFFHOOK, &offhook);
-      close (out_fd);
-      out_fd = -1;
+      ioctl (modem_out_fd, SNDCTL_DSP_MODEM_OFFHOOK, &offhook);
+      close (modem_out_fd);
+      modem_out_fd = -1;
     }
-  if (snd_fd >= 0)
+  if (dev_dsp_fd >= 0)
     {
-      close (snd_fd);
-      snd_fd = -1;
+      close (dev_dsp_fd);
+      dev_dsp_fd = -1;
     }
 }
 
@@ -244,7 +244,7 @@ main(int argc, char **argv)
       switch (c)
       {
       case 'd':
-              snd_dev = optarg;
+              dspdev_name = optarg;
               break;
       case 's':
               srate = atoi (optarg);
@@ -265,62 +265,62 @@ main(int argc, char **argv)
 
   atexit(exit_handler);
 
-  snd_fd = open (snd_dev, O_RDWR);
-  if (snd_fd < 0)
+  dev_dsp_fd = open (dspdev_name, O_RDWR);
+  if (dev_dsp_fd < 0)
     {
-      perror (snd_dev);
+      perror (dspdev_name);
       exit (-1);
     }
 
-  in_fd = open (argv[optind], O_RDWR);
-  if (in_fd < 0)
+  modem_in_fd = open (argv[optind], O_RDWR);
+  if (modem_in_fd < 0)
     {
       perror (argv[optind]);
       exit (-1);
     }
   tmp=0;
-  ioctl(in_fd, SNDCTL_DSP_COOKEDMODE, &tmp); // No error checking with this call
+  ioctl(modem_in_fd, SNDCTL_DSP_COOKEDMODE, &tmp); // No error checking with this call
   optind++;
 
-  out_fd = open(argv[optind], O_RDWR);
-  if (out_fd < 0)
+  modem_out_fd = open(argv[optind], O_RDWR);
+  if (modem_out_fd < 0)
     {
       perror (argv[optind]);
       exit (-1);
     }
   tmp=0;
-  ioctl(out_fd, SNDCTL_DSP_COOKEDMODE, &tmp); // No error checking with this call
+  ioctl(modem_out_fd, SNDCTL_DSP_COOKEDMODE, &tmp); // No error checking with this call
   optind++;
 
   if (argc > optind)
       phone_number = argv[optind];
 
-  assert ( ioctl (in_fd,  SNDCTL_DSP_CHANNELS, &channels) >= 0 );
-  assert ( ioctl (out_fd, SNDCTL_DSP_CHANNELS, &channels) >= 0 );
-  assert ( ioctl (snd_fd, SNDCTL_DSP_CHANNELS, &channels) >= 0 );
+  assert ( ioctl (modem_in_fd,  SNDCTL_DSP_CHANNELS, &channels) >= 0 );
+  assert ( ioctl (modem_out_fd, SNDCTL_DSP_CHANNELS, &channels) >= 0 );
+  assert ( ioctl (dev_dsp_fd, SNDCTL_DSP_CHANNELS, &channels) >= 0 );
 
-  assert ( ioctl (in_fd,  SNDCTL_DSP_SETFMT, &format) >= 0 );
-  assert ( ioctl (out_fd, SNDCTL_DSP_SETFMT, &format) >= 0 );
-  assert ( ioctl (snd_fd, SNDCTL_DSP_SETFMT, &format) >= 0 );
+  assert ( ioctl (modem_in_fd,  SNDCTL_DSP_SETFMT, &format) >= 0 );
+  assert ( ioctl (modem_out_fd, SNDCTL_DSP_SETFMT, &format) >= 0 );
+  assert ( ioctl (dev_dsp_fd, SNDCTL_DSP_SETFMT, &format) >= 0 );
 
-  assert ( ioctl (in_fd,  SNDCTL_DSP_SPEED, &srate) >= 0 );
-  assert ( ioctl (out_fd, SNDCTL_DSP_SPEED, &srate) >= 0 );
-  assert ( ioctl (snd_fd, SNDCTL_DSP_SPEED, &srate) >= 0 );
+  assert ( ioctl (modem_in_fd,  SNDCTL_DSP_SPEED, &srate) >= 0 );
+  assert ( ioctl (modem_out_fd, SNDCTL_DSP_SPEED, &srate) >= 0 );
+  assert ( ioctl (dev_dsp_fd, SNDCTL_DSP_SPEED, &srate) >= 0 );
 
   {
     int tmp;
     tmp = 0;
-    assert ( ioctl (in_fd,  SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (modem_in_fd,  SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
     tmp = PCM_ENABLE_INPUT;
-    assert ( ioctl (in_fd,  SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (modem_in_fd,  SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
     tmp = 0;
-    assert ( ioctl (out_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (modem_out_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
     tmp = PCM_ENABLE_OUTPUT;
-    assert ( ioctl (out_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (modem_out_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
     tmp = 0;
-    assert ( ioctl (snd_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (dev_dsp_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
     tmp = PCM_ENABLE_INPUT | PCM_ENABLE_OUTPUT;
-    assert ( ioctl (snd_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
+    assert ( ioctl (dev_dsp_fd, SNDCTL_DSP_SETTRIGGER, &tmp) >= 0 );
   }
 
   go_offhook ();
@@ -343,15 +343,15 @@ main(int argc, char **argv)
     fd_set rfds;
     int retval;
 
-    int max_fd = in_fd;
-    if (snd_fd > max_fd)
-        max_fd = snd_fd;
+    int max_fd = modem_in_fd;
+    if (dev_dsp_fd > max_fd)
+        max_fd = dev_dsp_fd;
 
     while (1)
          {
            FD_ZERO(&rfds);
-           FD_SET(in_fd, &rfds);
-           FD_SET(snd_fd, &rfds);
+           FD_SET(modem_in_fd, &rfds);
+           FD_SET(dev_dsp_fd, &rfds);
 
            retval = select(max_fd+1, &rfds, NULL, NULL, NULL);
            if (retval == -1)
@@ -360,15 +360,15 @@ main(int argc, char **argv)
              }
            else if (retval)
              {
-               if (FD_ISSET(in_fd, &rfds))
+               if (FD_ISSET(modem_in_fd, &rfds))
                  {
-                   read(in_fd, buf, sizeof(buf));
-                   write(snd_fd, buf, sizeof(buf));
+                   read(modem_in_fd, buf, sizeof(buf));
+                   write(dev_dsp_fd, buf, sizeof(buf));
                  }
-               if (FD_ISSET(snd_fd, &rfds))
+               if (FD_ISSET(dev_dsp_fd, &rfds))
                  {
-                   read(snd_fd, buf, sizeof(buf));
-                   write(out_fd, buf, sizeof(buf));
+                   read(dev_dsp_fd, buf, sizeof(buf));
+                   write(modem_out_fd, buf, sizeof(buf));
                  }
              }
          }
