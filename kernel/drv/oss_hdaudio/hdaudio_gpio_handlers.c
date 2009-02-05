@@ -69,3 +69,24 @@ cmn_err(CE_CONT, "hdaudio_mac_GPIO_init() entered, afg=%d, subdevice=0x%08x, cod
 
 	return OSS_EAGAIN; /* Continue with the default mixer init */
 }
+
+int
+hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
+{
+cmn_err(CE_CONT, "iMac Sigmatel hdaudio initialization\n");
+	return hdaudio_mac_GPIO_init(dev, mixer, cad, top_group);
+}
+
+int
+hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
+{
+ 	codec_t *codec = mixer->codecs[cad];
+ 	int afg = codec->afg;	// Audio function group root widget
+
+cmn_err(CE_CONT, "iMac Realtek hdaudio initialization\n");
+
+	corb_write (mixer, cad, afg, 0, SET_GPIO_DIR, 0xffffffff);
+ 	corb_write (mixer, cad, afg, 0, SET_GPIO_ENABLE, 0xffffffff);
+	corb_write (mixer, cad, afg, 0, SET_GPIO_DATA, 0xffffffff);
+	return hdaudio_mac_GPIO_init(dev, mixer, cad, top_group);
+}

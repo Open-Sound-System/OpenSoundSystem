@@ -608,14 +608,23 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
   if (midi_devs[dev]->open_mode != 0)	/* Device busy */
     ok = 0;
 
-  if ((cmd = GET_PROCESS_NAME (file)) != NULL)
-    strncpy (client->mididev->cmd, cmd, 15);
-  client->mididev->pid = GET_PROCESS_PID (file);
-
   if (ok)			/* Still OK */
     {
+      client->mididev = midi_devs[dev];
+      if (client->mididev == NULL)
+      {
+	 cmn_err(CE_WARN, "client->mididev == NULL\n");
+         MUTEX_EXIT_IRQRESTORE (midi_mutex, flags);
+	 return OSS_EIO;
+      }
+
       client->open_mode = mode;
       midi_devs[dev]->open_mode = mode;
+
+      if ((cmd = GET_PROCESS_NAME (file)) != NULL)
+    	 strncpy (client->mididev->cmd, cmd, 15);
+      client->mididev->pid = GET_PROCESS_PID (file);
+
       /* Release locks before calling device open method */
       MUTEX_EXIT_IRQRESTORE (midi_mutex, flags);
       if ((err = midi_devs[dev]->d->open (dev, mode,
@@ -638,7 +647,6 @@ oss_midi_open (int dev, int no_worries, struct fileinfo *file, int recursive,
       return err;
     }
 
-  client->mididev = midi_devs[dev];
   oss_midi_set_defaults (client->mididev);
 
   client->mididev->is_timing_master = 0;
