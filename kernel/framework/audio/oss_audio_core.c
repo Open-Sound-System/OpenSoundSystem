@@ -2276,15 +2276,17 @@ get_long_iptr (adev_p adev, dmap_p dmap, ioctl_arg arg)
 static int
 get_odelay (adev_p adev, dmap_p dmap, ioctl_arg arg)
 {
-  oss_int64_t val;
+  oss_int64_t val, pos;
   oss_native_word flags;
   if (dmap->dma_mode != PCM_ENABLE_OUTPUT ||
       (dmap->mapping_flags & DMA_MAP_MAPPED))
     return *arg = (0);
 
   MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
-  val = get_output_pointer (adev, dmap, 1);	/* Just to refresh the counters */
-  val = dmap->user_counter - dmap->byte_counter;
+  pos = get_output_pointer (adev, dmap, 1);
+  val = (dmap->byte_counter / dmap->bytes_in_use) * dmap->bytes_in_use;
+  val += pos;
+  val = dmap->user_counter - val;
   if (val < 0)
     val = 0;
   if (val > dmap->bytes_in_use)
