@@ -2208,6 +2208,7 @@ get_long_optr (adev_p adev, dmap_p dmap, ioctl_arg arg)
 {
   oss_count_t *ptr = (oss_count_t *) arg;
   oss_native_word flags;
+  oss_uint64_t pos, bytes;
 
   memset ((char *) ptr, 0, sizeof (*ptr));
 
@@ -2220,8 +2221,10 @@ get_long_optr (adev_p adev, dmap_p dmap, ioctl_arg arg)
     dmap->frame_size = 1;
   if (dmap->user_frame_size < 1)
     dmap->user_frame_size = 1;
-  get_output_pointer (adev, dmap, 1);
-  ptr->samples = (unsigned int) (dmap->byte_counter / dmap->frame_size);
+  pos = get_output_pointer (adev, dmap, 1);
+  bytes = (dmap->byte_counter / dmap->bytes_in_use) * dmap->bytes_in_use;
+  bytes += pos;
+  ptr->samples = (unsigned int) (bytes / dmap->frame_size);
 
   /* Adjust for format conversions */
   ptr->samples = (ptr->samples * UNIT_EXPAND) / dmap->expand_factor;
@@ -2243,6 +2246,7 @@ get_long_iptr (adev_p adev, dmap_p dmap, ioctl_arg arg)
 {
   oss_count_t *ptr = (oss_count_t *) arg;
   oss_native_word flags;
+  oss_uint64_t pos, bytes;
 
   memset ((char *) ptr, 0, sizeof (*ptr));
 
@@ -2255,8 +2259,10 @@ get_long_iptr (adev_p adev, dmap_p dmap, ioctl_arg arg)
     dmap->frame_size = 1;
   if (dmap->user_frame_size < 1)
     dmap->user_frame_size = 1;
-  get_input_pointer (adev, dmap, 1);
-  ptr->samples = (unsigned int) (dmap->byte_counter / dmap->frame_size);
+  pos = get_input_pointer (adev, dmap, 1);
+  bytes = (dmap->byte_counter / dmap->bytes_in_use) * dmap->bytes_in_use;
+  bytes += pos;
+  ptr->samples = (unsigned int) (bytes / dmap->frame_size);
 
   /* Adjust for format conversions */
   ptr->samples = (ptr->samples / dmap->expand_factor) * UNIT_EXPAND;
