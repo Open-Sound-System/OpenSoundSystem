@@ -1,4 +1,4 @@
-OBJS=guslib.o opl3lib.o libmain.o midiparser.o play_event.o
+OBJS=libmain.o midiparser.o play_event.o
 INSTALLLIB=/lib
 LDFLAGS=-shared -fPIC
 CFLAGS=-O -fPIC
