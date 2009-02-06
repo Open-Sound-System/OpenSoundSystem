@@ -68,13 +68,13 @@ setup_terminal(void)
 		if (tcgetattr(0, &tc)==-1)
 		{
 			perror("tcgetattr");
-			exit(-1);
+			exit(1);
 		}
 
 	   	if (tcgetattr(0, &saved_tc)==-1)
 		{
 			perror("tcgetattr");
-			exit(-1);
+			exit(1);
 		}
 
 		atexit(restore_terminal);
@@ -93,7 +93,7 @@ wait_connect(void)
 	if (listen(listenfd, 1) == -1)
 	{
 		perror("listen");
-		exit(-1);
+		exit(1);
 	}
 
 	printf("Waiting for a new connection - hit ^C to exit.\n");
@@ -101,7 +101,7 @@ wait_connect(void)
 	if ((connfd=accept(listenfd, NULL, NULL))==-1)
 	{
 		perror("accept");
-		exit(-1);
+		exit(1);
 	}
 
 	printf("Connected\n\n");fflush(stdout);
@@ -199,7 +199,7 @@ shell_loop(int connfd, int infd, int outfd)
 				if (errno == EIO)
 				{
 					printf("Disconnected\n");
-					exit(-1);
+					exit(1);
 				}
 
 				perror("read(infd)");
@@ -212,7 +212,8 @@ shell_loop(int connfd, int infd, int outfd)
 				return;
 			}
 
-			(void)write(1, buf, l); // Echo to the local terminal
+			if (write(1, buf, l)!=l) // Echo to the local terminal
+			   exit(1);
 		}
 
 		if (FD_ISSET(connfd, &readfds))
@@ -261,7 +262,7 @@ handle_connection(int connfd)
 	{
 		perror("send welcome");
 		fprintf(stderr, "Cannot send the welcome string\n");
-		exit(-1);
+		exit(1);
 	}
 
    	setup_terminal();
@@ -291,13 +292,13 @@ run_daemon(int port)
 	if (port==0)
 	{
 		fprintf(stderr, "Please give a port (-p)\n");
-		exit(-1);
+		exit(1);
 	}
 
 	if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
 		perror("socket");
-		exit(-1);
+		exit(1);
 	}
 
 	bzero(&servaddr, sizeof(servaddr));
@@ -308,7 +309,7 @@ run_daemon(int port)
 	if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr))==-1)
 	{
 		perror("bind");
-		exit(-1);
+		exit(1);
 	}
 
 	while (1)
@@ -317,7 +318,7 @@ run_daemon(int port)
 	   if (!wait_connect())
 	   {
 	      perror("wait connection");
-	      exit(-1);
+	      exit(1);
 	   }
 
 	   handle_connection(connfd);
@@ -349,7 +350,7 @@ pty_session(int connfd)
 	if ((pid=forkpty(&ptyfd, NULL, NULL, NULL))==-1)
 	{
 		perror("forkpty");
-		exit(-1);
+		exit(1);
 	}
 
 	if (pid != 0)
@@ -381,13 +382,13 @@ run_client(char *host, int port)
 	if (host == NULL)
 	{
 		fprintf(stderr, "Please give a host (-h)\n");
-		exit(-1);
+		exit(1);
 	}
 
 	if (port==0)
 	{
 		fprintf(stderr, "Please give a port (-p)\n");
-		exit(-1);
+		exit(1);
 	}
 
   if ((sockfd = socket (PF_INET, SOCK_STREAM, 0)) == -1)
@@ -421,7 +422,7 @@ run_client(char *host, int port)
     if (read(sockfd, welcomebuf, PARTYSH_HDRSIZE) != PARTYSH_HDRSIZE)
     {
     	perror("receive welcome");
-	exit(-1);
+	exit(1);
     }
 
     // printf("Welcome %s\n", welcomebuf);
@@ -429,7 +430,7 @@ run_client(char *host, int port)
     if (strncmp(welcomebuf, PARTYSH_MAGIC, strlen(PARTYSH_MAGIC))!=0)
     {
     	fprintf(stderr, "Didn't receive valid velcome string - abort\n");
-	exit(-1);
+	exit(1);
     }
 
     if ((ps1=getenv("PS1")) != NULL)
