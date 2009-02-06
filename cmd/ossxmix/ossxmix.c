@@ -1745,8 +1745,6 @@ poll_all (gpointer data)
 	  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &i) == -1)
 	    {
 	      perror ("SNDCTL_MIX_NREXT");
-	      if (errno == EINVAL)
-		fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
 	      exit (-1);
 	    }
 	    if (i != srec->parm)

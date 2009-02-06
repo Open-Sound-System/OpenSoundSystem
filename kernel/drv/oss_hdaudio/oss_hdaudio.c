@@ -135,6 +135,7 @@ typedef struct hda_devc_t
   int num_outputs, num_inputs;
 
   int num_spdin, num_spdout;
+  int num_mdmin, num_mdmout;
 }
 hda_devc_t;
 
@@ -454,8 +455,8 @@ hda_audio_set_channels (int dev, short arg)
       return portc->channels;
     }
 
-  if (arg < 2)
-    arg = 2;
+  if (arg < 1)
+    arg = 1;
 
   if (arg > adev->max_channels)
   {
@@ -1397,7 +1398,7 @@ install_outputdevs (hda_devc_t * devc)
  * Install the output devices in two passes. First install the analog
  * endpoints and then the digital one(s).
  */
-  for (pass = 0; pass < 2; pass++)
+  for (pass = 0; pass < 3; pass++)
     for (i = 0; i < n; i++)
       {
 	adev_p adev;
@@ -1419,14 +1420,19 @@ install_outputdevs (hda_devc_t * devc)
 
 	switch (pass)
 	  {
-	  case 0:		/* Pick analog ones */
-	    if (endpoints[i].is_digital)
+	  case 0:		/* Pick analog and non-modem ones */
+	    if (endpoints[i].is_digital || endpoints[i].is_modem)
 	      continue;
 	    break;
 
 	  case 1:		/* Pick digital one(s) */
 	    if (!endpoints[i].is_digital)
 	      continue;
+            break;
+
+          case 2:               /* Pick modem one(s) */
+            if (!endpoints[i].is_modem)
+              continue;
 	  }
 
 	if (endpoints[i].is_digital)
@@ -1435,6 +1441,12 @@ install_outputdevs (hda_devc_t * devc)
 	    sprintf (devname, "spdout%d", devc->num_spdout++);
 	    devfile_name = devname;
 	  }
+        if (endpoints[i].is_modem)
+          {
+            opts |= ADEV_SPECIAL;
+            sprintf (devname, "mdmout%d", devc->num_mdmout++);
+            devfile_name = devname;
+          }
 
 	// sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
 	sprintf (tmp_name, "HD Audio play %s", endpoints[i].name);
@@ -1469,6 +1481,13 @@ install_outputdevs (hda_devc_t * devc)
 	  adev->max_channels = 8;
 	else
 	  adev->max_channels = 2;
+
+        if (endpoints[i].is_modem)
+          {
+            adev->min_channels = 1;
+            adev->max_channels = 1;
+            adev->caps |= PCM_CAP_MODEM;
+          }
 
 	if (adev->max_channels > 4)
 	  adev->dmabuf_alloc_flags |= DMABUF_LARGE | DMABUF_QUIET;
@@ -1557,6 +1576,12 @@ install_inputdevs (hda_devc_t * devc)
 	  sprintf (devname, "spdin%d", devc->num_spdin++);
 	  devfile_name = devname;
 	}
+      if (endpoints[i].is_modem)
+        {
+          opts |= ADEV_SPECIAL;
+          sprintf (devname, "mdmin%d", devc->num_mdmin++);
+          devfile_name = devname;
+        }
 
       //sprintf (tmp_name, "%s %s", devc->chip_name, endpoints[i].name);
       sprintf (tmp_name, "HD Audio rec %s", endpoints[i].name);
@@ -1587,6 +1612,14 @@ install_inputdevs (hda_devc_t * devc)
       adev->max_rate = 192000;
       adev->min_channels = 2;
       adev->max_channels = 2;
+
+      if (endpoints[i].is_modem)
+        {
+          adev->min_channels = 1;
+          adev->max_channels = 1;
+          adev->caps |= PCM_CAP_MODEM;
+        }
+
       adev->min_block = 128;	/* Hardware limitation */
       adev->min_fragments = 4;	/* Vmix doesn't work without this */
       portc->num = i;
@@ -1711,6 +1744,10 @@ oss_hdaudio_attach (oss_device_t * osdev)
   pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
   pci_read_config_word (osdev, PCI_DEVICE_ID, &device);
 
+#if 0
+  // This check is not necessary because the kernel has already checked
+  // the vendor&device ID
+
   if ((vendor != INTEL_VENDOR_ID && vendor != NVIDIA_VENDOR_ID &&
        vendor != ATI_VENDOR_ID && vendor != SIS_VENDOR_ID &&
        vendor != VIA_VENDOR_ID && vendor != ULI_VENDOR_ID) ||
@@ -1728,9 +1765,9 @@ oss_hdaudio_attach (oss_device_t * osdev)
        device != ATI_DEVICE_SB450 && device != ATI_DEVICE_SB600))
 
     {
-
       return 0;
     }
+#endif
 
   pci_read_config_byte (osdev, PCI_REVISION_ID, &pci_revision);
   pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
