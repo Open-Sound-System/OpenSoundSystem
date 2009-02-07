@@ -29,6 +29,7 @@
 #define NVIDIA_DEVICE_MCP61A    0x03f0
 #define NVIDIA_DEVICE_MCP65     0x044a
 #define NVIDIA_DEVICE_MCP67     0x055c
+#define NVIDIA_DEVICE_MCP73     0x07fc
 #define NVIDIA_DEVICE_MCP78S    0x0774
 #define NVIDIA_DEVICE_MCP79     0x0ac0
 
@@ -1721,7 +1722,8 @@ oss_hdaudio_attach (oss_device_t * osdev)
        device != NVIDIA_DEVICE_MCP51 && device != NVIDIA_DEVICE_MCP55 &&
        device != NVIDIA_DEVICE_MCP61 && device != NVIDIA_DEVICE_MCP61A &&
        device != NVIDIA_DEVICE_MCP65 && device != NVIDIA_DEVICE_MCP67 &&
-       device != NVIDIA_DEVICE_MCP78S && device != NVIDIA_DEVICE_MCP79 &&
+       device != NVIDIA_DEVICE_MCP73 && device != NVIDIA_DEVICE_MCP78S &&
+       device != NVIDIA_DEVICE_MCP79 &&
        device != VIA_DEVICE_HDA &&
        device != SIS_DEVICE_HDA &&
        device != ULI_DEVICE_HDA &&
@@ -1776,6 +1778,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case NVIDIA_DEVICE_MCP61A:
     case NVIDIA_DEVICE_MCP65:
     case NVIDIA_DEVICE_MCP67:
+    case NVIDIA_DEVICE_MCP73:
     case NVIDIA_DEVICE_MCP78S:
     case NVIDIA_DEVICE_MCP79:
       devc->chip_name = "nVidia HD Audio";
