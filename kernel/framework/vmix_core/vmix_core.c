@@ -1590,7 +1590,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   adev_t *adev, *master_adev;
   int opts = ADEV_VIRTUAL | ADEV_DEFAULT | ADEV_VMIX;
 
-  n = mixer->num_clientdevs++;
+  n = mixer->num_clientdevs;
 
   /*
    * ADEV_HIDDEN is used for the VMIX devices because they should not be
@@ -1611,7 +1611,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   if (mixer->masterdev == -1)
     return OSS_ENXIO;
 
-  if (mixer->num_clientdevs >= MAX_CLIENTS) /* Cannot create more client engines */
+  if (n + 1 >= MAX_CLIENTS) /* Cannot create more client engines */
      return OSS_EBUSY;
 
   /*
@@ -1628,6 +1628,8 @@ create_vmix_engine (vmix_mixer_t * mixer)
     }
   memset (portc, 0, sizeof (*portc));
   portc->open_pending = 1; /* Reserve this engine to the client it was created for */
+
+  mixer->num_clientdevs++;
 
   portc->num = n;
 
