@@ -73,6 +73,8 @@ typedef struct allegro_devc
   }
   dma_adc, dma_dac;
 
+  oss_dma_handle_t dma_handle;
+
   /* Mixer parameters */
   ac97_devc ac97devc;
 }
@@ -649,7 +651,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
 	  void *rawbuf;
 	  rawbuf =
 	    (void *) CONTIG_MALLOC (devc->osdev, db->dmasize,
-				    MEMLIMIT_32BITS, &phaddr, TODO);
+				    MEMLIMIT_32BITS, &phaddr, devc->dma_handle);
 
 	  if (!rawbuf)
 	    break;
@@ -663,7 +665,7 @@ alloc_dmabuf (allegro_devc * devc, int direction)
 	    {
 	      if (rejected == MAX_REJECTED)
 		{
-		  CONTIG_FREE (devc->osdev, rawbuf, db->dmasize, TODO);
+		  CONTIG_FREE (devc->osdev, rawbuf, db->dmasize, devc->dma_handle);
 		  break;
 		}
 	      rejectedPA[rejected] = (oss_native_word) rawbuf;
