@@ -41,6 +41,17 @@ int phys_only = 0;
 int show_engines = 0;
 int show_ex = 0;
 
+static void
+print_symlink(const char *link)
+{
+	char devname[256];
+
+	memset(devname, 0, sizeof(devname));
+
+	if (readlink(link, devname, sizeof(devname)-1) != -1)
+	   printf("  %s -> %s\n", link, devname);
+}
+
 /*
  * Display filters for selecting what to print.
  */
@@ -434,6 +445,16 @@ print_audio_info (void)
 
       printf ("\n");
     }
+
+  printf ("\n");
+  print_symlink ("/dev/dsp");
+  print_symlink ("/dev/dsp_in");
+  print_symlink ("/dev/dsp_out");
+  print_symlink ("/dev/dsp_ac3");
+  print_symlink ("/dev/dsp_mmap");
+  print_symlink ("/dev/dsp_multich");
+  print_symlink ("/dev/dsp_spdifout");
+  print_symlink ("/dev/dsp_spdifin");
 }
 
 
