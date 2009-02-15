@@ -166,6 +166,8 @@ then
   echo Warning: No libsalsa library compiled
 fi
 
+cp target/lib/* prototype/$OSSLIBDIR/lib
+
 cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 if test -d kernel/nonfree

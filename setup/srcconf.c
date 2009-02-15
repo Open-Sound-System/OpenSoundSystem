@@ -750,6 +750,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   fprintf (f, "TMPDIR=.\n");
   fprintf (f, "MODDIR=$(TOPDIR)/target/modules\n");
   fprintf (f, "BINDIR=$(TOPDIR)/target/bin\n");
+  fprintf (f, "LIBDIR=$(TOPDIR)/target/lib\n");
   fprintf (f, "SBINDIR=$(TOPDIR)/target/sbin\n");
   if ((p = getenv("OSSLIBDIR")) != NULL)
     fprintf (f, "OSSLIBDIR=\"%s\"\n", p);
@@ -807,6 +808,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #if !defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
     fprintf (f, "CFLAGS += %s\n", conf.cflags);
+  if (conf.mode == MD_SHLIB)
+    fprintf (f, "CFLAGS += -fPIC\n");
 #endif
   if (conf.mode != MD_KERNEL)
     objdir = "TMPDIR";
@@ -916,6 +919,10 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       if (nobjects > 0)
 	fprintf (f, "$(MODDIR)/%s.o ", name);
     }
+  else if (conf.mode == MD_SHLIB)
+    {
+	fprintf (f, "$(LIBDIR)/%s.so ", name);
+    }
   else if (conf.mode != MD_KERNEL)
     {
       if (nobjects > 0)
@@ -972,6 +979,17 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f, "$(BINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
 	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(BINDIR)/%s $(OBJECTS)\n",
+	       name);
+      fprintf (f, "\n\n");
+    }
+
+  if (conf.mode == MD_SHLIB)
+    {
+      fprintf (f, "%s.so:\t$(LIBDIR)/%s.so\n\n", name, name);
+
+      fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
+      fprintf (f,
+	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -shared -fPIC -o $(LIBDIR)/%s.so $(OBJECTS)\n",
 	       name);
       fprintf (f, "\n\n");
     }

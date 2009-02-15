@@ -171,6 +171,7 @@ then
 fi
 
 mkdir target/bin
+mkdir target/lib
 mkdir target/sbin
 mkdir target/modules
 mkdir target/objects
