@@ -8,6 +8,11 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 lynxtwo	pci1621,28	Lynx AES16e Studio Interface 
 lynxtwo	pci1621,29	Lynx AES16e-SRC Studio Interface 
 oss_ali5455	pci10b9,5455	ALI M5455
+oss_allegro	pci125d,1988	ESS Allegro ES1988
+oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
+oss_allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
+oss_allegro	pci125d,1998	ESS Maestro3 ES1998
+oss_allegro	pci125d,199a	ESS Maestro3 ES199A
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
@@ -35,16 +40,6 @@ oss_digi96	pci10ee,3fc1	RME Digi96/8
 oss_digi96	pci10ee,3fc2	RME Digi96/8 PRO
 oss_digi96	pci10ee,3fc3	RME Digi96/8 PAD
 oss_emu10k1x	pci1102,6	Creative Sound Blaster 5.1 (Dell)
-oss_envy24ht	pci1412,1724	Generic ENVY24HT based sound card
-oss_envy24ht	pcs1412,3630	M Audio Revolution 7.1
-oss_envy24ht	pcs1412,3631	M Audio Revolution 5.1
-oss_envy24ht	pcs1412,6321	M Audio Audiophile 192
-oss_envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
-oss_envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
-oss_envy24ht	pcs153b,1149	Terratec PHASE 28
-oss_envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
-oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
-oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 oss_envy24	pci1412,1712	Generic ENVY24 based device
 oss_envy24	pcs1412,d630	M Audio Delta 1010
 oss_envy24	pcs1412,d631	M Audio Delta DiO 2496
@@ -58,6 +53,16 @@ oss_envy24	pcs153b,1115	Terratec EWS88MT
 oss_envy24	pcs153b,112b	Terratec EWS88D
 oss_envy24	pcs153b,1130	Terratec EWX 24/96
 oss_envy24	pcs153b,1138	Terratec DMX 6Fire
+oss_envy24ht	pci1412,1724	Generic ENVY24HT based sound card
+oss_envy24ht	pcs1412,3630	M Audio Revolution 7.1
+oss_envy24ht	pcs1412,3631	M Audio Revolution 5.1
+oss_envy24ht	pcs1412,6321	M Audio Audiophile 192
+oss_envy24ht	pcs153b,1145	Terratec Aureon 7.1 Space
+oss_envy24ht	pcs153b,1147	Terratec Aureon 7.1 Sky
+oss_envy24ht	pcs153b,1149	Terratec PHASE 28
+oss_envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
+oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
+oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 oss_fmedia	pci1319,801	ForteMedia FM 801
 oss_fmedia	pcs1489,7008	Genius Sound Maker Live
 oss_geode	pci100b,503	National Semiconductor Geode SC1200
@@ -70,13 +75,16 @@ oss_hdaudio	pci8086,284b	Intel High Definition Audio (ICH8)
 oss_hdaudio	pci8086,293e	Intel High Definition Audio (P35)
 oss_hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
 oss_hdaudio	pci8086,3a3e	Intel High Definition Audio (ICH10)
+oss_hdaudio	pci8086,3a6e	Intel High Definition Audio (ICH10)
 oss_hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
 oss_hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
 oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
 oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci10de,7fc	Nvidia High Definition Audio (MCP73)
 oss_hdaudio	pci10de,774	Nvidia High Definition Audio (MCP78S)
+oss_hdaudio	pci10de,ac0	Nvidia High Definition Audio (MCP79)
 oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
 oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio

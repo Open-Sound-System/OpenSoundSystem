@@ -33,7 +33,7 @@ static int module_major = 0;
 static int instance = 0;
 
 MODULE_LICENSE ("GPL v2");
-MODULE_DESCRIPTION ("Open Sound System '" DRIVER_NICK "' driver module");
+MODULE_DESCRIPTION ("Open Sound System '" DRIVER_PURPOSE "' driver module");
 MODULE_AUTHOR ("4Front Technologies (support@opensound.com)");
 
 extern int DRIVER_ATTACH (oss_device_t * osdev);

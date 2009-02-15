@@ -70,6 +70,8 @@ typedef struct
 
   int power_manage;	/* Supports device power management (under Solaris) */
   int suspend_resume;	/* Supports suspend/resume (under Solaris) */
+
+  char *purpose;
 } conf_t;
 
 #define DEFAULT_CC "cc"
@@ -485,6 +487,25 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   if (conf.mode == MD_KERNEL_)
     conf.mode = MD_KERNEL;
+
+  sprintf (tmp, "%s/.name", path);
+  if ((cf = fopen (tmp, "r")) != NULL)
+    {
+      char *p;
+
+      if (fgets(tmp, sizeof(tmp)-1, cf)==NULL)
+	 strcpy(tmp, name);
+      fclose (cf);
+
+      p=tmp+strlen(tmp)-1;
+      if (*p=='\n')*p=0;
+
+      conf.purpose=strdup(tmp);
+    }
+  else
+    {
+	    conf.purpose=strdup(name);
+    }
 
   sprintf (tmp, "%s/.config", path);
   if ((cf = fopen (tmp, "r")) != NULL)
