@@ -30,6 +30,7 @@ extern void ossmix_set_value(int mixernum, int ctl, int timestamp, int value);
 typedef struct
 {
 	int cmd;
+#define OSSMIX_CMD_HALOO			0	/* Haloo means hello in finnish */
 #define OSSMIX_CMD_OK				0	
 #define OSSMIX_CMD_ERROR			-1
 #define OSSMIX_CMD_INIT				1
@@ -46,6 +47,9 @@ typedef struct
 #define OSSMIX_CMD_SET_VALUE			12
 
 	int p1, p2, p3, p4, p5;
+
+#define OSSMIX_P1_MAGIC				0x12345678
+	
 	int ack_rq;
 	int unsolicited;
 	int payload_size;

@@ -202,6 +202,8 @@ handle_connection (int connfd)
 {
 	ossmix_commad_packet_t pack;
 
+	send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0);
+
 	while (read(connfd, &pack, sizeof(pack))==sizeof(pack))
 	{
 		serve_command(&pack);
