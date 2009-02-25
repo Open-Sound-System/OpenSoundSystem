@@ -19,7 +19,7 @@ fi
 cp -pRf $SRCDIR/* prototype/$OSSLIBDIR/
 rm -f prototype/$OSSLIBDIR/.nomake
 
-cp $SRCDIR/lib/libossmix/libossmix.h prototype/usr/lib/oss/include
+#cp $SRCDIR/lib/libossmix/libossmix.h prototype/usr/lib/oss/include
 
 chmod 700 prototype/usr/sbin/*
 

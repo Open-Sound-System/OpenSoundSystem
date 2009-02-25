@@ -1,0 +1,22 @@
+#define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
+
+extern int mixlib_trace;
+
+typedef struct
+{
+	int (*connect)(const char *hostname, int port);
+	void (*disconnect)(void);
+	int (*get_nmixers)(void);
+	int (*get_mixerinfo)(int mixernum, oss_mixerinfo *mi);
+	int (*open_mixer)(int mixernum);
+	void (*close_mixer)(int mixernum);
+	int (*get_nrext)(int mixernum);
+	int (*get_nodeinfo)(int mixernum, int node, oss_mixext *ext);
+	int (*get_enuminfo)(int mixernum, int node, oss_mixer_enuminfo *ei);
+	int (*get_description)(int mixernum, int node, oss_mixer_enuminfo *desc);
+	int (*get_value)(int mixernum, int ctl, int timestamp);
+        void (*set_value)(int mixernum, int ctl, int timestamp, int value);
+
+} ossmix_driver_t;
+
+extern ossmix_driver_t ossmix_local_driver, ossmix_tcp_driver;
