@@ -142,8 +142,9 @@ static int wait_dialtone()
   printf("Waiting for dial tone...\n");
   while (dc_level < min_dc_level)
        {
+	 int dummy;
          modem_read(modem_in_fd, buf, sizeof(buf));
-         write(dev_dsp_fd, buf, sizeof(buf));
+         dummy=write(dev_dsp_fd, buf, sizeof(buf));
 
          dc_level = evaluate_dc_level(buf, sizeof(buf)/sizeof(uint16_t));
 
@@ -177,16 +178,18 @@ dial_phone_number(const char *phone_number)
        {
          if (dtmf_fill_digit (digit, digit_len, *phone_number) >= 0)
            {
+	     int dummy;
+
              printf("%c", *phone_number);
              fflush(stdout);
 
              modem_write (modem_out_fd, digit, digit_size);
              modem_read (modem_in_fd, digit, digit_size);
-             write (dev_dsp_fd, digit, digit_size);
+             dummy=write (dev_dsp_fd, digit, digit_size);
 
              modem_write (modem_out_fd, silence, silence_size);
              modem_read (modem_in_fd, buf, silence_size);
-             write (dev_dsp_fd, buf, silence_size);
+             dummy=write (dev_dsp_fd, buf, silence_size);
            }
          phone_number++;
        }
@@ -369,6 +372,7 @@ main(int argc, char **argv)
 
     while (1)
          {
+	   int dummy;
            FD_ZERO(&rfds);
            FD_SET(modem_in_fd, &rfds);
            FD_SET(dev_dsp_fd, &rfds);
@@ -383,11 +387,11 @@ main(int argc, char **argv)
                if (FD_ISSET(modem_in_fd, &rfds))
                  {
                    modem_read(modem_in_fd, buf, sizeof(buf));
-                   write(dev_dsp_fd, buf, sizeof(buf));
+                   dummy=write(dev_dsp_fd, buf, sizeof(buf));
                  }
                if (FD_ISSET(dev_dsp_fd, &rfds))
                  {
-                   read(dev_dsp_fd, buf, sizeof(buf));
+                   dummy=read(dev_dsp_fd, buf, sizeof(buf));
                    modem_write(modem_out_fd, buf, sizeof(buf));
                  }
              }
