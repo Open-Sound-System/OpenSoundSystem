@@ -160,7 +160,7 @@ get_response(void)
 	  {
 	  	if ((l=read(sockfd, payload, msg.payload_size)) != msg.payload_size)
 		{
-			perror("Get error message");
+			perror("Get response payload");
 			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
 			return -1;
 		}
@@ -245,6 +245,7 @@ wait_payload(void *payload, int len, bswap_func_t swapper)
 	  	if ((l=read(sockfd, payload, msg.payload_size)) != msg.payload_size)
 		{
 			perror("Get error message");
+			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
 			return -1;
 		}
 	  }
