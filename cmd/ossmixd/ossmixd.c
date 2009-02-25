@@ -36,7 +36,10 @@ send_response(int cmd, int p1, int p2, int p3, int p4, int p5)
 	  msg.p4=p4;
 	  msg.p5=p5;
 
-	  write(connfd, &msg, sizeof(msg));
+	  if (write(connfd, &msg, sizeof(msg)) != sizeof(msg))
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
 }
 
 static void
@@ -54,8 +57,15 @@ send_response_long(int cmd, int p1, int p2, int p3, int p4, int p5, const char *
 	  msg.p5=p5;
 	  msg.payload_size=plsize;
 
-	  write(connfd, &msg, sizeof(msg));
-	  write(connfd, payload, msg.payload_size);
+	  if (write(connfd, &msg, sizeof(msg))!=sizeof(msg))
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
+
+	  if (write(connfd, payload, msg.payload_size) != msg.payload_size)
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
 }
 
 static void

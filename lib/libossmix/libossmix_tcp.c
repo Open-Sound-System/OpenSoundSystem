@@ -121,7 +121,10 @@ send_request(int cmd, int p1, int p2, int p3, int p4, int p5)
 	  msg.p5=p5;
 	  msg.ack_rq=1;
 
-	  write(sockfd, &msg, sizeof(msg));
+	  if (write(sockfd, &msg, sizeof(msg))!=sizeof(msg))
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
 	  return get_response();
 }
 
@@ -140,7 +143,10 @@ send_request_noreply(int cmd, int p1, int p2, int p3, int p4, int p5)
 	  msg.p5=p5;
 	  msg.ack_rq=0;
 
-	  write(sockfd, &msg, sizeof(msg));
+	  if (write(sockfd, &msg, sizeof(msg))!=sizeof(msg))
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
 	  //send(sockfd, &msg, sizeof(msg), 0);
 }
 
@@ -160,8 +166,14 @@ send_request_long(int cmd, int p1, int p2, int p3, int p4, int p5, const char *p
 	  msg.ack_rq=1;
 	  msg.payload_size=strlen(payload);
 
-	  write(sockfd, &msg, sizeof(msg));
-	  write(sockfd, payload, msg.payload_size);
+	  if (write(sockfd, &msg, sizeof(msg))!=sizeof(msg))
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
+	  if (write(sockfd, payload, msg.payload_size) != msg.payload_size)
+	  {
+		  fprintf(stderr, "Write to socket failed\n");
+	  }
 	  return get_response();
 }
 
