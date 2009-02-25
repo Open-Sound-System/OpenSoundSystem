@@ -60,7 +60,12 @@ check_sysdep (conf_t * conf, struct utsname *un)
 #else
   if (strcmp (tmp, "amd64") == 0)
     {
-      strcpy (conf->OSflags, "-xarch=$(ARCH) -xmodel=kernel");
+#if (__SUNPRO_C <= 0x590)
+       strcpy (conf->OSflags, "-m64 -xmodel=kernel");
+#else
+       strcpy (conf->OSflags, "-xarch=$(ARCH) -xmodel=kernel");
+#endif
+         strcpy (conf->platform, "i86pc");
       strcpy (conf->platform, "i86pc");
     }
   else if (strcmp (tmp, "sparcv9") == 0)
@@ -75,7 +80,11 @@ check_sysdep (conf_t * conf, struct utsname *un)
     }
   else if (strcmp (tmp, "i386") == 0)
     {
+#if (__SUNPRO_C <= 0x590)
+      strcpy (conf->OSflags, "-m32");
+#else
       strcpy (conf->OSflags, "-xarch=386");
+#endif
       strcpy (conf->platform, "i86pc");
     }
   else
