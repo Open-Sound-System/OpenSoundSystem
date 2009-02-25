@@ -441,8 +441,20 @@ static int
 cmpstringp (const void *p1, const void *p2)
 {
   /* The arguments to this function are "pointers to
-   *      pointers to char", but strcmp() arguments are "pointers
-   *           to char", hence the following cast plus dereference */
+   * pointers to char", but strcmp() arguments are "pointers
+   * to char", hence the following cast plus dereference
+   */
+
+  /*
+   * Make sure "lib" directories get compiles before any other
+   * subdirectories.
+   */
+
+   if (strcmp(*(char **) p1, "lib")==0)
+      return -1;
+   else
+      if (strcmp(*(char **) p2, "lib")==0)
+	 return 1;
 
   return strcmp (*(char **) p1, *(char **) p2);
 }
