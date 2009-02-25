@@ -46,6 +46,7 @@ bswap32 (int x)
 static void
 byteswap_msg(ossmix_commad_packet_t *msg)
 {
+fprintf(stderr, "byteswap_msg() called\n");
 	BSWAP32(msg->cmd);
 	BSWAP32(msg->p1);
 	BSWAP32(msg->p2);
@@ -160,6 +161,7 @@ get_response(void)
 	  	if ((l=read(sockfd, payload, msg.payload_size)) != msg.payload_size)
 		{
 			perror("Get error message");
+			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
 			return -1;
 		}
 
