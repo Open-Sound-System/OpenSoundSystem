@@ -25,6 +25,25 @@ static void tcp_disconnect(void);
 static int sockfd=-1;
 static int do_byteswap=0;
 
+static int
+read_all(int sock, void *b, int count)
+{
+	unsigned char *buf=b;
+	int l=0;
+
+	while (l<count)
+	{
+		int c, n=count-l;
+
+		if ((c=read(sock, buf+l, n)) <= 0)
+		   return c;
+
+		l += c;
+	}
+
+	return l;
+}
+
 static __inline__ int
 bswap32 (int x)
 {
@@ -144,7 +163,7 @@ get_response(void)
 
 	  payload[0]=0;
 
-	  if ((l=read(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
+	  if ((l=read_all(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
 	  {
 		  if (l==0) /* Connection closed */
 		     return -1;
@@ -158,7 +177,7 @@ get_response(void)
 
 	  if (msg.payload_size > 0)
 	  {
-	  	if ((l=read(sockfd, payload, msg.payload_size)) != msg.payload_size)
+	  	if ((l=read_all(sockfd, payload, msg.payload_size)) != msg.payload_size)
 		{
 			perror("Get response payload");
 			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
@@ -185,7 +204,7 @@ check_welcome(void)
 	  if (sockfd==-1)
 	     return 0;
 
-	  if ((l=read(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
+	  if ((l=read_all(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
 	  {
 		  if (l==0) /* Connection closed */
 		     return 0;
@@ -228,7 +247,7 @@ wait_payload(void *payload, int len, bswap_func_t swapper)
 	  if (sockfd==-1)
 	     return -1;
 
-	  if ((l=read(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
+	  if ((l=read_all(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
 	  {
 		  if (l==0) /* Connection closed */
 		     return -1;
@@ -242,7 +261,7 @@ wait_payload(void *payload, int len, bswap_func_t swapper)
 
 	  if (msg.payload_size > 0)
 	  {
-	  	if ((l=read(sockfd, payload, msg.payload_size)) != msg.payload_size)
+	  	if ((l=read_all(sockfd, payload, msg.payload_size)) != msg.payload_size)
 		{
 			perror("Get error message");
 			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
