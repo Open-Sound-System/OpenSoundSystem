@@ -1344,7 +1344,8 @@ oss_sbpci_attach (oss_device_t * osdev)
   pci_write_config_word (osdev, PCI_COMMAND, pci_command);
 
   /* set the PCI latency to 32 */
-  if ((apci_latency == 32) || (apci_latency == 64) || (apci_latency == 96))
+  if ((apci_latency == 32) || (apci_latency == 64) || (apci_latency == 96) ||
+      (apci_latency == 128))
     pci_write_config_byte (osdev, 0x0d, apci_latency);
 
 
