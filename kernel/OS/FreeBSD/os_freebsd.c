@@ -14,6 +14,7 @@
 #include <fs/devfs/devfs.h>
 #include <sys/poll.h>
 #include <sys/param.h>
+#include <sys/filio.h>
 
 /* Function prototypes */
 static d_open_t oss_open;
@@ -800,6 +801,28 @@ oss_ioctl (struct cdev *bsd_dev, u_long cmd, caddr_t arg, int mode,
   if (cdev->d->ioctl == NULL)
     {
       return ENODEV;
+    }
+
+  switch (cmd)
+    {
+     /*
+      * FreeBSD uses these ioctls to (un)set nonblocking I/O for devices. e.g.
+      * in case of fcntl (fd, F_SETFL, O_RDONLY|O_NONBLOCK) it will fire
+      * both ioctls.
+      * We deal with them here, and not in oss_audio_core because struct file
+      * isn't available in oss_audio_ioctl and we want the flags to remain
+      * accurate. oss_audio_core checks for O_NONBLOCK, and will pick
+      * up the change next read/write.
+      */
+      case FIONBIO:
+        if (arg != NULL)
+          {
+            if (*arg) fi->acc_flags |= O_NONBLOCK;
+            else fi->acc_flags &= ~O_NONBLOCK;
+          }
+      case FIOASYNC:
+        return 0;
+      default: break;
     }
 
   retval = cdev->d->ioctl (cdev->instance, fi, cmd, (ioctl_arg) arg);
