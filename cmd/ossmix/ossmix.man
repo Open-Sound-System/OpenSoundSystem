@@ -26,7 +26,8 @@ printout can also be used to find out the supported control names and
 their possible values. Currently all controls accept an ON/OFF value, a
 mono value (0 to 100) or a stereo value (left:right where both channel
 volumes can be between 0 and 100). The value can also be expressed in a
-relative form (e.g. +1 to add 1 to the previous volume).
+relative form (e.g. +1 to add 1 to the previous volume). An ON/OFF control
+can also receive a TOGGLE value.
 The following is a sample printout produced by ossmix:
 
 	Selected mixer 0/Creative AudioPCI

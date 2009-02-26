@@ -273,4 +273,6 @@ then
   cc -I$KERNEL32 $KERNEL32/4front-private/ossupdate.c -s -o prototype/usr/sbin/ossupdate -lsocket -lnsl
 fi
 
+sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
+
 exit 0

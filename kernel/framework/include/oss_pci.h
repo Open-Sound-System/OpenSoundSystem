@@ -16,6 +16,7 @@
 #define PCI_REVISION_ID			0x08
 #define PCI_COMMAND			0x04
 #define PCI_DEVICE_ID			0x02
+#define PCI_LATENCY_TIMER		0x0d
 #define PCI_INTERRUPT_LINE		0x3c
 #define PCI_BASE_ADDRESS_0		0x10
 

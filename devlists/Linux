@@ -8,6 +8,11 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 lynxtwo	pci1621,28	Lynx AES16e Studio Interface 
 lynxtwo	pci1621,29	Lynx AES16e-SRC Studio Interface 
 oss_ali5455	pci10b9,5455	ALI M5455
+oss_allegro	pci125d,1988	ESS Allegro ES1988
+oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
+oss_allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
+oss_allegro	pci125d,1998	ESS Maestro3 ES1998
+oss_allegro	pci125d,199a	ESS Maestro3 ES199A
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
@@ -15,6 +20,7 @@ oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
 oss_audiopci	pci1274,5000	Creative AudioPCI (ES1370)
 oss_cmi878x	pci13f6,8788	CMedia CMI8788
+oss_cmi878x	pci1043,834f	Asus Xonar D1 (AV100)
 oss_cmi878x	pci1043,8275    Asus Xonar DX (AV100)
 oss_cmpci	pci13f6,100	C-Media CM8338A
 oss_cmpci	pci13f6,100	MIDIMan DiO 2448
@@ -69,17 +75,22 @@ oss_hdaudio	pci8086,284b	Intel High Definition Audio (ICH8)
 oss_hdaudio	pci8086,293e	Intel High Definition Audio (P35)
 oss_hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
 oss_hdaudio	pci8086,3a3e	Intel High Definition Audio (ICH10)
+oss_hdaudio	pci8086,3a6e	Intel High Definition Audio (ICH10)
 oss_hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
 oss_hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
 oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,3f0	Nvidia High Definition Audio (MCP61)
 oss_hdaudio	pci10de,44a	Nvidia High Definition Audio (MCP65)
 oss_hdaudio	pci10de,55c	Nvidia High Definition Audio (MCP67)
+oss_hdaudio	pci10de,7fc	Nvidia High Definition Audio (MCP73)
+oss_hdaudio	pci10de,774	Nvidia High Definition Audio (MCP78S)
+oss_hdaudio	pci10de,ac0	Nvidia High Definition Audio (MCP79)
 oss_hdaudio	pci1002,437b	ATI High Definition Audio (SB450)
 oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio
 oss_hdaudio	pci1039,7502	SiS High Definition Audio
 oss_hdaudio	pci10b9,5461	ULI High Definition Audio
+oss_hdsp	pci10ee,3fc5	RME Hammerfall (not supported yet)
 oss_ich	pci1022,7445	AMD 786
 oss_ich	pci1022,746d	AMD 8111 
 oss_ich	pci1039,7012	SiS 7012 

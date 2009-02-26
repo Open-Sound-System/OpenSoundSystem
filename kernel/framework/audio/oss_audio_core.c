@@ -782,12 +782,15 @@ audio_reset_adev (adev_p adev)
       MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
       return;
     }
+  MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
 
 #ifdef CONFIG_OSSD
   ossd_event (adev->engine_num, OSSD_EV_RESET_OUTPUT);
   ossd_event (adev->engine_num, OSSD_EV_RESET_INPUT);
 #endif
   adev->d->adrv_halt_io (adev->engine_num);
+
+  MUTEX_ENTER_IRQDISABLE (adev->mutex, flags);
   reset_dmap (adev->dmap_out);
   reset_dmap (adev->dmap_in);
   MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
