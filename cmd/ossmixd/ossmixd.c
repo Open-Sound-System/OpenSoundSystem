@@ -107,6 +107,34 @@ return_value(int val)
 }
 
 static void
+send_multiple_nodes(ossmix_commad_packet_t *pack)
+{
+	int i,n;
+	oss_mixext nodes[MAX_NODES];
+
+	n=0;
+	for (i=pack->p2;i<=pack->p3;i++)
+	{
+		if (ossmix_get_nodeinfo(pack->p1, i, &nodes[n]) < 0)
+		{
+	   		send_error("Cannot get mixer node info\n");
+	   		return;
+		}
+
+		if (++n >= MAX_NODES)
+		{
+	  	  send_response_long(OSSMIX_CMD_GET_NODEINFO, n, i, 0, 0, 0,
+				  (void*)&nodes, n*sizeof(oss_mixext));
+		  n=0;
+		}
+	}
+
+	if (n>0)
+	    send_response_long(OSSMIX_CMD_GET_NODEINFO, n, pack->p3, 0, 0, 0,
+			  (void*)&nodes, n*sizeof(oss_mixext));
+}
+
+static void
 serve_command(ossmix_commad_packet_t *pack)
 {
 	switch (pack->cmd)
@@ -152,6 +180,12 @@ serve_command(ossmix_commad_packet_t *pack)
 	case OSSMIX_CMD_GET_NODEINFO:
 		{
 			oss_mixext ext;
+
+			if (pack->p3 > pack->p2)
+			{
+				send_multiple_nodes(pack);
+				break;
+			}
 
 			if (ossmix_get_nodeinfo(pack->p1, pack->p2, &ext) < 0)
 			   send_error("Cannot get mixer node info\n");

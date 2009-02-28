@@ -1,4 +1,4 @@
-#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2008. All rights reserved.
 /*
  * TCP driver for libossmix
  */
@@ -24,6 +24,18 @@ static int initialized=0;
 static void tcp_disconnect(void);
 static int sockfd=-1;
 static int do_byteswap=0;
+
+#define MAX_TMP_MIXER	64
+#define MAX_TMP_NODES	1024
+
+typedef struct
+{
+	oss_mixext *nodes[MAX_TMP_NODES];
+	int nrext;
+} local_mixer_t;
+
+static int num_mixers=0;
+static local_mixer_t *mixers[MAX_TMP_MIXER] = {NULL};
 
 static int
 read_all(int sock, void *b, int count)
@@ -128,6 +140,26 @@ bswap_nodeinfo(void *data, int len)
 	BSWAP32(ei->update_counter);
 	BSWAP32(ei->rgbcolor);
 }
+
+static void
+bswap_nodeinfo_array(void *data, int len)
+{
+	oss_mixext *ei = (oss_mixext*)data;
+	int i, n;
+
+	n=len / sizeof(oss_mixext);
+
+	if (len != n*sizeof(oss_mixext))
+	{
+		fprintf(stderr, "bswap_enuminfo_array: Bad size (%d/%d*%d)\n", len, n, sizeof(*ei));
+		exit(EXIT_FAILURE);
+	}
+
+	for (i=0;i<n;i++)
+	    bswap_nodeinfo((void*)&ei[i], sizeof(oss_mixext));
+
+}
+
 
 static void
 bswap_enuminfo(void *data, int len)
@@ -443,7 +475,13 @@ fprintf(stderr, "Entered tcp_disconnect()\n");
 static int
 tcp_get_nmixers(void)
 {
-        return send_request(OSSMIX_CMD_GET_NMIXERS, 0, 0, 0, 0, 0);
+	int nmixers;
+
+        nmixers=send_request(OSSMIX_CMD_GET_NMIXERS, 0, 0, 0, 0, 0);
+
+	num_mixers = nmixers; 
+
+	return nmixers;
 }
 
 static int
@@ -456,7 +494,86 @@ tcp_get_mixerinfo(int mixernum, oss_mixerinfo *mi)
 static int
 tcp_open_mixer(int mixernum)
 {
-        return send_request(OSSMIX_CMD_OPEN_MIXER, mixernum, 0, 0, 0, 0);
+	int nrext;
+	int n;
+	oss_mixext nodes[MAX_NODES];
+	local_mixer_t *lmixer;
+
+        if (send_request(OSSMIX_CMD_OPEN_MIXER, mixernum, 0, 0, 0, 0)<0)
+	   return -1;
+
+	if (mixernum >= MAX_TMP_MIXER)
+	{
+		fprintf(stderr, "tcp_open_mixer: Mixer number too large %d\n", mixernum);
+		return -1;
+	}
+
+        if ((nrext=send_request(OSSMIX_CMD_GET_NREXT, mixernum, 0, 0, 0, 0)) < 0)
+	   return -1;
+
+	if (mixers[mixernum] == NULL)
+	   {
+		mixers[mixernum]=lmixer=malloc(sizeof(*lmixer));
+		if (lmixer == NULL)
+		{
+			fprintf(stderr, "tcp_open_mixer: Out of memory\n");
+			exit(EXIT_FAILURE);
+		}
+
+		memset(lmixer, 0, sizeof(*lmixer));
+	   }
+	else
+	   lmixer=mixers[mixernum];
+
+	if (nrext > lmixer->nrext)
+	   lmixer->nrext=nrext;
+
+        send_request_noreply(OSSMIX_CMD_GET_NODEINFO, mixernum, 0, nrext-1, 0, 0);
+	while (nrext > 0)
+	{
+		int i;
+
+		n = nrext;
+		if (n>MAX_NODES)
+		   n=MAX_NODES;
+
+		if (wait_payload(nodes, n*sizeof(oss_mixext), bswap_nodeinfo_array)<0)
+		   return -1;
+
+		for (i=0;i<n;i++)
+		{
+			oss_mixext *node, *lnode;
+			int ctl;
+
+			node=&nodes[i];
+			ctl=node->ctrl;
+			
+			if (ctl >= MAX_TMP_NODES)
+			{
+			   fprintf(stderr, "tcp_open_mixer: Node number too large %d\n", ctl);
+			   exit(EXIT_FAILURE);
+			}
+
+			lnode = lmixer->nodes[ctl];
+
+			if (lnode == NULL)
+			{
+				lmixer->nodes[ctl]=lnode=malloc(sizeof(*lnode));
+
+				if (lnode==NULL)
+				{
+					fprintf(stderr, "tcp_open_mixer: Out of memory\n");
+					exit(EXIT_FAILURE);
+				}
+			}
+
+			memcpy(lnode, node, sizeof(*node));
+		}
+
+		nrext -= n;
+	}
+
+	return 0;
 }
 
 static void
@@ -468,14 +585,54 @@ tcp_close_mixer(int mixernum)
 static int
 tcp_get_nrext(int mixernum)
 {
+	// TODO: Cache this information locally
         return send_request(OSSMIX_CMD_GET_NREXT, mixernum, 0, 0, 0, 0);
 }
 
 static int
 tcp_get_nodeinfo(int mixernum, int node, oss_mixext *ext)
 {
-        send_request_noreply(OSSMIX_CMD_GET_NODEINFO, mixernum, node, 0, 0, 0);
-	return wait_payload(ext, sizeof(*ext), bswap_nodeinfo);
+	local_mixer_t *lmixer;
+	oss_mixext *lnode;
+
+	if (mixernum >= MAX_TMP_MIXER)
+	{
+		fprintf(stderr, "tcp_get_nodeinfo: Mixer number too large %d\n", mixernum);
+		return -1;
+	}
+
+	lmixer=mixers[mixernum];
+	if (lmixer == NULL)
+	{
+		fprintf(stderr, "tcp_get_nodeinfo: Mixer %d not opened\n", mixernum);
+		return -1;
+	}
+
+	if (node >= lmixer->nrext)
+	{
+		fprintf(stderr, "tcp_get_nodeinfo: Mixer %d: Node %d doesn't exist \n", mixernum, node);
+		return -1;
+	}
+
+	lnode=lmixer->nodes[node];
+
+	if (lnode == NULL)
+	{
+		lnode=lmixer->nodes[node]=malloc(sizeof(*lnode));
+
+        	send_request_noreply(OSSMIX_CMD_GET_NODEINFO, mixernum, node, 0, 0, 0);
+		if (wait_payload(lnode, sizeof(*lnode), bswap_nodeinfo)<0)
+		{
+			free(lnode);
+			lmixer->nodes[node] = NULL;
+			fprintf(stderr, "tcp_get_nodeinfo: Mixer %d: Cannot load nodeinfo for %d\n", mixernum, node);
+			return -1;
+		}
+	}
+
+	memcpy(ext, lnode, sizeof(*ext));
+
+	return 0;
 }
 
 static int

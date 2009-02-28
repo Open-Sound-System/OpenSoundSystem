@@ -54,4 +54,5 @@ typedef struct
 	int unsolicited;
 	int payload_size;
 } ossmix_commad_packet_t;
+#define MAX_NODES	32
 #endif
