@@ -19,10 +19,10 @@
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/pci.h>
-#include "../include/internals/timestamp.h"
-#include "ossddk/oss_exports.h"
+#include "timestamp.h"
+#include "oss_exports.h"
 #include "wrap.h"
-#include "ossddk/ossddk.h"
+#include "ossddk.h"
 #include "ossdip.h"
 #undef strcpy
 #define strcpy oss_strcpy

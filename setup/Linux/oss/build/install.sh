@@ -4,6 +4,7 @@ then
   . /etc/oss.conf
 else
   OSSLIBDIR=/usr/lib/oss
+  echo "OSSLIBDIR=/usr/lib/oss" > /etc/oss.conf
 fi
 
 cd $OSSLIBDIR/build
@@ -177,8 +178,6 @@ fi
 
 cp -f ../objects/osscore.o osscore_mainline.o
 
-ln -sf ../include/sys/*.h ../include/sys/ossddk .
-
 rm -f Makefile
 ln -s Makefile.osscore Makefile
 
@@ -211,8 +210,7 @@ fi
 if test -f Module.symvers
 then
 	#Take generated symbol information and add it to module.inc
-	rm -f osscore_symbols.inc
-	echo "static const struct modversion_info ____versions[]" >> osscore_symbols.inc
+	echo "static const struct modversion_info ____versions[]" > osscore_symbols.inc
 	echo " __attribute__((used))" >> osscore_symbols.inc
 	echo "__attribute__((section(\"__versions\"))) = {" >> osscore_symbols.inc
 	sed -e "s:^:{:" -e "s:\t:, \":" -e "s:\t\(.\)*:\"},:" < Module.symvers >> osscore_symbols.inc
@@ -250,7 +248,7 @@ do
 	make clean
 done 
 
-rm -f Makefile
+rm -f Makefile osscore_symbols.inc
 
 echo "depmod -a"
 depmod -a

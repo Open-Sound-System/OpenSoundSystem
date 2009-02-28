@@ -16,9 +16,9 @@ typedef int *ioctl_arg;
 #include <linux/delay.h>
 #include <stdarg.h>
 #include <linux/vmalloc.h>
-#include "../include/internals/timestamp.h"
-#include "../include/internals/local_config.h"
-#include "ossddk/oss_exports.h"
+#include "timestamp.h"
+#include "local_config.h"
+#include "oss_exports.h"
 #include "wrap.h"
 #include "ossdip.h"
 #include <linux/version.h>
@@ -37,9 +37,9 @@ typedef int *ioctl_arg;
 
 typedef struct _smap_t dmap_t;
 
-#include "../include/sys/soundcard.h"
-#include "../include/internals/audio_core.h"
-#include "../include/internals/mixer_core.h"
+#include "soundcard.h"
+#include "audio_core.h"
+#include "mixer_core.h"
 #include "ubuntu_version_hack.inc"
 
 MODULE_LICENSE ("GPL v2");
