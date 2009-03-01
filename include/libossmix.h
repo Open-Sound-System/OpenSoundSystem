@@ -55,4 +55,15 @@ typedef struct
 	int payload_size;
 } ossmix_commad_packet_t;
 #define MAX_NODES	32
+#define MAX_TMP_MIXER	64
+#define MAX_TMP_NODES	1024
+
+typedef struct
+{
+	oss_mixext *nodes[MAX_TMP_NODES];
+	int nrext;
+} local_mixer_t;
+
+extern void mixc_add_node(int mixernum, int node, oss_mixext *ext);
+extern oss_mixext *mixc_get_node(int mixernum, int node);
 #endif
