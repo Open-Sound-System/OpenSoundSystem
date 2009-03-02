@@ -80,6 +80,22 @@ fprintf(stderr, "byteswap_msg() called\n");
 typedef void (*bswap_func_t)(void *data, int len);
 
 static void
+bswap_int_array(void *data, int len)
+{
+	int *arr=(int*)data;
+	int i;
+
+	if (len % sizeof(int) != 0)
+	{
+		fprintf(stderr, "bswap_int_array: Bad size %d\n", len);
+		exit(EXIT_FAILURE);
+	}
+
+	for (i=0;i<len/sizeof(int);i++)
+	    BSWAP32(arr[i]);
+}
+
+static void
 bswap_mixerinfo(void *data, int len)
 {
 	oss_mixerinfo *mi = (oss_mixerinfo*)data;
@@ -259,7 +275,7 @@ check_welcome(void)
 }
 
 static int
-wait_payload(void *payload, int len, bswap_func_t swapper)
+wait_payload(void *payload, int len, bswap_func_t swapper, int *truelen)
 {
 	  ossmix_commad_packet_t msg;
 	  int l;
@@ -294,6 +310,7 @@ wait_payload(void *payload, int len, bswap_func_t swapper)
 		  fprintf(stderr, "Remote error: %s\n", payload);
 	  }
 
+	  if (truelen == NULL)
 	  if (msg.payload_size != len)
 	  {
 		  fprintf(stderr, "Payload size mismatch (%d/%d)\n", 
@@ -301,6 +318,8 @@ wait_payload(void *payload, int len, bswap_func_t swapper)
 		  return -1;
 	  }
 
+	  if (truelen != NULL)
+	     *truelen = msg.payload_size;
 	  return msg.cmd;
 }
 
@@ -476,15 +495,15 @@ static int
 tcp_get_mixerinfo(int mixernum, oss_mixerinfo *mi)
 {
         send_request_noreply(OSSMIX_CMD_GET_MIXERINFO, mixernum, 0, 0, 0, 0);
-	return wait_payload(mi, sizeof(*mi), bswap_mixerinfo);
+	return wait_payload(mi, sizeof(*mi), bswap_mixerinfo, NULL);
 }
 
 static int
 tcp_open_mixer(int mixernum)
 {
-	int nrext;
-	int n;
+	int nrext, nrext2;
 	oss_mixext nodes[MAX_NODES];
+	value_packet_t value_packet;
 
         if (send_request(OSSMIX_CMD_OPEN_MIXER, mixernum, 0, 0, 0, 0)<0)
 	   return -1;
@@ -498,17 +517,22 @@ tcp_open_mixer(int mixernum)
         if ((nrext=send_request(OSSMIX_CMD_GET_NREXT, mixernum, 0, 0, 0, 0)) < 0)
 	   return -1;
 
+	nrext2=nrext; // Save the value for the next step
+/*
+ * Load all node info records
+ */
 
         send_request_noreply(OSSMIX_CMD_GET_NODEINFO, mixernum, 0, nrext-1, 0, 0);
 	while (nrext > 0)
 	{
 		int i;
+		int n;
 
 		n = nrext;
 		if (n>MAX_NODES)
 		   n=MAX_NODES;
 
-		if (wait_payload(nodes, n*sizeof(oss_mixext), bswap_nodeinfo_array)<0)
+		if (wait_payload(nodes, n*sizeof(oss_mixext), bswap_nodeinfo_array, NULL)<0)
 		   return -1;
 
 		for (i=0;i<n;i++)
@@ -522,6 +546,25 @@ tcp_open_mixer(int mixernum)
 
 		nrext -= n;
 	}
+
+	nrext=nrext2;
+
+/*
+ * Load all values
+ */
+        send_request_noreply(OSSMIX_CMD_GET_ALL_VALUES, mixernum, 0, 0, 0, 0);
+
+	if (wait_payload(value_packet, nrext*sizeof(value_record_t), bswap_int_array, &nrext2)<0)
+	   return -1;
+	else
+	   {
+		   int i;
+
+		   for (i=0;i<nrext2/sizeof(value_record_t);i++)
+		   {
+			   mixc_set_value(mixernum, value_packet[i].node, value_packet[i].value);
+		   }
+	   }
 
 	return 0;
 }
@@ -549,7 +592,7 @@ tcp_get_nodeinfo(int mixernum, int node, oss_mixext *ext)
 	if (lnode == NULL)
 	{
         	send_request_noreply(OSSMIX_CMD_GET_NODEINFO, mixernum, node, 0, 0, 0);
-		if (wait_payload(ext, sizeof(*ext), bswap_nodeinfo)<0)
+		if (wait_payload(ext, sizeof(*ext), bswap_nodeinfo, NULL)<0)
 		{
 			fprintf(stderr, "tcp_get_nodeinfo: Mixer %d: Cannot load nodeinfo for %d\n", mixernum, node);
 			return -1;
@@ -566,20 +609,21 @@ static int
 tcp_get_enuminfo(int mixernum, int node, oss_mixer_enuminfo *ei)
 {
         send_request_noreply(OSSMIX_CMD_GET_ENUMINFO, mixernum, node, 0, 0, 0);
-	return wait_payload(ei, sizeof(*ei), bswap_enuminfo);
+	return wait_payload(ei, sizeof(*ei), bswap_enuminfo, NULL);
 }
 
 static int
 tcp_get_description(int mixernum, int node, oss_mixer_enuminfo *desc)
 {
         send_request_noreply(OSSMIX_CMD_GET_DESCRIPTION, mixernum, node, 0, 0, 0);
-	return wait_payload(desc, sizeof(*desc), bswap_enuminfo);
+	return wait_payload(desc, sizeof(*desc), bswap_enuminfo, NULL);
 }
 
 static int
 tcp_get_value(int mixernum, int ctl, int timestamp)
 {
-        return send_request(OSSMIX_CMD_GET_VALUE, mixernum, ctl, timestamp, 0, 0);
+        // return send_request(OSSMIX_CMD_GET_VALUE, mixernum, ctl, timestamp, 0, 0);
+	return mixc_get_value(mixernum, ctl);
 }
 
 static void

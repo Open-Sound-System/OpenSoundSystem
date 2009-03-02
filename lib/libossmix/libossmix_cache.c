@@ -31,6 +31,8 @@ mixc_add_node(int mixernum, int node, oss_mixext *ext)
 	
 	if (mixers[mixernum] == NULL)
 	   {
+		int i;
+
 		mixers[mixernum]=lmixer=malloc(sizeof(*lmixer));
 		if (lmixer == NULL)
 		{
@@ -39,6 +41,8 @@ mixc_add_node(int mixernum, int node, oss_mixext *ext)
 		}
 
 		memset(lmixer, 0, sizeof(*lmixer));
+		for (i=0;i<MAX_TMP_NODES;i++)
+		    lmixer->values[i]=-1; // Invalid
 	   }
 	else
 	   lmixer=mixers[mixernum];
@@ -90,4 +94,80 @@ mixc_get_node(int mixernum, int node)
 	lnode = lmixer->nodes[node];
 
 	return lnode;
+}
+
+void
+mixc_set_value(int mixernum, int node, int value)
+{
+	local_mixer_t *lmixer;
+	
+	if (mixers[mixernum] == NULL)
+	   {
+		   return;
+	   }
+	lmixer=mixers[mixernum];
+
+	if (node >= MAX_TMP_NODES)
+	{
+	   fprintf(stderr, "mixc_set_value: Node number too large %d\n", node);
+	   exit(EXIT_FAILURE);
+	}
+
+	lmixer->values[node] = value;
+}
+
+int
+mixc_get_value(int mixernum, int node)
+{
+	local_mixer_t *lmixer;
+	
+	if (mixers[mixernum] == NULL)
+	   {
+		   return -1;
+	   }
+	lmixer=mixers[mixernum];
+
+	if (node >= MAX_TMP_NODES)
+	{
+	   fprintf(stderr, "mixc_get_value: Node number too large %d\n", node);
+	   exit(EXIT_FAILURE);
+	}
+
+	return lmixer->values[node];
+}
+
+int
+mixc_get_all_values(int mixernum, value_packet_t value_packet)
+{
+	int i, n=0;
+	oss_mixext *lnode;
+	local_mixer_t *lmixer;
+	
+	if (mixers[mixernum] == NULL)
+	   {
+		   fprintf(stderr, "mixc_get_all_values: Mixer %d doesn't exist\n", mixernum);
+		   return 0;
+	   }
+	lmixer=mixers[mixernum];
+
+	for (i=0;i<lmixer->nrext;i++)
+	{
+		lnode=lmixer->nodes[i];
+
+		if (lnode == NULL)
+		{
+			fprintf(stderr, "mixc_get_all_values: Mixer %d, node %d == NULL\n", mixernum, i);
+			continue;
+		}
+
+		if (lnode->type != MIXT_DEVROOT && lnode->type != MIXT_GROUP && lnode->type != MIXT_MARKER)
+		{
+			value_packet[n].node = i;
+			value_packet[n].value = lmixer->values[i];
+//printf("Send %d = %08x\n", i, lmixer->values[i]);
+			n++;
+		}
+	}
+
+	return n;
 }

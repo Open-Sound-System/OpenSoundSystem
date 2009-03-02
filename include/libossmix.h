@@ -45,6 +45,7 @@ typedef struct
 #define OSSMIX_CMD_GET_DESCRIPTION		10
 #define OSSMIX_CMD_GET_VALUE			11
 #define OSSMIX_CMD_SET_VALUE			12
+#define OSSMIX_CMD_GET_ALL_VALUES		13
 
 	int p1, p2, p3, p4, p5;
 
@@ -60,10 +61,22 @@ typedef struct
 
 typedef struct
 {
-	oss_mixext *nodes[MAX_TMP_NODES];
+	int node;
+	int value;
+} value_record_t;
+
+typedef value_record_t value_packet_t[MAX_TMP_NODES];
+
+typedef struct
+{
 	int nrext;
+	oss_mixext *nodes[MAX_TMP_NODES];
+	int values[MAX_TMP_NODES];
 } local_mixer_t;
 
 extern void mixc_add_node(int mixernum, int node, oss_mixext *ext);
 extern oss_mixext *mixc_get_node(int mixernum, int node);
+extern void mixc_set_value(int mixernum, int node, int value);
+extern int mixc_get_value(int mixernum, int node);
+extern int mixc_get_all_values(int mixernum, value_packet_t value_packet);
 #endif
