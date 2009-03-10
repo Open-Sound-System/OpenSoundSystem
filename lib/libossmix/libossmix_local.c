@@ -59,6 +59,13 @@ fprintf(stderr, "Entered local_disconnect()\n");
 }
 
 static int
+local_get_fd(ossmix_select_poll_t *cb)
+{
+	*cb = NULL;
+	return -1; /* No poll handling required */
+}
+
+static int
 local_get_nmixers(void)
 {
 	oss_sysinfo si;
@@ -216,6 +223,7 @@ local_set_value(int mixernum, int ctl, int timestamp, int value)
 ossmix_driver_t ossmix_local_driver =
 {
 	local_connect,
+	local_get_fd,
 	local_disconnect,
 	local_get_nmixers,
 	local_get_mixerinfo,

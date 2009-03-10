@@ -18,18 +18,19 @@
 #define OSSMIX_REMOTE
 #include "libossmix.h"
 
-int connfd;
-int listenfd;
-int verbose=0;
+static int connfd;
+static int listenfd;
+static int verbose=0;
 
 static void
-send_response(int cmd, int p1, int p2, int p3, int p4, int p5)
+send_response(int cmd, int p1, int p2, int p3, int p4, int p5, int unsol)
 {
 	  ossmix_commad_packet_t msg;
 
 	  memset(&msg, 0, sizeof(msg));
 
 	  msg.cmd=cmd;
+	  msg.unsolicited=unsol;
 	  msg.p1=p1;
 	  msg.p2=p2;
 	  msg.p3=p3;
@@ -97,13 +98,13 @@ wait_connect (void)
 static void
 send_ack(void)
 {
-	send_response(OSSMIX_CMD_OK, 0, 0, 0, 0, 0);
+	send_response(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, 0);
 }
 
 static void
 return_value(int val)
 {
-	send_response(val, 0, 0, 0, 0, 0);
+	send_response(val, 0, 0, 0, 0, 0, 0);
 }
 
 static void
@@ -278,16 +279,56 @@ serve_command(ossmix_commad_packet_t *pack)
 }
 
 static void
+poll_devices(void)
+{
+}
+
+static int
 handle_connection (int connfd)
 {
-	ossmix_commad_packet_t pack;
+      ossmix_commad_packet_t pack;
+      struct timeval tmout;
 
-	send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0);
+      send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0, 0);
 
-	while (read(connfd, &pack, sizeof(pack))==sizeof(pack))
+      tmout.tv_sec = 0;
+      tmout.tv_usec = 100000;
+
+      while (1)
+      {
+      int ndevs, i;
+      fd_set readfds, exfds;
+      FD_ZERO (&readfds);
+      FD_ZERO (&exfds);
+
+      FD_SET (connfd, &readfds);
+      FD_SET (connfd, &exfds);
+
+      if ((ndevs =
+	   select (connfd + 1, &readfds, NULL, &exfds, &tmout)) == -1)
+	{
+	  perror ("select");
+	  exit (-1);
+	}
+
+      if (ndevs == 0)
+	{
+	  poll_devices();
+          tmout.tv_sec = 0;
+          tmout.tv_usec = 100000;
+	}
+
+      if (FD_ISSET (connfd, &readfds) || FD_ISSET (connfd, &exfds))
+      {
+	if (read(connfd, &pack, sizeof(pack))==sizeof(pack))
 	{
 		serve_command(&pack);
 	}
+      else
+	      return;
+      }
+    }
+
 
 }
 

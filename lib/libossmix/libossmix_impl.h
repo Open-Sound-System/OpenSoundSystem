@@ -5,6 +5,7 @@ extern int mixlib_trace;
 typedef struct
 {
 	int (*connect)(const char *hostname, int port);
+	int (*get_fd)(ossmix_select_poll_t *cb);
 	void (*disconnect)(void);
 	int (*get_nmixers)(void);
 	int (*get_mixerinfo)(int mixernum, oss_mixerinfo *mi);

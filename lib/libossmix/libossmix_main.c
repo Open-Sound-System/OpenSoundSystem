@@ -41,6 +41,12 @@ ossmix_connect(const char *hostname, int port)
 	return mixer_driver->connect(hostname, port);
 }
 
+int
+ossmix_get_fd(ossmix_select_poll_t *cb)
+{
+	return mixer_driver->get_fd(cb);
+}
+
 void
 ossmix_disconnect(void)
 {

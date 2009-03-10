@@ -25,6 +25,8 @@ static void tcp_disconnect(void);
 static int sockfd=-1;
 static int do_byteswap=0;
 
+static void poll_callback(void);
+
 static int
 read_all(int sock, void *b, int count)
 {
@@ -465,6 +467,14 @@ fprintf(stderr, "Entered tcp_connect(%s, %d)\n", remotehost, port);
   return send_request(OSSMIX_CMD_INIT, 0, 0, 0, 0, 0);
 }
 
+static int
+tcp_get_fd(ossmix_select_poll_t *cb)
+{
+	*cb = poll_callback;
+
+	return sockfd;
+}
+
 static void
 tcp_disconnect(void)
 {
@@ -635,6 +645,7 @@ tcp_set_value(int mixernum, int ctl, int timestamp, int value)
 ossmix_driver_t ossmix_tcp_driver =
 {
 	tcp_connect,
+	tcp_get_fd,
 	tcp_disconnect,
 	tcp_get_nmixers,
 	tcp_get_mixerinfo,
@@ -647,3 +658,48 @@ ossmix_driver_t ossmix_tcp_driver =
 	tcp_get_value,
 	tcp_set_value
 };
+
+static void
+handle_packet(ossmix_commad_packet_t *msg, char *payload, int payload_size)
+{
+	printf("\nPacket %d\n", msg->cmd);
+}
+
+static void
+poll_callback(void)
+{
+	  ossmix_commad_packet_t msg;
+	  char payload[4096];
+	  int l;
+
+	  if (sockfd==-1)
+	     return -1;
+
+	  payload[0]=0;
+
+	  if ((l=read_all(sockfd, &msg, sizeof(msg)))!=sizeof(msg))
+	  {
+		  if (l==0) /* Connection closed */
+		     return -1;
+
+		  perror("get response");
+		  return -1;
+	  }
+
+	  if (do_byteswap)
+	     byteswap_msg(&msg);
+
+	  if (msg.payload_size > 0)
+	  {
+	  	if ((l=read_all(sockfd, payload, msg.payload_size)) != msg.payload_size)
+		{
+			perror("Get response payload");
+			fprintf(stderr, "Payload size %d/%d\n", l, msg.payload_size);
+			return -1;
+		}
+
+		payload[l]=0;
+	  }
+
+	handle_packet(&msg, payload, msg.payload_size);
+}

@@ -3,10 +3,13 @@
  */
 #define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
 
+typedef void (*ossmix_select_poll_t)(void);
+
 extern int ossmix_init(void);
 extern void ossmix_close(void);
 
 extern int ossmix_connect(const char *hostname, int port);
+extern int ossmix_get_fd(ossmix_select_poll_t *cb);
 extern void ossmix_disconnect(void);
 
 extern int ossmix_get_nmixers(void);

@@ -3,9 +3,78 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
-#include <soundcard.h>
-#include <libossmix.h>
+#include <sys/soundcard.h>
+#include <sys/libossmix.h>
+
+static void
+command_parser(char *line)
+{
+	char *p = line + strlen(line)-1;
+
+	if (*p == '\n')
+	   *p=0;
+
+	if (strcmp(line, "exit")==0)
+	   exit(0);
+}
+
+static void
+interactive_mode(void)
+{
+  int libfd=-1, maxdev, ndevs;
+  fd_set readfds;
+  ossmix_select_poll_t pollfunc;
+
+  libfd=ossmix_get_fd(&pollfunc);
+
+  printf("libfd=%d, func=%p\n", libfd, pollfunc);
+  printf("\n");
+  printf("> ");fflush(stdout);
+
+  while (1)
+    {
+      FD_ZERO (&readfds);
+
+      maxdev = 0;
+
+      FD_SET (0, &readfds); // Stdin
+      if (libfd > 0)
+         FD_SET (libfd, &readfds);
+
+      if (libfd > maxdev)
+	maxdev = libfd;
+
+      if ((ndevs =
+	   select (maxdev + 1, &readfds, NULL, NULL, NULL)) == -1)
+	{
+	  perror ("select");
+	  exit (-1);
+	}
+
+      if (ndevs == 0)
+	{
+	  fprintf (stderr, "Select timeout\n");
+	  exit (-1);
+	}
+
+      if (FD_ISSET (0, &readfds)) /* Stdio */
+      {
+	      char line[128];
+
+	      if (fgets(line, sizeof(line)-1, stdin) != NULL)
+	      {
+		command_parser(line);
+  		printf("> ");fflush(stdout);
+	      }
+      }
+
+      if (libfd > 0)
+      if (FD_ISSET (libfd, &readfds))
+	 pollfunc();
+    }
+}
 
 static void
 print_enum_list(int mixnum, int ctl)
@@ -50,12 +119,16 @@ main(int argc, char *argv[])
 	int port=7777;
 	int nmixers=0;
 	extern int mixlib_trace;
+	int interactive=0;
 
 	//mixlib_trace=1;
 
-	while ((i = getopt(argc, argv, "p:h:")) != EOF)
+	while ((i = getopt(argc, argv, "ip:h:")) != EOF)
 	switch (i)
 	{
+	case 'i':
+		interactive=1;
+		break;
 	case 'p':
 		port = atoi(optarg);
 		break;
@@ -144,6 +217,9 @@ main(int argc, char *argv[])
 
 		ossmix_close_mixer(i);
 	}
+
+	if (interactive)
+	   interactive_mode();
 
 printf("Disconnecting\n");
 	ossmix_disconnect();
