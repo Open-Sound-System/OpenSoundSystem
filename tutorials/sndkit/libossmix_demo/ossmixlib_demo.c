@@ -9,6 +9,12 @@
 #include <sys/libossmix.h>
 
 static void
+event_callback(ossmix_callback_parm_t *parms)
+{
+printf("Event callback %d\n", parms->event);
+}
+
+static void
 command_parser(char *line)
 {
 	char *p = line + strlen(line)-1;
@@ -16,7 +22,7 @@ command_parser(char *line)
 	if (*p == '\n')
 	   *p=0;
 
-	if (strcmp(line, "exit")==0)
+	if (strcmp(line, "exit")==0 || strcmp(line, "q")==0)
 	   exit(0);
 }
 
@@ -28,6 +34,8 @@ interactive_mode(void)
   ossmix_select_poll_t pollfunc;
 
   libfd=ossmix_get_fd(&pollfunc);
+
+  ossmix_set_callback(event_callback);
 
   printf("libfd=%d, func=%p\n", libfd, pollfunc);
   printf("\n");

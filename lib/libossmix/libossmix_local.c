@@ -14,25 +14,25 @@
 #include "libossmix.h"
 #include "libossmix_impl.h"
 
-static int global_fd=-1;
+static int global_fd = -1;
 
 #define MAX_MIXERS 256
 static int mixer_fd[MAX_MIXERS];
 
 static int
-local_connect(const char *hostname, int port)
+local_connect (const char *hostname, int port)
 {
   char *devmixer;
   int i;
 
-	if (mixlib_trace > 0)
-fprintf(stderr, "Entered local_connect()\n");
+  if (mixlib_trace > 0)
+    fprintf (stderr, "Entered local_connect()\n");
 
-  for (i=0;i<MAX_MIXERS;i++)
-	  mixer_fd[i] = -1;
+  for (i = 0; i < MAX_MIXERS; i++)
+    mixer_fd[i] = -1;
 
-  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
-     devmixer = "/dev/mixer";
+  if ((devmixer = getenv ("OSS_MIXERDEV")) == NULL)
+    devmixer = "/dev/mixer";
 
 /*
  *	Open the mixer device
@@ -43,196 +43,201 @@ fprintf(stderr, "Entered local_connect()\n");
       return -1;
     }
 
-	return 0;
+  return 0;
 }
 
 static void
-local_disconnect(void)
+local_disconnect (void)
 {
-	if (mixlib_trace > 0)
-fprintf(stderr, "Entered local_disconnect()\n");
+  if (mixlib_trace > 0)
+    fprintf (stderr, "Entered local_disconnect()\n");
 
-	if (global_fd >= 0)
-	   close(global_fd);
+  if (global_fd >= 0)
+    close (global_fd);
 
-	global_fd=-1;
+  global_fd = -1;
+}
+
+static void
+local_enable_events (void)
+{
 }
 
 static int
-local_get_fd(ossmix_select_poll_t *cb)
+local_get_fd (ossmix_select_poll_t * cb)
 {
-	*cb = NULL;
-	return -1; /* No poll handling required */
+  *cb = NULL;
+  return -1;			/* No poll handling required */
 }
 
 static int
-local_get_nmixers(void)
+local_get_nmixers (void)
 {
-	oss_sysinfo si;
+  oss_sysinfo si;
 
-	if (ioctl(global_fd, SNDCTL_SYSINFO, &si)==-1)
-	{
-		perror("SNDCTL_SYSINFO");
-		return -1;
-	}
+  if (ioctl (global_fd, SNDCTL_SYSINFO, &si) == -1)
+    {
+      perror ("SNDCTL_SYSINFO");
+      return -1;
+    }
 
-	return si.nummixers;
+  return si.nummixers;
 }
 
 static int
-local_get_mixerinfo(int mixernum, oss_mixerinfo *mi)
+local_get_mixerinfo (int mixernum, oss_mixerinfo * mi)
 {
-	mi->dev=mixernum;
+  mi->dev = mixernum;
 
-	if (ioctl(global_fd, SNDCTL_MIXERINFO, mi)==-1)
-	{
-		perror("SNDCTL_MIXERINFO");
-		return -1;
-	}
+  if (ioctl (global_fd, SNDCTL_MIXERINFO, mi) == -1)
+    {
+      perror ("SNDCTL_MIXERINFO");
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
 static int
-local_open_mixer(int mixernum)
+local_open_mixer (int mixernum)
 {
-	oss_mixerinfo mi;
+  oss_mixerinfo mi;
 
-	if (mixer_fd[mixernum] > -1)
-	   return 0;
+  if (mixer_fd[mixernum] > -1)
+    return 0;
 
-	if (ossmix_get_mixerinfo(mixernum, &mi)<0)
-	   return -1;
+  if (ossmix_get_mixerinfo (mixernum, &mi) < 0)
+    return -1;
 
 //fprintf(stderr, "local_open_mixer(%d: %s)\n", mixernum, mi.devnode);
 
-	if ((mixer_fd[mixernum] = open(mi.devnode, O_RDWR, 0))==-1)
-	{
-		perror(mi.devnode);
-		return -1;
-	}
+  if ((mixer_fd[mixernum] = open (mi.devnode, O_RDWR, 0)) == -1)
+    {
+      perror (mi.devnode);
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
 static void
-local_close_mixer(int mixernum)
+local_close_mixer (int mixernum)
 {
 //fprintf(stderr, "local_close_mixer(%d)\n", mixernum);
 
-	if (mixer_fd[mixernum] == -1)
-	   return;
+  if (mixer_fd[mixernum] == -1)
+    return;
 
-	close(mixer_fd[mixernum]);
-	mixer_fd[mixernum] = -1;
+  close (mixer_fd[mixernum]);
+  mixer_fd[mixernum] = -1;
 }
 
 static int
-local_get_nrext(int mixernum)
+local_get_nrext (int mixernum)
 {
-	int n=-1;
+  int n = -1;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_NREXT, &n)==-1)
-	{
-		perror("SNDCTL_MIX_NREXT");
-		return -1;
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_NREXT, &n) == -1)
+    {
+      perror ("SNDCTL_MIX_NREXT");
+      return -1;
+    }
 
-	return n;
+  return n;
 }
 
 static int
-local_get_nodeinfo(int mixernum, int node, oss_mixext *ext)
+local_get_nodeinfo (int mixernum, int node, oss_mixext * ext)
 {
-	ext->dev=mixernum;
-	ext->ctrl=node;
+  ext->dev = mixernum;
+  ext->ctrl = node;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_EXTINFO, ext)==-1)
-	{
-		perror("SNDCTL_MIX_EXTINFO");
-		return -1;
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_EXTINFO, ext) == -1)
+    {
+      perror ("SNDCTL_MIX_EXTINFO");
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
 static int
-local_get_enuminfo(int mixernum, int node, oss_mixer_enuminfo *ei)
+local_get_enuminfo (int mixernum, int node, oss_mixer_enuminfo * ei)
 {
-	ei->dev=mixernum;
-	ei->ctrl=node;
+  ei->dev = mixernum;
+  ei->ctrl = node;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_ENUMINFO, ei)==-1)
-	{
-		perror("SNDCTL_MIX_ENUMINFO");
-		return -1;
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_ENUMINFO, ei) == -1)
+    {
+      perror ("SNDCTL_MIX_ENUMINFO");
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
 static int
-local_get_description(int mixernum, int node, oss_mixer_enuminfo *desc)
+local_get_description (int mixernum, int node, oss_mixer_enuminfo * desc)
 {
-	desc->dev=mixernum;
-	desc->ctrl=node;
+  desc->dev = mixernum;
+  desc->ctrl = node;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_DESCRIPTION, desc)==-1)
-	{
-		perror("SNDCTL_MIX_DESCRIPTION");
-		return -1;
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_DESCRIPTION, desc) == -1)
+    {
+      perror ("SNDCTL_MIX_DESCRIPTION");
+      return -1;
+    }
 
-	return 0;
+  return 0;
 }
 
 static int
-local_get_value(int mixernum, int ctl, int timestamp)
+local_get_value (int mixernum, int ctl, int timestamp)
 {
-	oss_mixer_value val;
+  oss_mixer_value val;
 
-	val.dev=mixernum;
-	val.ctrl=ctl;
-	val.timestamp=timestamp;
+  val.dev = mixernum;
+  val.ctrl = ctl;
+  val.timestamp = timestamp;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_READ, &val)==-1)
-	{
-		perror("SNDCTL_MIX_READ");
-		return -1;
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_READ, &val) == -1)
+    {
+      perror ("SNDCTL_MIX_READ");
+      return -1;
+    }
 
-	return val.value;
+  return val.value;
 }
 
 static void
-local_set_value(int mixernum, int ctl, int timestamp, int value)
+local_set_value (int mixernum, int ctl, int timestamp, int value)
 {
-	oss_mixer_value val;
+  oss_mixer_value val;
 
-	val.dev=mixernum;
-	val.ctrl=ctl;
-	val.timestamp=timestamp;
-	val.value=value;
+  val.dev = mixernum;
+  val.ctrl = ctl;
+  val.timestamp = timestamp;
+  val.value = value;
 
-	if (ioctl(mixer_fd[mixernum], SNDCTL_MIX_WRITE, &val)==-1)
-	{
-		perror("SNDCTL_MIX_WRITE");
-	}
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_WRITE, &val) == -1)
+    {
+      perror ("SNDCTL_MIX_WRITE");
+    }
 }
 
-ossmix_driver_t ossmix_local_driver =
-{
-	local_connect,
-	local_get_fd,
-	local_disconnect,
-	local_get_nmixers,
-	local_get_mixerinfo,
-	local_open_mixer,
-	local_close_mixer,
-	local_get_nrext,
-	local_get_nodeinfo,
-	local_get_enuminfo,
-	local_get_description,
-	local_get_value,
-	local_set_value
+ossmix_driver_t ossmix_local_driver = {
+  local_connect,
+  local_get_fd,
+  local_disconnect,
+  local_enable_events,
+  local_get_nmixers,
+  local_get_mixerinfo,
+  local_open_mixer,
+  local_close_mixer,
+  local_get_nrext,
+  local_get_nodeinfo,
+  local_get_enuminfo,
+  local_get_description,
+  local_get_value,
+  local_set_value
 };

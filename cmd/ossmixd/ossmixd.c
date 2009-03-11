@@ -20,61 +20,72 @@
 
 static int connfd;
 static int listenfd;
-static int verbose=0;
+static int verbose = 0;
+static int polling_started = 0;
 
 static void
-send_response(int cmd, int p1, int p2, int p3, int p4, int p5, int unsol)
+send_response (int cmd, int p1, int p2, int p3, int p4, int p5, int unsol)
 {
-	  ossmix_commad_packet_t msg;
+  ossmix_commad_packet_t msg;
 
-	  memset(&msg, 0, sizeof(msg));
+  memset (&msg, 0, sizeof (msg));
 
-	  msg.cmd=cmd;
-	  msg.unsolicited=unsol;
-	  msg.p1=p1;
-	  msg.p2=p2;
-	  msg.p3=p3;
-	  msg.p4=p4;
-	  msg.p5=p5;
+  if (verbose)
+    printf ("Send %02d, p=0x%08x, %d, %d, %d, %d, unsol=%d\n",
+	    cmd, p1, p2, p3, p4, p5, unsol);
 
-	  if (write(connfd, &msg, sizeof(msg)) != sizeof(msg))
-	  {
-		  fprintf(stderr, "Write to socket failed\n");
-	  }
+  msg.cmd = cmd;
+  msg.unsolicited = unsol;
+  msg.p1 = p1;
+  msg.p2 = p2;
+  msg.p3 = p3;
+  msg.p4 = p4;
+  msg.p5 = p5;
+
+  if (write (connfd, &msg, sizeof (msg)) != sizeof (msg))
+    {
+      fprintf (stderr, "Write to socket failed\n");
+    }
 }
 
 static void
-send_response_long(int cmd, int p1, int p2, int p3, int p4, int p5, const char *payload, int plsize)
+send_response_long (int cmd, int p1, int p2, int p3, int p4, int p5,
+		    const char *payload, int plsize, int unsol)
 {
-	  ossmix_commad_packet_t msg;
+  ossmix_commad_packet_t msg;
 
-	  memset(&msg, 0, sizeof(msg));
+  if (verbose)
+    printf ("Send %02d, p=0x%08x, %d, %d, %d, %d, unsol=%d, pl=%d\n",
+	    cmd, p1, p2, p3, p4, p5, unsol, plsize);
 
-	  msg.cmd=cmd;
-	  msg.p1=p1;
-	  msg.p2=p2;
-	  msg.p3=p3;
-	  msg.p4=p4;
-	  msg.p5=p5;
-	  msg.payload_size=plsize;
+  memset (&msg, 0, sizeof (msg));
 
-	  if (write(connfd, &msg, sizeof(msg))!=sizeof(msg))
-	  {
-		  fprintf(stderr, "Write to socket failed\n");
-	  }
+  msg.cmd = cmd;
+  msg.unsolicited = unsol;
+  msg.p1 = p1;
+  msg.p2 = p2;
+  msg.p3 = p3;
+  msg.p4 = p4;
+  msg.p5 = p5;
+  msg.payload_size = plsize;
 
-	  if (write(connfd, payload, msg.payload_size) != msg.payload_size)
-	  {
-		  fprintf(stderr, "Write to socket failed\n");
-	  }
+  if (write (connfd, &msg, sizeof (msg)) != sizeof (msg))
+    {
+      fprintf (stderr, "Write to socket failed\n");
+    }
+
+  if (write (connfd, payload, msg.payload_size) != msg.payload_size)
+    {
+      fprintf (stderr, "Write to socket failed\n");
+    }
 }
 
 static void
-send_error(const char *msg)
+send_error (const char *msg)
 {
-	int l=strlen(msg)+1;
+  int l = strlen (msg) + 1;
 
-	send_response_long(OSSMIX_CMD_ERROR, 0, 0, 0, 0, 0, msg, l);
+  send_response_long (OSSMIX_CMD_ERROR, 0, 0, 0, 0, 0, msg, l, 0);
 }
 
 int
@@ -96,206 +107,219 @@ wait_connect (void)
 }
 
 static void
-send_ack(void)
+send_ack (void)
 {
-	send_response(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, 0);
+  send_response (OSSMIX_CMD_OK, 0, 0, 0, 0, 0, 0);
 }
 
 static void
-return_value(int val)
+return_value (int val)
 {
-	send_response(val, 0, 0, 0, 0, 0, 0);
+  send_response (val, 0, 0, 0, 0, 0, 0);
 }
 
 static void
-send_multiple_nodes(ossmix_commad_packet_t *pack)
+send_multiple_nodes (ossmix_commad_packet_t * pack)
 {
-	int i,n;
-	oss_mixext nodes[MAX_NODES];
+  int i, n;
+  oss_mixext nodes[MAX_NODES];
 
-	n=0;
-	for (i=pack->p2;i<=pack->p3;i++)
+  n = 0;
+  for (i = pack->p2; i <= pack->p3; i++)
+    {
+      if (ossmix_get_nodeinfo (pack->p1, i, &nodes[n]) < 0)
 	{
-		if (ossmix_get_nodeinfo(pack->p1, i, &nodes[n]) < 0)
-		{
-	   		send_error("Cannot get mixer node info\n");
-	   		return;
-		}
-
-		mixc_add_node(pack->p1, i, &nodes[n]);
-
-		if (++n >= MAX_NODES)
-		{
-	  	  send_response_long(OSSMIX_CMD_GET_NODEINFO, n, i, 0, 0, 0,
-				  (void*)&nodes, n*sizeof(oss_mixext));
-		  n=0;
-		}
+	  send_error ("Cannot get mixer node info\n");
+	  return;
 	}
 
-	if (n>0)
-	    send_response_long(OSSMIX_CMD_GET_NODEINFO, n, pack->p3, 0, 0, 0,
-			  (void*)&nodes, n*sizeof(oss_mixext));
-}
+      mixc_add_node (pack->p1, i, &nodes[n]);
 
-static void
-update_values(int mixernum)
-{
-	oss_mixext *ext;
-	int i;
-	int nrext;
-	int value, prev_value;
-
-	nrext=ossmix_get_nrext(mixernum);
-
-	for (i=0;i<nrext;i++)
+      if (++n >= MAX_NODES)
 	{
-		if ((ext=mixc_get_node(mixernum, i))==NULL)
-		   continue;
-
-		if (ext->type == MIXT_DEVROOT || ext->type == MIXT_GROUP || ext->type == MIXT_MARKER)
-		   continue;
-
-		prev_value=mixc_get_value(mixernum, i);
-
-		if ((value=ossmix_get_value(mixernum, i, ext->timestamp))<0)
-		   continue;
-
-		if (value != prev_value)
-		   mixc_set_value(mixernum, i, value);
+	  send_response_long (OSSMIX_CMD_GET_NODEINFO, n, i, 0, 0, 0,
+			      (void *) &nodes, n * sizeof (oss_mixext), 0);
+	  n = 0;
 	}
+    }
+
+  if (n > 0)
+    send_response_long (OSSMIX_CMD_GET_NODEINFO, n, pack->p3, 0, 0, 0,
+			(void *) &nodes, n * sizeof (oss_mixext), 0);
 }
 
 static void
-serve_command(ossmix_commad_packet_t *pack)
+update_values (int mixernum)
 {
-	switch (pack->cmd)
-	{
-	case OSSMIX_CMD_INIT:
-		if (pack->ack_rq)
-		   send_ack();
-		break;
+  oss_mixext *ext;
+  int i;
+  int nrext;
+  int value, prev_value;
 
-	case OSSMIX_CMD_EXIT:
-		//fprintf(stderr, "Exit\n");
-		if (pack->ack_rq)
-		   send_ack();
-		break;
+  nrext = ossmix_get_nrext (mixernum);
 
-	case OSSMIX_CMD_GET_NMIXERS:
-		return_value(ossmix_get_nmixers());
-		break;
+  for (i = 0; i < nrext; i++)
+    {
+      if ((ext = mixc_get_node (mixernum, i)) == NULL)
+	continue;
 
-	case OSSMIX_CMD_GET_MIXERINFO:
-		{
-			oss_mixerinfo mi;
+      if (ext->type == MIXT_DEVROOT || ext->type == MIXT_GROUP
+	  || ext->type == MIXT_MARKER)
+	continue;
 
-			if (ossmix_get_mixerinfo(pack->p1, &mi) < 0)
-			   send_error("Cannot get mixer info\n");
-			else
-			   send_response_long(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void*)&mi, sizeof(mi));
-		}
-		break;
+      prev_value = mixc_get_value (mixernum, i);
 
-	case OSSMIX_CMD_OPEN_MIXER:
-		return_value(ossmix_open_mixer(pack->p1));
-		break;
+      if ((value = ossmix_get_value (mixernum, i, ext->timestamp)) < 0)
+	continue;
 
-	case OSSMIX_CMD_CLOSE_MIXER:
-		ossmix_close_mixer(pack->p1);
-		break;
-
-	case OSSMIX_CMD_GET_NREXT:
-		return_value(ossmix_get_nrext(pack->p1));
-		break;
-
-	case OSSMIX_CMD_GET_NODEINFO:
-		{
-			oss_mixext ext;
-
-			if (pack->p3 > pack->p2)
-			{
-				send_multiple_nodes(pack);
-				break;
-			}
-
-			if (ossmix_get_nodeinfo(pack->p1, pack->p2, &ext) < 0)
-			   send_error("Cannot get mixer node info\n");
-			else
-			{
-			   mixc_add_node(pack->p1, pack->p2, &ext);
-			   send_response_long(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void*)&ext, sizeof(ext));
-			}
-		}
-		break;
-
-	case OSSMIX_CMD_GET_ENUMINFO:
-		{
-			oss_mixer_enuminfo desc;
-
-			if (ossmix_get_enuminfo(pack->p1, pack->p2, &desc) < 0)
-			   send_error("Cannot get mixer enum strings\n");
-			else
-			   send_response_long(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void*)&desc, sizeof(desc));
-		}
-		break;
-
-	case OSSMIX_CMD_GET_DESCRIPTION:
-		{
-			oss_mixer_enuminfo desc;
-
-			if (ossmix_get_description(pack->p1, pack->p2, &desc) < 0)
-			   send_error("Cannot get mixer description\n");
-			else
-			   send_response_long(OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void*)&desc, sizeof(desc));
-		}
-		break;
-
-	case OSSMIX_CMD_GET_VALUE:
-		return_value(ossmix_get_value(pack->p1, pack->p2, pack->p3));
-		break;
-
-	case OSSMIX_CMD_GET_ALL_VALUES:
-		{
-			int n;
-			value_packet_t value_packet;
-
-			update_values(pack->p1);
-			n=mixc_get_all_values(pack->p1, value_packet);
-
-	  	  send_response_long(OSSMIX_CMD_GET_ALL_VALUES, n, 0, 0, 0, 0,
-				  (void*)&value_packet, n*sizeof(value_record_t));
-		}
-		break;
-
-	case OSSMIX_CMD_SET_VALUE:
-		ossmix_set_value(pack->p1, pack->p2, pack->p3, pack->p4);
-		break;
-
-	default:
-
-		if (pack->ack_rq)
-		   send_error("Unrecognized request");
-	}
+      if (value != prev_value)
+	mixc_set_value (mixernum, i, value);
+    }
 }
 
 static void
-poll_devices(void)
+serve_command (ossmix_commad_packet_t * pack)
 {
+  switch (pack->cmd)
+    {
+    case OSSMIX_CMD_INIT:
+      polling_started = 0;
+      if (pack->ack_rq)
+	send_ack ();
+      break;
+
+    case OSSMIX_CMD_EXIT:
+      //fprintf(stderr, "Exit\n");
+      polling_started = 0;
+      if (pack->ack_rq)
+	send_ack ();
+      break;
+
+    case OSSMIX_CMD_START_EVENTS:
+      polling_started = 1;
+      break;
+
+    case OSSMIX_CMD_GET_NMIXERS:
+      return_value (ossmix_get_nmixers ());
+      break;
+
+    case OSSMIX_CMD_GET_MIXERINFO:
+      {
+	oss_mixerinfo mi;
+
+	if (ossmix_get_mixerinfo (pack->p1, &mi) < 0)
+	  send_error ("Cannot get mixer info\n");
+	else
+	  send_response_long (OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void *) &mi,
+			      sizeof (mi), 0);
+      }
+      break;
+
+    case OSSMIX_CMD_OPEN_MIXER:
+      return_value (ossmix_open_mixer (pack->p1));
+      break;
+
+    case OSSMIX_CMD_CLOSE_MIXER:
+      ossmix_close_mixer (pack->p1);
+      break;
+
+    case OSSMIX_CMD_GET_NREXT:
+      return_value (ossmix_get_nrext (pack->p1));
+      break;
+
+    case OSSMIX_CMD_GET_NODEINFO:
+      {
+	oss_mixext ext;
+
+	if (pack->p3 > pack->p2)
+	  {
+	    send_multiple_nodes (pack);
+	    break;
+	  }
+
+	if (ossmix_get_nodeinfo (pack->p1, pack->p2, &ext) < 0)
+	  send_error ("Cannot get mixer node info\n");
+	else
+	  {
+	    mixc_add_node (pack->p1, pack->p2, &ext);
+	    send_response_long (OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void *) &ext,
+				sizeof (ext), 0);
+	  }
+      }
+      break;
+
+    case OSSMIX_CMD_GET_ENUMINFO:
+      {
+	oss_mixer_enuminfo desc;
+
+	if (ossmix_get_enuminfo (pack->p1, pack->p2, &desc) < 0)
+	  send_error ("Cannot get mixer enum strings\n");
+	else
+	  send_response_long (OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void *) &desc,
+			      sizeof (desc), 0);
+      }
+      break;
+
+    case OSSMIX_CMD_GET_DESCRIPTION:
+      {
+	oss_mixer_enuminfo desc;
+
+	if (ossmix_get_description (pack->p1, pack->p2, &desc) < 0)
+	  send_error ("Cannot get mixer description\n");
+	else
+	  send_response_long (OSSMIX_CMD_OK, 0, 0, 0, 0, 0, (void *) &desc,
+			      sizeof (desc), 0);
+      }
+      break;
+
+    case OSSMIX_CMD_GET_VALUE:
+      return_value (ossmix_get_value (pack->p1, pack->p2, pack->p3));
+      break;
+
+    case OSSMIX_CMD_GET_ALL_VALUES:
+      {
+	int n;
+	value_packet_t value_packet;
+
+	update_values (pack->p1);
+	n = mixc_get_all_values (pack->p1, value_packet);
+
+	send_response_long (OSSMIX_CMD_GET_ALL_VALUES, n, 0, 0, 0, 0,
+			    (void *) &value_packet,
+			    n * sizeof (value_record_t), 0);
+      }
+      break;
+
+    case OSSMIX_CMD_SET_VALUE:
+      ossmix_set_value (pack->p1, pack->p2, pack->p3, pack->p4);
+      break;
+
+    default:
+
+      if (pack->ack_rq)
+	send_error ("Unrecognized request");
+    }
+}
+
+static void
+poll_devices (void)
+{
+//      send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0, 1);
 }
 
 static int
 handle_connection (int connfd)
 {
-      ossmix_commad_packet_t pack;
-      struct timeval tmout;
+  ossmix_commad_packet_t pack;
+  struct timeval tmout;
 
-      send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0, 0);
+  send_response (OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0, 0);
 
-      tmout.tv_sec = 0;
-      tmout.tv_usec = 100000;
+  tmout.tv_sec = 1;
+  tmout.tv_usec = 0;
 
-      while (1)
-      {
+  while (1)
+    {
       int ndevs, i;
       fd_set readfds, exfds;
       FD_ZERO (&readfds);
@@ -304,8 +328,7 @@ handle_connection (int connfd)
       FD_SET (connfd, &readfds);
       FD_SET (connfd, &exfds);
 
-      if ((ndevs =
-	   select (connfd + 1, &readfds, NULL, &exfds, &tmout)) == -1)
+      if ((ndevs = select (connfd + 1, &readfds, NULL, &exfds, &tmout)) == -1)
 	{
 	  perror ("select");
 	  exit (-1);
@@ -313,20 +336,28 @@ handle_connection (int connfd)
 
       if (ndevs == 0)
 	{
-	  poll_devices();
-          tmout.tv_sec = 0;
-          tmout.tv_usec = 100000;
+	  if (polling_started)
+	    {
+	      poll_devices ();
+	      tmout.tv_sec = 0;
+	      tmout.tv_usec = 1000000;
+	    }
+	  else
+	    {
+	      tmout.tv_sec = 1;
+	      tmout.tv_usec = 0;
+	    }
 	}
 
       if (FD_ISSET (connfd, &readfds) || FD_ISSET (connfd, &exfds))
-      {
-	if (read(connfd, &pack, sizeof(pack))==sizeof(pack))
 	{
-		serve_command(&pack);
+	  if (read (connfd, &pack, sizeof (pack)) == sizeof (pack))
+	    {
+	      serve_command (&pack);
+	    }
+	  else
+	    return;
 	}
-      else
-	      return;
-      }
     }
 
 
@@ -341,17 +372,17 @@ main (int argc, char *argv[])
   int err;
   extern int optind;
 
-	if ((err=ossmix_init())<0)
-	{
-		fprintf(stderr, "ossmix_init() failed, err=%d\n");
-		exit(EXIT_FAILURE);
-	}
+  if ((err = ossmix_init ()) < 0)
+    {
+      fprintf (stderr, "ossmix_init() failed, err=%d\n");
+      exit (EXIT_FAILURE);
+    }
 
-	if ((err=ossmix_connect(NULL, 0))<0) /* Force local connection */
-	{
-		fprintf(stderr, "ossmix_connect() failed, err=%d\n", err);
-		exit(EXIT_FAILURE);
-	}
+  if ((err = ossmix_connect (NULL, 0)) < 0)	/* Force local connection */
+    {
+      fprintf (stderr, "ossmix_connect() failed, err=%d\n", err);
+      exit (EXIT_FAILURE);
+    }
 
   while ((c = getopt (argc, argv, "vp:")) != EOF)
     {

@@ -3,13 +3,17 @@
  */
 #define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
 
+typedef struct _ossmix_callback_parm ossmix_callback_parm_t;
+
 typedef void (*ossmix_select_poll_t)(void);
+typedef void (*ossmix_callback_t)(ossmix_callback_parm_t *parms);
 
 extern int ossmix_init(void);
 extern void ossmix_close(void);
 
 extern int ossmix_connect(const char *hostname, int port);
 extern int ossmix_get_fd(ossmix_select_poll_t *cb);
+extern void ossmix_set_callback(ossmix_callback_t cb);
 extern void ossmix_disconnect(void);
 
 extern int ossmix_get_nmixers(void);
@@ -24,6 +28,12 @@ extern int ossmix_get_description(int mixernum, int node, oss_mixer_enuminfo *de
 
 extern int ossmix_get_value(int mixernum, int ctl, int timestamp);
 extern void ossmix_set_value(int mixernum, int ctl, int timestamp, int value);
+
+struct _ossmix_callback_parm
+{
+	int event;
+	int p1, p2, p3, p4, p5;
+};
 
 #ifdef OSSMIX_REMOTE
 /*
@@ -49,6 +59,7 @@ typedef struct
 #define OSSMIX_CMD_GET_VALUE			11
 #define OSSMIX_CMD_SET_VALUE			12
 #define OSSMIX_CMD_GET_ALL_VALUES		13
+#define OSSMIX_CMD_START_EVENTS			14
 
 	int p1, p2, p3, p4, p5;
 
