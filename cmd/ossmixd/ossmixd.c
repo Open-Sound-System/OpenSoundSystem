@@ -22,6 +22,9 @@ static int connfd;
 static int listenfd;
 static int verbose = 0;
 static int polling_started = 0;
+static int num_mixers=0;
+
+static unsigned char mixer_open_mask[MAX_TMP_MIXER/8] = {0};
 
 static void
 send_response (int cmd, int p1, int p2, int p3, int p4, int p5, int unsol)
@@ -172,8 +175,22 @@ update_values (int mixernum)
       if ((value = ossmix_get_value (mixernum, i, ext->timestamp)) < 0)
 	continue;
 
-      if (value != prev_value)
-	mixc_set_value (mixernum, i, value);
+      switch (ext->type)
+      {
+      case MIXT_SLIDER:
+      case MIXT_MONOSLIDER:
+      case MIXT_STEREOSLIDER:
+      case MIXT_MONOSLIDER16:
+      case MIXT_STEREOSLIDER16:
+      case MIXT_MONOVU:
+      case MIXT_STEREOVU:
+	    if (value > prev_value)
+	       mixc_set_value (mixernum, i, value);
+	    break;
+
+      default:
+	    mixc_set_value (mixernum, i, value);
+      }
     }
 }
 
@@ -191,6 +208,7 @@ serve_command (ossmix_commad_packet_t * pack)
     case OSSMIX_CMD_EXIT:
       //fprintf(stderr, "Exit\n");
       polling_started = 0;
+      memset(mixer_open_mask, 0, sizeof(mixer_open_mask));
       if (pack->ack_rq)
 	send_ack ();
       break;
@@ -200,7 +218,7 @@ serve_command (ossmix_commad_packet_t * pack)
       break;
 
     case OSSMIX_CMD_GET_NMIXERS:
-      return_value (ossmix_get_nmixers ());
+      return_value (num_mixers=ossmix_get_nmixers ());
       break;
 
     case OSSMIX_CMD_GET_MIXERINFO:
@@ -216,10 +234,12 @@ serve_command (ossmix_commad_packet_t * pack)
       break;
 
     case OSSMIX_CMD_OPEN_MIXER:
+      mixer_open_mask[pack->p1 / 8] |= (1<<(pack->p1 % 8)); // Open
       return_value (ossmix_open_mixer (pack->p1));
       break;
 
     case OSSMIX_CMD_CLOSE_MIXER:
+      mixer_open_mask[pack->p1 / 8] &= ~(1<<(pack->p1 % 8)); // Closed
       ossmix_close_mixer (pack->p1);
       break;
 
@@ -282,11 +302,12 @@ serve_command (ossmix_commad_packet_t * pack)
 	value_packet_t value_packet;
 
 	update_values (pack->p1);
-	n = mixc_get_all_values (pack->p1, value_packet);
+	n = mixc_get_all_values (pack->p1, value_packet, 0);
 
-	send_response_long (OSSMIX_CMD_GET_ALL_VALUES, n, 0, 0, 0, 0,
+	send_response_long (OSSMIX_CMD_GET_ALL_VALUES, n, pack->p1, 0, 0, 0,
 			    (void *) &value_packet,
 			    n * sizeof (value_record_t), 0);
+	mixc_clear_changeflags (pack->p1);
       }
       break;
 
@@ -304,7 +325,24 @@ serve_command (ossmix_commad_packet_t * pack)
 static void
 poll_devices (void)
 {
-//      send_response(OSSMIX_CMD_HALOO, OSSMIX_P1_MAGIC, 0, 0, 0, 0, 1);
+	int n;
+	int mixernum;
+	value_packet_t value_packet;
+
+	for (mixernum=0;mixernum<num_mixers;mixernum++)
+        if (mixer_open_mask[mixernum / 8] & 1<<(mixernum % 8))
+	{
+		update_values (mixernum);
+		n = mixc_get_all_values (mixernum, value_packet, 1);
+	
+		if (n==0)	/* Nothing changed */
+		   continue;
+
+		send_response_long (OSSMIX_EVENT_VALUE, n, mixernum, 0, 0, 0,
+				    (void *) &value_packet,
+				    n * sizeof (value_record_t), 1);
+		mixc_clear_changeflags (mixernum);
+	}
 }
 
 static int
@@ -340,7 +378,7 @@ handle_connection (int connfd)
 	    {
 	      poll_devices ();
 	      tmout.tv_sec = 0;
-	      tmout.tv_usec = 1000000;
+	      tmout.tv_usec = 100000;
 	    }
 	  else
 	    {

@@ -97,6 +97,20 @@ mixc_get_node (int mixernum, int node)
 }
 
 void
+mixc_clear_changeflags(int mixernum)
+{
+  local_mixer_t *lmixer;
+
+  if (mixers[mixernum] == NULL)
+    {
+      return;
+    }
+  lmixer = mixers[mixernum];
+
+  memset(lmixer->changemask, 0, sizeof(lmixer->changemask));
+}
+
+void
 mixc_set_value (int mixernum, int node, int value)
 {
   local_mixer_t *lmixer;
@@ -112,6 +126,9 @@ mixc_set_value (int mixernum, int node, int value)
       fprintf (stderr, "mixc_set_value: Node number too large %d\n", node);
       exit (EXIT_FAILURE);
     }
+
+  if (lmixer->values[node] != value)
+     lmixer->changemask[node / 8] |= (1 << (node % 8));
 
   lmixer->values[node] = value;
 }
@@ -132,12 +149,13 @@ mixc_get_value (int mixernum, int node)
       fprintf (stderr, "mixc_get_value: Node number too large %d\n", node);
       exit (EXIT_FAILURE);
     }
+  lmixer->changemask[node / 8] &= ~(1 << (node % 8));
 
   return lmixer->values[node];
 }
 
 int
-mixc_get_all_values (int mixernum, value_packet_t value_packet)
+mixc_get_all_values (int mixernum, value_packet_t value_packet, int changecheck)
 {
   int i, n = 0;
   oss_mixext *lnode;
@@ -162,11 +180,18 @@ mixc_get_all_values (int mixernum, value_packet_t value_packet)
 	  continue;
 	}
 
+      if (changecheck) // Not changed since the last time
+      if (!(lmixer->changemask[i / 8] & (1 << (i % 8)) ))
+	 continue;
+
       if (lnode->type != MIXT_DEVROOT && lnode->type != MIXT_GROUP
 	  && lnode->type != MIXT_MARKER)
 	{
 	  value_packet[n].node = i;
 	  value_packet[n].value = lmixer->values[i];
+
+     	  lmixer->changemask[i / 8] &= ~(1 << (i % 8));
+
 //printf("Send %d = %08x\n", i, lmixer->values[i]);
 	  n++;
 	}

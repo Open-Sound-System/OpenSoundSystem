@@ -11,7 +11,15 @@
 static void
 event_callback(ossmix_callback_parm_t *parms)
 {
-printf("Event callback %d\n", parms->event);
+	switch (parms->event)
+	{
+	case OSSMIX_EVENT_VALUE:
+		printf("Value change, mixer=%d, ctl=%d, value=0x%08x\n", parms->p1, parms->p2, parms->p3);
+		break;
+
+	default:
+		printf("Event callback %d, %d, %d, %d, %d\n", parms->event, parms->p1, parms->p2, parms->p3, parms->p4);
+	}
 }
 
 static void
@@ -223,7 +231,8 @@ main(int argc, char *argv[])
 			   
 		}
 
-		ossmix_close_mixer(i);
+		if (!interactive)
+		   ossmix_close_mixer(i);
 	}
 
 	if (interactive)

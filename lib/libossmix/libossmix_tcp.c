@@ -709,12 +709,41 @@ ossmix_driver_t ossmix_tcp_driver = {
 };
 
 static void
+handle_values(int mixnum, int nvalues, value_record_t values[], int len)
+{
+	int i;
+
+	if (nvalues*sizeof(value_record_t) > len)
+	{
+		fprintf(stderr, "Short value record (%d, %d)\n", nvalues*sizeof(value_record_t), len);
+		exit(EXIT_FAILURE);
+	}
+
+	for (i=0;i<nvalues;i++)
+	{
+	    _client_event (OSSMIX_EVENT_VALUE, mixnum, values[i].node, values[i].value, 0, 0);
+	}
+
+}
+
+static void
 handle_packet (ossmix_commad_packet_t * msg, char *payload, int payload_size)
 {
 //printf("Got packet %d, p=0x%08x, %d, %d, %d, %d\n",
 //              msg->cmd, msg->p1, msg->p2, msg->p3, msg->p4, msg->p5);
 
-  _client_event (msg->cmd, msg->p1, msg->p2, msg->p3, msg->p4, msg->p5);
+//  _client_event (msg->cmd, msg->p1, msg->p2, msg->p3, msg->p4, msg->p5);
+
+	switch(msg->cmd)
+	{
+	case OSSMIX_EVENT_VALUE:
+		handle_values(msg->p2, msg->p1, (value_record_t *)payload, payload_size);
+		break;
+
+	default:
+		fprintf(stderr, "Unrecognized event packet %d\n", msg->cmd);
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void

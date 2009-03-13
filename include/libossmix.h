@@ -32,6 +32,8 @@ extern void ossmix_set_value(int mixernum, int ctl, int timestamp, int value);
 struct _ossmix_callback_parm
 {
 	int event;
+#define OSSMIX_EVENT_VALUE	1000001	// p1=mixnum, p2=node, p3=value
+
 	int p1, p2, p3, p4, p5;
 };
 
@@ -70,8 +72,8 @@ typedef struct
 	int payload_size;
 } ossmix_commad_packet_t;
 #define MAX_NODES	32
-#define MAX_TMP_MIXER	64
-#define MAX_TMP_NODES	1024
+#define MAX_TMP_MIXER	64	/* Must be multiple of 8 */
+#define MAX_TMP_NODES	1024	/* Must be multiple of 8 */
 
 typedef struct
 {
@@ -86,11 +88,13 @@ typedef struct
 	int nrext;
 	oss_mixext *nodes[MAX_TMP_NODES];
 	int values[MAX_TMP_NODES];
+	unsigned char changemask[MAX_TMP_NODES/8];
 } local_mixer_t;
 
 extern void mixc_add_node(int mixernum, int node, oss_mixext *ext);
 extern oss_mixext *mixc_get_node(int mixernum, int node);
 extern void mixc_set_value(int mixernum, int node, int value);
+extern void mixc_clear_changeflags(int mixernum);
 extern int mixc_get_value(int mixernum, int node);
-extern int mixc_get_all_values(int mixernum, value_packet_t value_packet);
+extern int mixc_get_all_values(int mixernum, value_packet_t value_packet, int changechec);
 #endif
