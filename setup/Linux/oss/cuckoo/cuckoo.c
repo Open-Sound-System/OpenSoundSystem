@@ -2,7 +2,7 @@
  * This software module makes it possible to use Open Sound System for Linux
  * (the _professional_ version) as a low level driver source for ALSA.
  *
- * Copyright (C) 2004 Hannu Savolainen (hannu@voimakentta.net).
+ * Copyright (C) 2004-2009 Hannu Savolainen (hannu@opensound.com).
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@
 static const char vermagic[] = VERMAGIC_STRING;
 #endif
 
-MODULE_AUTHOR ("Hannu Savolainen <hannu@voimakentta.net>");
+MODULE_AUTHOR ("Hannu Savolainen <hannu@opensound.com>");
 MODULE_LICENSE ("GPL v2");
 //MODULE_CLASSES("{sound}");
 MODULE_DESCRIPTION ("OSS low level driver interface for ALSA");

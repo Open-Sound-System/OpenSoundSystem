@@ -29,7 +29,7 @@
  */
 
 #define _KERNEL
-#include <include/sys/soundcard.h>
+#include "../include/sys/soundcard.h"
 
 #include <linux/version.h>
 
@@ -88,13 +88,13 @@ struct _oss_mutex_t
 
 #define audio_devs dummy_audio_devs
 
-#include <include/sys/ossddk/oss_exports.h>
-#include <build/wrap.h>
-#include <include/sys/ossddk/ossddk.h>
+#include "../include/internals/oss_exports.h"
+#include "../build/wrap.h"
+#include "../include/internals/ossddk.h"
 
 typedef struct oss_wait_queue oss_wait_queue_t;	/* This must match oss_config.h */
 
-#include <include/sys/ossddk/ossddk.h>
+#include "../include/internals/ossddk.h"
 
 #include <sound/driver.h>
 #include <sound/core.h>
@@ -111,8 +111,8 @@ typedef int sound_os_info;
 
 #define WR_BUF_CONST	const
 
-#include <include/internals/audio_core.h>
-#include <include/internals/mixer_core.h>
+#include "../include/internals/audio_core.h"
+#include "../include/internals/mixer_core.h"
 
 typedef struct _snd_cuckoo cuckoo_t, chip_t;
 
@@ -123,6 +123,7 @@ typedef struct
 
 #define MAX_OSSPCM 24		// Max # of PCM devices/card instance
 
+#if 0
 // Older ALSA versions used to define these...
 typedef struct snd_card snd_card_t;
 typedef struct snd_pcm snd_pcm_t;
@@ -140,6 +141,7 @@ typedef struct snd_pcm_hw_params snd_pcm_hw_params_t;
 typedef struct snd_pcm_ops snd_pcm_ops_t;
 typedef struct snd_device snd_device_t;
 typedef struct snd_device_ops snd_device_ops_t;
+#endif
 
 struct _snd_cuckoo
 {
@@ -153,8 +155,8 @@ struct _snd_cuckoo
 #define cuckoo_t_magic 0xaabbccdd
 #define chip__tmagic cuckoo_t_magic
 
-#define OPEN_READ	PCM_ENABLE_INPUT
-#define OPEN_WRITE	PCM_ENABLE_OUTPUT
+//#define OPEN_READ	PCM_ENABLE_INPUT
+//#define OPEN_WRITE	PCM_ENABLE_OUTPUT
 
 extern int install_mixer_instances (cuckoo_t * chip, int cardno);
 extern int install_midiport_instances (cuckoo_t * chip, int cardno);
