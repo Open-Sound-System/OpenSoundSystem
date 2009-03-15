@@ -219,6 +219,8 @@ echo "+++ dmesg +++" >> $LOG
 dmesg >> $LOG
 echo "+++ lspci +++" >> $LOG
 lspci -v >> $LOG 2>&1
+echo "+-----------+" >> $LOG
+lspci -n >> $LOG 2>&1
 echo "+++ /proc/interrupts +++" >> $LOG
 cat /proc/interrupts >> $LOG 2>&1
 echo "+++ /proc/cpuinfo +++" >> $LOG
