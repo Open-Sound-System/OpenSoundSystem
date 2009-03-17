@@ -781,6 +781,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f,
 	       "CFLAGS += -O6 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
 # else
+#   ifndef __arm__
       if (getenv ("NO_REGPARM") == NULL)
 	{
 	  fprintf (f,
@@ -790,6 +791,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 	{
 	  fprintf (f, "CFLAGS += -O6 -fno-common -DNO_REGPARM\n");
 	}
+#   endif
 # endif
       /* fprintf(f, "CFLAGS += -W -Wno-unused -Wno-sign-compare\n"); */
 #endif

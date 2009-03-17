@@ -15,6 +15,15 @@ then
 	exit 1
 fi
 
+if test "`uname -m` " = "arm "
+then
+# ARM doesn't have regparm support
+
+	echo Setting up for ARM architecture
+	sh $SRCDIR/setup/setupdir.sh
+	exit 0
+fi
+
 # Setup directory for REGPARM
 
 unset NO_REGPARM

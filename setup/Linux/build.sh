@@ -43,7 +43,7 @@ chmod 700 prototype/$OSSLIBDIR/objects.*
 chmod 700 prototype/$OSSLIBDIR/build
 chmod 700 prototype/$OSSLIBDIR/save
 
-if test "`cat regparm` " = "1 "
+if test -f regparm && test "`cat regparm` " = "1 "
 then
   MODULES=modules.regparm
   OBJECTS=objects.regparm
@@ -54,13 +54,15 @@ fi
 
 cp .version prototype/$OSSLIBDIR/version.dat
 
-if ! test -f regparm
+if test "`uname -m` " != "arm "
 then
-  echo Error: ./regparm is missing
-  exit 1
+	if ! test -f regparm
+	then
+	  echo Error: ./regparm is missing
+	  exit 1
+	fi
+	cp regparm prototype/$OSSLIBDIR/build
 fi
-
-cp regparm prototype/$OSSLIBDIR/build
 
 # Regenerating the config file templates
 rm -f /tmp/confgen

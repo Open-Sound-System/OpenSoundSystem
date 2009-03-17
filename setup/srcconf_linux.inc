@@ -6,7 +6,9 @@ check_sysdep (conf_t * conf, struct utsname *un)
 
   char cmd[512];
 
+#ifndef __arm__
   vmix_mode = "FLOAT";
+#endif
 
   if ((p=getenv("CROSSCOMPILE"))!=NULL)
      {
