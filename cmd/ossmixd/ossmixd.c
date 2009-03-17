@@ -345,7 +345,7 @@ poll_devices (void)
 	}
 }
 
-static int
+static void
 handle_connection (int connfd)
 {
   ossmix_commad_packet_t pack;
@@ -358,7 +358,7 @@ handle_connection (int connfd)
 
   while (1)
     {
-      int ndevs, i;
+      int ndevs;
       fd_set readfds, exfds;
       FD_ZERO (&readfds);
       FD_ZERO (&exfds);
