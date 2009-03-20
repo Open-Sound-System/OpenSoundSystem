@@ -273,4 +273,3 @@ extern int osdev_get_instance (oss_device_t * osdev);
 extern int oss_request_major (oss_device_t * osdev, int major, char *module);
 extern int oss_register_device (oss_device_t * osdev, const char *name);	/* from oss_config.h */
 
-extern void *oss_adev_pointer;	/* Alias of audio_engines for Cuckoo */

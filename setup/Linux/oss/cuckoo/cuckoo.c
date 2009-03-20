@@ -102,8 +102,6 @@ init_module (void)
   char tmp[100];
   int pass;
 
-  cuckoo_audio_devs = oss_adev_pointer;
-
 #if 0
   // TODO
   if ((err = udi_connect (WRAPPER_VERSION)) < 0)

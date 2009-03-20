@@ -30,7 +30,6 @@
 
 #define _KERNEL
 #include "../include/sys/soundcard.h"
-#include "../build/osscore_symbols.inc"
 
 #include <linux/version.h>
 
@@ -102,6 +101,8 @@ typedef struct oss_wait_queue oss_wait_queue_t;	/* This must match oss_config.h 
 #include <sound/control.h>
 #include <sound/pcm.h>
 
+#include "../build/osscore_symbols.inc"
+
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 
@@ -168,7 +169,3 @@ extern int install_pcm_instances (cuckoo_t * chip, int cardno);
 #define udi_spin_unlock_irqrestore(a, b)
 
 #define strlcpy(a, b) {strncpy(a, b, sizeof(a)-1);a[sizeof(a)-1]=0;}
-
-#undef audio_devs
-#define audio_devs cuckoo_audio_devs
-extern adev_t **cuckoo_audio_devs;

@@ -2184,7 +2184,3 @@ EXPORT_FUNC (oss_get_procinfo);
 EXPORT_FUNC (oss_midi_ioctl);
 EXPORT_FUNC (oss_midi_copy_timer);
 #endif
-
-extern void *oss_adev_pointer;
-EXPORT_SYMBOL (oss_adev_pointer);
-
