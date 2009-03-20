@@ -346,6 +346,7 @@ snd_cuckoo_capture_close (snd_pcm_substream_t * substream)
   int snum = substream->number;
   adev_t *adev;
   oss_native_word flags;
+  struct fileinfo tmp_finfo;
 
   if (snum < 0 || snum >= chip->npcm)
     return -ENXIO;
