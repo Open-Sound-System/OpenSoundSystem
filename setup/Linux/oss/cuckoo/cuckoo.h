@@ -30,6 +30,7 @@
 
 #define _KERNEL
 #include "../include/sys/soundcard.h"
+#include "../build/osscore_symbols.inc"
 
 #include <linux/version.h>
 
@@ -96,7 +97,7 @@ typedef struct oss_wait_queue oss_wait_queue_t;	/* This must match oss_config.h 
 
 #include "../include/internals/ossddk.h"
 
-#include <sound/driver.h>
+//#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -123,7 +124,7 @@ typedef struct
 
 #define MAX_OSSPCM 24		// Max # of PCM devices/card instance
 
-#if 0
+#if 1
 // Older ALSA versions used to define these...
 typedef struct snd_card snd_card_t;
 typedef struct snd_pcm snd_pcm_t;

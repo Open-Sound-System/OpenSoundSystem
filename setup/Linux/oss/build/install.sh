@@ -248,7 +248,7 @@ do
 	make clean
 done 
 
-rm -f Makefile osscore_symbols.inc
+rm -f Makefile
 
 echo "depmod -a"
 depmod -a
