@@ -18,7 +18,7 @@ typedef struct
   int (*get_description) (int mixernum, int node, oss_mixer_enuminfo * desc);
   int (*get_value) (int mixernum, int ctl, int timestamp);
   void (*set_value) (int mixernum, int ctl, int timestamp, int value);
-
+  void (*timertick)(void);
 } ossmix_driver_t;
 
 extern ossmix_driver_t ossmix_local_driver, ossmix_tcp_driver;

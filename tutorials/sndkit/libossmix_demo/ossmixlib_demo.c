@@ -40,6 +40,7 @@ interactive_mode(void)
   int libfd=-1, maxdev, ndevs;
   fd_set readfds;
   ossmix_select_poll_t pollfunc;
+  struct timeval tmout;
 
   libfd=ossmix_get_fd(&pollfunc);
 
@@ -48,6 +49,17 @@ interactive_mode(void)
   printf("libfd=%d, func=%p\n", libfd, pollfunc);
   printf("\n");
   printf("> ");fflush(stdout);
+
+  if (libfd >= 0)
+     {
+  	tmout.tv_sec = 0;
+  	tmout.tv_usec = 100000; /* 0.1 sec */
+     }
+  else
+     {
+  	tmout.tv_sec = 0;
+  	tmout.tv_usec = 0;
+     }
 
   while (1)
     {
@@ -63,7 +75,7 @@ interactive_mode(void)
 	maxdev = libfd;
 
       if ((ndevs =
-	   select (maxdev + 1, &readfds, NULL, NULL, NULL)) == -1)
+	   select (maxdev + 1, &readfds, NULL, NULL, &tmout)) == -1)
 	{
 	  perror ("select");
 	  exit (-1);
@@ -71,8 +83,9 @@ interactive_mode(void)
 
       if (ndevs == 0)
 	{
-	  fprintf (stderr, "Select timeout\n");
-	  exit (-1);
+	  ossmix_timertick();
+  	  tmout.tv_sec = 0;
+  	  tmout.tv_usec = 100000; /* 0.1 sec */
 	}
 
       if (FD_ISSET (0, &readfds)) /* Stdio */

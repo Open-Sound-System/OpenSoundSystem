@@ -691,6 +691,12 @@ tcp_set_value (int mixernum, int ctl, int timestamp, int value)
 			0);
 }
 
+static void
+tcp_timertick(void)
+{
+	// NOP
+}
+
 ossmix_driver_t ossmix_tcp_driver = {
   tcp_connect,
   tcp_get_fd,
@@ -705,7 +711,8 @@ ossmix_driver_t ossmix_tcp_driver = {
   tcp_get_enuminfo,
   tcp_get_description,
   tcp_get_value,
-  tcp_set_value
+  tcp_set_value,
+  tcp_timertick
 };
 
 static void

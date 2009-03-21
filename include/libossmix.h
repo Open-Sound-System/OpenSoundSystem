@@ -10,6 +10,7 @@ typedef void (*ossmix_callback_t)(ossmix_callback_parm_t *parms);
 
 extern int ossmix_init(void);
 extern void ossmix_close(void);
+extern void ossmix_timertick(void);
 
 extern int ossmix_connect(const char *hostname, int port);
 extern int ossmix_get_fd(ossmix_select_poll_t *cb);

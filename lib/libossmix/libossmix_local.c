@@ -11,13 +11,15 @@
 
 #include <soundcard.h>
 
+#define OSSMIX_REMOTE
+
 #include "libossmix.h"
 #include "libossmix_impl.h"
 
 static int global_fd = -1;
+static int num_mixers=0;
 
-#define MAX_MIXERS 256
-static int mixer_fd[MAX_MIXERS];
+static int mixer_fd[MAX_TMP_MIXER];
 
 static int
 local_connect (const char *hostname, int port)
@@ -28,7 +30,7 @@ local_connect (const char *hostname, int port)
   if (mixlib_trace > 0)
     fprintf (stderr, "Entered local_connect()\n");
 
-  for (i = 0; i < MAX_MIXERS; i++)
+  for (i = 0; i < MAX_TMP_MIXER; i++)
     mixer_fd[i] = -1;
 
   if ((devmixer = getenv ("OSS_MIXERDEV")) == NULL)
@@ -81,7 +83,7 @@ local_get_nmixers (void)
       return -1;
     }
 
-  return si.nummixers;
+  return num_mixers = si.nummixers;
 }
 
 static int
@@ -158,6 +160,7 @@ local_get_nodeinfo (int mixernum, int node, oss_mixext * ext)
       return -1;
     }
 
+  mixc_add_node (mixernum, node, ext);
   return 0;
 }
 
@@ -206,6 +209,25 @@ local_get_value (int mixernum, int ctl, int timestamp)
       return -1;
     }
 
+  mixc_set_value (mixernum, ctl, val.value);
+  return val.value;
+}
+
+static int
+private_get_value (int mixernum, int ctl, int timestamp)
+{
+  oss_mixer_value val;
+
+  val.dev = mixernum;
+  val.ctrl = ctl;
+  val.timestamp = timestamp;
+
+  if (ioctl (mixer_fd[mixernum], SNDCTL_MIX_READ, &val) == -1)
+    {
+      perror ("SNDCTL_MIX_READ");
+      return -1;
+    }
+
   return val.value;
 }
 
@@ -223,6 +245,54 @@ local_set_value (int mixernum, int ctl, int timestamp, int value)
     {
       perror ("SNDCTL_MIX_WRITE");
     }
+  mixc_set_value (mixernum, ctl, val.value);
+}
+
+static void
+update_values (int mixernum)
+{
+  oss_mixext *ext;
+  int i;
+  int nrext;
+  int value, prev_value;
+
+  nrext = ossmix_get_nrext (mixernum);
+
+  for (i = 0; i < nrext; i++)
+    {
+      if ((ext = mixc_get_node (mixernum, i)) == NULL)
+      {
+	continue;
+      }
+
+      if (ext->type == MIXT_DEVROOT || ext->type == MIXT_GROUP
+	  || ext->type == MIXT_MARKER)
+	continue;
+
+      prev_value = mixc_get_value (mixernum, i);
+
+      if ((value = private_get_value (mixernum, i, ext->timestamp)) < 0)
+	continue;
+
+      if (value != prev_value)
+      {
+  	 mixc_set_value (mixernum, i, value);
+	 _client_event (OSSMIX_EVENT_VALUE, mixernum, i, value, 0, 0);
+      }
+
+    }
+}
+
+static void
+local_timertick(void)
+{
+	int mixernum;
+
+	for (mixernum=0;mixernum<num_mixers;mixernum++)
+        if (mixer_fd[mixernum] >= 0) /* Open */
+	{
+		update_values (mixernum);
+	}
 }
 
 ossmix_driver_t ossmix_local_driver = {
@@ -239,5 +309,6 @@ ossmix_driver_t ossmix_local_driver = {
   local_get_enuminfo,
   local_get_description,
   local_get_value,
-  local_set_value
+  local_set_value,
+  local_timertick
 };

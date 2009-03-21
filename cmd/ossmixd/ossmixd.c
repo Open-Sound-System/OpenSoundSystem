@@ -175,22 +175,7 @@ update_values (int mixernum)
       if ((value = ossmix_get_value (mixernum, i, ext->timestamp)) < 0)
 	continue;
 
-      switch (ext->type)
-      {
-      case MIXT_SLIDER:
-      case MIXT_MONOSLIDER:
-      case MIXT_STEREOSLIDER:
-      case MIXT_MONOSLIDER16:
-      case MIXT_STEREOSLIDER16:
-      case MIXT_MONOVU:
-      case MIXT_STEREOVU:
-	    if (value > prev_value)
-	       mixc_set_value (mixernum, i, value);
-	    break;
-
-      default:
-	    mixc_set_value (mixernum, i, value);
-      }
+      mixc_set_value (mixernum, i, value);
     }
 }
 

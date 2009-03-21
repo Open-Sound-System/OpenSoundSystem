@@ -209,3 +209,9 @@ ossmix_set_value (int mixernum, int node, int timestamp, int value)
 
   mixer_driver->set_value (mixernum, node, timestamp, value);
 }
+
+void
+ossmix_timertick(void)
+{
+  mixer_driver->timertick();
+}
