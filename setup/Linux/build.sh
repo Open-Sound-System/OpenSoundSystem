@@ -201,7 +201,7 @@ echo done ossdetect
 cp -f $SRCDIR/oss/lib/flashsupport.c prototype/$OSSLIBDIR/lib
 
 # Licensing stuff
-if test -f $SRCDIR/4front-private/osslic.c
+if test -f 4front-private/osslic.c
 then
 	cc -o prototype/usr/sbin/osslic -Isetup -Ikernel/nonfree/include -Ikernel/framework/include -Iinclude -Ikernel/OS/Linux -I$SRCDIR $SRCDIR/4front-private/osslic.c
 	strip prototype/usr/sbin/osslic
