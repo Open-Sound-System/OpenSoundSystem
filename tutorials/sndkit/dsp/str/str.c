@@ -211,9 +211,9 @@ main (argc, argv)
 	  close (audio);
 	  exit (EXIT_FAILURE);
 	}
+#endif
     }
   else
-#endif
     {				/* to a file: use block size of 1kB */
       abuf_size = 1024;
       loop_forever = 0;
