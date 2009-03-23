@@ -34,6 +34,7 @@ struct _ossmix_callback_parm
 {
 	int event;
 #define OSSMIX_EVENT_VALUE	1000001	// p1=mixnum, p2=node, p3=value
+#define OSSMIX_EVENT_NEWMIXER	1000002	// p1=nmixers
 
 	int p1, p2, p3, p4, p5;
 };

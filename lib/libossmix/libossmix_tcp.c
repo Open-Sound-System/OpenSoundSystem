@@ -747,6 +747,11 @@ handle_packet (ossmix_commad_packet_t * msg, char *payload, int payload_size)
 		handle_values(msg->p2, msg->p1, (value_record_t *)payload, payload_size);
 		break;
 
+	case OSSMIX_EVENT_NEWMIXER:
+		//num_mixers=msg->p1;
+	 	_client_event (OSSMIX_EVENT_NEWMIXER, msg->p1, 0, 0, 0, 0);
+		break;
+
 	default:
 		fprintf(stderr, "Unrecognized event packet %d\n", msg->cmd);
 		exit(EXIT_FAILURE);

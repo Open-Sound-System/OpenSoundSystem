@@ -273,6 +273,7 @@ update_values (int mixernum)
 
       if ((value = private_get_value (mixernum, i, ext->timestamp)) < 0)
 	continue;
+      // TODO check for EIDRM
 
       if (value != prev_value)
       {
@@ -286,12 +287,19 @@ update_values (int mixernum)
 static void
 local_timertick(void)
 {
-	int mixernum;
+	int mixernum, n;
 
 	for (mixernum=0;mixernum<num_mixers;mixernum++)
         if (mixer_fd[mixernum] >= 0) /* Open */
 	{
 		update_values (mixernum);
+	}
+
+	n=ossmix_get_nmixers();
+	if (n>num_mixers)
+	{
+		num_mixers=n;
+	 	_client_event (OSSMIX_EVENT_NEWMIXER, n, 0, 0, 0, 0);
 	}
 }
 

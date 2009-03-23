@@ -23,3 +23,4 @@ typedef struct
 
 extern ossmix_driver_t ossmix_local_driver, ossmix_tcp_driver;
 extern void _client_event (int cmd, int p1, int p2, int p3, int p4, int p5);
+extern int _ossmix_refresh_mixer(int mixernum, int prev_nmixers);

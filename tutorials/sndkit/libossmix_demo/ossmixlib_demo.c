@@ -17,6 +17,10 @@ event_callback(ossmix_callback_parm_t *parms)
 		printf("Value change, mixer=%d, ctl=%d, value=0x%08x\n", parms->p1, parms->p2, parms->p3);
 		break;
 
+	case OSSMIX_EVENT_NEWMIXER:
+		printf("Number of mixers increased to %d\n", parms->p1);
+		break;
+
 	default:
 		printf("Event callback %d, %d, %d, %d, %d\n", parms->event, parms->p1, parms->p2, parms->p3, parms->p4);
 	}

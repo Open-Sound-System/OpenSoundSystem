@@ -215,3 +215,14 @@ ossmix_timertick(void)
 {
   mixer_driver->timertick();
 }
+
+/*
+ * Internal use functions (not to be used by applications)
+ */
+int
+_ossmix_refresh_mixer(int mixernum, int prev_nmixers)
+{
+printf("_ossmix_refresh_mixer(%d, %d) called\n", mixernum, prev_nmixers);
+
+	return prev_nmixers; // TODO
+}

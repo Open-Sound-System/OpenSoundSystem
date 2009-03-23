@@ -174,6 +174,7 @@ update_values (int mixernum)
 
       if ((value = ossmix_get_value (mixernum, i, ext->timestamp)) < 0)
 	continue;
+      // TODO check for EIDRM
 
       mixc_set_value (mixernum, i, value);
     }
@@ -327,6 +328,13 @@ poll_devices (void)
 				    (void *) &value_packet,
 				    n * sizeof (value_record_t), 1);
 		mixc_clear_changeflags (mixernum);
+	}
+
+	n=ossmix_get_nmixers();
+	if (n>num_mixers)
+	{
+		num_mixers=n;
+	 	send_response (OSSMIX_EVENT_NEWMIXER, n, 0, 0, 0, 0, 1);
 	}
 }
 
