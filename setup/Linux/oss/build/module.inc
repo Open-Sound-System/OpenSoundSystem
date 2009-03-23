@@ -19,10 +19,10 @@
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/pci.h>
-#include "../include/internals/timestamp.h"
-#include "ossddk/oss_exports.h"
+#include "timestamp.h"
+#include "oss_exports.h"
 #include "wrap.h"
-#include "ossddk/ossddk.h"
+#include "ossddk.h"
 #include "ossdip.h"
 #undef strcpy
 #define strcpy oss_strcpy
@@ -33,7 +33,7 @@ static int module_major = 0;
 static int instance = 0;
 
 MODULE_LICENSE ("GPL v2");
-MODULE_DESCRIPTION ("Open Sound System '" DRIVER_NICK "' driver module");
+MODULE_DESCRIPTION ("Open Sound System '" DRIVER_PURPOSE "' driver module");
 MODULE_AUTHOR ("4Front Technologies (support@opensound.com)");
 
 extern int DRIVER_ATTACH (oss_device_t * osdev);

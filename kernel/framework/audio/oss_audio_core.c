@@ -37,7 +37,6 @@ int oss_max_audio_engines=8;
 adev_t **audio_engines = NULL;
 int num_audio_engines = 0;
 
-void *oss_adev_pointer = NULL;	/* Alias of audio_engines for Cuckoo */
 adev_t **audio_devfiles = NULL;
 int num_audio_devfiles = 0;
 extern int flat_device_model;
@@ -782,12 +781,15 @@ audio_reset_adev (adev_p adev)
       MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
       return;
     }
+  MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
 
 #ifdef CONFIG_OSSD
   ossd_event (adev->engine_num, OSSD_EV_RESET_OUTPUT);
   ossd_event (adev->engine_num, OSSD_EV_RESET_INPUT);
 #endif
   adev->d->adrv_halt_io (adev->engine_num);
+
+  MUTEX_ENTER_IRQDISABLE (adev->mutex, flags);
   reset_dmap (adev->dmap_out);
   reset_dmap (adev->dmap_in);
   MUTEX_EXIT_IRQRESTORE (adev->mutex, flags);
@@ -6291,12 +6293,6 @@ oss_install_audiodev_with_devname (int vers,
       audio_devfiles = AUDIO_MALLOC (NULL, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
       memset (audio_devfiles, 0, sizeof (adev_t *) * MAX_AUDIO_DEVFILES);
     }
-#ifdef linux
-  /*
-   * For the Cuckoo module
-   */
-  oss_adev_pointer = audio_engines;
-#endif
 
   if (vers != OSS_AUDIO_DRIVER_VERSION)
     {

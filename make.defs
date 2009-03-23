@@ -45,6 +45,7 @@ config:
 dirs:
 	-mkdir $(OBJDIR)
 	-mkdir $(BINDIR)
+	-mkdir $(LIBDIR)
 	-mkdir $(SBINDIR)
 	-mkdir $(TMPDIR)
 	-mkdir $(MODDIR)

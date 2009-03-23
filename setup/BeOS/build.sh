@@ -219,12 +219,12 @@ done
 #  cc -I. 4front-private/ossupdate.c -s -o prototype/usr/sbin/ossupdate -lsocket -lbind
 #fi
 
+sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
+
 #chmod 700 prototype/usr/sbin/*
 #chmod 755 prototype/usr/bin/*
 
 #cp setup/SCO_SV/S89oss prototype/$OSSLIBDIR/etc
 #chmod 744 prototype/$OSSLIBDIR/etc/S89oss
-
-#exec sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
 
 exit 0

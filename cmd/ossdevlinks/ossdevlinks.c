@@ -711,7 +711,7 @@ find_midilink (oss_midi_info * xi)
 
   for (dev = 0; dev < MAXDEV; dev++)
     {
-      sprintf (devname, "/dev/midi%d", dev);
+      sprintf (devname, "/dev/midi%02d", dev);
       if (lstat (devname, &st) != -1)
 	if (S_ISLNK (st.st_mode))
 	  {
@@ -774,7 +774,7 @@ create_midilinks (void)
   for (dev = 0; dev < MAXDEV; dev++)
     {
 
-      sprintf (devname, "/dev/midi%d", dev);
+      sprintf (devname, "/dev/midi%02d", dev);
       newdev = dev;
 
       if (lstat (devname, &st) != -1)
@@ -787,13 +787,13 @@ create_midilinks (void)
   if (numfiles < si.nummidis)
     numfiles = si.nummidis;
 
-  if (verbose) printf ("/dev/midi%d is the next free legacy device\n",numfiles);
+  if (verbose) printf ("/dev/midi%02d is the next free legacy device\n",numfiles);
 
   for (dev = 0; dev < si.nummidis; dev++)
     {
       int recreate = 0;
 
-      sprintf (devname, "/dev/midi%d", dev);
+      sprintf (devname, "/dev/midi%02d", dev);
       newdev = dev;
 
       if (lstat (devname, &st) == -1)
@@ -836,7 +836,7 @@ create_midilinks (void)
 		      newdev = numfiles++;
 		    }
 		  else
-		    if (verbose) printf ("\tAlready linked to /dev/midi%d\n",
+		    if (verbose) printf ("\tAlready linked to /dev/midi%02d\n",
 					 newdev);
 		}
 	      else
@@ -853,7 +853,7 @@ create_midilinks (void)
       if (recreate)
 	{
 	  mididevs[dev]->legacy_device = newdev;
-	  sprintf (devname, "/dev/midi%d", newdev);
+	  sprintf (devname, "/dev/midi%02d", newdev);
 
 	  if (strcmp (mididevs[dev]->devnode, devname) != 0)	/* Not the same */
 	    {
@@ -879,7 +879,7 @@ create_midilinks (void)
   for (dev = 0; dev < si.nummidis; dev++)
     {
       if (mididevs[dev]->legacy_device != dev)
-	if (verbose) printf ("Mididev %d is legacy device file /dev/midi%d\n",
+	if (verbose) printf ("Mididev %d is legacy device file /dev/midi%02d\n",
 			     dev, mididevs[dev]->legacy_device);
       renum.map[dev] = mididevs[dev]->legacy_device;
     }

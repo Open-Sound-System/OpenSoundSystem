@@ -3,6 +3,8 @@ oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audiocs	SUNW,CS4231	Sun UltraSparc workstation audio (CS4231)
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
 oss_audiopci	pci1274,5000	Creative AudioPCI (ES1370)
+oss_cmi878x	pci1043,8275    Asus Xonar DX (AV100)
+oss_cmi878x	pci1043,834f	Asus Xonar D1 (AV100)
 oss_cmi878x	pci13f6,8788	CMedia CMI8788
 oss_cmpci	pci13f6,100	C-Media CM8338A
 oss_cmpci	pci13f6,100	MIDIMan DiO 2448
@@ -33,8 +35,9 @@ oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
 oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
 oss_fmedia	pci1319,801	ForteMedia FM 801
 oss_fmedia	pcs1489,7008	Genius Sound Maker Live
-oss_imux	IMUX	OSS Input Multiplexer 
-oss_midiloop	MIDILOOP	OSS MIDI Loopback driver
+oss_imux	oss_imux	OSS Input Multiplexer 
+oss_madi	pci10ee,3fc6	RME MADI (not supported yet)
+oss_midiloop	oss_midiloop	OSS MIDI Loopback driver
 oss_sadasupport	OSSAUDIOS	SADA emulation layer for OSS
 oss_sblive	pci1102,2001	Creative Sound Blaster Audigy2 ZS PCMCIA
 oss_sblive	pci1102,4	Creative Sound Blaster Audigy/Audigy2
@@ -78,7 +81,7 @@ oss_usb	usbifa92,1010	EGO SYStems RoMI/O USB MIDI interface (BETA)
 oss_usb	usbifd8c,102	C-Media USB 2/4/6/8ch audio adapter
 oss_usb	usbifd8c,103	C-Media USB audio adapter - model2
 oss_usb	usbifd8c,c	C-Media USB audio adapter - model1
-oss_userdev	USERDEV	OSS user space audio driver I/O module
+oss_userdev	oss_userdev	OSS user space audio driver I/O module
 oss_ymf7xx	pci1073,10	Yamaha DS-XG YMF744 
 oss_ymf7xx	pci1073,12	Yamaha DS-XG YMF754
 oss_ymf7xx	pci1073,4	Yamaha DS-XG YMF724

@@ -171,6 +171,7 @@ then
 fi
 
 mkdir target/bin
+mkdir target/lib
 mkdir target/sbin
 mkdir target/modules
 mkdir target/objects
@@ -207,7 +208,12 @@ fi
 if test ! -d kernel/nonfree || test -f $SRCDIR/kernel/nonfree/.nomake
 then
 	echo '#define __OPENOSS__' >> kernel/framework/include/buildid.h
-	echo '#define OSS_LICENSE "'`cat $SRCDIR/.license`'"' >> kernel/framework/include/buildid.h
+	if test -f $SRCDIR/.license
+	then
+	   echo '#define OSS_LICENSE "'`cat $SRCDIR/.license`'"' >> kernel/framework/include/buildid.h
+	else
+	   echo '#define OSS_LICENSE "OSS_HG"' >> kernel/framework/include/buildid.h
+	fi
 fi
 
 if test "$uOSS " = "1 "
