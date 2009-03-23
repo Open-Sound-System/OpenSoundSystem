@@ -36,6 +36,8 @@
 static char *vmix_mode="FIXEDPOINT";
 static char *config_midi="ENABLED"; // Actually this depends on the configure script
 
+static int exact_architectures=0; /* 1=Compile only drivers that have matching arch given in their .config file. */
+
 typedef struct
 {
   char project_name[64];
@@ -399,6 +401,14 @@ parse_config (FILE * f, conf_t * conf)
     {
       return 0;
     }
+
+/*
+ * Under some CPU architectures we should compile only the driver modules
+ * that have proper targetcpu line in their .config file. It doesn't make any
+ * sense to compile PCI drivers for architectures that don't have any PCI bus.
+ */
+  if (conf->mode == MD_MODULE && exact_architectures && !conf->check_cpu)
+     return 0;
 
   return 1;
 }

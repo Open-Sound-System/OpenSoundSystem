@@ -1,6 +1,3 @@
-static void
-generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
-		 char *dirname, char *topdir)
 {
   /* Linux version */
 
