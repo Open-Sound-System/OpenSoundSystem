@@ -211,6 +211,8 @@ main (argc, argv)
 	  close (audio);
 	  exit (EXIT_FAILURE);
 	}
+#else
+      abuf_size = 1024;
 #endif
     }
   else
