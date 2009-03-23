@@ -32,16 +32,23 @@
 /* Should be smaller than the others. Used to ensure an update at end of file */
 #define UPDATE_EPSILON			1.0
 
-#define AFMT_MS_ADPCM		-(AFMT_S16_LE | 0x1000000)
-#define AFMT_MS_IMA_ADPCM	-(AFMT_S16_LE | 0x2000000)
-#define AFMT_MAC_IMA_ADPCM	-(AFMT_S16_LE | 0x4000000)
+/*
+ * We overload the format definitions to include some "fake" formats.
+ * Therefor, the values should be negative to avoid collusions.
+ */
+enum {
+ AFMT_MS_ADPCM = -256,
+ AFMT_MS_IMA_ADPCM,
+ AFMT_MS_IMA_ADPCM_3BITS,
+ AFMT_MAC_IMA_ADPCM,
+ AFMT_S24_PACKED_BE,
+ AFMT_CR_ADPCM_2,
+ AFMT_CR_ADPCM_3,
+ AFMT_CR_ADPCM_4,
+ AFMT_FIBO_DELTA,
+ AFMT_EXP_DELTA	
+};
 #define AFMT_S24_PACKED_LE	AFMT_S24_PACKED
-#define AFMT_S24_PACKED_BE	-(AFMT_S32_LE | 0x1000000)
-#define AFMT_CR_ADPCM_2		-(AFMT_U8 | 0x1000000)
-#define AFMT_CR_ADPCM_3		-(AFMT_U8 | 0x2000000)
-#define AFMT_CR_ADPCM_4		-(AFMT_U8 | 0x4000000)
-#define AFMT_FIBO_DELTA		-(AFMT_U8 | 0x10000000)
-#define AFMT_EXP_DELTA		-(AFMT_U8 | 0x20000000)
 
 typedef struct {
   int fd;
@@ -134,6 +141,58 @@ typedef struct decoders_queue {
   decoder_flag_t flag;
 }
 decoders_queue_t;
+
+typedef enum {
+  E_SETUP_ERROR = 1,
+  E_FORMAT_UNSUPPORTED,
+  E_CHANNELS_UNSUPPORTED,
+  E_DECODE,
+  E_ENCODE,
+  /*
+   * Not an error, but since seek function can also return an error this needs
+   * to be different from the others
+   */
+  SEEK_CONT_AFTER_DECODE
+}
+ossplay_errors_t;
+
+static const format_t format_a[] = {
+  {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},
+  {"U8",		AFMT_U8,		CRP,		AFMT_S16_NE},
+  {"S16_LE",		AFMT_S16_LE,		CRP,		AFMT_S16_NE},
+  {"S16_BE",		AFMT_S16_BE,		CRP,		AFMT_S16_NE},
+  {"U16_LE",		AFMT_U16_LE,		CRP,		AFMT_S16_NE},
+  {"U16_BE",		AFMT_U16_BE,		CRP,		AFMT_S16_NE},
+  {"S24_LE",		AFMT_S24_LE,		CRP,		0},
+  {"S24_BE",		AFMT_S24_BE,		CRP,		0},
+  {"S32_LE",		AFMT_S32_LE,		CRP,		AFMT_S32_NE},
+  {"S32_BE",		AFMT_S32_BE,		CRP,		AFMT_S32_NE},
+  {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
+  {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
+  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
+  {"MS_IMA_ADPCM",	AFMT_MS_IMA_ADPCM,	CP,		0},
+  {"MS_IMA_ADPCM_3BITS",AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
+  {"MAC_IMA_ADPCM",	AFMT_MAC_IMA_ADPCM,	CP,		0},
+  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
+  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
+  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
+  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
+  {"FLOAT",		AFMT_FLOAT,		CRP,		0},
+  {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
+  {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
+  {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
+  {"FIBO_DELTA",	AFMT_FIBO_DELTA,	CP,		0},
+  {"EXP_DELTA",		AFMT_EXP_DELTA,		CP,		0},
+  {NULL,		0,			0,		0}
+};
+
+static const container_t container_a[] = {
+  {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
+  {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
+  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
+  {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
+  {NULL,		0,		0,		0,	0}
+}; /* Order should match fctypes_t enum so that container_a[type] works */
 
 int be_int (const unsigned char *, int);
 const char * filepart (const char *);

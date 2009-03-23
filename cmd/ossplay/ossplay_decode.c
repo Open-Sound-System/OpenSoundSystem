@@ -32,6 +32,8 @@ extern double seek_time;
 
 static void decode_ima (unsigned char *, unsigned char *, ssize_t, int *,
                         int *, int, int);
+static void decode_ima_3bits (unsigned char *, unsigned char *, ssize_t, int *,
+                              int *, int, int);
 static decfunc_t decode_24;
 static decfunc_t decode_8_to_s16;
 static decfunc_t decode_amplify;
@@ -39,8 +41,9 @@ static decfunc_t decode_cr;
 static decfunc_t decode_endian;
 static decfunc_t decode_fib;
 static decfunc_t decode_mac_ima;
+static decfunc_t decode_mono_to_stereo;
 static decfunc_t decode_ms_ima;
-static decfunc_t decode_msadpcm; 
+static decfunc_t decode_ms_adpcm; 
 static decfunc_t decode_nul;
 
 static cradpcm_values_t * setup_cr (int, int);
@@ -56,17 +59,17 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
 {
   decoders_queue_t * dec, * decoders;
   seekfunc_t * seekf = NULL;
-  int bsize, obsize, res = -2;
+  int bsize, obsize, ret = E_DECODE;
   double constant;
 
   if (force_speed != 0) speed = force_speed;
   if (force_channels != 0) channels = force_channels;
   if (force_fmt != 0) format = force_fmt;
-  if (channels > MAX_CHANNELS)
+  if ((channels > MAX_CHANNELS) || (channels == 0))
     {
-      print_msg (ERRORM, "An unreasonably high number of channels (%d), "
-                         "aborting\n", channels);
-      return -2;
+      print_msg (ERRORM, "An unreasonable number of channels (%d), aborting\n",
+                 channels);
+      return E_DECODE;
     }
 
   constant = format2bits (format) * speed * channels / 8.0;
@@ -107,8 +110,18 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
             dec->flag |= FREE_META;
           }
         else dec->metadata = metadata;
-        dec->decoder = decode_msadpcm;
+        dec->decoder = decode_ms_adpcm;
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
+        if (bsize == 0) /* Let's try anyway */
+          {
+            bsize = filesize - filesize % 4;
+          }
+        if ((bsize > 16*1024*1024) || (bsize == 0))
+          {
+            print_msg (ERRORM,
+                       "Unreasonable nBlockAlign (%d), aborting\n", bsize);
+            goto exit;
+          }
         obsize = 4 * bsize;
         dec->outbuf = ossplay_malloc (obsize);
         dec->flag |= FREE_OBUF;
@@ -116,12 +129,31 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
 
         format = AFMT_S16_LE;
         break;
-      case AFMT_MS_IMA_ADPCM: /* The 3 bits variant isn't supported yet */
+      case AFMT_MS_IMA_ADPCM:
+      case AFMT_MS_IMA_ADPCM_3BITS:
         dec->metadata = metadata;
         if (dec->metadata == NULL) goto exit;
         dec->decoder = decode_ms_ima;
         bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
-        obsize = 4 * bsize;
+        if (bsize == 0) /* Let's try anyway */
+          {
+            bsize = filesize - filesize % 4;
+          }
+        if ((bsize > 16*1024*1024) || (bsize == 0))
+          {
+            print_msg (ERRORM,
+                       "Unreasonable nBlockAlign (%d), aborting\n", bsize);
+            goto exit;
+          }
+        if (format == AFMT_MS_IMA_ADPCM_3BITS)
+          obsize = (bsize * 16)/3 + 2;
+         /*
+          * 8 sample words per 3 bytes, each expanding to 2 bytes, plus 2 bytes
+          * to deal with fractions. Slight overestimation because bsize
+          * includes the headers too. 
+          */
+        else
+          obsize = 4 * bsize;
         dec->outbuf = ossplay_malloc (obsize);
         dec->flag = FREE_OBUF;
         seekf = seek_compressed;
@@ -198,15 +230,43 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
       decoders->flag = 0;
     }
 
-  if (!(res = setup_device (dsp, format, channels, speed)))
+  ret = setup_device (dsp, format, channels, speed);
+  if (ret == E_FORMAT_UNSUPPORTED)
     {
-      res = -2;
+      int i, tmp;
+
+      for (i = 0; format_a[i].name != NULL; i++)
+        if (format_a[i].fmt == format)
+          {
+            tmp = format_a[i].may_conv;
+            if ((tmp == 0) || (tmp == format)) continue;
+            print_msg (WARNM, "Converting to format %s\n",
+                       sample_format_name (tmp));
+            ret = setup_device (dsp, tmp, channels, speed);
+            decoders = setup_normalize (&format, &obsize, decoders);
+            goto dcont;
+          }
       goto exit;
     }
-  if (res != format)
-    decoders = setup_normalize (&format, &obsize, decoders);
 
-  res = play (dsp, fd, &filesize, bsize, constant, dec, seekf);
+dcont:
+  if ((ret == E_CHANNELS_UNSUPPORTED) && (channels == 1))
+    {
+      channels = 2;
+      if ((ret = setup_device (dsp, format, channels, speed))) goto exit;
+      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders = decoders->next;
+      decoders->metadata = (void *)(long)format;
+      decoders->decoder = decode_mono_to_stereo;
+      decoders->next = NULL;
+      obsize *= 2;
+      decoders->outbuf = ossplay_malloc (obsize);
+      decoders->flag = FREE_OBUF;
+    }
+
+  if (ret) goto exit;
+
+  ret = play (dsp, fd, &filesize, bsize, constant, dec, seekf);
 
 exit:
   decoders = dec;
@@ -219,7 +279,7 @@ exit:
       dec = decoders;
     }
 
-  return res;
+  return ret;
 }
 
 int
@@ -232,7 +292,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   decoders_queue_t * dec, * decoders = NULL;
   FILE * wave_fp;
 
-  if (setup_device (dsp, format, channels, speed) == -2) return -1;
+  if ((ret = setup_device (dsp, format, channels, speed))) return ret;
   constant = format2bits (format) * speed * channels / 8.0;
 
   if (datalimit != 0) datalimit *= constant;
@@ -245,7 +305,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
       if (fd == -1)
         {
           perror (fname);
-          return -2;
+          return E_ENCODE;
         }
       wave_fp = fdopen (fd, "wb");
     }
@@ -254,7 +314,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
     {
       perror (fname);
       if (fd != -1) close (fd);
-      return -2;
+      return E_ENCODE;
     }
 
   if (channels == 1)
@@ -271,7 +331,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
    * Write the initial header
    */
   if (write_head (wave_fp, type, datalimit, format, channels, speed) == -1)
-    return -2;
+    return E_ENCODE;
 
   decoders = dec = ossplay_malloc (sizeof (decoders_queue_t));
   dec->next = NULL;
@@ -295,7 +355,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   if (fclose (wave_fp) != 0)
     {
       perror (fname);
-      ret = -1;
+      ret = E_ENCODE;
     }
 
   decoders = dec;
@@ -321,7 +381,7 @@ decode_24 (unsigned char ** obuf, unsigned char * buf,
   if (format == AFMT_S24_PACKED) v1 = 8;
   else v1 = 24;
 
-  for (i = 0; i < l; i += 3)
+  for (i = 0; i < l-2; i += 3)
     {
       u32 = (unsigned int *) &sample_s32;	/* Alias */
 
@@ -559,8 +619,8 @@ decode_fib (unsigned char ** obuf, unsigned char * buf,
 }
 
 static ssize_t
-decode_msadpcm (unsigned char ** obuf, unsigned char * buf,
-                ssize_t l, void * metadata)
+decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
+                 ssize_t l, void * metadata)
 {
   msadpcm_values_t * val = (msadpcm_values_t *)metadata;
 
@@ -653,7 +713,7 @@ static ssize_t
 decode_endian (unsigned char ** obuf, unsigned char * buf,
                ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata, i, len;
+  int format = (int)(long)metadata, i;
 
   switch (format)
     {
@@ -661,8 +721,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
         {
           short * s = (short *)buf;
 
-          len = l/2;
-          for (i = 0; i < len; i++)
+          for (i = 0; i < l / 2; i++)
             s[i] = ((s[i] >> 8) & 0x00FF) |
                    ((s[i] << 8) & 0xFF00);
         }
@@ -672,8 +731,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
         {
           int * s = (int *)buf;
 
-          len = l/4;
-          for (i = 0; i < len; i++)
+          for (i = 0; i < l / 4; i++)
             s[i] = ((s[i] >> 24) & 0x000000FF) |
                    ((s[i] << 8) & 0x00FF0000) | ((s[i] >> 8) & 0x0000FF00) |
                    ((s[i] << 24) & 0xFF000000);
@@ -687,8 +745,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
         {
           short * s = (short *)buf;
 
-          len = l/2;
-          for (i = 0; i < len ; i++)
+          for (i = 0; i < l / 2; i++)
             s[i] = (((s[i] >> 8) & 0x00FF) | ((s[i] << 8) & 0xFF00)) -
                    USHRT_MAX/2;
         }
@@ -702,8 +759,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
        {
           short * s = (short *)buf;
 
-          len = l/2;
-          for (i = 0; i < len; i++)
+          for (i = 0; i < l / 2; i++)
              s[i] -= USHRT_MAX/2;
        }
       break;
@@ -768,23 +824,79 @@ decode_ima (unsigned char * obuf, unsigned char * buf, ssize_t l, int * pred0,
   static const signed char iTab4[16] =
     {-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8};
 
-  static const unsigned char t4[2] = { 8, 128 };
-
   for (i=0; i < l; i++)
     for (j=0; j < 2; j++)
       {
-        sign = 1 - 2 * (buf[i] & t4[j]) / t4[j];
-        value = (buf[i] >> 4*j) & 7;
+        value = (buf[i] >> 4*j) & 15;
+
         step = step_tab[index];
+        index += iTab4[value];
+        if (index < 0) index = 0;
+        else if (index > 88) index = 88;
+
+        sign = 1 - 2 * ((value >> 3) & 1);
+        value &= 7;
+
         pred += sign * (2 * value + 1) * step / 4;
         if (pred > 32767) pred = 32767;
         else if (pred < -32768) pred = -32768;
 
         outbuf[channels*(2*i+j)+ch] = pred;
-        index += iTab4[value];
-        if (index < 0) index = 0;
-        else if (index > 88) index = 88;
       }
+
+  *index0 = index;
+  *pred0 = pred;
+
+  return;
+}
+
+static void
+decode_ima_3bits (unsigned char * obuf, unsigned char * buf, ssize_t l,
+                  int * pred0, int * index0, int channels, int ch)
+{
+  int i, j, step, value, pred = *pred0, index = *index0, raw; 
+  short * outbuf = (short *) obuf;
+  signed char sign;
+  static const int step_tab[89] = {
+    7,     8,     9,     10,    11,    12,    13,    14,
+    16,    17,    19,    21,    23,    25,    28,    31,
+    34,    37,    41,    45,    50,    55,    60,    66,
+    73,    80,    88,    97,    107,   118,   130,   143,
+    157,   173,   190,   209,   230,   253,   279,   307,
+    337,   371,   408,   449,   494,   544,   598,   658,
+    724,   796,   876,   963,   1060,  1166,  1282,  1411,
+    1552,  1707,  1878,  2066,  2272,  2499,  2749,  3024,
+    3327,  3660,  4026,  4428,  4871,  5358,  5894,  6484,
+    7132,  7845,  8630,  9493,  10442, 11487, 12635, 13899,
+    15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794,
+    32767
+  };
+
+  static const signed char iTab3[8] =
+    {-1, -1, 1, 2, -1, -1, 1, 2};
+
+  for (i=0; i < l-2; i += 3)
+    {
+      raw = buf[i] + (buf[i+1] << 8) + (buf[i+2] << 16);
+      for (j = 0; j < 8; j++)
+        {
+          value = (raw >> (3*j)) & 7;
+
+          step = step_tab[index];
+          index += iTab3[value];
+          if (index < 0) index = 0;
+          else if (index > 88) index = 88;
+
+          sign = 1 - 2 * ((value >> 2) & 1);
+          value &= 3;
+
+          pred += sign * (2 * value + 1) * step / 4;
+          if (pred > 32767) pred = 32767;
+          else if (pred < -32768) pred = -32768;
+
+          outbuf[channels*(8*i/3+j)+ch] = pred;
+        }
+    }
 
   *index0 = index;
   *pred0 = pred;
@@ -808,10 +920,11 @@ decode_mac_ima (unsigned char ** obuf, unsigned char * buf,
           pred = (short)((buf[len] << 8) | (buf[len+1] & 128));
           index = buf[len+1] & 127;
           if (index > 88) index = 88;
+          len += 2;
 
           decode_ima (*obuf + olen, buf + len, MAC_IMA_BLKLEN - 2, &pred,
                       &index, channels, i);
-          len += MAC_IMA_BLKLEN;
+          len += MAC_IMA_BLKLEN-2;
         }
       olen += 4*(MAC_IMA_BLKLEN - 2)*channels;
     }
@@ -825,17 +938,16 @@ decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
 {
   msadpcm_values_t * val = (msadpcm_values_t *)metadata;
   ssize_t len = 0, olen = 0;
-  int i;
   short * outbuf = (short *) * obuf;
-  int index[MAX_CHANNELS], pred[MAX_CHANNELS];
+  int i, index[MAX_CHANNELS], pred[MAX_CHANNELS];
 
   for (i = 0; i < val->channels; i++)
     {
       if (len >= l) return olen;
       pred[i] = (short) le_int (buf + len, 2);
  /*
-  * The microsoft docs specifically say the sample from the block header
-  * must be outputted.
+  * The microsoft docs says the sample from the block header should be
+  * played.
   */
       outbuf[i] = pred[i];
       olen += 2;
@@ -845,19 +957,97 @@ decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
       len += 4;
     }
 
-  while (len < l)
+  if (val->bits == 4)
+    while (len < l)
+      {
+        for (i = 0; i < val->channels; i++)
+          {
+            if (len + 4 > l) return olen;
+            decode_ima (*obuf + olen, buf + len, 4, &pred[i], &index[i],
+                        val->channels, i);
+            len += 4;
+          }
+        olen += 2*8*val->channels;
+      }
+  else
     {
-      for (i = 0; i < val->channels; i++)
-        {
-          if (len + 4 > l) return olen;
-          decode_ima (*obuf + olen, buf + len, 4, &pred[i], &index[i],
-                      val->channels, i);
-          len += 4;
-        }
-      olen += 4*4*val->channels;
-    }
+      unsigned char rbuf[12];
+      int j;
 
+      while (len < l)
+        {
+          if (len + 12*val->channels > l) return olen;
+          for (i = 0; i < val->channels; i++)
+            {
+            /*
+             * Each sample word for a channel in an IMA ADPCM RIFF file is 4
+             * bits. This doesn't resolve to an integeral number of samples
+             * in a 3 bit ADPCM, so we use a simple method around this.
+             * This shouldn't skip samples since the spec gurantees the
+             * number of sample words in a block is divisible by 3.
+             */
+              for (j = 0; j < 12; j++)
+                rbuf[j] = buf[len + j%4 + (j/4)*(val->channels*4) + i*4];
+              decode_ima_3bits (*obuf + olen, rbuf, 12, &pred[i], &index[i],
+                                val->channels, i);
+            }
+          /* 12 = 3 words per channel, each containing 4 bytes */
+          len += 12*val->channels;
+          /* 64 = 32 samples per channel, each expanding to 2 bytes */
+          olen += 64*val->channels;
+        }
+    }
   return olen;
+}
+
+static ssize_t
+decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
+                       ssize_t l, void * metadata)
+{
+  ssize_t i;
+  int format = (int)(long)metadata;
+
+  switch (format)
+    {
+       case AFMT_U8:
+       case AFMT_S8:
+        {
+          unsigned char *r = (unsigned char *)buf, *s = (unsigned char *)*obuf;
+          for (i=0; i < l; i++)
+            {
+              *s++ = *r;
+              *s++ = *r++;
+            }
+         }
+         break;
+      case AFMT_S16_LE:
+      case AFMT_S16_BE:
+        {
+          short *r = (short *)buf, *s = (short *)*obuf;
+
+          for (i = 0; i < l/2 ; i++)
+            {
+              *s++ = *r;
+              *s++ = *r++;
+            }
+        }
+        break;
+      case AFMT_S32_LE:
+      case AFMT_S32_BE:
+      case AFMT_S24_LE:
+      case AFMT_S24_BE:
+        {
+          int *r = (int *)buf, *s = (int *)*obuf;
+
+          for (i = 0; i < l/4; i++)
+            {
+              *s++ = *r;
+              *s++ = *r++;
+            }
+        }
+        break;
+    } 
+  return 2*l;
 }
 
 int
@@ -1036,11 +1226,11 @@ seek_normal (int fd, unsigned long long * datamark, unsigned long long filesize,
   int ret;
 
   seek_time = 0;
-  if ((pos > filesize) || (pos < *datamark)) return -1;
+  if ((pos > filesize) || (pos < *datamark)) return E_DECODE;
   pos -= pos % channels;
 
   ret = ossplay_lseek (fd, pos - *datamark, SEEK_CUR);
-  if (ret == -1) return -1;
+  if (ret == -1) return E_DECODE;
   *datamark = ret;
 
   return 0;
@@ -1059,12 +1249,12 @@ seek_compressed (int fd, unsigned long long * datamark, unsigned long long files
   if (pos > filesize)
     {
       seek_time = 0;
-      return -1;
+      return E_DECODE;
     }
 
   if (*datamark + rsize < pos)
      {
-       return 1;
+       return SEEK_CONT_AFTER_DECODE;
      }
   else
     {
