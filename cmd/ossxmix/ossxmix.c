@@ -71,6 +71,8 @@
 #define FALSE 0
 #endif
 
+static int boomer_workaround = 0;
+
 #define MAX_DEVS 16
 static int set_counter[MAX_DEVS] = { 0 };
 static int prev_update_counter[MAX_DEVS] = { 0 };
@@ -958,6 +960,7 @@ load_devinfo (int dev)
 	  if (!show_all)
 	    break;
 #if OSS_VERSION >= 0x040090
+	  if (!boomer_workaround) /* Boomer 4.0 doesn't provide update_counters */
 	  if (thisrec->update_counter == 0)
 	    break;
 #endif
@@ -1922,6 +1925,7 @@ main (int argc, char **argv)
 #endif /* !GTK1_ONLY */
 
   char *devmixer;
+  oss_sysinfo si;
 
   if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
      devmixer = "/dev/mixer";
@@ -1990,6 +1994,10 @@ main (int argc, char **argv)
     }
 
   atexit (cleanup);
+
+  if (ioctl(mixer_fd, SNDCTL_SYSINFO, &si) != -1)
+     if (si.versionnum == 0x040003) /* Boomer 4.0 */
+	boomer_workaround = 1;
 
   if (dev == -1)
     dev = find_default_mixer ();
