@@ -1447,6 +1447,12 @@ typedef unsigned short oss_peaks_t[MAX_PEAK_CHANNELS];
 #define X_SADA_SET_PLAYTGT	__SIOWR('P', 68, int)
 #endif
 
+/*
+ ****************************************************************************
+ * Modem interface
+ */
+#define SNDCTL_DSP_MODEM_OFFHOOK        __SIOWR('P', 69, int)
+
 #ifndef NO_LEGACY_MIXER
 /*
  ****************************************************************************
@@ -1783,6 +1789,17 @@ typedef struct oss_mixext
 #	define MIXT_STEREOSLIDER16	20
 #	define MIXT_MUTE	21	/* Mute=1, unmute=0 */
 
+/*
+ * MIXT_ENUM_MULTI is a multi choice variant of MIXT_ENUM. Bits 0 to 30
+ * of the value field are used as a bit mask (bit 31 is reserved and must be
+ * set to 0).
+ *
+ * This MIXT_ENUM_MULTI type is reserved for Sun's Boomer. The official OSS
+ * implementation will probably not use this feature. The same functionality
+ * can be implemented by using group of MIXT_ONOFF controls.
+ */
+#	define MIXT_ENUM_MULTI	22
+
   /**************************************************************/
 
   /* Possible value range (minvalue to maxvalue) */
@@ -1808,6 +1825,7 @@ typedef struct oss_mixext
 #	define MIXF_MONVOL	0x00002000	/* Input->output monitor volume */
 #	define MIXF_WIDE	0x00004000	/* Enum control has wide labels */
 #	define MIXF_DESCR	0x00008000	/* Description (tooltip) available */
+#	define MIXF_DISABLED	0x00010000	/* Control is not active at this moment (grayed out) */
   oss_id_t id;			/* Mnemonic ID (mainly for internal use) */
   int parent;			/* Entry# of parent (group) node (-1 if root) */
 
@@ -1881,9 +1899,17 @@ typedef struct oss_mixer_enuminfo
   char strings[OSS_ENUM_STRINGSIZE];
 } oss_mixer_enuminfo;
 
-#define OPEN_READ	PCM_ENABLE_INPUT
-#define OPEN_WRITE	PCM_ENABLE_OUTPUT
-#define OPEN_READWRITE	(OPEN_READ|OPEN_WRITE)
+#define OSS_OPEN_READ	PCM_ENABLE_INPUT
+#define OSS_OPEN_WRITE	PCM_ENABLE_OUTPUT
+#define OSS_OPEN_READWRITE	(OSS_OPEN_READ|OSS_OPEN_WRITE)
+
+/*
+ * Older names for the above (to be removed in the future since they
+ * may pollute the name space)
+ */
+#define OPEN_READ	OSS_OPEN_READ
+#define OPEN_WRITE	OSS_OPEN_WRITE
+#define OPEN_READWRITE	OSS_OPEN_READWRITE
 
 typedef struct oss_audioinfo
 {

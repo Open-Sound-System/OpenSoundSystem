@@ -164,6 +164,8 @@ then
   cc -I. 4front-private/ossupdate.c -s -o prototype/usr/sbin/ossupdate
 fi
 
+sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
+
 chmod 700 prototype/usr/sbin/*
 chmod 755 prototype/usr/bin/*
 chmod 700 prototype/$OSSLIBDIR

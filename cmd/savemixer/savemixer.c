@@ -105,13 +105,13 @@ reorder_dspdevs (void)
 	{
 	  switch (i + 1)
 	    {
-	    case OPEN_READ:
+	    case OSS_OPEN_READ:
 	      fprintf (stdout, "/dev/dsp input assignment: ");
 	      break;
-	    case OPEN_WRITE:
+	    case OSS_OPEN_WRITE:
 	      fprintf (stdout, "/dev/dsp output assignment: ");
 	      break;
-	    case OPEN_READ | OPEN_WRITE:
+	    case OSS_OPEN_READ | OSS_OPEN_WRITE:
 	      fprintf (stdout, "/dev/dsp output assignment: ");
 	      break;
 	    }
@@ -188,10 +188,10 @@ load_applist (void)
 	switch (mode[i])
 	  {
 	  case 'r':
-	    rout.mode |= OPEN_READ;
+	    rout.mode |= OSS_OPEN_READ;
 	    break;
 	  case 'w':
-	    rout.mode |= OPEN_WRITE;
+	    rout.mode |= OSS_OPEN_WRITE;
 	    break;
 
 	  default:

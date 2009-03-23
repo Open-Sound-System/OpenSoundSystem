@@ -18,6 +18,8 @@ struct codec_desc
 S/PDIF */
 #define VF_VAIO_HACK    0x00000002      /* VAIO STAC9872 requires special
 handling for headphone DAC */
+#define VF_SI3055_HACK  0x00000004      /* Si3055 modem requires manual endpoint
+setuping and rate and ioctl hacks. */
   char **remap;
 
   /*
@@ -894,6 +896,16 @@ static const codec_desc_t codecs[] = {
   {0x14f12c06, "Conexant2c06", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Vaio) */
   {0x14f12bfa, "Conexant2bfa", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Acer Ferrari 5k) */
 
+  /* Si3055 and compatible modems */
+  {0x163c3055, "Si3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x163c3155, "Si3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13026, "Agere3026", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13055, "Agere3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x11c13155, "Agere3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573055, "Motorola3055", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573057, "Motorola3057", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+  {0x10573155, "Motorola3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
+
   /* Unknown */
   {0, "Unknown"}
 };
@@ -1018,7 +1030,9 @@ extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int c
 extern int hdaudio_travelmate4060_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
-extern int hdaudio_mac_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
@@ -1070,21 +1084,27 @@ static const codec_desc_t subdevices[] = {
   {0x17aa20bb, "Thinkpad R61", VF_NONE, (char**) &ad1984remap, 0, hdaudio_thinkpad_r61_mixer_init},
 
 /*
+ * Asus Eee PC (model 900 at least)
+ */
+  {0x10438337, "Asus Eee PC", VF_NONE, NULL, 0, hdaudio_eeepc_mixer_init},
+
+/*
  * Known Macintosh systems
  */
-  {0x106b0800, "Intel Mac V1", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0700, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0600, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0200, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b0f00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1600, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1700, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b1a00, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  // {0x00000100, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, ?, hdaudio_mac_GPIO_init},
-  {0x106b0a00, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
-  {0x106b2200, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_GPIO_init},
+  {0x106b0800, "Intel Mac V1", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0700, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0600, "Intel Mac V2", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0200, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0f00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1600, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1700, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1e00, "Intel Mac V3", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b1a00, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  // {0x00000100, "Intel Mac V4", VF_NONE, (char **) &stac922xremap, ?, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b0a00, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b2200, "Intel Mac V5", VF_NONE, (char **) &stac922xremap, 0, hdaudio_mac_sigmatel_GPIO_init},
+  {0x106b3200, "Intel iMac", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_mac_realtek_GPIO_init}, // ALC885
 
   {0, "Unknown"}
 };

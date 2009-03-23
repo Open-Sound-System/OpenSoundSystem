@@ -332,13 +332,20 @@ run_daemon(int port)
 void
 pty_session(int connfd)
 {
+	mode_t mode;
 	pid_t pid;
 	int ptyfd;
 	FILE *f;
 	char tmpl[32]="/tmp/osspartyshXXXXXX";
-	mkstemp(tmpl);
 
+	mode = umask(077);
+	if (mkstemp(tmpl) == -1)
+	{
+		perror("mkstemp");
+		exit(-1);
+	}
 	chmod(tmpl, 0700);
+	umask(mode);
 
 	if ((f=fopen(tmpl, "w"))!=NULL)
 	{

@@ -36,6 +36,8 @@
 static char *vmix_mode="FIXEDPOINT";
 static char *config_midi="ENABLED"; // Actually this depends on the configure script
 
+static int exact_architectures=0; /* 1=Compile only drivers that have matching arch given in their .config file. */
+
 typedef struct
 {
   char project_name[64];
@@ -70,6 +72,8 @@ typedef struct
 
   int power_manage;	/* Supports device power management (under Solaris) */
   int suspend_resume;	/* Supports suspend/resume (under Solaris) */
+
+  char *purpose;
 } conf_t;
 
 #define DEFAULT_CC "cc"
@@ -122,6 +126,13 @@ parse_config (FILE * f, conf_t * conf)
 
       if (*parms == '=')
 	*parms++ = 0;
+
+#if defined(__BEOS__) || defined(__HAIKU__)
+      if (strcmp (parms, "-lm") == 0)
+	{
+	  parms = "";
+	}
+#endif
 
       if (strcmp (parms, "$GTKCFLAGS") == 0)
 	{
@@ -391,6 +402,14 @@ parse_config (FILE * f, conf_t * conf)
       return 0;
     }
 
+/*
+ * Under some CPU architectures we should compile only the driver modules
+ * that have proper targetcpu line in their .config file. It doesn't make any
+ * sense to compile PCI drivers for architectures that don't have any PCI bus.
+ */
+  if (conf->mode == MD_MODULE && exact_architectures && !conf->check_cpu)
+     return 0;
+
   return 1;
 }
 
@@ -432,8 +451,20 @@ static int
 cmpstringp (const void *p1, const void *p2)
 {
   /* The arguments to this function are "pointers to
-   *      pointers to char", but strcmp() arguments are "pointers
-   *           to char", hence the following cast plus dereference */
+   * pointers to char", but strcmp() arguments are "pointers
+   * to char", hence the following cast plus dereference
+   */
+
+  /*
+   * Make sure "lib" directories get compiles before any other
+   * subdirectories.
+   */
+
+   if (strcmp(*(char **) p1, "lib")==0)
+      return -1;
+   else
+      if (strcmp(*(char **) p2, "lib")==0)
+	 return 1;
 
   return strcmp (*(char **) p1, *(char **) p2);
 }
@@ -478,6 +509,25 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   if (conf.mode == MD_KERNEL_)
     conf.mode = MD_KERNEL;
+
+  sprintf (tmp, "%s/.name", path);
+  if ((cf = fopen (tmp, "r")) != NULL)
+    {
+      char *p;
+
+      if (fgets(tmp, sizeof(tmp)-1, cf)==NULL)
+	 strcpy(tmp, name);
+      fclose (cf);
+
+      p=tmp+strlen(tmp)-1;
+      if (*p=='\n')*p=0;
+
+      conf.purpose=strdup(tmp);
+    }
+  else
+    {
+	    conf.purpose=strdup(name);
+    }
 
   sprintf (tmp, "%s/.config", path);
   if ((cf = fopen (tmp, "r")) != NULL)
@@ -722,6 +772,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   fprintf (f, "TMPDIR=.\n");
   fprintf (f, "MODDIR=$(TOPDIR)/target/modules\n");
   fprintf (f, "BINDIR=$(TOPDIR)/target/bin\n");
+  fprintf (f, "LIBDIR=$(TOPDIR)/target/lib\n");
   fprintf (f, "SBINDIR=$(TOPDIR)/target/sbin\n");
   if ((p = getenv("OSSLIBDIR")) != NULL)
     fprintf (f, "OSSLIBDIR=\"%s\"\n", p);
@@ -740,6 +791,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f,
 	       "CFLAGS += -O6 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
 # else
+#   ifndef __arm__
       if (getenv ("NO_REGPARM") == NULL)
 	{
 	  fprintf (f,
@@ -749,6 +801,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 	{
 	  fprintf (f, "CFLAGS += -O6 -fno-common -DNO_REGPARM\n");
 	}
+#   endif
 # endif
       /* fprintf(f, "CFLAGS += -W -Wno-unused -Wno-sign-compare\n"); */
 #endif
@@ -779,6 +832,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #if !defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
     fprintf (f, "CFLAGS += %s\n", conf.cflags);
+  if (conf.mode == MD_SHLIB)
+    fprintf (f, "CFLAGS += -fPIC\n");
 #endif
   if (conf.mode != MD_KERNEL)
     objdir = "TMPDIR";
@@ -888,6 +943,10 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       if (nobjects > 0)
 	fprintf (f, "$(MODDIR)/%s.o ", name);
     }
+  else if (conf.mode == MD_SHLIB)
+    {
+	fprintf (f, "$(LIBDIR)/%s.so ", name);
+    }
   else if (conf.mode != MD_KERNEL)
     {
       if (nobjects > 0)
@@ -944,6 +1003,17 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f, "$(BINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
 	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(BINDIR)/%s $(OBJECTS)\n",
+	       name);
+      fprintf (f, "\n\n");
+    }
+
+  if (conf.mode == MD_SHLIB)
+    {
+      fprintf (f, "%s.so:\t$(LIBDIR)/%s.so\n\n", name, name);
+
+      fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
+      fprintf (f,
+	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -shared -fPIC -o $(LIBDIR)/%s.so $(OBJECTS)\n",
 	       name);
       fprintf (f, "\n\n");
     }

@@ -4,13 +4,24 @@
  * Definitions for private use by the ossctl program. Everything defined
  * in this file is likely to change without notice between OSS versions.
  *
- * This file will probably be removed from OSS in the near future.
+ * Note that thse ioctl calls are not for public use. They cannot be used by 
+ * applications that are not part of the official OSS distribution.
  *
  */
 #define COPYING41 Copyright (C) Hannu Savolainen and Dev Mazumdar 1997-2007. All rights reserved.
 
 #ifndef _INTERNAL_H_
 #define _INTERNAL_H_
+
+/*
+ * This file defines ioctl codes 200 to 255 in the 'X' block. These codes may be
+ * reused for internal purposes by other OSSv4 implementations that don't use
+ * this file. Implementations based on the 'stock' OSS code can add their 
+ * private use ioctl codes in this file. However in such case it's recommended
+ * to notify the OSS development community (4Front Technologies) so that the
+ * code can be marked as reserved in the official sources.
+ *
+ */
 
 #define OSS_MAXERR 200
 typedef struct

@@ -62,6 +62,7 @@ typedef struct
   unsigned int sizemask;
   int stream_number, default_stream_number, iddle_stream;
   int is_digital;
+  int is_modem;
   int auto_muted;
   int skip; /* Not connected to anywhere */
   int already_used;
@@ -127,6 +128,7 @@ typedef struct
 #define SET_GPIO_STICKY				0x71a
 #define GET_SUBSYSTEM_ID			0xf20
 #define GET_STRIPE_CONTROL			0xf24
+#define SET_CODEC_RESET				0x7ff
 
 /*
  * Parameters
@@ -349,9 +351,9 @@ struct _hdaudio_mixer_struct
 
   int ncontrols;		/* Total number of widgets (all codecs) */
 
-  int num_inendpoints;
+  int num_inendpoints, copied_inendpoints;
   hdaudio_endpointinfo_t inendpoints[HDA_MAX_INSTREAMS];
-  int num_outendpoints;
+  int num_outendpoints, copied_outendpoints;
   hdaudio_endpointinfo_t outendpoints[HDA_MAX_OUTSTREAMS];
 
   int npins;			/* Used for managing the width of the connectors group */

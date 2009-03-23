@@ -47,10 +47,12 @@ extern int hda_codec_add_insrcselect(int dev, hdaudio_mixer_t * mixer, int cad, 
 
 extern int hda_codec_add_select(int dev, hdaudio_mixer_t *mixer, int cad, int wid, int group, const char *name, int *ctl, int initial_select);
 extern void hda_codec_set_select(int dev, hdaudio_mixer_t *mixer, int cad, int wid, int value);
+extern void hda_codec_set_pinselect(int dev, hdaudio_mixer_t *mixer, int cad, int wid, int value);
 extern int hda_codec_add_pinselect(int dev, hdaudio_mixer_t *mixer, int cad, int wid, int group, const char *name, int *ctl, int initial_select);
 #define HDA_SELECT(wid, name, ctl, group, sel) hda_codec_add_select(dev, mixer, cad, wid, group, name, &ctl, sel)
 #define HDA_PINSELECT(wid, ctl, group, name, sel) hda_codec_add_pinselect(dev, mixer, cad, wid, group, name, &ctl, sel)
 #define HDA_SETSELECT(wid, value) hda_codec_set_select(dev, mixer, cad, wid, value)
+#define HDA_SET_PINSELECT(wid, value) hda_codec_set_pinselect(dev, mixer, cad, wid, value)
 
 extern int hda_codec_add_choices(int dev, hdaudio_mixer_t *mixer, int ctl, const char *choiselist);
 #define HDA_CHOICES(ctl, choicelist) hda_codec_add_choices(dev, mixer, ctl, choicelist)

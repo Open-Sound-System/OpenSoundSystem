@@ -1666,7 +1666,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   adev->portc = portc;
   adev->min_rate = mixer->play_engine.rate;
   adev->max_rate = mixer->play_engine.rate;
-  adev->caps |= PCM_CAP_FREERATE;
+  adev->caps |= PCM_CAP_FREERATE | PCM_CAP_BATCH | PCM_CAP_MULTI;
   adev->min_channels = 2;
   adev->max_channels = mixer->play_engine.channels;
 
@@ -1763,7 +1763,7 @@ create_loopdev (vmix_mixer_t * mixer)
   adev->max_rate = mixer->play_engine.rate;
   adev->min_channels = mixer->play_engine.channels;
   adev->max_channels = mixer->play_engine.channels;
-  adev->caps |= PCM_CAP_FREERATE | PCM_CAP_HIDDEN;
+  adev->caps |= PCM_CAP_FREERATE | PCM_CAP_HIDDEN  | PCM_CAP_BATCH | PCM_CAP_MULTI;
   portc->mixer = mixer;
   portc->dev_type = DT_LOOP;
   portc->disabled_modes = OPEN_WRITE;

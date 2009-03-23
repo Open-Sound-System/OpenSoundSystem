@@ -741,7 +741,8 @@ change_level (int dev, const char * cname, const char * arg)
 {
   enum {
     RELLEFT = 1,
-    RELRIGHT = 2
+    RELRIGHT = 2,
+    RELTOGGLE = 4
   };
   int ctrl, lefti, righti, dist = 0, vol = 0;
   float left = -1, right = 0;
@@ -801,6 +802,8 @@ change_level (int dev, const char * cname, const char * arg)
     left = 1;
   else if (strcmp (arg, "OFF") == 0 || strcmp (arg, "off") == 0)
     left = 0;
+  else if (strcmp (arg, "TOGGLE") == 0 || strcmp (arg, "toggle") == 0)
+    relative = RELTOGGLE;
   else if ((p = strchr (arg, ':')) != NULL)
     {
       if (sscanf (arg, "%f:%f", &left, &right) != 2)
@@ -853,6 +856,7 @@ change_level (int dev, const char * cname, const char * arg)
         }
       if (relative & RELLEFT) lefti += left;
       if (relative & RELRIGHT) righti += right;
+      if (relative & RELTOGGLE) lefti = !left;
     }
 
   if (lefti < 0) lefti = 0;

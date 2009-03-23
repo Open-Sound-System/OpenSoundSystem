@@ -1040,6 +1040,9 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
 
       if ((outl = read (fd, buf, rsize)) <= 0)
         {
+          if (outl == 0) /* EOF */
+	     return 0;
+
           /* clear_update might have reset errno. Save and add strerror? */
           if ((errno == 0) && (outl == 0) && (filesize != UINT_MAX))
             print_msg (WARNM, "Sound data ended prematurily!\n");
@@ -1069,7 +1072,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
         {
           if ((errno == EINTR) && (eflag)) EXITPLAY (eflag);
           ossplay_free (buf);
-          perror_msg (dsp->dname);
+          perror_msg ("audio write");
           exit (-1);
         }
     }
