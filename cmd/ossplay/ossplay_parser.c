@@ -216,7 +216,7 @@ play_file (dspdev_t * dsp, const char * filename)
 
       print_msg (NORMALM, "Playing MPEG audio file %s\n", filename);
 
-      if (!setup_device (fd, AFMT_S16_NE, 2, 44100))
+      if (setup_device (fd, AFMT_S16_NE, 2, 44100))
 	return;
 
       tmp = APF_NORMAL;
@@ -584,15 +584,19 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 
             msadpcm_val.channels = channels = ne_int (buf + 2, 2);
             speed = ne_int (buf + 4, 4);
+#if 0
+            bytes_per_sec = be_int (buf + 8, 4); /* ossplay doesn't use this */
+#endif
             msadpcm_val.nBlockAlign = ne_int (buf + 12, 2);
+            if (msadpcm_val.nBlockAlign == 0)
+              print_msg (WARNM, "%s: nBlockAlign is 0!\n", filename);
             msadpcm_val.bits = bits = ne_int (buf + 14, 2);
-            bits += bits % 8;
 
             if (format == 0xFFFE)
               {
                 if (chunk_size < 40)
                   {
-                   print_msg (ERRORM, "%s: invallid fmt chunk\n", filename);
+                    print_msg (ERRORM, "%s: invalid fmt chunk\n", filename);
                     return;
                   }
                 format = ne_int (buf + 24, 2);
@@ -600,6 +604,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
             if (force_fmt == 0) switch (format)
               {
                 case 0x1:
+                  bits += bits % 8;
                   if (type == WAVE_FILE) BITS2SFORMAT (LE);
                   else BITS2SFORMAT (BE);
                   if (bits == 8) format = AFMT_U8;
@@ -607,7 +612,16 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 case 0x2: format = AFMT_MS_ADPCM; break;
                 case 0x6: format = AFMT_A_LAW; break;
                 case 0x7: format = AFMT_MU_LAW; break;
-                case 0x11: format = AFMT_MS_IMA_ADPCM; break;
+                case 0x11: format = AFMT_MS_IMA_ADPCM;
+                           if (bits == 3) format = AFMT_MS_IMA_ADPCM_3BITS;
+                           else if (bits != 4)
+                             {
+                               print_msg (WARNM,
+                           "%s: Invalid number of bits (%d)! Assuming 4\n",
+                            filename, bits);
+                               msadpcm_val.bits = bits = 4;
+                             }
+                           break;
 #if 0
                 case 0x3: format = AFMT_FLOAT; break;
                 case 0x50: /* MPEG */
@@ -903,8 +917,8 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
 	      tmp = 256 - buf[0];	/* Time constant */
 	      speed = (1000000 + tmp / 2) / tmp / channels;
 
-               fmt = buf[1];
-               len -= 2;
+              fmt = buf[1];
+              len -= 2;
 
                if (force_fmt != 0) break;
                switch (fmt)
@@ -1064,6 +1078,7 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_MAC_IMA_ADPCM:
        case AFMT_MS_IMA_ADPCM:
        case AFMT_IMA_ADPCM: fmt = "IMA ADPCM"; break;
+       case AFMT_MS_IMA_ADPCM_3BITS: fmt = "3BIT IMA ADPCM"; break;
        case AFMT_MS_ADPCM: fmt = "MS-ADPCM"; break;
        case AFMT_MU_LAW: fmt = "mu-law"; break;
        case AFMT_A_LAW: fmt = "A-law"; break;

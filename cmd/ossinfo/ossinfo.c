@@ -41,6 +41,17 @@ int phys_only = 0;
 int show_engines = 0;
 int show_ex = 0;
 
+static void
+print_symlink(const char *link)
+{
+	char devname[256];
+
+	memset(devname, 0, sizeof(devname));
+
+	if (readlink(link, devname, sizeof(devname)-1) != -1)
+	   printf("  %s -> %s\n", link, devname);
+}
+
 /*
  * Display filters for selecting what to print.
  */
@@ -147,13 +158,13 @@ print_engine_info (oss_audioinfo * ainfo, int num)
 
   switch (ainfo->busy)
     {
-    case OPEN_READ:
+    case OSS_OPEN_READ:
       printf ("Busy (IN) ");
       break;
-    case OPEN_WRITE:
+    case OSS_OPEN_WRITE:
       printf ("Busy (OUT) ");
       break;
-    case OPEN_READWRITE:
+    case OSS_OPEN_READWRITE:
       printf ("Busy (IN/OUT) ");
       break;
     default:
@@ -434,6 +445,16 @@ print_audio_info (void)
 
       printf ("\n");
     }
+
+  printf ("\n");
+  print_symlink ("/dev/dsp");
+  print_symlink ("/dev/dsp_in");
+  print_symlink ("/dev/dsp_out");
+  print_symlink ("/dev/dsp_ac3");
+  print_symlink ("/dev/dsp_mmap");
+  print_symlink ("/dev/dsp_multich");
+  print_symlink ("/dev/dsp_spdifout");
+  print_symlink ("/dev/dsp_spdifin");
 }
 
 
@@ -507,13 +528,13 @@ print_midi_info (void)
 	{
 	  switch (minfo.busy)
 	    {
-	    case OPEN_READ:
+	    case OSS_OPEN_READ:
 	      printf ("Busy (IN) ");
 	      break;
-	    case OPEN_WRITE:
+	    case OSS_OPEN_WRITE:
 	      printf ("Busy (OUT) ");
 	      break;
-	    case OPEN_READWRITE:
+	    case OSS_OPEN_READWRITE:
 	      printf ("Busy (IN/OUT) ");
 	      break;
 	    default:

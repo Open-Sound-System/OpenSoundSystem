@@ -1,3 +1,6 @@
+include /etc/oss.conf
+
+EXTRA_CFLAGS += -I${OSSLIBDIR}/include/internals -I${OSSLIBDIR}/include/sys
 
 ifneq ($(KERNELRELEASE),)
 

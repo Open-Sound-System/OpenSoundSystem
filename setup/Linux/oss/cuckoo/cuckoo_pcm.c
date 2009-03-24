@@ -28,7 +28,6 @@
 
 #include "cuckoo.h"
 
-adev_t **cuckoo_audio_devs = NULL;
 static snd_pcm_substream_t *cuckoo_playsubstream[256] = { NULL };
 static snd_pcm_substream_t *cuckoo_capturesubstream[256] = { NULL };
 
@@ -77,7 +76,7 @@ cuckoo_outputintr (int dev, int notify_only)
   if (dev < 0 || dev > 255)
     return;
 
-  adev = audio_devs[dev];
+  adev = audio_devfiles[dev];
   dmap = adev->dmap_out;
 
   dmap->fragment_counter = (dmap->fragment_counter + 1) % dmap->nfrags;
@@ -102,7 +101,7 @@ cuckoo_inputintr (int dev, int intr_flags)
   if (dev < 0 || dev > 255)
     return;
 
-  adev = audio_devs[dev];
+  adev = audio_devfiles[dev];
   dmap = adev->dmap_in;
 
   dmap->fragment_counter = (dmap->fragment_counter + 1) % dmap->nfrags;
@@ -209,6 +208,7 @@ snd_cuckoo_playback_open (snd_pcm_substream_t * substream)
   int err;
   adev_t *adev;
   oss_native_word flags;
+  struct fileinfo tmp_finfo;
 
   if (snum < 0 || snum >= chip->npcm)
     {
@@ -227,24 +227,23 @@ snd_cuckoo_playback_open (snd_pcm_substream_t * substream)
       return -ENOMEM;
     }
 
-  udi_spin_lock_irqsave (&adev->mutex, &flags);
-
   if (adev->open_mode != 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return -EBUSY;
     }
 
-/*
- * TODO: This code should be changed to call oss_audio_open_devfile() or oss_audio_open_engine()
- *       instead of adev->d->adrv_open(). However this change may be very tricky because the
- *       change will have side effects here and there.
- */
-  if ((err = adev->d->adrv_open (adev->engine_num, OPEN_WRITE, 0)) < 0)
+  tmp_finfo.mode = OPEN_WRITE;
+  tmp_finfo.acc_flags = 0;
+  if ((err =
+       oss_audio_open_engine (adev->engine_num, OSS_DEV_DSP,
+			      &tmp_finfo, 1, OF_SMALLBUF,
+			      NULL)) < 0)
     {
-      udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return err;
     }
+
+  udi_spin_lock_irqsave (&adev->mutex, &flags);
   adev->open_mode = OPEN_WRITE;
   runtime->hw = snd_cuckoo_playback;
   copy_hw_caps (runtime, adev, OPEN_WRITE);
@@ -267,6 +266,7 @@ snd_cuckoo_capture_open (snd_pcm_substream_t * substream)
   int err;
   adev_t *adev;
   oss_native_word flags;
+  struct fileinfo tmp_finfo;
 
   if (snum < 0 || snum >= chip->npcm)
     {
@@ -284,23 +284,23 @@ snd_cuckoo_capture_open (snd_pcm_substream_t * substream)
       return -ENOMEM;
     }
 
-  udi_spin_lock_irqsave (&adev->mutex, &flags);
-
   if (adev->open_mode != 0)
     {
       udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return -EBUSY;
     }
-/*
- * TODO: This code should be changed to call oss_audio_open_devfile() or oss_audio_open_engine()
- *       instead of adev->d->adrv_open(). However this change may be very tricky because the
- *       change will have side effects here and there.
- */
-  if ((err = adev->d->adrv_open (adev->engine_num, OPEN_READ, 0)) < 0)
+
+  tmp_finfo.mode = OPEN_READ;
+  tmp_finfo.acc_flags = 0;
+  if ((err =
+       oss_audio_open_engine (adev->engine_num, OSS_DEV_DSP,
+			      &tmp_finfo, 1, OF_SMALLBUF,
+			      NULL)) < 0)
     {
-      udi_spin_unlock_irqrestore (&adev->mutex, flags);
       return err;
     }
+
+  udi_spin_lock_irqsave (&adev->mutex, &flags);
   adev->open_mode = OPEN_READ;
   runtime->hw = snd_cuckoo_capture;
   copy_hw_caps (runtime, adev, OPEN_READ);
@@ -321,6 +321,7 @@ snd_cuckoo_playback_close (snd_pcm_substream_t * substream)
   int snum = substream->number;
   adev_t *adev;
   oss_native_word flags;
+  struct fileinfo tmp_finfo;
 
   if (snum < 0 || snum >= chip->npcm)
     return -ENXIO;
@@ -328,12 +329,13 @@ snd_cuckoo_playback_close (snd_pcm_substream_t * substream)
   adev = chip->play_adev[snum];
 
   udi_spin_lock_irqsave (&adev->mutex, &flags);
-  adev->pid = -1;
-  *adev->cmd = 0;
-  adev->d->adrv_close (adev->engine_num, OPEN_WRITE);
-  adev->open_mode &= ~OPEN_WRITE;
   cuckoo_playsubstream[adev->engine_num] = NULL;
   udi_spin_unlock_irqrestore (&adev->mutex, flags);
+
+  tmp_finfo.mode = OPEN_WRITE;
+  tmp_finfo.acc_flags = 0;
+  oss_audio_release (adev->engine_num, &tmp_finfo);
+
   return 0;
 }
 
@@ -344,6 +346,7 @@ snd_cuckoo_capture_close (snd_pcm_substream_t * substream)
   int snum = substream->number;
   adev_t *adev;
   oss_native_word flags;
+  struct fileinfo tmp_finfo;
 
   if (snum < 0 || snum >= chip->npcm)
     return -ENXIO;
@@ -351,12 +354,13 @@ snd_cuckoo_capture_close (snd_pcm_substream_t * substream)
   adev = chip->capture_adev[snum];
 
   udi_spin_lock_irqsave (&adev->mutex, &flags);
-  adev->d->adrv_close (adev->engine_num, OPEN_READ);
-  adev->pid = -1;
-  *adev->cmd = 0;
-  adev->open_mode &= ~OPEN_READ;
   cuckoo_capturesubstream[adev->engine_num] = NULL;
   udi_spin_unlock_irqrestore (&adev->mutex, flags);
+
+  tmp_finfo.mode = OPEN_READ;
+  tmp_finfo.acc_flags = 0;
+  oss_audio_release (adev->engine_num, &tmp_finfo);
+
   return 0;
 }
 
@@ -716,24 +720,24 @@ install_pcm_instances (cuckoo_t * chip, int cardno)
   int dev, err, ok = 0;
   int ninputs = 0, noutputs = 0;
 
-  for (dev = 0; dev < num_audio_engines; dev++)
-    if (audio_devs[dev]->card_number == cardno)
+  for (dev = 0; dev < num_audio_devfiles; dev++)
+    if (audio_devfiles[dev]->card_number == cardno)
       {
-	adev_t *adev = audio_devs[dev];
-	adev_t *nextdev = audio_devs[dev + 1];
+	adev_t *adev = audio_devfiles[dev];
+	adev_t *nextdev = audio_devfiles[dev + 1];
 	snd_pcm_t *pcm;
 
 	ninputs = noutputs = 0;
 
 	ok = 0;
 /* Special handling for shadow devices */
-	if (dev < num_audio_engines - 1 && (adev->flags & ADEV_DUPLEX))
+	if (dev < num_audio_devfiles - 1 && (adev->flags & ADEV_DUPLEX))
 	  if ((nextdev->flags & ADEV_DUPLEX)
 	      && (nextdev->flags & ADEV_SHADOW))
 	    ok = 1;
 
 // Devices with one recording engine and multiple playback ones
-	if (dev < num_audio_engines - 1 && (adev->flags & ADEV_DUPLEX))
+	if (dev < num_audio_devfiles - 1 && (adev->flags & ADEV_DUPLEX))
 	  if (adev->card_number == nextdev->card_number)
 	    if ((nextdev->flags & ADEV_NOINPUT))
 	      ok = 1;
@@ -799,5 +803,4 @@ install_pcm_instances (cuckoo_t * chip, int cardno)
   return 0;
 }
 
-EXPORT_SYMBOL (cuckoo_audio_devs);
 EXPORT_SYMBOL (install_pcm_instances);

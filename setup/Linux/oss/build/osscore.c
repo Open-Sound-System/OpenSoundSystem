@@ -7,7 +7,7 @@
  */
 
 /*
- * Copyright (C) 4Front Technologies 2005-2007. Released under GPL2 license.
+ * Copyright (C) 4Front Technologies 2005-2009. Released under GPL2 license.
  */
 //#include <linux/config.h>
 typedef int *ioctl_arg;
@@ -16,9 +16,9 @@ typedef int *ioctl_arg;
 #include <linux/delay.h>
 #include <stdarg.h>
 #include <linux/vmalloc.h>
-#include "../include/internals/timestamp.h"
-#include "../include/internals/local_config.h"
-#include "ossddk/oss_exports.h"
+#include "timestamp.h"
+#include "local_config.h"
+#include "oss_exports.h"
 #include "wrap.h"
 #include "ossdip.h"
 #include <linux/version.h>
@@ -37,9 +37,9 @@ typedef int *ioctl_arg;
 
 typedef struct _smap_t dmap_t;
 
-#include "../include/sys/soundcard.h"
-#include "../include/internals/audio_core.h"
-#include "../include/internals/mixer_core.h"
+#include "soundcard.h"
+#include "audio_core.h"
+#include "mixer_core.h"
 #include "ubuntu_version_hack.inc"
 
 MODULE_LICENSE ("GPL v2");
@@ -326,8 +326,6 @@ osscore_init (void)
 static void
 osscore_exit (void)
 {
-  int i;
-
   uninit_proc_fs ();
   oss_uninit_osscore (core_osdev);
 }
@@ -397,13 +395,19 @@ oss_spin_unlock (oss_mutex_t mutex)
 void *
 oss_map_pci_mem (oss_device_t * osdev, int size, unsigned long offset)
 {
+#ifdef __arm__
+  return (void*)offset;
+#else
   return ioremap (offset, size);
+#endif
 }
 
 void
 oss_unmap_pci_mem (void *addr)
 {
+#ifndef __arm__
   iounmap (addr);
+#endif
 }
 
 unsigned long long
@@ -1094,6 +1098,7 @@ struct DIstruct
 #endif
 
 
+#ifndef __arm__
 /* We need this union to unpack/pack DImode values, since we don't have
    any arithmetic yet.  Incoming DImode parameters are stored into the
    `ll' field, and the unpacked result is read from the struct `s'.  */
@@ -1210,7 +1215,6 @@ __negdi2 (DItype u)
 
   return w.ll;
 }
-
 
 static inline UDItype
 __udivmoddi4 (UDItype n, UDItype d, UDItype * rp)
@@ -1429,7 +1433,6 @@ __udivmoddi4 (UDItype n, UDItype d, UDItype * rp)
   return ww.ll;
 }
 
-
 DItype
 __divdi3 (DItype u, DItype v)
 {
@@ -1492,6 +1495,7 @@ __udivdi3 (UDItype n, UDItype d)
 {
   return __udivmoddi4 (n, d, (UDItype *) 0);
 }
+#endif
 
 dev_info_t *
 oss_create_pcidip (struct pci_dev * pcidev)
@@ -1990,9 +1994,11 @@ EXPORT_SYMBOL (mixer_find_ext);
 EXPORT_SYMBOL (oss_install_mixer);
 EXPORT_SYMBOL (oss_strcpy);
 EXPORT_SYMBOL (oss_kmem_free);
+#ifndef __arm__
 EXPORT_FUNC (uart401_init);
 EXPORT_FUNC (uart401_disable);
 EXPORT_FUNC (uart401_irq);
+#endif
 EXPORT_SYMBOL (mixer_ext_set_init_fn);
 EXPORT_SYMBOL (mixer_ext_set_vmix_init_fn);
 #ifdef CONFIG_OSS_VMIX
@@ -2142,9 +2148,11 @@ EXPORT_FUNC (oss_do_timing);
 EXPORT_FUNC (oss_do_timing2);
 EXPORT_FUNC (oss_timing_enter);
 EXPORT_FUNC (oss_timing_leave);
+#ifndef __arm__
 EXPORT_SYMBOL (__udivdi3);
 EXPORT_SYMBOL (__umoddi3);
 EXPORT_SYMBOL (__divdi3);
+#endif
 EXPORT_SYMBOL (oss_copy_from_user);
 EXPORT_SYMBOL (oss_copy_to_user);
 EXPORT_SYMBOL (osdev_set_irqparms);
@@ -2176,7 +2184,3 @@ EXPORT_FUNC (oss_get_procinfo);
 EXPORT_FUNC (oss_midi_ioctl);
 EXPORT_FUNC (oss_midi_copy_timer);
 #endif
-
-extern void *oss_adev_pointer;
-EXPORT_SYMBOL (oss_adev_pointer);
-

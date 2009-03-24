@@ -36,43 +36,6 @@ unsigned int level_meters = 0, nfiles = 1;
 unsigned long long datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
-static const format_t format_a[] = {
-  {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},
-  {"U8",		AFMT_U8,		CRP,		AFMT_S16_NE},
-  {"S16_LE",		AFMT_S16_LE,		CRP,		AFMT_S16_NE},
-  {"S16_BE",		AFMT_S16_BE,		CRP,		AFMT_S16_NE},
-  {"U16_LE",		AFMT_U16_LE,		CRP,		AFMT_S16_NE},
-  {"U16_BE",		AFMT_U16_BE,		CRP,		AFMT_S16_NE},
-  {"S24_LE",		AFMT_S24_LE,		CRP,		0},
-  {"S24_BE",		AFMT_S24_BE,		CRP,		0},
-  {"S32_LE",		AFMT_S32_LE,		CRP,		AFMT_S32_NE},
-  {"S32_BE",		AFMT_S32_BE,		CRP,		AFMT_S32_NE},
-  {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
-  {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
-  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
-  {"MS_IMA_ADPCM",	AFMT_MS_IMA_ADPCM,	CP,		0},
-  {"MAC_IMA_ADPCM",	AFMT_MAC_IMA_ADPCM,	CP,		0},
-  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
-  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
-  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
-  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
-  {"FLOAT",		AFMT_FLOAT,		CRP,		0},
-  {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
-  {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
-  {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
-  {"FIBO_DELTA",	AFMT_FIBO_DELTA,	CP,		0},
-  {"EXP_DELTA",		AFMT_EXP_DELTA,		CP,		0},
-  {NULL,		0,			0,		0}
-};
-
-static const container_t container_a[] = {
-  {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
-  {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
-  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
-  {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
-  {NULL,		0,		0,		0,	0}
-}; /* Should match fctypes_t enum so that container_a[type] works */
-
 static void describe_error (void);
 static void find_devname (char *, const char *);
 static fctypes_t select_container (const char *);
@@ -227,6 +190,7 @@ format2bits (int format)
       case AFMT_CR_ADPCM_2: return 2;
       case AFMT_CR_ADPCM_3: return 2.66F;
       case AFMT_CR_ADPCM_4:
+      case AFMT_MS_IMA_ADPCM_3BITS: return 3;
       case AFMT_MAC_IMA_ADPCM:
       case AFMT_MS_IMA_ADPCM:
       case AFMT_IMA_ADPCM:
@@ -547,7 +511,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
   else
     {
       ioctl (dsp->fd, SNDCTL_SETSONG, dsp->current_songname);
-      return format;
+      return 0;
     }
 
   /*
@@ -568,25 +532,14 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
     {
       perror_msg (dsp->dname);
       print_msg (ERRORM, "Failed to select bits/sample\n");
-      return 0;
+      return E_SETUP_ERROR;
     }
 
   if (tmp != format)
     {
-      int i;
-
       print_msg (ERRORM, "%s doesn't support this audio format (%x/%x).\n",
                  dsp->dname, format, tmp);
-      for (i = 0; format_a[i].name != NULL; i++)
-        if (format_a[i].fmt == format)
-          {
-            tmp = format_a[i].may_conv;
-            if ((tmp == 0) || (tmp == format)) return 0;
-            print_msg (WARNM, "Converting to format %s\n",
-                       sample_format_name (tmp));
-            return setup_device (dsp, tmp, channels, speed);
-          }
-      return 0;
+      return E_FORMAT_UNSUPPORTED;
     }
 
   tmp = channels;
@@ -595,14 +548,14 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
     {
       perror_msg (dsp->dname);
       print_msg (ERRORM, "Failed to select number of channels.\n");
-      return 0;
+      return E_SETUP_ERROR;
     }
 
   if (tmp != channels)
     {
       print_msg (ERRORM, "%s doesn't support %d channels (%d).\n",
 	         dsp->dname, channels, tmp);
-      return 0;
+      return E_CHANNELS_UNSUPPORTED;
     }
 
   tmp = speed;
@@ -611,7 +564,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
     {
       perror_msg (dsp->dname);
       print_msg (ERRORM, "Failed to select sampling rate.\n");
-      return 0;
+      return E_SETUP_ERROR;
     }
 
   if (tmp != speed)
@@ -632,7 +585,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
         perror ("SNDCTL_DSP_SETRECVOL");
     }
 
-  return format;
+  return 0;
 }
 
 static void
@@ -814,7 +767,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
               case 24: force_fmt = AFMT_S24_PACKED; break;
               case 32: force_fmt = AFMT_S32_LE; break;
               default:
-                fprintf (stderr, "Error: Unsupported number of bits %d\n", c);
+                print_msg (ERRORM, "Error: Unsupported number of bits %d\n", c);
                 exit (-1);
             }
           break;
@@ -1004,7 +957,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
     ossplay_free (verbose_meta); \
     clear_update (); \
     ioctl (dsp->fd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
-    return code; \
+    return (code); \
   } while (0)
 
   unsigned long long rsize = bsize;
@@ -1023,7 +976,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
 
   while (*datamark < filesize)
     {
-      if (eflag) EXITPLAY (eflag);
+      if (eflag) EXITPLAY (eflag + 128);
 
       rsize = bsize;
       if (rsize > filesize - *datamark) rsize = filesize - *datamark;
@@ -1033,19 +986,22 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
           int ret;
 
           ret = seekf (fd, datamark, filesize, constant, rsize, dsp->channels);
-          if (ret < 0) EXITPLAY (ret);
-          else if (ret == 0) continue;
-          else contflag = 1;
+          if (ret == 0) continue;
+          else if (ret == SEEK_CONT_AFTER_DECODE) contflag = 1;
+          else EXITPLAY (ret);
         }
 
       if ((outl = read (fd, buf, rsize)) <= 0)
         {
+          if (outl == 0) /* EOF */
+	     return 0;
+
           /* clear_update might have reset errno. Save and add strerror? */
           if ((errno == 0) && (outl == 0) && (filesize != UINT_MAX))
             print_msg (WARNM, "Sound data ended prematurily!\n");
           else if (errno && (!eflag))
             perror_msg (dsp->dname);
-          EXITPLAY (eflag);
+          EXITPLAY (eflag + 128);
         }
       *datamark += outl;
 
@@ -1067,9 +1023,9 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
       if (verbose) print_play_verbose_info (obuf, outl, verbose_meta);
       if (write (dsp->fd, obuf, outl) == -1)
         {
-          if ((errno == EINTR) && (eflag)) EXITPLAY (eflag);
+          if ((errno == EINTR) && (eflag)) EXITPLAY (eflag + 128);
           ossplay_free (buf);
-          perror_msg (dsp->dname);
+          perror_msg ("audio write");
           exit (-1);
         }
     }
@@ -1092,7 +1048,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
     if ((eflag) && (verbose)) \
       print_msg (VERBOSEM, "\nStopped (%d).\n", eflag); \
     ioctl (dsp->fd, SNDCTL_DSP_HALT_INPUT, NULL); \
-    return code; \
+    return (code); \
   } while(0)
 
   ssize_t l, outl;
@@ -1114,15 +1070,15 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 //printf("datalimit %llu, *data_size %llu\n", datalimit, *data_size);
       if ((l = read (dsp->fd, buf, RECBUF_SIZE)) < 0)
 	{
-          if ((errno == EINTR) && (eflag)) EXITREC (eflag);
-	  if (errno == ECONNRESET) EXITREC (0); /* Device disconnected */
+          if ((errno == EINTR) && (eflag)) EXITREC (eflag + 128);
+	  if (errno == ECONNRESET) EXITREC (E_ENCODE); /* Device disconnected */
           perror_msg (dsp->dname);
-          EXITREC (-1);
+          EXITREC (E_ENCODE);
 	}
       if (l == 0)
 	{
 	  print_msg (ERRORM, "Unexpected EOF on audio device\n");
-          EXITREC (eflag);
+          EXITREC (eflag + 128);
 	}
 
       obuf = buf; d = dec; outl = l;
@@ -1136,13 +1092,13 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 
       *data_size += outl;
       if (verbose) print_record_verbose_info (obuf, outl, verbose_meta);
-      if (eflag) EXITREC(eflag);
+      if (eflag) EXITREC (eflag + 128);
 
       if (fwrite (obuf, outl, 1, wave_fp) != 1)
         {
-          if ((errno == EINTR) && (eflag)) EXITREC(eflag);
+          if ((errno == EINTR) && (eflag)) EXITREC (eflag + 128);
           perror_msg (filename);
-          EXITREC (-1);
+          EXITREC (E_ENCODE);
         }
 
       if ((datalimit != 0) && (*data_size >= datalimit)) break;
@@ -1159,7 +1115,7 @@ int silence (dspdev_t * dsp, unsigned long long len, int speed)
   ssize_t i;
   unsigned char empty[1024];
 
-  if (!(i = setup_device (dsp, AFMT_U8, 1, speed))) return -1;
+  if ((i = setup_device (dsp, AFMT_U8, 1, speed))) return -1;
 
   if (i == AFMT_S16_NE) len /= 2;
 

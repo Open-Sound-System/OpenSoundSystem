@@ -7,8 +7,8 @@ OSSLIBDIR="/usr/lib/oss"
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
 
-# MIDI support is disabled by default. Use --config-midi=YES to enable
-CONFIG_MIDI=DISABLED
+# MIDI support is enabled by default. Use --config-midi=NO to disable
+CONFIG_MIDI=ENABLED
 
 export CONFIGURE CONFIG_MIDI
 
@@ -76,8 +76,15 @@ do
 	"--include-closed-source")
 		CLOSED_SOURCE=YES
 		NO_WARNING_CHECKS=YES
-		export CLOSED_SOURCE NO_WARNING_CHECKS
+		PORTABLE_BUILD=YES	# Produce binaries that work under generic CPU arch
+		export CLOSED_SOURCE NO_WARNING_CHECKS PORTABLE_BUILD
 		;;
+
+	"--portable-build")
+		PORTABLE_BUILD=YES	# Produce binaries that work under generic CPU arch
+		export PORTABLE_BUILD
+		;;
+		
 
 	"--enable-libsalsa=NO")
 		NOALSA=1

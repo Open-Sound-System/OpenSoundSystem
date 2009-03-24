@@ -43,7 +43,7 @@ chmod 700 prototype/$OSSLIBDIR/objects.*
 chmod 700 prototype/$OSSLIBDIR/build
 chmod 700 prototype/$OSSLIBDIR/save
 
-if test "`cat regparm` " = "1 "
+if test -f regparm && test "`cat regparm` " = "1 "
 then
   MODULES=modules.regparm
   OBJECTS=objects.regparm
@@ -54,13 +54,15 @@ fi
 
 cp .version prototype/$OSSLIBDIR/version.dat
 
-if ! test -f regparm
+if test "`uname -m` " != "arm "
 then
-  echo Error: ./regparm is missing
-  exit 1
+	if ! test -f regparm
+	then
+	  echo Error: ./regparm is missing
+	  exit 1
+	fi
+	cp regparm prototype/$OSSLIBDIR/build
 fi
-
-cp regparm prototype/$OSSLIBDIR/build
 
 # Regenerating the config file templates
 rm -f /tmp/confgen
@@ -78,12 +80,12 @@ fi
 
 rm -f /tmp/confgen
 
-cp -a $SRCDIR/include/* prototype/$OSSLIBDIR/include/sys/
+cp $SRCDIR/include/*.h prototype/$OSSLIBDIR/include/sys/
 cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
 cp -f $SRCDIR/kernel/OS/Linux/wrapper/wrap.h prototype/$OSSLIBDIR/build/
 cp -f $SRCDIR/kernel/framework/include/udi.h prototype/$OSSLIBDIR/build/
 cp -a $SRCDIR/kernel/framework/include/*_core.h kernel/framework/include/local_config.h prototype/$OSSLIBDIR/include/internals
-cp -a $SRCDIR/kernel/framework/include/ossddk prototype/$OSSLIBDIR/include/sys
+cp $SRCDIR/kernel/framework/include/ossddk/*.h prototype/$OSSLIBDIR/include/internals
 cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/include/internals
 
 cat > prototype/$OSSLIBDIR/include/internals/WARNING.txt << EOF
@@ -166,6 +168,8 @@ then
   echo Warning: No libsalsa library compiled
 fi
 
+cp target/lib/* prototype/$OSSLIBDIR/lib
+
 cp devlist.txt prototype/$OSSLIBDIR/etc/devices.list
 
 if test -d kernel/nonfree
@@ -197,7 +201,7 @@ echo done ossdetect
 cp -f $SRCDIR/oss/lib/flashsupport.c prototype/$OSSLIBDIR/lib
 
 # Licensing stuff
-if test -f $SRCDIR/4front-private/osslic.c
+if test -f 4front-private/osslic.c
 then
 	cc -o prototype/usr/sbin/osslic -Isetup -Ikernel/nonfree/include -Ikernel/framework/include -Iinclude -Ikernel/OS/Linux -I$SRCDIR $SRCDIR/4front-private/osslic.c
 	strip prototype/usr/sbin/osslic
@@ -217,6 +221,8 @@ then
   #ossupdate
   cc -I. 4front-private/ossupdate.c -s -o prototype/usr/sbin/ossupdate
 fi
+
+sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
 
 chmod 700 prototype/usr/sbin/*
 chmod 755 prototype/usr/bin/*
