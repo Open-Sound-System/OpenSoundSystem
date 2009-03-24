@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 OSSLIBDIR=/usr/lib/oss
 if [ -e /etc/oss.conf ]; then source /etc/oss.conf; fi
 if [ -e /tmp/OSS_UPGRADE ]; then echo "Upgrading OSS - will not purge $OSSLIBDIR."; else rm -rf "$OSSLIBDIR"/*; fi
