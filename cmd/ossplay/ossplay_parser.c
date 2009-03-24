@@ -166,6 +166,7 @@ play_file (dspdev_t * dsp, const char * filename)
 
   if (strcmp (suffix, ".au") == 0 || strcmp (suffix, ".AU") == 0)
     {				/* Raw mu-Law data */
+      if (verbose)
       print_msg (NORMALM, "Playing raw mu-Law file %s\n", filename);
 
       decode_sound (dsp, fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
@@ -214,6 +215,7 @@ play_file (dspdev_t * dsp, const char * filename)
 	  goto done;
 	}
 
+      if (verbose)
       print_msg (NORMALM, "Playing MPEG audio file %s\n", filename);
 
       if (setup_device (fd, AFMT_S16_NE, 2, 44100))
@@ -869,6 +871,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       return;
     }
 
+  if (verbose)
   print_msg (NORMALM, "Playing .VOC file %s\n", filename);
 
    /*LINTED*/ while (1)
@@ -1050,18 +1053,25 @@ print_verbose_fileinfo (const char * filename, int type, int format,
     {
       case WAVE_FILE:
       case WAVE_FILE_BE:
+        if (verbose)
         print_msg (NORMALM, "Playing WAVE file %s, ", filename); break;
       case AIFC_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing AIFC file %s, ", filename); break;
       case AIFF_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing AIFF file %s, ", filename); break;
       case AU_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing AU file %s, ", filename); break;
       case _8SVX_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing 8SVX file %s, ", filename); break;
       case _16SV_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing 16SV file %s, ", filename); break;
       case MAUD_FILE:
+        if (verbose)
         print_msg (NORMALM, "Playing MAUD file %s, ", filename); break;
     }
 
@@ -1101,5 +1111,6 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
        case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
     }
+  if (verbose)
   print_msg (NORMALM, "%s/%s/%d Hz\n", fmt, chn, speed);
 }
