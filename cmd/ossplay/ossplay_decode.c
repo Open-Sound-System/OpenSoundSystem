@@ -59,8 +59,9 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
 {
   decoders_queue_t * dec, * decoders;
   seekfunc_t * seekf = NULL;
-  int bsize, obsize, ret = E_DECODE;
+  int bsize, obsize;
   double constant;
+  errors_t ret = E_DECODE;
 
   if (force_speed != 0) speed = force_speed;
   if (force_channels != 0) channels = force_channels;
@@ -288,8 +289,9 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
 {
   unsigned long long datasize = 0;
   double constant;
-  int fd = -1, ret;
+  int fd = -1;
   decoders_queue_t * dec, * decoders = NULL;
+  errors_t ret;
   FILE * wave_fp;
 
   if ((ret = setup_device (dsp, format, channels, speed))) return ret;
@@ -981,7 +983,7 @@ decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
             {
             /*
              * Each sample word for a channel in an IMA ADPCM RIFF file is 4
-             * bits. This doesn't resolve to an integeral number of samples
+             * bits. This doesn't resolve to an integral number of samples
              * in a 3 bit ADPCM, so we use a simple method around this.
              * This shouldn't skip samples since the spec gurantees the
              * number of sample words in a block is divisible by 3.

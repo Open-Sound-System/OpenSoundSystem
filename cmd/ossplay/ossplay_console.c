@@ -189,8 +189,9 @@ ossplay_strdup (const char * s)
 static int
 ossplay_main (int argc, char ** argv)
 {
-  int i;
+  int i, loop_flag;
   dspdev_t dsp = { 0 };
+  errors_t ret = 0;
 
   normalout = stdout;
 
@@ -203,18 +204,21 @@ ossplay_main (int argc, char ** argv)
   open_device (&dsp);
   if (dsp.playtgt != NULL) select_playtgt (&dsp);
 
-  do for (i = 1; i < argc; i++)
-    {
-      strncpy (dsp.current_songname, filepart (argv[i]),
-               sizeof (dsp.current_songname));
-      dsp.current_songname[sizeof (dsp.current_songname) - 1] = 0;
-      from_stdin = !strcmp (argv[i], "-");
-      play_file (&dsp, argv[i]);
-      eflag = 0;
-    }
-  while (loop);
+  do {
+    loop_flag = 0;
+    for (i = 1; i < argc; i++)
+      {
+        strncpy (dsp.current_songname, filepart (argv[i]),
+                 sizeof (dsp.current_songname));
+        dsp.current_songname[sizeof (dsp.current_songname) - 1] = '\0';
+        from_stdin = !strcmp (argv[i], "-");
+        ret = play_file (&dsp, argv[i]);
+        if (ret == 0) loop_flag = 1;
+        eflag = 0;
+      }
+  } while (loop && loop_flag);
 
-  return exitstatus;
+  return ret;
 }
 
 static int

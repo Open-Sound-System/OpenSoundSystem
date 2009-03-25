@@ -124,8 +124,8 @@ msadpcm_values_t;
 
 typedef ssize_t (decfunc_t) (unsigned char **, unsigned char *,
                              ssize_t, void *);
-typedef ssize_t (seekfunc_t) (int, unsigned long long *, unsigned long long, double,
-                              unsigned long long, int);
+typedef ssize_t (seekfunc_t) (int, unsigned long long *, unsigned long long,
+                              double, unsigned long long, int);
 
 typedef enum {
   FREE_OBUF = 1,
@@ -143,18 +143,20 @@ typedef struct decoders_queue {
 decoders_queue_t;
 
 typedef enum {
-  E_SETUP_ERROR = 1,
+  E_OK,
+  E_SETUP_ERROR,
   E_FORMAT_UNSUPPORTED,
   E_CHANNELS_UNSUPPORTED,
   E_DECODE,
   E_ENCODE,
+  E_USAGE,
   /*
    * Not an error, but since seek function can also return an error this needs
    * to be different from the others
    */
   SEEK_CONT_AFTER_DECODE
 }
-ossplay_errors_t;
+errors_t;
 
 static const format_t format_a[] = {
   {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},

@@ -137,7 +137,7 @@ find_devname (char * devname, const char * num)
   if (sscanf (num, "%d", &dev) != 1)
     {
       print_msg (ERRORM, "Invalid audio device number '%s'\n", num);
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if ((mixer_fd = open (devmixer, O_RDWR, 0)) == -1)
@@ -239,7 +239,7 @@ open_device (dspdev_t * dsp)
     {
       perror_msg (dsp->dname);
       describe_error ();
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if (raw_mode)
@@ -269,7 +269,7 @@ ossplay_usage (const char * prog)
   print_msg (HELPM, "            -S<secs>       Start playing from offset.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
-  exit (-1);
+  exit (E_USAGE);
 }
 
 static void
@@ -299,7 +299,7 @@ ossrecord_usage (const char * prog)
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
   print_msg (HELPM, "            -O             Allow overwrite.\n");
-  exit (-1);
+  exit (E_USAGE);
 }
 
 const char *
@@ -338,7 +338,7 @@ select_container (const char * optstr)
       return container_a[i].type;
 
   print_msg (ERRORM, "Unsupported container format name '%s'!\n", optstr);
-  exit (-1);
+  exit (E_USAGE);
 }
 
 static int
@@ -366,7 +366,7 @@ select_format (const char * optstr, int dir)
       return format_a[i].fmt;
 
   print_msg (ERRORM, "Unsupported format name '%s'!\n", optstr);
-  exit (-1);
+  exit (E_USAGE);
 }
 
 void
@@ -383,13 +383,13 @@ select_playtgt (dspdev_t * dsp)
   if (ioctl (dsp->fd, SNDCTL_DSP_GET_PLAYTGT_NAMES, &ei) == -1)
     {
       perror_msg ("SNDCTL_DSP_GET_PLAYTGT_NAMES");
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if (ioctl (dsp->fd, SNDCTL_DSP_GET_PLAYTGT, &src) == -1)
     {
       perror_msg ("SNDCTL_DSP_GET_PLAYTGT");
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if ((dsp->playtgt[0] == '\0') || (strcmp (dsp->playtgt, "?") == 0))
@@ -417,7 +417,7 @@ select_playtgt (dspdev_t * dsp)
 	  if (ioctl (dsp->fd, SNDCTL_DSP_SET_PLAYTGT, &src) == -1)
 	    {
 	      perror_msg ("SNDCTL_DSP_SET_PLAYTGT");
-	      exit (-1);
+	      exit (E_SETUP_ERROR);
 	    }
 
 	  return;
@@ -427,7 +427,7 @@ select_playtgt (dspdev_t * dsp)
   print_msg (ERRORM,
 	     "Unknown playback target name '%s' - use -o? to get the list\n",
 	     dsp->playtgt);
-  exit (-1);
+  exit (E_USAGE);
 }
 
 void
@@ -444,13 +444,13 @@ select_recsrc (dspdev_t * dsp)
   if (ioctl (dsp->fd, SNDCTL_DSP_GET_RECSRC_NAMES, &ei) == -1)
     {
       perror_msg ("SNDCTL_DSP_GET_RECSRC_NAMES");
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if (ioctl (dsp->fd, SNDCTL_DSP_GET_RECSRC, &src) == -1)
     {
       perror_msg ("SNDCTL_DSP_GET_RECSRC");
-      exit (-1);
+      exit (E_SETUP_ERROR);
     }
 
   if (dsp->recsrc[0] == '\0' || strcmp (dsp->recsrc, "?") == 0)
@@ -478,7 +478,7 @@ select_recsrc (dspdev_t * dsp)
 	  if (ioctl (dsp->fd, SNDCTL_DSP_SET_RECSRC, &src) == -1)
 	    {
 	      perror_msg ("SNDCTL_DSP_SET_RECSRC");
-	      exit (-1);
+	      exit (E_SETUP_ERROR);
 	    }
 	  return;
 	}
@@ -487,7 +487,7 @@ select_recsrc (dspdev_t * dsp)
   print_msg (ERRORM,
 	     "Unknown recording source name '%s' - use -i? to get the list\n",
 	     dsp->recsrc);
-  exit (-1);
+  exit (E_USAGE);
 }
 
 int
@@ -768,7 +768,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
               case 32: force_fmt = AFMT_S32_LE; break;
               default:
                 print_msg (ERRORM, "Error: Unsupported number of bits %d\n", c);
-                exit (-1);
+                exit (E_FORMAT_UNSUPPORTED);
             }
           break;
 
@@ -815,7 +815,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           if (force_speed == 0)
             {
               print_msg (ERRORM, "Bad sampling rate given\n");
-              exit (-1);
+              exit (E_USAGE);
             }
           if (force_speed < 1000) force_speed *= 1000;
           break;
@@ -825,7 +825,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           if ((c >= sizeof (script)) || (c < 0))
             {
               print_msg (ERRORM, "-r argument is too long!\n");
-              exit (-1);
+              exit (E_USAGE);
             }
           break;
 
@@ -851,10 +851,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
   if (argc != optind + 1)
   /* No file or multiple file names given */
-    {
       ossrecord_usage (argv[0]);
-      exit (-1);
-    }
 
   if (force_fmt == 0) force_fmt = container_a[type].dformat;
   if (force_channels == 0) force_channels = container_a[type].dchannels;
@@ -983,7 +980,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
 
       if ((seek_time != 0) && (seekf != NULL))
         {
-          int ret;
+          errors_t ret;
 
           ret = seekf (fd, datamark, filesize, constant, rsize, dsp->channels);
           if (ret == 0) continue;
@@ -996,12 +993,15 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
           if (outl == 0) /* EOF */
 	     return 0;
 
-          /* clear_update might have reset errno. Save and add strerror? */
           if ((errno == 0) && (outl == 0) && (filesize != UINT_MAX))
-            print_msg (WARNM, "Sound data ended prematurily!\n");
+            {
+              print_msg (WARNM, "Sound data ended prematurily!\n");
+              return 0;
+            }
           else if (errno && (!eflag))
             perror_msg (dsp->dname);
-          EXITPLAY (eflag + 128);
+          if (eflag) EXITPLAY (eflag + 128);
+          else EXITPLAY (E_DECODE);
         }
       *datamark += outl;
 
@@ -1026,7 +1026,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
           if ((errno == EINTR) && (eflag)) EXITPLAY (eflag + 128);
           ossplay_free (buf);
           perror_msg ("audio write");
-          exit (-1);
+          exit (E_DECODE);
         }
     }
 
@@ -1112,12 +1112,18 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 
 int silence (dspdev_t * dsp, unsigned long long len, int speed)
 {
+  errors_t ret;
   ssize_t i;
   unsigned char empty[1024];
 
-  if ((i = setup_device (dsp, AFMT_U8, 1, speed))) return -1;
+  ret = setup_device (dsp, AFMT_U8, 1, speed);
 
-  if (i == AFMT_S16_NE) len /= 2;
+  if (ret == E_FORMAT_UNSUPPORTED) 
+    {
+      len *= 4;
+      if ((ret = setup_device (dsp, AFMT_S16_NE, 2, speed))) return ret;
+    }
+  else if (ret) return ret;
 
   memset (empty, 0, 1024 * sizeof (unsigned char));
 

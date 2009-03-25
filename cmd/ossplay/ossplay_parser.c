@@ -31,28 +31,29 @@
 #define Crea_MAGIC	0x43726561	/* 'Crea' */
 
 extern int quiet, verbose;
-extern int raw_file, exitstatus, force_fmt, from_stdin;
+extern int raw_file, force_fmt, from_stdin;
 extern off_t (*ossplay_lseek) (int, off_t, int);
 
 #ifdef MPEG_SUPPORT
 static int mpeg_enabled = 0;
 #endif
 
-static void play_au (dspdev_t *, const char *, int, unsigned char *, int);
-static void play_iff (dspdev_t *, const char *, int, unsigned char *, int);
-static void play_voc (dspdev_t *, const char *, int, unsigned char *, int);
+static errors_t play_au (dspdev_t *, const char *, int, unsigned char *, int);
+static errors_t play_iff (dspdev_t *, const char *, int, unsigned char *, int);
+static errors_t play_voc (dspdev_t *, const char *, int, unsigned char *, int);
 #ifdef MPEG_SUPPORT
 extern void play_mpeg (const char *, int, unsigned char *, int);
 #endif
 static void print_verbose_fileinfo (const char *, int, int, int, int);
 
-void
+errors_t
 play_file (dspdev_t * dsp, const char * filename)
 {
   int fd;
   ssize_t l, i;
   unsigned char buf[PLAYBUF_SIZE];
   const char * suffix;
+  errors_t ret = 0;
 
   if (from_stdin)
     {
@@ -69,16 +70,15 @@ play_file (dspdev_t * dsp, const char * filename)
   if (fd == -1)
     {
       perror_msg (filename);
-      exitstatus++;
-      return;
+      return E_DECODE;
     }
 
   if (raw_file)
     {
       print_msg (NORMALM, "%s: Playing RAW file.\n", filename);
 
-      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
-                    DEFAULT_SPEED, NULL);
+      ret = decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                          DEFAULT_SPEED, NULL);
       goto done;
     }
 
@@ -110,7 +110,7 @@ play_file (dspdev_t * dsp, const char * filename)
           }
         l += i;
         if (l < 24) break;
-        play_au (dsp, filename, fd, buf, l);
+        ret = play_au (dsp, filename, fd, buf, l);
         goto done;
       case Crea_MAGIC:
         if ((i = read (fd, buf + 12, 7)) == -1)
@@ -120,34 +120,34 @@ play_file (dspdev_t * dsp, const char * filename)
           }
         l += i;
         if ((l < 19) || (memcmp (buf, "Creative Voice File", 19))) break;
-        play_voc (dsp, filename, fd, buf, l);
+        ret = play_voc (dsp, filename, fd, buf, l);
         goto done;
       case RIFF_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        play_iff (dsp, filename, fd, buf, WAVE_FILE);
+        ret = play_iff (dsp, filename, fd, buf, WAVE_FILE);
         goto done;
       case RIFX_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        play_iff (dsp, filename, fd, buf, WAVE_FILE_BE);
+        ret = play_iff (dsp, filename, fd, buf, WAVE_FILE_BE);
         goto done;
       case FORM_MAGIC:
         if (l < 12) break;
         switch (be_int (buf + 8, 4))
           {
             case AIFF_MAGIC:
-              play_iff (dsp, filename, fd, buf, AIFF_FILE);
+              ret = play_iff (dsp, filename, fd, buf, AIFF_FILE);
               goto done;
             case AIFC_MAGIC:
-              play_iff (dsp, filename, fd, buf, AIFC_FILE);
+              ret = play_iff (dsp, filename, fd, buf, AIFC_FILE);
               goto done;
             case _8SVX_MAGIC:
-              play_iff (dsp, filename, fd, buf, _8SVX_FILE);
+              ret = play_iff (dsp, filename, fd, buf, _8SVX_FILE);
               goto done;
             case _16SV_MAGIC:
-              play_iff (dsp, filename, fd, buf, _16SV_FILE);
+              ret = play_iff (dsp, filename, fd, buf, _16SV_FILE);
               goto done;
             case MAUD_MAGIC:
-              play_iff (dsp, filename, fd, buf, MAUD_FILE);
+              ret = play_iff (dsp, filename, fd, buf, MAUD_FILE);
               goto done;
             default: break;
           }
@@ -166,39 +166,38 @@ play_file (dspdev_t * dsp, const char * filename)
 
   if (strcmp (suffix, ".au") == 0 || strcmp (suffix, ".AU") == 0)
     {				/* Raw mu-Law data */
-      if (verbose)
-      print_msg (NORMALM, "Playing raw mu-Law file %s\n", filename);
+      print_msg (VERBOSEM, "Playing raw mu-Law file %s\n", filename);
 
-      decode_sound (dsp, fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
+      ret = decode_sound (dsp, fd, UINT_MAX, AFMT_MU_LAW, 1, 8000, NULL);
       goto done;
     }
 
   if (strcmp (suffix, ".snd") == 0 || strcmp (suffix, ".SND") == 0)
     {
-      print_msg (NORMALM,
+      print_msg (VERBOSEM,
                  "%s: Unknown format. Assuming RAW audio (%d/%d/%d.\n",
                  filename, DEFAULT_SPEED, DEFAULT_FORMAT, DEFAULT_CHANNELS);
 
-      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
-                    DEFAULT_SPEED, NULL);
+      ret = decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                          DEFAULT_SPEED, NULL);
       goto done;
     }
 
   if (strcmp (suffix, ".cdr") == 0 || strcmp (suffix, ".CDR") == 0)
     {
-      print_msg (NORMALM, "%s: Playing CD-R (cdwrite) file.\n", filename);
+      print_msg (VERBOSEM, "%s: Playing CD-R (cdwrite) file.\n", filename);
 
-      decode_sound (dsp, fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
+      ret = decode_sound (dsp, fd, UINT_MAX, AFMT_S16_BE, 2, 44100, NULL);
       goto done;
     }
 
 
   if (strcmp (suffix, ".raw") == 0 || strcmp (suffix, ".RAW") == 0)
     {
-      print_msg (NORMALM, "%s: Playing RAW file.\n", filename);
+      print_msg (VERBOSEM, "%s: Playing RAW file.\n", filename);
 
-      decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
-                    DEFAULT_SPEED, NULL);
+      ret = decode_sound (dsp, fd, UINT_MAX, DEFAULT_FORMAT, DEFAULT_CHANNELS,
+                          DEFAULT_SPEED, NULL);
       goto done;
     }
 
@@ -215,11 +214,10 @@ play_file (dspdev_t * dsp, const char * filename)
 	  goto done;
 	}
 
-      if (verbose)
-      print_msg (NORMALM, "Playing MPEG audio file %s\n", filename);
+      print_msg (VERBOSEM, "Playing MPEG audio file %s\n", filename);
 
-      if (setup_device (fd, AFMT_S16_NE, 2, 44100))
-	return;
+      if ((ret = setup_device (fd, AFMT_S16_NE, 2, 44100)))
+	return ret;
 
       tmp = APF_NORMAL;
       ioctl (audiofd, SNDCTL_DSP_PROFILE, &tmp);
@@ -229,21 +227,20 @@ play_file (dspdev_t * dsp, const char * filename)
 #endif
 
   print_msg (ERRORM, "%s: Unrecognized audio file type.\n", filename);
-  exitstatus++;
 done:
   close (fd);
 
 #if 0
   ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
 #endif
-  return;
+  return ret;
 seekerror:
-  exitstatus++;
   close (fd);
+  return E_DECODE;
 }
 
 /*ARGSUSED*/
-static void
+static errors_t
 play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
           int type)
 {
@@ -304,7 +301,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
         print_msg (ERRORM, "%s: error: cannot seek to end of " #n " chunk.\n", \
                  filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return; \
+        else return E_DECODE; \
       } \
   } while (0)
 
@@ -315,13 +312,13 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
         print_msg (ERRORM, \
                    "%s: error: chunk " #n " size is too small.\n", filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return; \
+        else return E_DECODE; \
       } \
     if (read(fd, buf, len) < len) \
       { \
         print_msg (ERRORM, "%s: error: cannot read " #n " chunk.\n",filename); \
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return; \
+        else return E_DECODE; \
       } \
     ASEEK (fd, chunk_size - len, n); \
   } while (0)
@@ -370,7 +367,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
           print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
                      filename, csize);
           if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta;
-          return;
+          return E_DECODE;
         }
       chunk_id = be_int (buf, 4);
       chunk_size = ne_int (buf + 4, 4);
@@ -384,7 +381,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               {
                 print_msg (ERRORM, "%s: error: COMM hunk not singular!\n",
                            filename);
-                return;
+                return E_DECODE;
               }
             if (type == AIFC_FILE) AREAD (fd, buf, 22, COMM);
             else AREAD (fd, buf, 18, COMM);
@@ -424,7 +421,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               if ((exp == 16384) || (COMM_rate <= 0))
                 {
                   print_msg (ERRORM, "Invalid sample rate!\n");
-                  return;
+                  return E_DECODE;
                 }
               speed = COMM_rate;
             }
@@ -465,7 +462,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                            "%s: error: %c%c%c%c compression is not supported\n",
                            filename, *(buf + 18), *(buf + 19),
                            *(buf + 20), *(buf + 21));
-                  return;
+                  return E_FORMAT_UNSUPPORTED;
               }
             break;
           case SSND_HUNK:
@@ -473,19 +470,19 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               {
                 print_msg (ERRORM,
                            "%s: error: SSND hunk not singular!\n", filename);
-                return;
+                return E_DECODE;
               }
             if (chunk_size < 8)
               {
                 print_msg (ERRORM,
                            "%s: error: impossibly small SSND hunk\n", filename);
-                return;
+                return E_DECODE;
               }
             if (read (fd, buf, 8) < 8)
               {
                 print_msg (ERRORM, "%s: error: cannot read SSND chunk.\n",
                            filename);
-                return;
+                return E_DECODE;
               }
             found |= SSND_FOUND;
 
@@ -520,7 +517,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 default:
                   print_msg (ERRORM, "%s: Unsupported compression %d\n",
                              filename, buf[15]);
-                  return;
+                  return E_FORMAT_UNSUPPORTED;
               }
             break;
           case data_HUNK: /* WAVE chunk */
@@ -563,7 +560,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 case 6: format = AFMT_IMA_ADPCM; break;
                 default:
                   print_msg (ERRORM, "%s: format not supported", filename);
-                  return;
+                  return E_FORMAT_UNSUPPORTED;
               }
             break;
 
@@ -573,7 +570,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               {
                 print_msg (ERRORM, "%s: error: fmt hunk not singular!\n",
                            filename);
-                return;
+                return E_DECODE;
               }
             if (chunk_size > 1024) len = 1024;
             else len = chunk_size;
@@ -599,7 +596,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 if (chunk_size < 40)
                   {
                     print_msg (ERRORM, "%s: invalid fmt chunk\n", filename);
-                    return;
+                    return E_DECODE;
                   }
                 format = ne_int (buf + 24, 2);
               }
@@ -632,7 +629,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 default:
                   print_msg (ERRORM, "%s: Unsupported wave format %#x\n",
                              filename, format);
-                  return;
+                  return E_FORMAT_UNSUPPORTED;
               }
             found |= COMM_FOUND;
 
@@ -703,13 +700,13 @@ nexta:
     if ((found & COMM_FOUND) == 0)
       {
         print_msg (ERRORM, "%s: Couldn't find format chunk!\n", filename);
-        return;
+        return E_DECODE;
       }
 
     if ((found & SSND_FOUND) == 0)
       {
         print_msg (ERRORM, "%s: Couldn't find sound chunk!\n", filename);
-        return;
+        return E_DECODE;
       }
 
     if ((type == AIFC_FILE) && ((found & FVER_FOUND) == 0))
@@ -719,20 +716,19 @@ nexta:
       {
         perror_msg (filename);
         print_msg (ERRORM, "Can't seek in file\n");
-        return;
+        return E_DECODE;
       }
 
 stdinext:
-  if (!quiet)
+  if (verbose)
     print_verbose_fileinfo (filename, type, format, channels, speed);
 
-  decode_sound (dsp, fd, sound_size, format, channels, speed,
-                (void *)&msadpcm_val);
-  return;
+  return decode_sound (dsp, fd, sound_size, format, channels, speed,
+                       (void *)&msadpcm_val);
 }
 
 /*ARGSUSED*/
-static void
+static errors_t
 play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
          int l)
 {
@@ -785,7 +781,7 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       print_msg (ERRORM,
                  "%s: Floating point encoded .au files are not supported",
                  filename);
-      return;
+      return E_FORMAT_UNSUPPORTED;
 
     case 23:
     case 24:
@@ -793,7 +789,7 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
     case 26:
       print_msg (ERRORM, "%s: G.72x ADPCM encoded .au files are not supported",
                  filename);
-      return;
+      return E_FORMAT_UNSUPPORTED;
 
     case 27:
       format = AFMT_A_LAW;
@@ -801,22 +797,22 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
 
     default:
       print_msg (ERRORM, "%s: Unknown encoding %d.\n", filename, fmt);
-      return;
+      return E_FORMAT_UNSUPPORTED;
     }
 
-  if (!quiet)
+  if (verbose)
     {
       print_verbose_fileinfo (filename, AU_FILE, format, channels, speed);
 
-      if ((verbose) && (p > 24))
+      if (p > 24)
         {
           if (p > 1047) an_len = 1023;
           else an_len = p - 24;
           if (read (fd, hdr, an_len) < an_len)
             {
-              print_msg (ERRORM, "%s: Can't %u bytes from pos 24\n", filename,
-                         an_len);
-              return;
+              print_msg (ERRORM, "%s: Can't read %u bytes from pos 24\n",
+                         filename, an_len);
+              return E_DECODE;
             }
           for (i = 0; i < an_len; i++) if (!isprint (hdr[i])) hdr[i] = '.';
           hdr[an_len] = '\0';
@@ -828,14 +824,14 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
     {
       perror_msg (filename);
       print_msg (ERRORM, "Can't seek to the data chunk\n");
-      return;
+      return E_DECODE;
     }
 
-  decode_sound (dsp, fd, filelen, format, channels, speed, NULL);
+  return decode_sound (dsp, fd, filelen, format, channels, speed, NULL);
 }
 
 /*ARGSUSED*/
-static void
+static errors_t
 play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
           int l)
 {
@@ -845,7 +841,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       { \
         print_msg (ERRORM, "%s: Can't read %d bytes at pos %d\n", \
                    filename, len, l); \
-        return; \
+        return E_DECODE; \
       } \
     pos += len; \
   } while (0)
@@ -854,11 +850,12 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
                loopcount = 0, loopoffs = 4, pos = l + 7;
   unsigned char buf[256], plock = 0, block_type;
   int speed = 11025, channels = 1, bits = 8, format = AFMT_U8;
+  errors_t ret;
 
   if (read (fd, hdr + 19, 7) < 7)
     {
       print_msg (ERRORM, "%s: Not a valid .VOC file\n", filename);
-      return;
+      return E_DECODE;
     }
 
   data_offs = le_int (hdr + 0x14, 2);
@@ -868,18 +865,17 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
   if ((((~vers) + 0x1234) & 0xffff) != id)
     {
       print_msg (ERRORM, "%s: Not a valid .VOC file\n", filename);
-      return;
+      return E_DECODE;
     }
 
-  if (verbose)
-  print_msg (NORMALM, "Playing .VOC file %s\n", filename);
+  print_msg (VERBOSEM, "Playing .VOC file %s\n", filename);
 
    /*LINTED*/ while (1)
     {
       if (ossplay_lseek (fd, data_offs - pos, SEEK_CUR) == -1)
         {
           print_msg (ERRORM, "%s: Can't seek to pos %d\n", filename, data_offs);
-          return;
+          return E_DECODE;
         }
       pos = data_offs + 4;
 
@@ -889,19 +885,19 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
           if (tmp != 0)
             print_msg (ERRORM,
                        "%s: Can't read 1 byte at pos %d\n", filename, l);
-          return;
+          return E_DECODE;
         }
 
       block_type = buf[0];
 
       if (block_type == 0)
-	return;			/* End */
+	return 0;			/* End */
 
       if (read (fd, buf, 3) != 3)
 	{
 	  print_msg (ERRORM, "%s: Truncated .VOC file (%d)\n",
 		     filename, buf[0]);
-	  return;
+	  return E_DECODE;
 	}
 
       blklen = len = le_int (buf, 3);
@@ -937,13 +933,13 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
                      print_msg (ERRORM,
                                 "%s: encoding %d is not supported\n",
                                 filename, fmt);
-                     return;
+                     return E_FORMAT_UNSUPPORTED;
                  }
             }
 
 	case 2:		/* Continuation data */
-          if (decode_sound (dsp, fd, len, format, channels, speed, NULL) < 0)
-            return;
+          if ((ret = decode_sound(dsp, fd, len, format, channels, speed, NULL)))
+            return ret;
           pos += len;
 	  break;
 
@@ -952,7 +948,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
 	  len = le_int (buf, 2);
 	  tmp = 256 - buf[2];	/* Time constant */
 	  speed = (1000000 + tmp / 2) / tmp;
-          silence (dsp, len, speed);
+	  if ((ret = silence (dsp, len, speed))) return ret;
 	  break;
 
         case 5: 	/* Text */
@@ -1003,7 +999,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                return;
+                return E_FORMAT_UNSUPPORTED;
             }
           break;
 
@@ -1029,11 +1025,11 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
               default:
                 print_msg (ERRORM,
                            "%s: encoding %d is not supported\n", filename, fmt);
-                return;
+                return E_FORMAT_UNSUPPORTED;
             }
 
-          if (decode_sound (dsp, fd, len, format, channels, speed, NULL) < 0)
-            return;
+          if ((ret = decode_sound(dsp, fd, len, format, channels, speed, NULL)))
+            return ret;
           pos += len;
 	  break;
 	}
@@ -1041,6 +1037,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       if (block_type != 8) plock = 0;
       data_offs += blklen + 4;
     }
+  return 0;
 }
 
 static void 
@@ -1053,26 +1050,19 @@ print_verbose_fileinfo (const char * filename, int type, int format,
     {
       case WAVE_FILE:
       case WAVE_FILE_BE:
-        if (verbose)
-        print_msg (NORMALM, "Playing WAVE file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing WAVE file %s, ", filename); break;
       case AIFC_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing AIFC file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing AIFC file %s, ", filename); break;
       case AIFF_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing AIFF file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing AIFF file %s, ", filename); break;
       case AU_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing AU file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing AU file %s, ", filename); break;
       case _8SVX_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing 8SVX file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing 8SVX file %s, ", filename); break;
       case _16SV_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing 16SV file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing 16SV file %s, ", filename); break;
       case MAUD_FILE:
-        if (verbose)
-        print_msg (NORMALM, "Playing MAUD file %s, ", filename); break;
+        print_msg (VERBOSEM, "Playing MAUD file %s, ", filename); break;
     }
 
   if (channels == 1)
@@ -1111,6 +1101,5 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;
        case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
     }
-  if (verbose)
-  print_msg (NORMALM, "%s/%s/%d Hz\n", fmt, chn, speed);
+  print_msg (VERBOSEM, "%s/%s/%d Hz\n", fmt, chn, speed);
 }

@@ -3,6 +3,6 @@
 
 #include "ossplay.h"
 
-void play_file (dspdev_t *, const char *);
+errors_t play_file (dspdev_t *, const char *);
 
 #endif
