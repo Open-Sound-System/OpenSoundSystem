@@ -629,7 +629,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       if (nobjects >= MAX_OBJECTS || nsources >= MAX_OBJECTS)
 	{
-	  fprintf (stderr, "Too many objects in s\n", path);
+	  fprintf (stderr, "Too many objects in %s\n", path);
 	  exit (-1);
 	}
 
