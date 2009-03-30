@@ -189,9 +189,14 @@ ossplay_strdup (const char * s)
 static int
 ossplay_main (int argc, char ** argv)
 {
+<<<<<<< local
   int i, loop_flag;
   dspdev_t dsp = { 0 };
   errors_t ret = 0;
+=======
+  int i;
+  dspdev_t dsp = { -1 };
+>>>>>>> other
 
   normalout = stdout;
 
@@ -218,14 +223,19 @@ ossplay_main (int argc, char ** argv)
       }
   } while (loop && loop_flag);
 
+<<<<<<< local
   return ret;
+=======
+  close_device (&dsp);
+  return exitstatus;
+>>>>>>> other
 }
 
 static int
 ossrecord_main (int argc, char ** argv)
 {
   int err, i, oind;
-  dspdev_t dsp = { 0 };
+  dspdev_t dsp = { -1 };
   char current_filename[512];
 
   extern int force_fmt, force_channels, force_speed, nfiles;
@@ -276,6 +286,7 @@ ossrecord_main (int argc, char ** argv)
       if (err) return err;
     }
 
+  close_device (&dsp);
   return 0;
 }
 
@@ -293,6 +304,6 @@ totime (double secs)
 int
 main (int argc, char **argv)
 {
-  if (strstr (filepart (argv[0]), "ossplay")) return ossplay_main (argc, argv);
-  return ossrecord_main (argc, argv);;
+  if (strstr (filepart (argv[0]), "ossplay")) exit(ossplay_main (argc, argv));
+  exit(ossrecord_main (argc, argv));
 }
