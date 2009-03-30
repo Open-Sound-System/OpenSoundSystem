@@ -190,11 +190,20 @@ static int
 ossplay_main (int argc, char ** argv)
 {
 <<<<<<< local
+=======
+<<<<<<< local
+>>>>>>> other
   int i, loop_flag;
+<<<<<<< local
+=======
   dspdev_t dsp = { 0 };
+>>>>>>> other
   errors_t ret = 0;
+<<<<<<< local
+=======
 =======
   int i;
+>>>>>>> other
   dspdev_t dsp = { -1 };
 >>>>>>> other
 
@@ -227,7 +236,11 @@ ossplay_main (int argc, char ** argv)
   return ret;
 =======
   close_device (&dsp);
+<<<<<<< local
+  return ret;
+=======
   return exitstatus;
+>>>>>>> other
 >>>>>>> other
 }
 
