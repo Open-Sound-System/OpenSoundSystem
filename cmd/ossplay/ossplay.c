@@ -257,11 +257,23 @@ format2bits (int format)
 }
 
 void
+close_device (dspdev_t * dsp)
+{
+	if (dsp->fd == -1)
+	   return;
+	close(dsp->fd);
+	dsp->fd=-1;
+}
+
+void
 open_device (dspdev_t * dsp)
 {
   char *devdsp;
 
-  dsp->fd = -1; dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
+  if (dsp->fd >= 0)
+     close_device (dsp);
+
+  dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
 
   if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
      devdsp = "/dev/dsp";
@@ -538,7 +550,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
       ioctl (dsp->fd, SNDCTL_DSP_SYNC, NULL);
       ioctl (dsp->fd, SNDCTL_DSP_HALT, NULL);
 #else
-      close (dsp->fd);
+      close_device (dsp);
       open_device (dsp);
       if (dsp->playtgt != NULL)	select_playtgt (dsp);
       if (dsp->recsrc != NULL)	select_recsrc (dsp);
