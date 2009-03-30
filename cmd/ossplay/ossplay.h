@@ -214,6 +214,7 @@ float format2bits (int);
 void select_playtgt (dspdev_t *);
 void select_recsrc (dspdev_t *);
 void open_device (dspdev_t *);
+void close_device (dspdev_t *);
 
 #if !defined(OSS_BIG_ENDIAN) && !defined(OSS_LITTLE_ENDIAN)
 #if AFMT_S16_NE == AFMT_S16_BE
