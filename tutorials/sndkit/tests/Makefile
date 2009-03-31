@@ -1,4 +1,4 @@
-TARGETS=iosync multich16 multich32 musicin seltest2 spdif_in_debug sweepdown sweepup synctest
+TARGETS=iosync multich16 multich32 musicin seltest2 spdif_in_debug sweepdown sweepup synctest ioctl_test
 
 CFLAGS=-I../../../include
 
