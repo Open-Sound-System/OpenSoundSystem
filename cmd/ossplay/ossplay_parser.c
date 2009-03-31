@@ -1037,7 +1037,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       if (block_type != 8) plock = 0;
       data_offs += blklen + 4;
     }
-  return 0;
+  // return 0; /* Not reached */
 }
 
 static void 
