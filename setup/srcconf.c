@@ -100,6 +100,8 @@ static int do_warning_checks=1;
 static char *shlib_cflags = "-shared -fPIC";
 static char *shlib_ldflags = "-r -shared -fPIC";
 
+static char *extra_libraries = "";
+
 char *hostcc;
 char *targetcc;
 
@@ -1006,8 +1008,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       fprintf (f, "$(BINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(BINDIR)/%s $(OBJECTS)\n",
-	       name);
+	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(BINDIR)/%s $(OBJECTS) %s\n",
+	       name, extra_libraries);
       fprintf (f, "\n\n");
     }
 
@@ -1028,8 +1030,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       fprintf (f, "$(SBINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(SBINDIR)/%s $(OBJECTS)\n",
-	       name);
+	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(SBINDIR)/%s $(OBJECTS) %s\n",
+	       name, extra_libraries);
       fprintf (f, "\n\n");
     }
 

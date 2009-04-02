@@ -460,6 +460,6 @@ main (int argc, char *argv[])
       close (connfd);
     }
 
-  close (listenfd);
+  // close (listenfd); /* Not reached */
   exit (0);
 }

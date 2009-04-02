@@ -19,6 +19,8 @@ check_sysdep (conf_t * conf, struct utsname *un)
   shlib_cflags = "-Bdynamic -Kpic";
   shlib_ldflags = "-G -z text";
 #endif
+
+  extra_libraries = "-lnsl -lsocket -lresolv";
   strcpy (conf->cplusplus,
 	  "CC -DNO_BUILTINS -I. -features=no%except -xvector=no");
 
