@@ -151,6 +151,12 @@ print_spacing (int i)
       return;
     }
 
+  if ((i % 5) == 0)
+     {
+	printf(",");
+	return;
+     }
+
   printf (".");
 }
 
