@@ -48,9 +48,13 @@
  *
  * -w NNN    Selects the number of bytes written during each loop. By default this is
  *           equal to the fragment size.
- * -D NNN    Delay NNN milliseconds after each write (before displaying the test output). Using too long
+ * -D NNN    Delay NNN milliseconds after each write (before displaying the test output).
+ *           This emulates the processing done by an application. Using too long
  *           delay times will cause buffer underruns. Use delays that are shorter than the fragment time
- *           reported by the program.
+ *           reported by the program. Note that granularity of the system timer is about 10 ms in typical
+ *           systems (HZ=100). This means that the delay time will always be rounded up to the nearest
+ *           system timer tick aftere the requested time. Using -D1 may result in up to 20 milliseconds of
+ *           delay.
  */
 
 #include <stdio.h>
@@ -85,7 +89,19 @@ int write_byte = 0;
 int raw_mode = 0;
 int loop_delay = 0;
 
+long long prev_time = 0;
+
 int data_rate, buffer_size;
+
+static long long
+get_usecs(void)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	
+	return (long long)tv.tv_sec * 1000000LL + (long long)tv.tv_usec;
+}
 
 static void
 player (int fd)
@@ -102,6 +118,15 @@ player (int fd)
 
   while (1)
     {
+      long long t, d;
+
+      t = get_usecs ();
+
+      d = t - prev_time;
+      prev_time = t;
+
+      printf("d=%2lld.%03lldms ", d / 1000LL, d % 1000LL);
+
       if (write (fd, buffer, write_size) != write_size)
 	{
 	  perror ("write");
@@ -427,6 +452,8 @@ main (int argc, char *argv[])
   printf ("\n");
   printf ("*** Starting test %d (%s)\n", mode, name);
   printf ("\n");
+
+  prev_time = get_usecs();
 
   player (fd);
   exit (0);
