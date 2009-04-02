@@ -97,6 +97,8 @@ static int kernelonly = 0;
 static int useronly = 0;
 static int do_warning_checks=1;
 
+static char *shlib_cflags = "-shared -fPIC";
+
 char *hostcc;
 char *targetcc;
 
@@ -833,7 +835,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   if (*conf.cflags != 0)
     fprintf (f, "CFLAGS += %s\n", conf.cflags);
   if (conf.mode == MD_SHLIB)
-    fprintf (f, "CFLAGS += -fPIC\n");
+    fprintf (f, "CFLAGS += %s\n", shlib_cflags);
 #endif
   if (conf.mode != MD_KERNEL)
     objdir = "TMPDIR";
@@ -1013,8 +1015,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -shared -fPIC -o $(LIBDIR)/%s.so $(OBJECTS)\n",
-	       name);
+	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
+	       shlib_cflags, name);
       fprintf (f, "\n\n");
     }
 
