@@ -8,4 +8,4 @@ sweepup:
 	$(CC) ${CFLAGS} $(LDFLAGS) -lm -o sweepup sweepup.c 
 
 clean:
-	rm -f ${TARGETS} *.o
+	rm -f ${TARGETS} *.o x y z *~
