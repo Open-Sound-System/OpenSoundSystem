@@ -98,6 +98,7 @@ static int useronly = 0;
 static int do_warning_checks=1;
 
 static char *shlib_cflags = "-shared -fPIC";
+static char *shlib_ldflags = "-shared -fPIC";
 
 char *hostcc;
 char *targetcc;
@@ -748,6 +749,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   fprintf (f, "# Makefile for %s module %s\n\n", conf.project_name, name);
   fprintf (f, "CC=%s\n", conf.ccomp);
+  // fprintf (f, "LD=ld\n");
   fprintf (f, "HOSTCC=%s\n", hostcc);
   fprintf (f, "CPLUSPLUS=%s\n", conf.cplusplus);
 #if defined(__SCO_VERSION__)
@@ -1015,8 +1017,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
-	       shlib_cflags, name);
+	       "\t$(LD) $(LIBRARIES) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
+	       shlib_ldflags, name);
       fprintf (f, "\n\n");
     }
 
