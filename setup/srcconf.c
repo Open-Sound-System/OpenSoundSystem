@@ -98,7 +98,7 @@ static int useronly = 0;
 static int do_warning_checks=1;
 
 static char *shlib_cflags = "-shared -fPIC";
-static char *shlib_ldflags = "-shared -fPIC";
+static char *shlib_ldflags = "-r -shared -fPIC";
 
 char *hostcc;
 char *targetcc;
@@ -1017,7 +1017,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
       fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(LD) $(LIBRARIES) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
+	       "\t$(LD) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
 	       shlib_ldflags, name);
       fprintf (f, "\n\n");
     }

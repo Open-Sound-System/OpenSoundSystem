@@ -17,7 +17,7 @@ check_sysdep (conf_t * conf, struct utsname *un)
   else
      strcpy (conf->ccomp, "cc -fast");	/* Optimize for the current system/arch */
   shlib_cflags = "-Bdynamic -Kpic";
-  shlib_ldflags = "-G -z -Bdynamic -Kpic";
+  shlib_ldflags = "-G -z text";
 #endif
   strcpy (conf->cplusplus,
 	  "CC -DNO_BUILTINS -I. -features=no%except -xvector=no");
