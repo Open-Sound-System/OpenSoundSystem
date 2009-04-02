@@ -5,9 +5,14 @@
  * Description:
  * This program can be used to debug some of the most common OSS audio ioctl calls (use the -m option to select):
  *
- * 	-m0 : SNDCTL_DSP_GETOSPTR      - The output buffer pointer
- * 	-m1 : SNDCTL_DSP_GETODELAY     - The output delay
- * 	-m2 : SNDCTL_DSP_GETOSPACE     - Space in the output buffer
+ *   Output tests:
+ * 	-m0  : SNDCTL_DSP_GETOSPTR      - The output buffer pointer
+ * 	-m1  : SNDCTL_DSP_GETODELAY     - The output delay
+ * 	-m2  : SNDCTL_DSP_GETOSPACE     - Space available in the output buffer
+ *
+ *   Input tests:
+ * 	-m20 : SNDCTL_DSP_GETISPTR      - The input buffer pointer
+ * 	-m21 : SNDCTL_DSP_GETISPACE     - Data available in the input buffer
  *
  * CAUTION!
  * 	
@@ -71,7 +76,8 @@
 
 typedef void (*measure_f_t) (int fd);
 
-measure_f_t measure_f = NULL;
+measure_f_t measure_f = NULL, run_test = NULL;
+
 char *name = "Unknown";
 
 char *dspdev = "/dev/dsp";
@@ -143,6 +149,43 @@ player (int fd)
 }
 
 static void
+recorder (int fd)
+{
+  char *buffer;
+
+  if ((buffer = malloc (write_size)) == NULL)
+    {
+      fprintf (stderr, "Out of memory\n");
+      exit (EXIT_FAILURE);
+    }
+
+  while (1)
+    {
+      long long t, d;
+
+      t = get_usecs ();
+
+      d = t - prev_time;
+      prev_time = t;
+
+      printf("d=%2lld.%03lldms ", d / 1000LL, d % 1000LL);
+
+      if (read (fd, buffer, write_size) != write_size)
+	{
+	  perror ("read");
+	  exit (EXIT_FAILURE);
+	}
+
+      if (loop_delay > 0)
+	usleep (loop_delay * 1000);
+
+      measure_f (fd);
+
+      write_byte += write_size;
+    }
+}
+
+static void
 print_spacing (int i)
 {
   if ((i % 10) == 0)
@@ -164,6 +207,9 @@ error_check (int fd)
 
   if (err.play_underruns > 0)
     printf (" %d underruns\n", err.play_underruns);
+
+  if (err.rec_overruns > 0)
+    printf (" %d overruns\n", err.rec_overruns);
 }
 
 static void
@@ -180,7 +226,40 @@ measure_getoptr (int fd)
 
   n = (100 * ci.ptr + buffer_size / 2) / buffer_size;
 
-  printf ("w=%8d, t=%8d ms, p=%6d : ", write_byte,
+  printf ("b=%8d, t=%8d ms, p=%6d : ", write_byte,
+	  (1000 * write_byte + data_rate / 2) / data_rate, ci.ptr);
+
+  for (i = 0; i < n; i++)
+    print_spacing (i);
+  printf ("*");
+
+  if (n < 100)
+    {
+      for (i = n + 1; i < 100; i++)
+	print_spacing (i);
+      printf ("%%");
+    }
+
+  error_check (fd);
+  printf ("\n");
+  fflush (stdout);
+}
+
+static void
+measure_getiptr (int fd)
+{
+  count_info ci;
+  int i, n;
+
+  if (ioctl (fd, SNDCTL_DSP_GETIPTR, &ci) == -1)
+    {
+      perror ("SNDCTL_DSP_GETIPTR");
+      exit (EXIT_FAILURE);
+    }
+
+  n = (100 * ci.ptr + buffer_size / 2) / buffer_size;
+
+  printf ("b=%8d, t=%8d ms, p=%6d : ", write_byte,
 	  (1000 * write_byte + data_rate / 2) / data_rate, ci.ptr);
 
   for (i = 0; i < n; i++)
@@ -213,7 +292,40 @@ measure_getospace (int fd)
 
   n = (100 * bi.bytes + buffer_size / 2) / buffer_size;
 
-  printf ("w=%8d, t=%8d ms, p=%6d : ", write_byte,
+  printf ("b=%8d, t=%8d ms, p=%6d : ", write_byte,
+	  (1000 * write_byte + data_rate / 2) / data_rate, bi.bytes);
+
+  for (i = 0; i < n; i++)
+    print_spacing (i);
+  printf ("*");
+
+  if (n < 100)
+    {
+      for (i = n + 1; i < 100; i++)
+	print_spacing (i);
+      printf ("%%");
+    }
+
+  error_check (fd);
+  printf ("\n");
+  fflush (stdout);
+}
+
+static void
+measure_getispace (int fd)
+{
+  audio_buf_info bi;
+  int i, n;
+
+  if (ioctl (fd, SNDCTL_DSP_GETISPACE, &bi) == -1)
+    {
+      perror ("SNDCTL_DSP_GETISPACE");
+      exit (EXIT_FAILURE);
+    }
+
+  n = (100 * bi.bytes + buffer_size / 2) / buffer_size;
+
+  printf ("b=%8d, t=%8d ms, p=%6d : ", write_byte,
 	  (1000 * write_byte + data_rate / 2) / data_rate, bi.bytes);
 
   for (i = 0; i < n; i++)
@@ -245,7 +357,7 @@ measure_getodelay (int fd)
 
   n = (100 * d + buffer_size / 2) / buffer_size;
 
-  printf ("w=%8d, t=%8d ms, d=%6d : ", write_byte,
+  printf ("b=%8d, t=%8d ms, d=%6d : ", write_byte,
 	  (1000 * write_byte + data_rate / 2) / data_rate, d);
 
   for (i = 0; i < n; i++)
@@ -269,9 +381,10 @@ main (int argc, char *argv[])
 {
   int i;
   int tmp;
+  int is_input = 0;
   audio_buf_info bi;
 
-  int open_mode = O_WRONLY;
+  int open_mode = 0;
 
   measure_f = measure_getospace;
 
@@ -347,14 +460,38 @@ main (int argc, char *argv[])
     case 0:
       measure_f = measure_getoptr;
       name = "Getoptr";
+      run_test = player;
+      open_mode |= O_WRONLY;
       break;
+
     case 1:
       measure_f = measure_getodelay;
       name = "Getodelay";
+      run_test = player;
+      open_mode |= O_WRONLY;
       break;
+
     case 2:
       measure_f = measure_getospace;
       name = "Getospace";
+      run_test = player;
+      open_mode |= O_WRONLY;
+      break;
+
+    case 20:
+      measure_f = measure_getiptr;
+      name = "Getiptr";
+      run_test = recorder;
+      open_mode |= O_RDONLY;
+      is_input = 1;
+      break;
+
+    case 21:
+      measure_f = measure_getispace;
+      name = "Getispace";
+      run_test = recorder;
+      open_mode |= O_RDONLY;
+      is_input = 1;
       break;
 
     default:
@@ -423,11 +560,22 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  if (ioctl (fd, SNDCTL_DSP_GETOSPACE, &bi) == -1)
-    {
-      perror ("SNDCTL_DSP_GETOSPACE");
-      exit (EXIT_FAILURE);
-    }
+  if (is_input)
+     {
+	  if (ioctl (fd, SNDCTL_DSP_GETISPACE, &bi) == -1)
+	    {
+	      perror ("SNDCTL_DSP_GETISPACE");
+	      exit (EXIT_FAILURE);
+	    }
+     }
+  else
+     {
+	  if (ioctl (fd, SNDCTL_DSP_GETOSPACE, &bi) == -1)
+	    {
+	      perror ("SNDCTL_DSP_GETOSPACE");
+	      exit (EXIT_FAILURE);
+	    }
+     }
 
   buffer_size = bi.fragsize * bi.fragstotal;
 
@@ -455,6 +603,6 @@ main (int argc, char *argv[])
 
   prev_time = get_usecs();
 
-  player (fd);
+  run_test (fd);
   exit (0);
 }
