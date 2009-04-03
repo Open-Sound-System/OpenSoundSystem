@@ -67,6 +67,19 @@ load_devinfo (int dev)
 {
   int i, n;
   oss_mixext *thisrec;
+  oss_mixerinfo mi;
+
+  mi.dev = dev;
+  if (ioctl (mixerfd, SNDCTL_MIXERINFO, &mi) != -1)
+     {
+	     close (mixerfd);
+
+	     if ((mixerfd=open(mi.devnode, O_RDWR, 0)) == -1)
+		{
+			perror (mi.devnode);
+			exit (EXIT_FAILURE);
+		}
+     }
 
   n = dev;
 

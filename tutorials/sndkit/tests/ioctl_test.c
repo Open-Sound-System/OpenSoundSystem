@@ -53,12 +53,12 @@
  *
  * -w NNN    Selects the number of bytes written during each loop. By default this is
  *           equal to the fragment size.
- * -D NNN    Delay NNN milliseconds after each write (before displaying the test output).
+ * -D NNN    Delay NNN milliseconds after each write/read (before displaying the test output).
  *           This emulates the processing done by an application. Using too long
  *           delay times will cause buffer underruns. Use delays that are shorter than the fragment time
  *           reported by the program. Note that granularity of the system timer is about 10 ms in typical
  *           systems (HZ=100). This means that the delay time will always be rounded up to the nearest
- *           system timer tick aftere the requested time. Using -D1 may result in up to 20 milliseconds of
+ *           system timer tick aftere the requested time. Using -D1 may result in up to 10-20 milliseconds of
  *           delay.
  */
 
