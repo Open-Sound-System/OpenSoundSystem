@@ -55,7 +55,7 @@ cp -r $SRCDIR/setup/FreeBSD/oss/* prototype/$OSSLIBDIR/
 cp $SRCDIR/kernel/OS/FreeBSD/wrapper/bsddefs.h prototype/$OSSLIBDIR/build/
 cp $SRCDIR/kernel/framework/include/ossddk/oss_exports.h prototype/$OSSLIBDIR/build/
 
-cp $SRCDIR/include/soundcard.h prototype/$OSSLIBDIR/include/sys/
+cp $SRCDIR/include/*.h prototype/$OSSLIBDIR/include/sys/
 cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/$OSSLIBDIR/include/
 cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/build/
 

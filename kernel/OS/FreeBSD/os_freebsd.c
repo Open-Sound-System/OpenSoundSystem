@@ -528,6 +528,18 @@ oss_untimeout (timeout_id_t id)
   tmout->timestamp = 0;
 }
 
+int
+oss_get_procinfo (int what)
+{
+  switch (what)
+    {
+      case OSS_GET_PROCINFO_UID:
+        return oss_get_uid();
+    }
+
+   return EINVAL; 
+}
+
 unsigned long
 oss_get_time (void)
 {
@@ -891,7 +903,7 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
   dev = fi->dev;
 #endif
 
-  if (dev > oss_num_cdevs)
+  if (dev >= oss_num_cdevs)
     return ENXIO;
 
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d == NULL)

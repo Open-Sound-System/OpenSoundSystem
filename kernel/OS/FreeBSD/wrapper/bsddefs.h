@@ -21,6 +21,7 @@
 extern int oss_file_set_private (struct thread *p, void *v, size_t l);
 extern int oss_file_get_private (void **v);
 #endif
+extern int oss_get_uid (void);
 
 typedef struct device dev_info_t;
 typedef long long oss_int64_t;			/* Signed 64 bit integer */

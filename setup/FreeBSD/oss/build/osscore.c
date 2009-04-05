@@ -30,6 +30,7 @@
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
+#include <sys/proc.h>
 
 typedef struct _oss_device_t oss_device_t;
 #include "bsddefs.h"
@@ -519,17 +520,13 @@ oss_file_set_private (struct thread *t, void *v, size_t l)
     }
   return 0;
 }
+#endif
 
-#if 0
 int
-oss_get_procinfo(int what)
+oss_get_uid(void)
 {
-	// TODO
-
-	return -EINVAL;
+  return curthread->td_ucred->cr_uid;
 }
-#endif
-#endif
 
 extern int max_intrate;
 extern int detect_trace;

@@ -98,7 +98,7 @@ static int useronly = 0;
 static int do_warning_checks=1;
 
 static char *shlib_cflags = "-shared -fPIC";
-static char *shlib_ldflags = "-r -shared -fPIC";
+static char *shlib_ldflags = "-shared -fPIC";
 
 static char *extra_libraries = "";
 
