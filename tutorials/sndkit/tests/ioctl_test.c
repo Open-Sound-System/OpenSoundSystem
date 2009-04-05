@@ -1,6 +1,5 @@
 /*
-  Purpose: This program has been used to verify that some of the ioctl calls work
- * Copyright (C) 4Front Technologies, 2009. Released under GPLv2/CDDL.
+ *  Purpose: This program has been used to verify that some of the ioctl calls work
  *
  * Description:
  * This program can be used to debug some of the most common OSS audio ioctl calls (use the -m option to select):
@@ -61,6 +60,7 @@
  *           system timer tick aftere the requested time. Using -D1 may result in up to 10-20 milliseconds of
  *           delay.
  */
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
 
 #include <stdio.h>
 #include <unistd.h>
