@@ -24,27 +24,34 @@ typedef struct fib_values {
 }
 fib_values_t;
 
-extern int force_speed, force_fmt, force_channels, amplification;
-extern int overwrite, verbose, int_conv;
+extern int amplification, force_speed, force_fmt, force_channels;
+extern flag int_conv, overwrite, verbose;
 extern char audio_devname[32];
 extern off_t (*ossplay_lseek) (int, off_t, int);
 extern double seek_time;
 
-static void decode_ima (unsigned char *, unsigned char *, ssize_t, int *,
-                        int *, int, int);
-static void decode_ima_3bits (unsigned char *, unsigned char *, ssize_t, int *,
-                              int *, int, int);
+static void decode_ima (unsigned char *, unsigned char *, ssize_t, int16 *,
+                        int8 *, int, int);
+static void decode_ima_3bits (unsigned char *, unsigned char *, ssize_t,
+                              int16 *, int8 *, int, int);
 static decfunc_t decode_24;
 static decfunc_t decode_8_to_s16;
 static decfunc_t decode_amplify;
 static decfunc_t decode_cr;
+static decfunc_t decode_double64_be;
+static decfunc_t decode_double64_le;
 static decfunc_t decode_endian;
 static decfunc_t decode_fib;
+static decfunc_t decode_float32_be;
+static decfunc_t decode_float32_le;
 static decfunc_t decode_mac_ima;
 static decfunc_t decode_mono_to_stereo;
 static decfunc_t decode_ms_ima;
 static decfunc_t decode_ms_adpcm; 
 static decfunc_t decode_nul;
+
+static int32 float32_to_s32 (int, int, int);
+static int32 double64_to_s32 (int, int32, int32, int);
 
 static cradpcm_values_t * setup_cr (int, int);
 static fib_values_t * setup_fib (int, int);
@@ -53,7 +60,7 @@ static decoders_queue_t * setup_normalize (int *, int *, decoders_queue_t *);
 static seekfunc_t seek_normal;
 static seekfunc_t seek_compressed;
 
-int
+errors_t
 decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
               int channels, int speed, void * metadata)
 {
@@ -210,6 +217,26 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
 
         format = AFMT_S32_NE;
         break;
+      case AFMT_FLOAT32_BE:
+      case AFMT_FLOAT32_LE:
+        if (format == AFMT_FLOAT32_BE) dec->decoder = decode_float32_be;
+        else dec->decoder = decode_float32_le;
+        bsize = PLAYBUF_SIZE;
+        obsize = bsize;
+        dec->outbuf = NULL;
+
+        format = AFMT_S32_NE;
+        break;
+      case AFMT_DOUBLE64_BE:
+      case AFMT_DOUBLE64_LE:
+        if (format == AFMT_DOUBLE64_BE) dec->decoder = decode_double64_be;
+        else dec->decoder = decode_double64_le;
+        bsize = PLAYBUF_SIZE - PLAYBUF_SIZE % 2;
+        obsize = bsize/2;
+        dec->outbuf = NULL;
+
+        format = AFMT_S32_NE;
+        break;
       default:
         dec->decoder = decode_nul;
 
@@ -283,7 +310,7 @@ exit:
   return ret;
 }
 
-int
+errors_t
 encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
               int channels, int speed, unsigned long long datalimit)
 {
@@ -377,21 +404,24 @@ decode_24 (unsigned char ** obuf, unsigned char * buf,
            ssize_t l, void * metadata)
 {
   unsigned long long outlen = 0;
-  unsigned int i, * u32, v1;
-  int sample_s32, format = (int)(long)metadata, * outbuf = (int *) * obuf;
+  ssize_t i;
+  int v1;
+  uint32 * u32;
+  int32 sample_s32, * outbuf = (int32 *) * obuf;;
+  int format = (int)(long)metadata;
 
   if (format == AFMT_S24_PACKED) v1 = 8;
   else v1 = 24;
 
   for (i = 0; i < l-2; i += 3)
     {
-      u32 = (unsigned int *) &sample_s32;	/* Alias */
+      u32 = (uint32 *) &sample_s32;	/* Alias */
 
       *u32 = (buf[i] << v1) | (buf[i + 1] << 16) | (buf[i + 2] << (32-v1));
       outbuf[outlen++] = sample_s32;
     }
 
-  return outlen * sizeof(int);
+  return 4 * outlen;
 }
 
 static fib_values_t *
@@ -479,9 +509,9 @@ decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
                  ssize_t l, void * metadata)
 {
   int format = (int)(long)metadata;
-  unsigned int i;
-  short * outbuf = (short *) * obuf;
-  static const short mu_law_table[256] = { 
+  ssize_t i;
+  int16 * outbuf = (int16 *) * obuf;
+  static const int16 mu_law_table[256] = { 
     -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956, 
     -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764, 
     -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412, 
@@ -516,7 +546,7 @@ decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
     56,    48,    40,    32,    24,    16,    8,     0 
   };
 
-  static const short a_law_table[256] = { 
+  static const int16 a_law_table[256] = { 
     -5504, -5248, -6016, -5760, -4480, -4224, -4992, -4736, 
     -7552, -7296, -8064, -7808, -6528, -6272, -7040, -6784, 
     -2752, -2624, -3008, -2880, -2240, -2112, -2496, -2368, 
@@ -575,9 +605,10 @@ decode_cr (unsigned char ** obuf, unsigned char * buf,
            ssize_t l, void * metadata)
 {
   cradpcm_values_t * val = (cradpcm_values_t *) metadata;
-  int i, j, pred = val->pred, step = val->step;
+  int j, pred = val->pred, step = val->step;
   unsigned char value;
   signed char sign;
+  ssize_t i;
 
   for (i=0; i < l; i++)
     for (j=0; j < val->ratio; j++)
@@ -602,8 +633,9 @@ decode_fib (unsigned char ** obuf, unsigned char * buf,
             ssize_t l, void * metadata)
 {
   fib_values_t * val = (fib_values_t *)metadata;
-  int i, x = val->pred;
+  int x = val->pred;
   unsigned char d;
+  ssize_t i;
 
   for (i = 0; i < 2*l; i++)
     {
@@ -626,14 +658,14 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
 {
   msadpcm_values_t * val = (msadpcm_values_t *)metadata;
 
-  int i, n = 0, nib = 0, outp = 0, x = 0, channels = val->channels;
+  int error_delta, i_delta, i = 0, nib = 0, channels = val->channels;
   int AdaptionTable[16] = {
     230, 230, 230, 230, 307, 409, 512, 614,
     768, 614, 512, 409, 307, 230, 230, 230
   };
-  int predictor[MAX_CHANNELS], delta[MAX_CHANNELS], samp1[MAX_CHANNELS],
-      samp2[MAX_CHANNELS];
-  int pred, new, error_delta, i_delta;
+  int32 delta[MAX_CHANNELS], samp1[MAX_CHANNELS], samp2[MAX_CHANNELS],
+        predictor[MAX_CHANNELS], new, pred, n = 0;
+  ssize_t outp = 0, x = 0;
 
 /*
  * Playback procedure
@@ -641,8 +673,8 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
 #define OUT_SAMPLE(s) \
  do { \
    if (s > 32767) s = 32767; else if (s < -32768) s = -32768; \
-   (*obuf)[outp++] = (unsigned char)(s & 0xff); \
-   (*obuf)[outp++] = (unsigned char)((s >> 8) & 0xff); \
+   (*obuf)[outp++] = (uint8)(s & 0xff); \
+   (*obuf)[outp++] = (uint8)((s >> 8) & 0xff); \
    n += 2; \
  } while(0)
 
@@ -660,20 +692,20 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
 
   for (i = 0; i < channels; i++)
     {
-      delta[i] = (short) le_int (&buf[x], 2);
+      delta[i] = (int16) le_int (&buf[x], 2);
       x += 2;
     }
 
   for (i = 0; i < channels; i++)
     {
-      samp1[i] = (short) le_int (&buf[x], 2);
+      samp1[i] = (int16) le_int (&buf[x], 2);
       x += 2;
       OUT_SAMPLE (samp2[i]);
     }
 
   for (i = 0; i < channels; i++)
     {
-      samp2[i] = (short) le_int (&buf[x], 2);
+      samp2[i] = (int16) le_int (&buf[x], 2);
       x += 2;
       OUT_SAMPLE (samp2[i]);
     }
@@ -715,7 +747,8 @@ static ssize_t
 decode_endian (unsigned char ** obuf, unsigned char * buf,
                ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata, i;
+  int format = (int)(long)metadata;
+  ssize_t i;
 
   switch (format)
     {
@@ -774,7 +807,8 @@ static ssize_t
 decode_amplify (unsigned char ** obuf, unsigned char * buf,
                 ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata, i, len;
+  int format = (int)(long)metadata, len;
+  ssize_t i;
 
   switch (format)
     {
@@ -802,12 +836,16 @@ decode_amplify (unsigned char ** obuf, unsigned char * buf,
 }
 
 static void
-decode_ima (unsigned char * obuf, unsigned char * buf, ssize_t l, int * pred0,
-            int * index0, int channels, int ch)
+decode_ima (unsigned char * obuf, unsigned char * buf, ssize_t l, int16 * pred0,
+            int8 * index0, int channels, int ch)
 {
-  int i, j, step, value, pred = *pred0, index = *index0;
-  short * outbuf = (short *) obuf;
+  int j;
+  int32 pred = *pred0;
+  int16 step;
+  int16 * outbuf = (int16 *) obuf;
+  int8 index = *index0, value;
   signed char sign;
+  ssize_t i;
   static const int step_tab[89] = {
     7,     8,     9,     10,    11,    12,    13,    14,
     16,    17,    19,    21,    23,    25,    28,    31,
@@ -823,7 +861,7 @@ decode_ima (unsigned char * obuf, unsigned char * buf, ssize_t l, int * pred0,
     32767
   };
 
-  static const signed char iTab4[16] =
+  static const int8 iTab4[16] =
     {-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8};
 
   for (i=0; i < l; i++)
@@ -854,11 +892,16 @@ decode_ima (unsigned char * obuf, unsigned char * buf, ssize_t l, int * pred0,
 
 static void
 decode_ima_3bits (unsigned char * obuf, unsigned char * buf, ssize_t l,
-                  int * pred0, int * index0, int channels, int ch)
+                  int16 * pred0, int8 * index0, int channels, int ch)
 {
-  int i, j, step, value, pred = *pred0, index = *index0, raw; 
-  short * outbuf = (short *) obuf;
+  int j;
   signed char sign;
+  ssize_t i;
+
+  int32 pred = *pred0, raw;
+  int8 index = *index0, value; 
+  int16 * outbuf = (int16 *) obuf, step;
+
   static const int step_tab[89] = {
     7,     8,     9,     10,    11,    12,    13,    14,
     16,    17,    19,    21,    23,    25,    28,    31,
@@ -874,7 +917,7 @@ decode_ima_3bits (unsigned char * obuf, unsigned char * buf, ssize_t l,
     32767
   };
 
-  static const signed char iTab3[8] =
+  static const int8 iTab3[8] =
     {-1, -1, 1, 2, -1, -1, 1, 2};
 
   for (i=0; i < l-2; i += 3)
@@ -912,14 +955,15 @@ decode_mac_ima (unsigned char ** obuf, unsigned char * buf,
 {
   ssize_t len = 0, olen = 0;
   int i, channels = (int)(long)metadata;
-  int pred, index;
+  int16 pred;
+  int8 index;
 
   while (len < l)
     {
       for (i = 0; i < channels; i++)
         {
           if (len + MAC_IMA_BLKLEN > l) return olen;
-          pred = (short)((buf[len] << 8) | (buf[len+1] & 128));
+          pred = (int16)((buf[len] << 8) | (buf[len+1] & 128));
           index = buf[len+1] & 127;
           if (index > 88) index = 88;
           len += 2;
@@ -938,15 +982,16 @@ static ssize_t
 decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
                 ssize_t l, void * metadata)
 {
-  msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+  int i;
   ssize_t len = 0, olen = 0;
-  short * outbuf = (short *) * obuf;
-  int i, index[MAX_CHANNELS], pred[MAX_CHANNELS];
+  msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+  int8 index[MAX_CHANNELS];
+  int16 * outbuf = (int16 *) * obuf, pred[MAX_CHANNELS];
 
   for (i = 0; i < val->channels; i++)
     {
       if (len >= l) return olen;
-      pred[i] = (short) le_int (buf + len, 2);
+      pred[i] = (int16) le_int (buf + len, 2);
  /*
   * The microsoft docs says the sample from the block header should be
   * played.
@@ -1014,7 +1059,7 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
        case AFMT_U8:
        case AFMT_S8:
         {
-          unsigned char *r = (unsigned char *)buf, *s = (unsigned char *)*obuf;
+          uint8 *r = (uint8 *)buf, *s = (uint8 *)*obuf;
           for (i=0; i < l; i++)
             {
               *s++ = *r;
@@ -1025,7 +1070,7 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
       case AFMT_S16_LE:
       case AFMT_S16_BE:
         {
-          short *r = (short *)buf, *s = (short *)*obuf;
+          int16 *r = (int16 *)buf, *s = (int16 *)*obuf;
 
           for (i = 0; i < l/2 ; i++)
             {
@@ -1039,7 +1084,7 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
       case AFMT_S24_LE:
       case AFMT_S24_BE:
         {
-          int *r = (int *)buf, *s = (int *)*obuf;
+          int32 *r = (int32 *)buf, *s = (int32 *)*obuf;
 
           for (i = 0; i < l/4; i++)
             {
@@ -1050,6 +1095,167 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
         break;
     } 
   return 2*l;
+}
+
+static ssize_t
+decode_float32_be (unsigned char ** obuf, unsigned char * buf, ssize_t l,
+                   void * metadata)
+{
+  ssize_t i;
+  int exp, man;
+  int32 * wbuf = (int32 *) buf;
+
+  for (i=0; i < l-3; i += 4)
+    {
+      exp = ((buf[i] & 0x7F) << 1) | ((buf[i+1] & 0x80) / 0x80);
+      man = ((buf[i+1] & 0x7F) << 16) | (buf[i+2] << 8) | buf[i+3];
+
+      *wbuf++ = float32_to_s32 (exp, man, (buf[i] & 0x80));
+    }
+
+  *obuf = buf;
+  return l;
+}
+
+static ssize_t
+decode_float32_le (unsigned char ** obuf, unsigned char * buf, ssize_t l,
+                   void * metadata)
+{
+  ssize_t i;
+  int exp, man;
+  int32 * wbuf = (int32 *) buf;
+
+  for (i=0; i < l-3; i += 4)
+    {
+      exp = ((buf[i+3] & 0x7F) << 1) | ((buf[i+2] & 0x80) / 0x80);
+      man = ((buf[i+2] & 0x7F) << 16) | (buf[i+1] << 8) | buf[i];
+
+      *wbuf++ = float32_to_s32 (exp, man, (buf[i+3] & 0x80));
+    }
+
+  *obuf = buf;
+  return l;
+}
+
+static ssize_t
+decode_double64_be (unsigned char ** obuf, unsigned char * buf, ssize_t l,
+                    void * metadata)
+{
+  ssize_t i;
+  int exp;
+  int32 * wbuf = (int32 *) buf, lower, upper;
+
+  for (i=0; i < l-7; i += 8)
+    {
+      exp = ((buf[i] & 0x7F) << 4) | ((buf[i+1] >> 4) & 0xF) ;
+
+      upper = ((buf[i+1] & 0xF) << 24) | (buf[i+2] << 16) | (buf[i+3] << 8) |
+              buf[i+4];
+      lower = (buf[i+5] << 16) | (buf[i+6] << 8) | buf[i+7];
+
+      *wbuf++ = double64_to_s32 (exp, upper, lower, buf[i] & 0x80);
+    }
+
+  *obuf = buf;
+  return l/2;
+}
+
+static ssize_t
+decode_double64_le (unsigned char ** obuf, unsigned char * buf, ssize_t l,
+                    void * metadata)
+{
+  ssize_t i;
+  int exp;
+  int32 * wbuf = (int32 *) buf, lower, upper;
+
+  for (i=0; i < l-7; i += 8)
+    {
+      exp = ((buf[i+7] & 0x7F) << 4) | ((buf[i+6] >> 4) & 0xF);
+
+      upper = ((buf[i+6] & 0xF) << 24) | (buf[i+5] << 16) | (buf[i+4] << 8) |
+              buf[i+3];
+      lower = (buf[i+2] << 16) | (buf[i+1] << 8) | buf[i];
+
+      *wbuf++ = double64_to_s32 (exp, upper, lower, buf[i+7] & 0x80);
+    }
+
+  *obuf = buf;
+  return l/2;
+}
+
+static int32
+double64_to_s32 (int exp, int32 upper, int32 lower, int sign)
+{
+  long double value, out;
+
+  if ((exp != 0) && (exp != 2047))
+    {
+      value = (upper + lower / ((double)0x1000000))/((double)0x10000000) + 1;
+      value = ossplay_ldexpl (value, exp - 1023);
+    }
+  else if (exp == 0)
+    {
+#if 0
+      /* So low, that it's pretty much 0 for us */
+      int j;
+
+      out = (upper + lower / ((double)0x1000000))/((double)0x10000000);
+      for (j=0; j < 73; j++) out /= 1 << 14;
+#endif
+      return 0;
+    }
+  else /* exp == 2047 */
+    {
+      /*
+       * Either NaN, or +/- Inf. 0 is almost as close an approximation of
+       * Inf as the maximum sample value....
+       */
+      print_msg (WARNM, "exp == 2047 in file!\n");
+      return 0;
+    }
+
+  out = (sign ? -1 : 1) * value * S32_MAX;
+  if (out > S32_MAX) out = S32_MAX;
+  else if (out < S32_MIN) out = S32_MIN;
+
+  return out;
+}
+
+static int32
+float32_to_s32 (int exp, int man, int sign)
+{
+  long double out, value;
+
+  if ((exp != 0) && (exp != 255))
+    {
+      value = man ? (float)man/(float)0x800000 + 1 : 0.0;
+      value = ossplay_ldexpl (value, exp - 127);
+    }
+  else if (exp == 0)
+    {
+#if 0
+      /* So low, that it's pretty much 0 for us */
+      value = (float)man / (float)0x800000;
+      value /= 1UL << 31; value /= 1UL << 31; value /= 1UL << 32;
+      value /= 1UL << 32;
+#endif
+      return 0;
+    }
+  else /* exp == 255 */
+    {
+      /*
+       * Either NaN, or +/- Inf. 0 is almost as close an approximation of
+       * Inf as the maximum sample value....
+       */
+      print_msg (WARNM, "exp == 255 in file!\n");
+      return 0;
+    }
+
+  out = (sign ? -1 : 1) * value * S32_MAX;
+  if (out > S32_MAX) out = S32_MAX;
+  else if (out < S32_MIN) out = S32_MIN;
+ 
+  return out;
 }
 
 int
@@ -1088,7 +1294,8 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
     11, 11, 11, 11, 11, 11
   };
 
-  int i, lim, v = 0, level;
+  int32 level, v = 0;
+  ssize_t i;
 
   level = 0;
 
@@ -1096,9 +1303,9 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
     {
       case AFMT_U8:
         {
-          char *p;
+          int8 * p;
 
-          p = (char *)buf;
+          p = (int8 *)buf;
 
           for (i = 0; i < l; i++)
             {
@@ -1111,12 +1318,11 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
 
       case AFMT_S16_NE:
         {
-          short *p;
+          int16 * p;
 
-          p = (short *)buf;
-          lim = l/2;
+          p = (int16 *)buf;
 
-          for (i = 0; i < lim; i++)
+          for (i = 0; i < l / 2; i++)
             {
               v = (*p++) << 16;
               if (v < 0) v = -v;
@@ -1128,12 +1334,11 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
       case AFMT_S24_NE:
       case AFMT_S32_NE:
         {
-         int *p;
+         int32 * p;
 
-         p = (int *)buf;
-         lim = l / 4;
+         p = (int32 *)buf;
 
-         for (i = 0; i < lim; i++)
+         for (i = 0; i < l / 4; i++)
            {
              v = *p++;
              if (v < 0) v = -v;
@@ -1239,8 +1444,9 @@ seek_normal (int fd, unsigned long long * datamark, unsigned long long filesize,
 }
 
 static ssize_t
-seek_compressed (int fd, unsigned long long * datamark, unsigned long long filesize,
-                 double constant, unsigned long long rsize, int channels)
+seek_compressed (int fd, unsigned long long * datamark, 
+                 unsigned long long filesize, double constant,
+                 unsigned long long rsize, int channels)
 /*
  * We have to use this method because some compressed formats depend on
  * the previous state of the decoder.

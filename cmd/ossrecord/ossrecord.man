@@ -1,8 +1,11 @@
 NAME
 ossrecord - Open Sound System recording program.
 
-USAGE
-ossrecord [options] filename
+SYNOPSIS
+ossrecord [-ORhlv] [-F cntname | ? ] [ -c channels ] [ -d devname ]
+          [ -f fmtname | ? ] [ -g gain ] [ -i recsource | ? ] [ -m nfiles ]
+          [ -r command ] [ -s rate ] [ -t maxsecs ] filename | - ...
+
 
 DESCRIPTION
 The ossrecord program records audio in Microsoft RIFF (wav) format. It
@@ -17,7 +20,7 @@ OPTIONS
 -s<rate> 	Select the recording rate for raw PCM audio (eg -s48000).
 -c<channels> 	Select the number of channels 1=mono 2=stereo, 4, 6, 8, etc. 
 -d<devname>  	Select <devname> as the device (eg -d/dev/dsp2).
--f<fmt>		Select the output sample format (eg -fS32_LE or -fMU_LAW)
+-f<fmt>		Select the input sample format (eg -fS32_LE or -fMU_LAW)
 -f?		Prints the list of supported format names.
 -F<cnt>		Select the container format (eg WAV or AU). Default is WAV.
 -F?		Prints the list of supported container formats.
@@ -90,6 +93,12 @@ exit 0
 NOTES
 The ossrecord executable is the same as the ossplay executable.
 Behaviour is decided by the name used to invoke the program.
+
+Some file formats allocate only 32 bits to record the file length,
+which may prevent some programs from reading a too large file properly.
+If a recording may pass the 4GB limit (a bit more then 6 hours and 10 minutes
+of sound assuming [48Khz/16bit/stereo] quality), it's best to have ossrecord
+use the AU or RAW containers (via -F switch) which do not have this restriction.
 
 SEE ALSO
 ossplay(1), ossmix(1), ossxmix(1)

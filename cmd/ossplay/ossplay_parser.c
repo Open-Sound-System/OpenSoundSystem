@@ -30,8 +30,8 @@
 /* Beginning of magic for Creative .voc files */
 #define Crea_MAGIC	0x43726561	/* 'Crea' */
 
-extern int quiet, verbose;
-extern int raw_file, force_fmt, from_stdin;
+extern int verbose, force_fmt;
+extern flag from_stdin, raw_file, quiet;
 extern off_t (*ossplay_lseek) (int, off_t, int);
 
 #ifdef MPEG_SUPPORT
@@ -124,10 +124,12 @@ play_file (dspdev_t * dsp, const char * filename)
         goto done;
       case RIFF_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
+        if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MS_IMA_ADPCM;
         ret = play_iff (dsp, filename, fd, buf, WAVE_FILE);
         goto done;
       case RIFX_MAGIC:
         if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
+        if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MS_IMA_ADPCM;
         ret = play_iff (dsp, filename, fd, buf, WAVE_FILE_BE);
         goto done;
       case FORM_MAGIC:
@@ -135,9 +137,11 @@ play_file (dspdev_t * dsp, const char * filename)
         switch (be_int (buf + 8, 4))
           {
             case AIFF_MAGIC:
+              if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
               ret = play_iff (dsp, filename, fd, buf, AIFF_FILE);
               goto done;
             case AIFC_MAGIC:
+              if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
               ret = play_iff (dsp, filename, fd, buf, AIFC_FILE);
               goto done;
             case _8SVX_MAGIC:
@@ -282,6 +286,8 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 #define twos_FMT 0x74776F73
 #define fl32_FMT 0x666C3332
 #define FL32_FMT 0x464C3332
+#define fl64_FMT 0x666C3634
+#define FL64_FMT 0x464C3634
 #define ima4_FMT 0x696D6134
 #define NONE_FMT 0x4E4F4E45
 #define raw_FMT  0x72617720
@@ -336,8 +342,8 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
   } while (0)
 
   int channels = 1, bits = 8, format, speed = 11025;
-  unsigned int chunk_id, chunk_size = 18, csize = 12, found = 0, offset = 0,
-               sound_loc = 0, sound_size = 0, timestamp, total_size;
+  uint32 chunk_id, chunk_size = 18, csize = 12, found = 0, offset = 0,
+         sound_loc = 0, sound_size = 0, timestamp, total_size;
   int (*ne_int) (const unsigned char *p, int l) = be_int;
 
   msadpcm_values_t msadpcm_val = {
@@ -405,7 +411,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               exp = ((buf[8] & 127) << 8) + buf[9] - 16383;
 #if 0
               /*
-               * This part of the mantisaa will always be resolved to
+               * This part of the mantissa will always be resolved to
                * sub-Hz rates which we don't support anyway.
                */
               COMM_rate = ((buf[14]) << 24) + (buf[15] << 16) +
@@ -414,9 +420,9 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 #endif
               COMM_rate += ((buf[10] & 127) << 24) + (buf[11] << 16) +
                            (buf[12] << 8) + buf[13];
-              /* Can overflow for huge values which don't make sense here */
-              COMM_rate /= 1L << (31 - exp);
-              if (buf[10] & 128) COMM_rate += 1L << exp; /* Normalize bit */
+              COMM_rate = ossplay_ldexpl (COMM_rate, exp-31);
+              if (buf[10] & 128)
+                COMM_rate += ossplay_ldexpl (1, exp); /* Normalize bit */
               if (buf[8] & 128) COMM_rate = -COMM_rate; /* Sign bit */
               if ((exp == 16384) || (COMM_rate <= 0))
                 {
@@ -453,10 +459,10 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 case ulaw_FMT:
                 case ULAW_FMT: format = AFMT_MU_LAW; break;
                 case ima4_FMT: format = AFMT_MAC_IMA_ADPCM; break;
-#if 0
                 case fl32_FMT:
-                case FL32_FMT: format = AFMT_FLOAT; break;
-#endif
+                case FL32_FMT: format = AFMT_FLOAT32_BE; break;
+                case fl64_FMT:
+                case FL64_FMT: format = AFMT_DOUBLE64_BE; break;
                 default:
                   print_msg (ERRORM, 
                            "%s: error: %c%c%c%c compression is not supported\n",
@@ -611,18 +617,21 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 case 0x2: format = AFMT_MS_ADPCM; break;
                 case 0x6: format = AFMT_A_LAW; break;
                 case 0x7: format = AFMT_MU_LAW; break;
-                case 0x11: format = AFMT_MS_IMA_ADPCM;
-                           if (bits == 3) format = AFMT_MS_IMA_ADPCM_3BITS;
-                           else if (bits != 4)
-                             {
-                               print_msg (WARNM,
-                           "%s: Invalid number of bits (%d)! Assuming 4\n",
-                            filename, bits);
-                               msadpcm_val.bits = bits = 4;
-                             }
-                           break;
+                case 0x11:
+                  format = AFMT_MS_IMA_ADPCM;
+                  if (bits == 3) format = AFMT_MS_IMA_ADPCM_3BITS;
+                  else if (bits != 4)
+                    {
+                      print_msg (WARNM, "%s: Invalid number of bits (%d)!"
+                                 " Assuming 4\n", filename, bits);
+                      msadpcm_val.bits = bits = 4;
+                    }
+                  break;
+                case 0x3:
+                  if (bits == 32) format = AFMT_FLOAT32_LE;
+                  else format = AFMT_DOUBLE64_LE;
+                  break;
 #if 0
-                case 0x3: format = AFMT_FLOAT; break;
                 case 0x50: /* MPEG */
                 case 0x55: /* MPEG 3 */
 #endif
@@ -733,7 +742,7 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
          int l)
 {
   int channels = 1, format = AFMT_S8, speed = 11025;
-  unsigned int filelen, fmt = 0, i, p = 24, an_len = 0;
+  uint32 filelen, fmt = 0, i, p = 24, an_len = 0;
 
   p = be_int (hdr + 4, 4);
   filelen = be_int (hdr + 8, 4);
@@ -774,14 +783,12 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       break;
 
     case 6:
+      format = AFMT_FLOAT32_BE;
+      break;
+
     case 7:
-#if 0
-      format = AFMT_FLOAT;
-#endif
-      print_msg (ERRORM,
-                 "%s: Floating point encoded .au files are not supported",
-                 filename);
-      return E_FORMAT_UNSUPPORTED;
+      format = AFMT_DOUBLE64_BE;
+      break;
 
     case 23:
     case 24:
@@ -846,9 +853,10 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
     pos += len; \
   } while (0)
 
-  unsigned int data_offs, vers, id, len, blklen, fmt, tmp,
-               loopcount = 0, loopoffs = 4, pos = l + 7;
-  unsigned char buf[256], plock = 0, block_type;
+  uint32 blklen, data_offs, fmt, id, len, loopcount = 0, loopoffs = 4,
+         pos = l + 7, tmp, vers;
+  unsigned char buf[256], block_type;
+  flag plock = 0;
   int speed = 11025, channels = 1, bits = 8, format = AFMT_U8;
   errors_t ret;
 
@@ -1095,7 +1103,11 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_SPDIF_RAW:
        case AFMT_S32_LE:
        case AFMT_S32_BE: fmt = "32 bits"; break;
+       case AFMT_FLOAT32_LE:
+       case AFMT_FLOAT32_BE: fmt = "32 bit float"; break;
        case AFMT_FLOAT: fmt = "float"; break;
+       case AFMT_DOUBLE64_LE:
+       case AFMT_DOUBLE64_BE: fmt = "64 bit float"; break;
        case AFMT_VORBIS: fmt = "vorbis"; break;
        case AFMT_MPEG: fmt = "mpeg"; break;
        case AFMT_FIBO_DELTA: fmt = "fibonacci delta"; break;

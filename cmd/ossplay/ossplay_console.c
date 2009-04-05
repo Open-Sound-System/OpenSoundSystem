@@ -8,7 +8,8 @@
 #include "ossplay_parser.h"
 #include "ossplay_decode.h"
 
-extern int exitstatus, eflag, from_stdin, loop, quiet, verbose;
+extern int eflag, verbose;
+extern flag from_stdin, loop, quiet;
 
 static FILE * normalout;
 static int dots = -11, direction = 0;
@@ -225,12 +226,13 @@ ossplay_main (int argc, char ** argv)
 static int
 ossrecord_main (int argc, char ** argv)
 {
-  int err, i, oind;
-  dspdev_t dsp = { -1 };
+  int i, oind;
   char current_filename[512];
+  dspdev_t dsp = { -1 };
+  errors_t err;
 
   extern int force_fmt, force_channels, force_speed, nfiles;
-  extern unsigned int datalimit;
+  extern unsigned long long datalimit;
   extern fctypes_t type;
   extern char script[512];
 

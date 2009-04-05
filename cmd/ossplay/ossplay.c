@@ -24,15 +24,15 @@
 #include <strings.h>
 #include <unistd.h>
 
-int force_speed = 0, force_fmt = 0, force_channels = 0;
 unsigned int amplification = 100;
-int eflag = 0, overwrite = 0, quiet = 0, verbose = 0, int_conv = 0;
-int raw_file = 0, raw_mode = 0, exitstatus = 0, loop = 0, from_stdin = 0;
+int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0;
+flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, overwrite = 0,
+     quiet = 0, raw_file = 0, raw_mode = 0;
 double seek_time = 0;
 off_t (*ossplay_lseek) (int, off_t, int) = lseek;
 
 char script[512] = "";
-unsigned int level_meters = 0, nfiles = 1;
+unsigned int nfiles = 1;
 unsigned long long datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
@@ -212,9 +212,13 @@ format2bits (int format)
       case AFMT_S24_LE:
       case AFMT_S24_BE:
       case AFMT_SPDIF_RAW:
+      case AFMT_FLOAT32_LE:
+      case AFMT_FLOAT32_BE:
       case AFMT_S32_LE:
       case AFMT_S32_BE: return 32;
-      case AFMT_FLOAT: return sizeof (float);
+      case AFMT_DOUBLE64_LE:
+      case AFMT_DOUBLE64_BE: return 64;
+      case AFMT_FLOAT: return sizeof (float) * 8;
       case AFMT_QUERY:
       default: return 0;
    }
@@ -223,10 +227,9 @@ format2bits (int format)
 void
 close_device (dspdev_t * dsp)
 {
-	if (dsp->fd == -1)
-	   return;
-	close(dsp->fd);
-	dsp->fd=-1;
+  if (dsp->fd == -1) return;
+  close (dsp->fd);
+  dsp->fd = -1;
 }
 
 void
@@ -508,7 +511,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
   int tmp;
 
   if (dsp->speed != speed || dsp->format != format ||
-      dsp->channels != channels)
+      dsp->channels != channels || dsp->fd == -1)
     {
 #if 0
       ioctl (dsp->fd, SNDCTL_DSP_SYNC, NULL);
@@ -604,13 +607,13 @@ static void
 ossplay_getint (int signum)
 {
 #if 0
-  if (eflag == signum)
+  if (eflag == signum + 128)
     {
       signal (signum, SIG_DFL);
       kill (getpid(), signum);
     }
 #endif
-  eflag = signum;
+  eflag = signum + 128;
 }
 
 off_t
@@ -894,6 +897,35 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
   return optind;
 }
 
+long double
+ossplay_ldexpl (long double num, int exp)
+{
+  /*
+   * Very simple emulation of ldexpl to avoid linking to libm, or assuming
+   * anything about float representation.
+   */
+  if (exp > 0)
+    {
+      while (exp > 31)
+        {
+          num *= 1L << 31;
+          exp -= 31;
+        }
+      num *= 1L << exp;
+    }
+  else if (exp < 0)
+    {
+      while (exp < -31)
+        {
+          num /= 1L << 31;
+          exp += 31;
+        }
+      num /= 1L << -exp;
+    }
+
+  return num;
+}
+
 static void
 print_play_verbose_info (const unsigned char * buf, ssize_t l, void * metadata)
 {
@@ -957,8 +989,9 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
 }
 
 int
-play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long bsize,
-      double constant, decoders_queue_t * dec, seekfunc_t * seekf)
+play (dspdev_t * dsp, int fd, unsigned long long * datamark,
+      unsigned long long bsize, double constant, decoders_queue_t * dec,
+      seekfunc_t * seekf)
 {
 #define EXITPLAY(code) \
   do { \
@@ -985,7 +1018,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
 
   while (*datamark < filesize)
     {
-      if (eflag) EXITPLAY (eflag + 128);
+      if (eflag) EXITPLAY (eflag);
 
       rsize = bsize;
       if (rsize > filesize - *datamark) rsize = filesize - *datamark;
@@ -1002,18 +1035,14 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
 
       if ((outl = read (fd, buf, rsize)) <= 0)
         {
-          if (outl == 0) /* EOF */
-	     return 0;
-
-          if ((errno == 0) && (outl == 0) && (filesize != UINT_MAX))
+          if (errno) perror_msg (dsp->dname);
+          if ((filesize != UINT_MAX) && (*datamark < filesize) && (!eflag))
             {
+              clear_update ();
               print_msg (WARNM, "Sound data ended prematurily!\n");
-              return 0;
             }
-          else if (errno && (!eflag))
-            perror_msg (dsp->dname);
-          if (eflag) EXITPLAY (eflag + 128);
-          else EXITPLAY (E_DECODE);
+          if ((outl == 0) && (!eflag)) return 0;
+          EXITPLAY (eflag);
         }
       *datamark += outl;
 
@@ -1035,7 +1064,7 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark, unsigned long long 
       if (verbose) print_play_verbose_info (obuf, outl, verbose_meta);
       if (write (dsp->fd, obuf, outl) == -1)
         {
-          if ((errno == EINTR) && (eflag)) EXITPLAY (eflag + 128);
+          if ((errno == EINTR) && (eflag)) EXITPLAY (eflag);
           ossplay_free (buf);
           perror_msg ("audio write");
           exit (E_DECODE);
@@ -1058,7 +1087,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
     ossplay_free (verbose_meta); \
     clear_update (); \
     if ((eflag) && (verbose)) \
-      print_msg (VERBOSEM, "\nStopped (%d).\n", eflag); \
+      print_msg (VERBOSEM, "\nStopped (%d).\n", eflag-128); \
     ioctl (dsp->fd, SNDCTL_DSP_HALT_INPUT, NULL); \
     return (code); \
   } while(0)
@@ -1082,7 +1111,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 //printf("datalimit %llu, *data_size %llu\n", datalimit, *data_size);
       if ((l = read (dsp->fd, buf, RECBUF_SIZE)) < 0)
 	{
-          if ((errno == EINTR) && (eflag)) EXITREC (eflag + 128);
+          if ((errno == EINTR) && (eflag)) EXITREC (eflag);
 	  if (errno == ECONNRESET) EXITREC (E_ENCODE); /* Device disconnected */
           perror_msg (dsp->dname);
           EXITREC (E_ENCODE);
@@ -1090,7 +1119,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
       if (l == 0)
 	{
 	  print_msg (ERRORM, "Unexpected EOF on audio device\n");
-          EXITREC (eflag + 128);
+          EXITREC (eflag);
 	}
 
       obuf = buf; d = dec; outl = l;
@@ -1102,16 +1131,17 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
         }
       while (d != NULL);
 
-      *data_size += outl;
-      if (verbose) print_record_verbose_info (obuf, outl, verbose_meta);
-      if (eflag) EXITREC (eflag + 128);
+      if (eflag) EXITREC (eflag);
 
       if (fwrite (obuf, outl, 1, wave_fp) != 1)
         {
-          if ((errno == EINTR) && (eflag)) EXITREC (eflag + 128);
+          if ((errno == EINTR) && (eflag)) EXITREC (eflag);
           perror_msg (filename);
           EXITREC (E_ENCODE);
         }
+
+      *data_size += outl;
+      if (verbose) print_record_verbose_info (obuf, outl, verbose_meta);
 
       if ((datalimit != 0) && (*data_size >= datalimit)) break;
     }

@@ -32,6 +32,17 @@
 /* Should be smaller than the others. Used to ensure an update at end of file */
 #define UPDATE_EPSILON			1.0
 
+typedef signed char int8;
+typedef unsigned char uint8;
+typedef short int16;
+typedef unsigned short uint16;
+typedef int int32;
+typedef unsigned int uint32;
+typedef char flag;
+#define S32_MAX 2147483647
+#define S32_MIN (-S32_MAX - 1)
+#define U32_MAX 4294967295U
+
 /*
  * We overload the format definitions to include some "fake" formats.
  * Therefor, the values should be negative to avoid collusions.
@@ -46,7 +57,11 @@ enum {
  AFMT_CR_ADPCM_3,
  AFMT_CR_ADPCM_4,
  AFMT_FIBO_DELTA,
- AFMT_EXP_DELTA	
+ AFMT_EXP_DELTA,
+ AFMT_FLOAT32_BE,
+ AFMT_FLOAT32_LE,
+ AFMT_DOUBLE64_BE,
+ AFMT_DOUBLE64_LE
 };
 #define AFMT_S24_PACKED_LE	AFMT_S24_PACKED
 
@@ -83,6 +98,10 @@ typedef enum {
 }
 fctypes_t;
 
+/*
+ * Used in the format_t table below.
+ * Shows what actions can be done with the format - Play, Record or both.
+ */
 typedef enum {
   CP = 0x1,
   CR = 0x2,
@@ -172,14 +191,15 @@ static const format_t format_a[] = {
   {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
   {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
   {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
-  {"MS_IMA_ADPCM",	AFMT_MS_IMA_ADPCM,	CP,		0},
-  {"MS_IMA_ADPCM_3BITS",AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
-  {"MAC_IMA_ADPCM",	AFMT_MAC_IMA_ADPCM,	CP,		0},
+  {"IMA_ADPCM_3BITS",	AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
   {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
   {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
   {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
   {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
-  {"FLOAT",		AFMT_FLOAT,		CRP,		0},
+  {"FLOAT32_LE",	AFMT_FLOAT32_LE,	CP,		0},
+  {"FLOAT32_BE",	AFMT_FLOAT32_BE,	CP,		0},
+  {"DOUBLE64_LE",	AFMT_DOUBLE64_LE,	CP,		0},
+  {"DOUBLE64_BE",	AFMT_DOUBLE64_BE,	CP,		0},
   {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
   {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
   {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
@@ -198,7 +218,9 @@ static const container_t container_a[] = {
 
 int be_int (const unsigned char *, int);
 const char * filepart (const char *);
+float format2bits (int);
 int le_int (const unsigned char *, int);
+long double ossplay_ldexpl (long double, int);
 off_t ossplay_lseek_stdin (int, off_t, int);
 int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);
@@ -209,7 +231,6 @@ int record (dspdev_t *, FILE *, const char *, double, unsigned long long,
 const char * sample_format_name (int);
 int setup_device (dspdev_t *, int, int, int);
 int silence (dspdev_t *, unsigned long long, int);
-float format2bits (int);
 
 void select_playtgt (dspdev_t *);
 void select_recsrc (dspdev_t *);

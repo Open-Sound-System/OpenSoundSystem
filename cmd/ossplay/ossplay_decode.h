@@ -20,9 +20,10 @@ typedef struct verbose_values {
 }
 verbose_values_t;
 
-int decode_sound (dspdev_t *, int, unsigned long long, int, int, int, void *);
-int encode_sound (dspdev_t *, fctypes_t, const char *, int, int, int,
-                  unsigned long long);
+errors_t decode_sound (dspdev_t *, int, unsigned long long, int, int, int,
+                       void *);
+errors_t encode_sound (dspdev_t *, fctypes_t, const char *, int, int, int,
+                       unsigned long long);
 int get_db_level (const unsigned char *, ssize_t, int);
 verbose_values_t * setup_verbose (int, double, unsigned long long *);
 
