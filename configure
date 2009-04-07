@@ -131,6 +131,7 @@ do
 		echo "   --config-midi=NO|YES		- Enable/disable MIDI support."
 		echo "   --only-drv=[list]		- Only compile the drivers named in the comma delimited list."
 		echo "   --enable-timings		- Enable internal timings (for the readtimings utility)."
+		echo "   --portable-build               - Produce portable binaries for generic CPU architecture."
 		exit 1
 	esac
 
