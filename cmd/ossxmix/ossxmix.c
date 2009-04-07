@@ -78,7 +78,8 @@ static int set_counter[MAX_DEVS] = { 0 };
 static int prev_update_counter[MAX_DEVS] = { 0 };
 static oss_mixext_root * root[MAX_DEVS] = { NULL };
 static oss_mixext * extrec[MAX_DEVS] = { NULL };
-static int mixer_fd = -1;
+static int global_fd = -1;		// Global /dev/mixer fd for SNDCTL_SYSINFO/MIXERINFO/etc
+static int local_fd[MAX_DEVS];		// Mixer specific fd(s) for actual mixer access
 static int dev = -1;
 static int show_all = 1;
 static int fully_started = 0;
@@ -194,6 +195,37 @@ static void trayicon_popupmenu (GtkStatusIcon *, guint, guint, gpointer);
 static GtkStatusIcon *status_icon = NULL;
 #endif /* STATUSICON */
 
+static int
+get_fd(int dev)
+{
+	int fd;
+	oss_mixerinfo mi;
+
+	if (dev< 0 || dev >= MAX_DEVS)
+	   {
+		   fprintf (stderr, "Bad mixer device number %d\n", dev);
+		   exit (EXIT_FAILURE);
+	   }
+
+	if (local_fd[dev] > 0)
+	   return local_fd[dev];
+
+	mi.dev = dev;
+	if (ioctl (global_fd, SNDCTL_MIXERINFO, &mi) == -1)
+	   {
+		perror ("SNDCTL_MIXERINFO");
+		exit (EXIT_FAILURE);
+	   }
+
+	if ((fd = open (mi.devnode, O_RDWR, 0)) == -1)
+	   {
+		perror (mi.devnode);
+		exit (EXIT_FAILURE);
+	   }
+
+	return local_fd[dev] = fd;
+}
+
 static void
 check_tooltip (oss_mixext * rec, GtkWidget * wid)
 {
@@ -206,7 +238,7 @@ check_tooltip (oss_mixext * rec, GtkWidget * wid)
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_DESCRIPTION, &ei) == -1)
+  if (ioctl (get_fd(rec->dev), SNDCTL_MIX_DESCRIPTION, &ei) == -1)
      return;
 
 /*
@@ -282,7 +314,7 @@ showenum (oss_mixext * rec, int val)
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_ENUMINFO, &ei) != -1)
+  if (ioctl (get_fd(rec->dev), SNDCTL_MIX_ENUMINFO, &ei) != -1)
     {
       char *p;
 
@@ -311,7 +343,7 @@ load_enum_values (char *extname, oss_mixext * rec)
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_ENUMINFO, &ei) != -1)
+  if (ioctl (get_fd(rec->dev), SNDCTL_MIX_ENUMINFO, &ei) != -1)
     {
       int n = ei.nvalues;
       char *p;
@@ -350,7 +382,7 @@ findenum (oss_mixext * rec, const char * arg)
   ei.dev = rec->dev;
   ei.ctrl = rec->ctrl;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_ENUMINFO, &ei) != -1)
+  if (ioctl (get_fd(rec->dev), SNDCTL_MIX_ENUMINFO, &ei) != -1)
     {
       int n = ei.nvalues;
       char *p;
@@ -383,7 +415,7 @@ get_value (oss_mixext * thisrec)
   val.ctrl = thisrec->ctrl;
   val.timestamp = thisrec->timestamp;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_READ, &val) == -1)
+  if (ioctl (get_fd(thisrec->dev), SNDCTL_MIX_READ, &val) == -1)
     {
       if (errno == EPIPE)
 	{
@@ -440,7 +472,7 @@ set_value (oss_mixext * thisrec, int value)
   val.timestamp = thisrec->timestamp;
   set_counter[thisrec->dev]++;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_WRITE, &val) == -1)
+  if (ioctl (get_fd(thisrec->dev), SNDCTL_MIX_WRITE, &val) == -1)
     {
       if (errno == EIDRM)
       {
@@ -508,7 +540,7 @@ manage_label (GtkWidget * frame, oss_mixext * thisrec)
 	return;
 
       ainfo.dev = dspnum;
-      if (ioctl (mixer_fd, SNDCTL_ENGINEINFO, &ainfo) == -1)
+      if (ioctl (global_fd, SNDCTL_ENGINEINFO, &ainfo) == -1)
 	{
 	  perror ("SNDCTL_ENGINEINFO");
 	  return;
@@ -779,7 +811,7 @@ load_multiple_devs (void)
   int i;
   GtkWidget *notebook, *mixer_page, *label, *vbox, *hbox;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &mixer_num) == -1)
+  if (ioctl (global_fd, SNDCTL_MIX_NRMIX, &mixer_num) == -1)
     {
       perror ("SNDCTL_MIX_NRMIX");
       exit (-1);
@@ -857,7 +889,7 @@ load_devinfo (int dev)
   gboolean expand, use_layout_b = FALSE;
 
   mi.dev = dev;
-  if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &mi) == -1)
+  if (ioctl (global_fd, SNDCTL_MIXERINFO, &mi) == -1)
     {
       perror ("SNDCTL_MIXERINFO");
       exit (-1);
@@ -873,7 +905,7 @@ load_devinfo (int dev)
     width_adjust = -1;
 
   n = dev;
-  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &n) == -1)
+  if (ioctl (get_fd(dev), SNDCTL_MIX_NREXT, &n) == -1)
     {
       perror ("SNDCTL_MIX_NREXT");
       if (errno == EINVAL)
@@ -896,7 +928,7 @@ load_devinfo (int dev)
       thisrec->dev = dev;
       thisrec->ctrl = i;
 
-      if (ioctl (mixer_fd, SNDCTL_MIX_EXTINFO, thisrec) == -1)
+      if (ioctl (get_fd(dev), SNDCTL_MIX_EXTINFO, thisrec) == -1)
 	{
 	  if (errno == EINVAL)
 	      printf ("Incompatible OSS version\n");
@@ -1687,7 +1719,7 @@ poll_all (gpointer data)
   oss_mixerinfo inf;
 
   inf.dev = dev;
-  if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &inf) == -1)
+  if (ioctl (global_fd, SNDCTL_MIXERINFO, &inf) == -1)
     {
       perror ("SNDCTL_MIXERINFO");
       exit (-1);
@@ -1718,7 +1750,7 @@ poll_all (gpointer data)
  * the associated audio device. Handling for this is here
  */
 	  ainfo.dev = srec->parm;
-	  if (ioctl (mixer_fd, SNDCTL_ENGINEINFO, &ainfo) == -1)
+	  if (ioctl (global_fd, SNDCTL_ENGINEINFO, &ainfo) == -1)
 	    {
 	      perror ("SNDCTL_ENGINEINFO");
 	      continue;
@@ -1745,7 +1777,7 @@ poll_all (gpointer data)
  * The aforementioned mixer controls can be create dynamically, so ossxmix
  * needs to poll for this. Handling for this is here
  */
-	  if (ioctl (mixer_fd, SNDCTL_MIX_NREXT, &i) == -1)
+	  if (ioctl (get_fd(dev), SNDCTL_MIX_NREXT, &i) == -1)
 	    {
 	      perror ("SNDCTL_MIX_NREXT");
 	      exit (-1);
@@ -1852,7 +1884,7 @@ poll_mixnum (gpointer data)
 {
   int c_mixer_num;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &c_mixer_num) == -1)
+  if (ioctl (global_fd, SNDCTL_MIX_NRMIX, &c_mixer_num) == -1)
     {
       perror ("SNDCTL_MIX_NRMIX");
       exit (-1);
@@ -1870,7 +1902,7 @@ find_default_mixer (void)
   oss_mixerinfo mi;
   int i, best = -1, bestpri = 0, mix_num;
 
-  if (ioctl (mixer_fd, SNDCTL_MIX_NRMIX, &mix_num) == -1)
+  if (ioctl (global_fd, SNDCTL_MIX_NRMIX, &mix_num) == -1)
     {
       perror ("SNDCTL_MIX_NRMIX");
       if (errno == EINVAL)
@@ -1888,7 +1920,7 @@ find_default_mixer (void)
     {
       mi.dev = i;
 
-      if (ioctl (mixer_fd, SNDCTL_MIXERINFO, &mi) == -1)
+      if (ioctl (global_fd, SNDCTL_MIXERINFO, &mi) == -1)
 	continue;		/* Ignore errors */
 
       if (mi.enabled)
@@ -1915,7 +1947,7 @@ find_default_mixer (void)
 int
 main (int argc, char **argv)
 {
-  int v, c;
+  int i, v, c;
   GtkRequisition Dimensions;
 #ifndef GTK1_ONLY
   GdkPixbuf *icon_pix;
@@ -1926,6 +1958,9 @@ main (int argc, char **argv)
 
   char *devmixer;
   oss_sysinfo si;
+
+  for (i=0; i< MAX_DEVS; i++)
+      local_fd[i] = -1; /* Not opened */
 
   if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
      devmixer = "/dev/mixer";
@@ -1987,7 +2022,7 @@ main (int argc, char **argv)
   if (width_adjust > 4)
     width_adjust = 4;
 
-  if ((mixer_fd = open (devmixer, O_RDWR, 0)) == -1)
+  if ((global_fd = open (devmixer, O_RDWR, 0)) == -1)
     {
       perror (devmixer);
       exit (-1);
@@ -1995,7 +2030,7 @@ main (int argc, char **argv)
 
   atexit (cleanup);
 
-  if (ioctl(mixer_fd, SNDCTL_SYSINFO, &si) != -1)
+  if (ioctl(global_fd, SNDCTL_SYSINFO, &si) != -1)
      if (si.versionnum == 0x040003) /* Boomer 4.0 */
 	boomer_workaround = 1;
 
@@ -2068,7 +2103,14 @@ main (int argc, char **argv)
 static void
 cleanup (void)
 {
-  close (mixer_fd);
+  int i;
+
+  close (global_fd);
+
+  for (i=0;i<MAX_DEVS;i++)
+      if (local_fd[i] > 0)
+	 close (local_fd[i]);
+
 #if !defined(GTK1_ONLY) && GTK_CHECK_VERSION(2,2,0)
   gdk_notify_startup_complete ();
 #endif /* !GTK1_ONLY */
