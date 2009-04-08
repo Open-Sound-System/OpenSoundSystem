@@ -69,6 +69,8 @@ typedef struct
 
   int check_os, os_ok, os_bad;
   int check_cpu, cpu_ok, cpu_bad;
+  int check_endian, endian_ok;
+  int check_platform, platform_ok;
 
   int power_manage;	/* Supports device power management (under Solaris) */
   int suspend_resume;	/* Supports suspend/resume (under Solaris) */
@@ -112,7 +114,7 @@ static int do_cleanup = 0;
 static char arch[32] = "";
 
 static int
-parse_config (FILE * f, conf_t * conf)
+parse_config (FILE * f, conf_t * conf, char *comment)
 {
   char line[256], *p, *parms;
 
@@ -326,8 +328,11 @@ parse_config (FILE * f, conf_t * conf)
       if (strcmp (line, "targetcpu") == 0)
 	{
 	  conf->check_cpu = 1;
-	  if (strcmp (conf->arch, parms) == 0)
-	    conf->cpu_ok = 1;
+	  if (strcmp (parms, "any") == 0)
+	     conf->cpu_ok = 1;
+	  else
+	     if (strcmp (conf->arch, parms) == 0)
+	        conf->cpu_ok = 1;
 	  continue;
 	}
 
@@ -340,17 +345,17 @@ parse_config (FILE * f, conf_t * conf)
 
       if (strcmp (line, "endian") == 0)
 	{
-	  conf->check_cpu = 1;
+	  conf->check_endian = 1;
 	  if (strcmp (conf->endianess, parms) == 0)
-	    conf->cpu_ok = 1;
+	    conf->endian_ok = 1;
 	  continue;
 	}
 
       if (strcmp (line, "platform") == 0)
 	{
-	  conf->check_cpu = 1;
+	  conf->check_platform = 1;
 	  if (strcmp (conf->platform, parms) == 0)
-	    conf->cpu_ok = 1;
+	    conf->platform_ok = 1;
 	  continue;
 	}
 
@@ -407,13 +412,26 @@ parse_config (FILE * f, conf_t * conf)
       return 0;
     }
 
+  if (conf->check_endian && !conf->endian_ok)
+    {
+      return 0;
+    }
+
+  if (conf->check_platform && !conf->platform_ok)
+    {
+      return 0;
+    }
+
 /*
  * Under some CPU architectures we should compile only the driver modules
  * that have proper targetcpu line in their .config file. It doesn't make any
  * sense to compile PCI drivers for architectures that don't have any PCI bus.
  */
   if (conf->mode == MD_MODULE && exact_architectures && !conf->check_cpu)
-     return 0;
+     {
+	printf ("Ignoring %s - No CPU specified\n", comment);
+     	return 0;
+     }
 
   return 1;
 }
@@ -537,7 +555,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   sprintf (tmp, "%s/.config", path);
   if ((cf = fopen (tmp, "r")) != NULL)
     {
-      if (!parse_config (cf, &conf))
+      if (!parse_config (cf, &conf, path))
 	{
 	  /* Not compatible with this environment */
 	  fclose (cf);
@@ -545,6 +563,9 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 	}
       fclose (cf);
     }
+  else
+    if (exact_architectures) /* .config required for this arch */
+       return 0;
 
   sprintf (tmp, "%s/.nativemake", path);	/* Use the existing makefile */
   if (stat (tmp, &st) != -1)
@@ -1367,7 +1388,7 @@ main (int argc, char *argv[])
 	     sprintf (tmp, "setup/%s.conf", env);
   	     if ((cf = fopen (tmp, "r")) != NULL)
     		{
-      	     		parse_config (cf, &conf);
+      	     		parse_config (cf, &conf, tmp);
 			fclose (cf);
      		}
      }

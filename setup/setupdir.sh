@@ -244,11 +244,11 @@ ln -s $SRCDIR origdir
 
 if test -f setup/$OS/build_`uname -m`.sh
 then
-	ln -s setup/$OS/build_`uname -m`.sh .
+	ln -s setup/$OS/build_`uname -m`.sh build.sh
 else
 	if test -f setup/$OS/build.sh
 	then
-		ln -s setup/$OS/build.sh .
+		ln -s setup/$OS/build.sh build.sh
 	fi
 fi
 
