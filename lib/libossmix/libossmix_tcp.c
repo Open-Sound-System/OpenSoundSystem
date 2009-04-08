@@ -494,7 +494,10 @@ tcp_connect (const char *remotehost, int port)
 	       port);
       return -1;
     }
+#ifndef __arm__
+// For some reason this doesn't work under maemo Linux
   atexit (tcp_disconnect);
+#endif
 
   if (!check_welcome ())
     return -1;
