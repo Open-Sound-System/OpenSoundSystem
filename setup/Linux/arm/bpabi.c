@@ -34,12 +34,64 @@ extern long long __gnu_ldivmod_helper (long long, long long, long long *);
 extern unsigned long long __gnu_uldivmod_helper (unsigned long long, 
 						 unsigned long long, 
 						 unsigned long long *);
-
-#define W_TYPE_SIZE (4*8)	/* 32 bits */
+#define UQItype unsigned char
 #define DWtype long long
-#define UDWtype unsigned long long
+#define UDItype unsigned long long
 #define Wtype int
-#define UWtype unsigned int
+#define USItype		unsigned int
+
+#include "longlong.h"
+
+const UQItype __clz_tab[256] =
+{
+  0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+  6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+  8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
+  8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
+  8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
+  8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
+};
+
+#define add_ssaaaa(sh, sl, ah, al, bh, bl) \
+  __asm__ ("adds	%1, %4, %5\n\tadc	%0, %2, %3"		\
+	   : "=r" ((USItype) (sh)),					\
+	     "=&r" ((USItype) (sl))					\
+	   : "%r" ((USItype) (ah)),					\
+	     "rI" ((USItype) (bh)),					\
+	     "%r" ((USItype) (al)),					\
+	     "rI" ((USItype) (bl)) __CLOBBER_CC)
+#define sub_ddmmss(sh, sl, ah, al, bh, bl) \
+  __asm__ ("subs	%1, %4, %5\n\tsbc	%0, %2, %3"		\
+	   : "=r" ((USItype) (sh)),					\
+	     "=&r" ((USItype) (sl))					\
+	   : "r" ((USItype) (ah)),					\
+	     "rI" ((USItype) (bh)),					\
+	     "r" ((USItype) (al)),					\
+	     "rI" ((USItype) (bl)) __CLOBBER_CC)
+#define umul_ppmm(xh, xl, a, b) \
+{register USItype __t0, __t1, __t2;					\
+  __asm__ ("%@ Inlined umul_ppmm\n"					\
+	   "	mov	%2, %5, lsr #16\n"				\
+	   "	mov	%0, %6, lsr #16\n"				\
+	   "	bic	%3, %5, %2, lsl #16\n"				\
+	   "	bic	%4, %6, %0, lsl #16\n"				\
+	   "	mul	%1, %3, %4\n"					\
+	   "	mul	%4, %2, %4\n"					\
+	   "	mul	%3, %0, %3\n"					\
+	   "	mul	%0, %2, %0\n"					\
+	   "	adds	%3, %4, %3\n"					\
+	   "	addcs	%0, %0, #65536\n"				\
+	   "	adds	%1, %1, %3, lsl #16\n"				\
+	   "	adc	%0, %0, %3, lsr #16"				\
+	   : "=&r" ((USItype) (xh)),					\
+	     "=r" ((USItype) (xl)),					\
+	     "=&r" (__t0), "=&r" (__t1), "=r" (__t2)			\
+	   : "r" ((USItype) (a)),					\
+	     "r" ((USItype) (b)) __CLOBBER_CC );}
+#define UMUL_TIME 20
+#define UDIV_TIME 100
 
 #if 1 	/* Big endian */
   struct DWstruct {Wtype high, low;};

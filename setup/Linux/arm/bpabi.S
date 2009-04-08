@@ -81,6 +81,8 @@ ARM_FUNC_START aeabi_ulcmp
 
 #endif /* L_aeabi_ulcmp */
 
+#ifdef L_aeabi_ldivmod
+
 ARM_FUNC_START aeabi_ldivmod
 	sub sp, sp, #8
 #if defined(__thumb2__)
@@ -95,6 +97,10 @@ ARM_FUNC_START aeabi_ldivmod
 	do_pop {r2, r3}
 	RET
 	
+#endif /* L_aeabi_ldivmod */
+
+#ifdef L_aeabi_uldivmod
+
 ARM_FUNC_START aeabi_uldivmod
 	sub sp, sp, #8
 #if defined(__thumb2__)
@@ -108,4 +114,6 @@ ARM_FUNC_START aeabi_uldivmod
 	add sp, sp, #8
 	do_pop {r2, r3}
 	RET
+	
+#endif /* L_aeabi_divmod */
 	
