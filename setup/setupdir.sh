@@ -241,9 +241,15 @@ rm ./ossvers
 make dep
 
 ln -s $SRCDIR origdir
-if test -f setup/$OS/build.sh
+
+if test -f setup/$OS/build_`uname -m`.sh
 then
-	ln -s setup/$OS/build.sh .
+	ln -s setup/$OS/build_`uname -m`.sh .
+else
+	if test -f setup/$OS/build.sh
+	then
+		ln -s setup/$OS/build.sh .
+	fi
 fi
 
 if test -f setup/$OS/make.local

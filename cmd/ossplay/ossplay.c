@@ -908,7 +908,7 @@ ossplay_ldexpl (long double num, int exp)
     {
       while (exp > 31)
         {
-          num *= 1L << 31;
+          num *= 1UL << 31;
           exp -= 31;
         }
       num *= 1L << exp;
@@ -917,7 +917,7 @@ ossplay_ldexpl (long double num, int exp)
     {
       while (exp < -31)
         {
-          num /= 1L << 31;
+          num /= 1UL << 31;
           exp += 31;
         }
       num /= 1L << -exp;
