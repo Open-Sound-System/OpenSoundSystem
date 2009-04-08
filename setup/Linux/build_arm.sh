@@ -51,7 +51,13 @@ cp ./setup/Linux/oss/build/ossdip.h tmp_build/
 cp ./include/soundcard.h tmp_build/
 cp ./kernel/framework/include/ossddk/oss_exports.h tmp_build/
 
-(cd tmp_build && make KERNELDIR=$KERNELDIR)
+if ! (cd tmp_build && make KERNELDIR=$KERNELDIR) > build.log 2>&1
+then
+   cat build.log
+   echo
+   echo Building osscore module failed
+   exit 1
+fi
 
 ld -r tmp_build/osscore.ko target/objects/*.o bpabi.o -o prototype/usr/lib/oss/modules/osscore.ko
 
