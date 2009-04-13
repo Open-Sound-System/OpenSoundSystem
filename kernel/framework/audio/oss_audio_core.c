@@ -6531,10 +6531,10 @@ oss_install_audiodev_with_devname (int vers,
       op->unloaded = 0;
     }
 
-#ifdef VDEV_SUPPORT
+//#ifdef VDEV_SUPPORT
   oss_install_chrdev (osdev, NULL, OSS_DEV_DSP_ENGINE, num,
 		      &audio_engine_cdev_drv, chdev_flags);
-#endif
+//#endif
 
 #if 0
   if (!reinsterted_device && update_devlists && !hidden_device)

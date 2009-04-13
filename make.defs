@@ -3,7 +3,7 @@
 #
 
 INCLUDES=-I$(TOPDIR)/include -I$(TOPDIR)/kernel/framework/include \
-	 -I$(TOPDIR)/kernel/OS/$(THISOS) \
+	 -I$(TOPDIR)/$(THISOS) \
 	 -I$(TOPDIR)/kernel/nonfree/include -I$(TOPDIR)
 #-I/usr/src/uts/${ARCH}
 

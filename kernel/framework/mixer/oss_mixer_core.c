@@ -1359,6 +1359,7 @@ mixer_ext_set_vmix_init_fn (int dev, mixer_create_controls_t func, int nextra,
   return 0;
 }
 
+#ifdef VDEV_SUPPORT
 static void
 ainfo_combine_caps (oss_audioinfo * ainfo, adev_p adev)
 {
@@ -1382,6 +1383,7 @@ ainfo_combine_caps (oss_audioinfo * ainfo, adev_p adev)
     ainfo->caps |= DSP_CAP_MMAP;
 #endif
 }
+#endif
 
 #if 0
 /*

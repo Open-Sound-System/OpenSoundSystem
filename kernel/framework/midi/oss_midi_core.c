@@ -1411,6 +1411,7 @@ oss_midi_chpoll (int dev, struct fileinfo *file, oss_poll_event_t * ev)
 }
 #endif
 
+#ifdef VDEV_SUPPORT
 static oss_cdev_drv_t vmidi_cdev_drv = {
   oss_vmidi_open,
   oss_midi_release,
@@ -1423,6 +1424,7 @@ static oss_cdev_drv_t vmidi_cdev_drv = {
   NULL
 #endif
 };
+#endif
 
 static oss_cdev_drv_t midi_cdev_drv = {
   oss_midi_open,
