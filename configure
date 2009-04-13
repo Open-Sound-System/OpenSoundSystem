@@ -3,6 +3,7 @@
 CONFIGURE=YES
 COPY_OPTIONS=
 OSSLIBDIR="/usr/lib/oss"
+TARGETOS=
 
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
@@ -13,6 +14,29 @@ CONFIG_MIDI=ENABLED
 export CONFIGURE CONFIG_MIDI
 
 unset CDPATH >/dev/null 2>&1
+
+DIR=`pwd`
+SRCDIR=`dirname $0`
+SRCDIR=`cd $SRCDIR && pwd`
+
+if test "$DIR " = " " || test "$DIR " = ". "
+then
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo
+	echo "**** USAGE ERROR ****"
+	echo
+	echo You need to create an empty build directory and
+	echo then execute sh `pwd`/configure inside it.
+	echo
+	echo Configure script aborted
+	exit 2
+fi
 
 while test  "$# " != "0 "
 do
@@ -41,6 +65,14 @@ do
    	"--target=uclinux-blackfin")
 		CROSSCOMPILE=uclinux-blackfin
 		uOSS=1
+		export CROSSCOMPILE uOSS
+		;;
+
+   	"--target=vxworks-x86")
+		CROSSCOMPILE=vxworks-x86
+		uOSS=1
+		CONFIGSCRIPT=$SRCDIR/setup/setupdir.sh
+		TARGETOS=VxWorks
 		export CROSSCOMPILE uOSS
 		;;
 
@@ -138,31 +170,14 @@ do
 	shift
 done
 
-DIR=`pwd`
-SRCDIR=`dirname $0`
-SRCDIR=`cd $SRCDIR && pwd`
-export SRCDIR COPY_OPTIONS OSSLIBDIR
-
-if test "$DIR " = " " || test "$DIR " = ". "
-then
-	echo
-	echo
-	echo
-	echo
-	echo
-	echo
-	echo
-	echo
-	echo "**** USAGE ERROR ****"
-	echo
-	echo You need to create an empty build directory and
-	echo then execute sh `pwd`/configure inside it.
-	echo
-	echo Configure script aborted
-	exit 2
-fi
+export SRCDIR COPY_OPTIONS OSSLIBDIR TARGETOS
 
 # Run the OS dependent setup script
+
+if test "$CONFIGSCRIPT " != " "
+then
+	exec sh $CONFIGSCRIPT
+fi
 
 case `uname` in
 

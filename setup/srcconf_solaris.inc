@@ -6,7 +6,7 @@
 static void
 check_sysdep (conf_t * conf, struct utsname *un)
 {
-  char tmp[64];
+  char tmp[64], *p;
 
   conf->flags |= F_USEARCH;
 #ifdef USE_GCC
@@ -106,4 +106,12 @@ check_sysdep (conf_t * conf, struct utsname *un)
 
   if (getenv ("SOL9") != NULL)
     strcat (conf->OSflags, " -DSOL9");
+
+  if ((p=getenv("CROSSCOMPILE"))!=NULL)
+     {
+	if (strcmp(p, "vxworks-x86")==0)
+	   {
+		vxworks_setup(conf, "386");
+	   }
+     }
 }

@@ -20,7 +20,6 @@
 #include "libossmix.h"
 #include "libossmix_impl.h"
 
-//static int num_mixers=0;
 static local_mixer_t *mixers[MAX_TMP_MIXER] = { NULL };
 
 void

@@ -7,10 +7,13 @@
 
 #define IN
 #define OUT
-typedef unsigned char UCHAR, *PUCHAR;
+//typedef unsigned char UCHAR, *PUCHAR;
 typedef unsigned char BOOLEAN, BYTE, *PBYTE;
-typedef unsigned int ULONG, *PULONG;
-typedef unsigned short USHORT, *PUSHORT, WORD, *PWORD;
+//typedef unsigned int ULONG, *PULONG;
+//typedef unsigned short USHORT, *PUSHORT, WORD, *PWORD;
+
+typedef UCHAR *PUCHAR;
+typedef USHORT WORD;
 
 /*
  * Default levels 

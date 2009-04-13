@@ -19,6 +19,10 @@ check_sysdep (conf_t * conf, struct utsname *un)
 		hostcc="cc";
 		targetcc="uclinux-blackfin-gcc";
 	   }
+	if (strcmp(p, "vxworks-x86")==0)
+	   {
+		vxworks_setup(conf, "386");
+	   }
      }
 
   sprintf(conf->ccomp, "%s -ffreestanding", targetcc);

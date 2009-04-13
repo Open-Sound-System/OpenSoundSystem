@@ -14,6 +14,11 @@ echo srcdir=$SRCDIR
 BLDDIR=`pwd`
 OS=`uname -s`
 
+if test "$TARGETOS " != " "
+then
+  OS=$TARGETOS
+fi
+
 # Use the same source directories for SCO UnixWare and SCO OSR
 if test "$OS " = "UnixWare "
 then

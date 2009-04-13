@@ -111,7 +111,11 @@ static int nincludes = 0;
 static char *includes[MAX_INCLUDES];
 static int do_cleanup = 0;
 
+static int config_vxworks=0;
+
 static char arch[32] = "";
+
+#include "srcconf_vxworks.inc"
 
 static int
 parse_config (FILE * f, conf_t * conf, char *comment)
@@ -602,6 +606,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   if ((dir = opendir (path)) == NULL)
     {
       perror (path);
+      fprintf(stderr, "scan_dir(%s): Opendir failed\n", path);
       exit (-1);
     }
 
@@ -775,6 +780,10 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   // fprintf (f, "LD=ld\n");
   fprintf (f, "HOSTCC=%s\n", hostcc);
   fprintf (f, "CPLUSPLUS=%s\n", conf.cplusplus);
+
+  if (config_vxworks)
+     vxworks_genheader (f, path);
+
 #if defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
     fprintf (f, "CFLAGS=%s\n", conf.cflags);
@@ -808,7 +817,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 
   if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
-      fprintf (f, "CFLAGS=-D_KERNEL\n");
+      fprintf (f, "CFLAGS+=-D_KERNEL\n");
 #ifdef sun
       /* fprintf(f, "CFLAGS += -xmodel=kernel\n"); */
 #endif
@@ -852,7 +861,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 #ifndef __SCO_VERSION__
   else
     {
-      fprintf (f, "CFLAGS=-O\n");
+      fprintf (f, "CFLAGS+=-O\n");
     }
 #endif
 
