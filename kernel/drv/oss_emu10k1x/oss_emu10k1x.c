@@ -64,7 +64,7 @@
 #define PLAY_INTR_ENABLE (INTR_PFF|INTR_PFH)
 #define RECORD_INTR_ENABLE (INTR_RFF|INTR_RFH)
 
-#define BUFSIZE 32*1024
+#define EMU_BUFSIZE 32*1024
 #define MAX_PORTC	3
 
 extern int emu10k1x_spdif_enable;
@@ -477,7 +477,7 @@ emu10k1x_prepare_for_input (int dev, int bsize, int bcount)
   write_reg (devc, RFBA, 0, portc->recbuf_phys);
   write_reg (devc, RFBS, 0, (dmap->fragment_size * 2) << 16);
 #endif
-  memset (portc->recbuf, 0, BUFSIZE);
+  memset (portc->recbuf, 0, EMU_BUFSIZE);
   portc->rec_cfrag = portc->rec_chalf = 0;
   portc->audio_enabled &= ~PCM_ENABLE_INPUT;
   portc->trigger_bits &= ~PCM_ENABLE_INPUT;
@@ -519,7 +519,7 @@ emu10k1x_prepare_for_output (int dev, int bsize, int bcount)
   write_reg (devc, PFBA, portc->port_number, portc->playbuf_phys);
   write_reg (devc, PFBS, portc->port_number, (dmap->fragment_size * 2) << 16);
 #endif
-  memset (portc->playbuf, 0, BUFSIZE);
+  memset (portc->playbuf, 0, EMU_BUFSIZE);
   portc->play_cfrag = portc->play_chalf = 0;
 
   if (portc->fmt == AFMT_AC3)
@@ -567,7 +567,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
       if (portc->port_number == 0)
 	{
 	  portc->recbuf =
-	    CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->recbuf_dma_handle);
+	    CONTIG_MALLOC (devc->osdev, EMU_BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->recbuf_dma_handle);
 	  if (portc->recbuf == NULL)
 	    return OSS_ENOMEM;
 	  portc->recbuf_phys = phaddr;
@@ -576,7 +576,7 @@ emu10k1x_alloc_buffer (int dev, dmap_t * dmap, int direction)
   else
     {
       portc->playbuf =
-	CONTIG_MALLOC (devc->osdev, BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->playbuf_dma_handle);
+	CONTIG_MALLOC (devc->osdev, EMU_BUFSIZE, MEMLIMIT_32BITS, &phaddr, portc->playbuf_dma_handle);
       if (portc->playbuf == NULL)
 	return OSS_ENOMEM;
       portc->playbuf_phys = phaddr;
@@ -595,13 +595,13 @@ emu10k1x_free_buffer (int dev, dmap_t * dmap, int direction)
 
   if (portc->playbuf != NULL)
     {
-      CONTIG_FREE (devc->osdev, portc->playbuf, BUFSIZE, portc->playbuf_dma_handle);
+      CONTIG_FREE (devc->osdev, portc->playbuf, EMU_BUFSIZE, portc->playbuf_dma_handle);
       portc->playbuf = NULL;
     }
 
   if (portc->recbuf != NULL)
     {
-      CONTIG_FREE (devc->osdev, portc->recbuf, BUFSIZE, portc->recbuf_dma_handle);
+      CONTIG_FREE (devc->osdev, portc->recbuf, EMU_BUFSIZE, portc->recbuf_dma_handle);
       portc->recbuf = NULL;
     }
 
@@ -1052,7 +1052,7 @@ install_audio_devices (emu10k1x_devc * devc)
       audio_engines[adev]->min_rate = 48000;
       audio_engines[adev]->max_rate = 48000;
       audio_engines[adev]->caps |= PCM_CAP_FREERATE;
-      /*audio_engines[adev]->max_block = BUFSIZE / 2; *//*  Never change this */
+      /*audio_engines[adev]->max_block = EMU_BUFSIZE / 2; *//*  Never change this */
       audio_engines[adev]->fixed_rate = 48000;
       audio_engines[adev]->binding = bindings[i];
       audio_engines[adev]->vmix_flags = VMIX_MULTIFRAG;
