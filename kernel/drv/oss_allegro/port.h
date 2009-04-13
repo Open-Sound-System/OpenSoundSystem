@@ -9,8 +9,8 @@ typedef void *PVOID;
 typedef char CHAR;
 typedef short SHORT;
 typedef long LONG;
-typedef int BOOL;
-typedef unsigned char UCHAR;
+//typedef int BOOL;
+//typedef unsigned char UCHAR;
 typedef unsigned char *PBYTE;
 typedef unsigned short *PUSHORT;
 #define BYTE UCHAR
