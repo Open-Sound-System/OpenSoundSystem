@@ -39,6 +39,7 @@
 #ifdef linux
 /* In Linux we need to be prepared for cross compiling */
 #include <sys/ioctl.h>
+extern int ioctl (int __fd, unsigned long int __request, ...);
 #else
 # ifdef __FreeBSD__
 #    include <sys/ioccom.h>
