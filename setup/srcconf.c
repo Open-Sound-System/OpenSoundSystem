@@ -530,6 +530,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   int n_filenames = 0;
 
   char tmp_endian[100]="";
+  char autogen_sources[1024]="";
 
   memcpy (&conf, cfg, sizeof (conf));
 
@@ -683,6 +684,40 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 	  if (strcmp (obj, cfg_name) == 0)
 	    cfg_seen = 1;
 	}
+
+      if (config_phpmake)
+         {
+		 if (strcmp(suffix, ".PHc") == 0)
+	            {
+			    if (*autogen_sources != 0)
+			       strcat(autogen_sources, " ");
+			    *suffix=0;
+			    strcat(autogen_sources, obj);
+			    strcat(autogen_sources, ".c");
+			    *suffix='.';
+			    strcpy(suffix, ".c");
+		    }
+		 else
+		 if (strcmp(suffix, ".PHh") == 0)
+	            {
+			    if (*autogen_sources != 0)
+			       strcat(autogen_sources, " ");
+			    *suffix=0;
+			    strcat(autogen_sources, obj);
+			    strcat(autogen_sources, ".h");
+			    *suffix='.';
+		    }
+		 else
+		 if (strcmp(suffix, ".PHinc") == 0)
+	            {
+			    if (*autogen_sources != 0)
+			       strcat(autogen_sources, " ");
+			    *suffix=0;
+			    strcat(autogen_sources, obj);
+			    strcat(autogen_sources, ".inc");
+			    *suffix='.';
+		    }
+	 }
 
       if (strcmp (suffix, ".c") == 0 ||
 	  strcmp (suffix, ".C") == 0 || strcmp (suffix, ".cpp") == 0)
@@ -904,14 +939,31 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
     {
       int i;
 
-      fprintf (f, "SUBDIRS=");
-      for (i = 0; i < ndirs; i++)
-	{
-	  if (i > 0)
-	    fprintf (f, " ");
-	  fprintf (f, "%s", subdirs[i]);
-	}
-      fprintf (f, "\n");
+      if (config_phpmake)
+         {
+	      fprintf (f, "<?php\n");
+	      fprintf (f, "\t$subdirs=array(");
+	      for (i = 0; i < ndirs; i++)
+		{
+		  if (i > 0)
+		    fprintf (f, ", ");
+		  fprintf (f, "\"%s\"", subdirs[i]);
+		}
+	      fprintf (f, ");\n");
+	      fprintf (f, "phpmake_print_subdirs($subdirs);\n");
+	      fprintf (f, "?>\n");
+	 }
+      else
+         {
+	      fprintf (f, "SUBDIRS=");
+	      for (i = 0; i < ndirs; i++)
+		{
+		  if (i > 0)
+		    fprintf (f, " ");
+		  fprintf (f, "%s", subdirs[i]);
+		}
+	      fprintf (f, "\n");
+	 }
     }
 
   if (nobjects > 0)
@@ -967,6 +1019,9 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f, "\n");
     }
 
+  if (*autogen_sources != 0)
+     fprintf (f, "AUTOGEN_SOURCES=%s\n", autogen_sources);
+
   fprintf (f, "\n");
 
   if (include_local_makefile)
@@ -1008,7 +1063,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
   else
     {
       if (nobjects > 0)
-	fprintf (f, "objects ");
+	fprintf (f, "$(AUTOGEN_SOURCES) objects ");
     }
 
   if (ndirs > 0)
@@ -1036,7 +1091,7 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
    */
   fprintf (f, "dep: ");
   if (nobjects > 0)
-    fprintf (f, "dep_local ");
+    fprintf (f, "$(AUTOGEN_SOURCES) dep_local ");
   if (ndirs > 0)
     fprintf (f, "dep_subdirs ");
   fprintf (f, "\n\n");
