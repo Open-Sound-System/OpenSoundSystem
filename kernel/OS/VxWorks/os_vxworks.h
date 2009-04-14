@@ -14,7 +14,7 @@
 #undef CONFIG_OSS_VMIX_FLOAT
 #endif
 
-#undef  VDEV_SUPPORT
+#define VDEV_SUPPORT
 #undef  USE_DEVICE_SUBDIRS
 
 #define __inline__ inline
@@ -199,8 +199,8 @@ extern void oss_reserve_pages (oss_native_word start_addr,
 extern void oss_unreserve_pages (oss_native_word start_addr,
 				 oss_native_word end_addr);
 
-#define KERNEL_MALLOC(nbytes)	NULL
-#define KERNEL_FREE(addr)	
+#define KERNEL_MALLOC(nbytes)	malloc(nbytes)
+#define KERNEL_FREE(addr)	free(addr)
 #define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr)
 #define CONTIG_FREE(osdev, p, sz, handle)	oss_contig_free(osdev, p, sz)
 

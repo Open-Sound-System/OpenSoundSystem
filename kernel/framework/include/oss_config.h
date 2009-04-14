@@ -185,6 +185,9 @@ typedef struct _oss_cdev_t oss_cdev_t;
 
 struct _oss_cdev_t
 {
+#ifdef DEV_HDR
+  DEV_HDR devHdr;
+#endif
   oss_cdev_t *hl;	/* Hash link (for operating system ports that use it) */
   int minor;
   int dev_class;
