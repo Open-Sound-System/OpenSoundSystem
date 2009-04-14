@@ -38,6 +38,8 @@ static char *config_midi="ENABLED"; // Actually this depends on the configure sc
 
 static int exact_architectures=0; /* 1=Compile only drivers that have matching arch given in their .config file. */
 
+static int config_phpmake=0;
+
 typedef struct
 {
   char project_name[64];
@@ -722,7 +724,11 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       return 0;
     }
 
-  sprintf (tmp, "%s/Makefile", path);
+  if (config_phpmake)
+     sprintf (tmp, "%s/Makefile.php", path);
+  else
+     sprintf (tmp, "%s/Makefile", path);
+
 #if 0
   if ((f = fopen (tmp, "w")) == NULL)
     {
@@ -776,6 +782,10 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
     }
 
   fprintf (f, "# Makefile for %s module %s\n\n", conf.project_name, name);
+
+  if (config_phpmake)
+     fprintf (f, "<?php require getenv(\"PHPMAKE_LIBPATH\") . \"library.php\"; phpmake_makefile_top_rules(); ?>\n");
+
   fprintf (f, "CC=%s\n", conf.ccomp);
   // fprintf (f, "LD=ld\n");
   fprintf (f, "HOSTCC=%s\n", hostcc);
@@ -965,6 +975,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fprintf (f, "\n");
     }
 
+  if (config_phpmake)
+     fprintf (f, "<?php phpmake_makefile_rules(); ?>\n");
   /*
    * Create the default target
    */
@@ -1112,6 +1124,8 @@ produce_output (conf_t * conf)
 
   scan_dir (".", "main", NULL, conf, 1);
   scan_dir (this_os, "main", "../../..", conf, 3);
+
+  symlink (this_os, "targetos");
 
   already_configured = 1;
 }
@@ -1351,6 +1365,11 @@ main (int argc, char *argv[])
 {
   int i;
   char tmp[256], *env;
+
+  struct stat st;
+
+  if (stat("phpmake/library.php", &st) != -1)
+     config_phpmake=1;
 
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')

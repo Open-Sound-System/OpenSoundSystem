@@ -243,8 +243,6 @@ cc -o ossvers -I./kernel/framework/include  setup/ossvers.c
 ./ossvers > .version
 rm ./ossvers
 
-make dep
-
 ln -s $SRCDIR origdir
 
 if test -f setup/$OS/build_`uname -m`.sh
@@ -259,9 +257,32 @@ fi
 
 if test -f setup/$OS/make.local
 then
+  if test -f Makefile.php
+  then
+	echo >> Makefile.php
+	echo include setup/$OS/make.local >> Makefile.php
+  else
 	echo >> Makefile
 	echo include setup/$OS/make.local >> Makefile
+  fi
 fi
+
+if test -f Makefile.php && test -d phpmake
+then
+	echo Running phpmake for all subdirectories - please wait
+
+	if test "$PHPMAKE_LIBPATH " = " "
+	then
+	   echo PHPMAKE_LIBPATH not set - cannot continue
+	   exit 1
+	fi
+
+	phpmake
+
+	(cd targetos && phpmake)
+fi 
+
+make dep
 
 echo Directory preparation complete.
 echo Build ID will be `cat $SRCDIR/buildid.dat`
