@@ -718,6 +718,50 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 			    *suffix='.';
 		    }
 	 }
+      else
+	 {
+		 char source[256], target[256];
+
+		 if (strcmp(suffix, ".PHc") == 0)
+	            {
+			    *suffix=0;
+			    sprintf (source, "%s.PHc", obj);
+			    sprintf (target, "%s/%s.c", path, obj);
+			    *suffix='.';
+			    if (symlink (source, target) == -1)
+			       {
+				       perror(source);
+				       exit(1);
+			       }
+		    }
+		 else
+		 if (strcmp(suffix, ".PHh") == 0)
+	            {
+			    *suffix=0;
+			    sprintf (source, "%s.PHh", obj);
+			    sprintf (target, "%s/%s.h", path, obj);
+			    *suffix='.';
+			    if (symlink (source, target) == -1)
+			       {
+				       perror(source);
+				       exit(1);
+			       }
+		    }
+		 else
+		 if (strcmp(suffix, ".PHinc") == 0)
+	            {
+			    *suffix=0;
+			    sprintf (source, "%s.PHinc", obj);
+			    sprintf (target, "%s/%s.inc", path, obj);
+			    *suffix='.';
+printf("Symlink %s -> %s\n", source, target);
+			    if (symlink (source, target) == -1)
+			       {
+				       perror(source);
+				       exit(1);
+			       }
+		    }
+	 }
 
       if (strcmp (suffix, ".c") == 0 ||
 	  strcmp (suffix, ".C") == 0 || strcmp (suffix, ".cpp") == 0)
@@ -859,6 +903,9 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
     fprintf (f, "OSSLIBDIR=\"%s\"\n", p);
 
   fprintf (f, "THISOS=%s\n", this_os);
+
+  if (config_phpmake)
+     fprintf (f, "CFLAGS+=-D__USE_PHPMAKE__\n");
 
   if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
