@@ -203,18 +203,9 @@ extern int sequencer_disabled;
 extern volatile int sequencer_busy;
 
 extern mididev_t **midi_devs;
-/* OBSOLETE extern struct synth_operations *synth_devs[MAX_SYNTH_DEV + MAX_MIDI_DEV]; */
 extern int num_mididevs;
 extern int oss_num_timers;
 extern oss_uint64_t seq_time;
-extern void sequencer_init (void);
-extern void sequencer_timer (oss_uint64_t dummy);
-extern int note_to_freq (int note_num);
-extern oss_native_word compute_finetune (oss_native_word base_freq,
-					 int bend, int range,
-					 int vibrato_bend);
-extern void seq_input_event (unsigned char *event, int len);
-extern void seq_copy_to_input (unsigned char *event, int len);
 
 struct oss_timer_driver;
 typedef void (*oss_midi_wait_callback_t) (void *arg);

@@ -24,31 +24,6 @@ static int oss_expired = 0;
 static oss_device_t *cards[MAX_CARDS];
 int oss_num_cards = 0;
 
-/*
- * TODO: These dummy variables are collected here while MIDI/sequencer stuff
- * is not included. Remove them when enabling this stuff again.
- */
-struct synth_operations *synth_devs[MAX_SYNTH_DEV + MAX_MIDI_DEV];
-void
-sequencer_timer (oss_uint64_t dummy)
-{
-}
-
-oss_native_word
-compute_finetune (oss_native_word base_freq, int bend, int range,
-		  int vibrato_cents)
-{
-  return 0;
-}
-
-int (*softsynthp) (int cmd, int parm1, int parm2, oss_native_word parm3) =
-  NULL;
-int
-note_to_freq (int note_num)
-{
-  return 0;
-}
-
 void
 oss_pci_byteswap (oss_device_t * osdev, int mode)
 {
