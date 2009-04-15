@@ -278,6 +278,12 @@ then
 	   echo PHPMAKE_LIBPATH not set - assuming $PHPMAKE_LIBPATH
 	fi
 
+	if test "$PHPMAKE_PROJECT " = " "
+	then
+	   echo PHPMAKE_PROJECT not set - cannot continue
+	   exit 1
+	fi
+
 	phpmake
 
 	(cd targetos && phpmake)

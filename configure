@@ -5,6 +5,8 @@ COPY_OPTIONS=
 OSSLIBDIR="/usr/lib/oss"
 TARGETOS=
 
+unset USE_PHPMAKE
+
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
 
@@ -133,6 +135,11 @@ do
 	"--only-drv="*)
 		ONLY_DRVS=`echo $1 | sed 's/--only-drv=/,/'`
 		export ONLY_DRVS
+		;;
+
+	"--use-phpmake")
+		USE_PHPMAKE=YES
+		export USE_PHPMAKE
 		;;
 	*)
 

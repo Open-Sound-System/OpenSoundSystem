@@ -1492,6 +1492,7 @@ main (int argc, char *argv[])
 
   struct stat st;
 
+  if (getenv("USE_PHPMAKE") != NULL)
   if (stat("phpmake/library.php", &st) != -1)
      config_phpmake=1;
 
