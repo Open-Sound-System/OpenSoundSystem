@@ -20,7 +20,9 @@
 #include <errno.h>
 #include <soundcard.h>
 #include <sys/ioctl.h>
+#ifndef LOCAL_BUILD
 #include <local_config.h>
+#endif
 
 static char *progname = NULL;
 static int mixerfd = -1, nrext = 0, quiet = 0, verbose = 0;
@@ -272,7 +274,8 @@ verbose_devinfo (int dev)
 	  break;
 
 	default:
-	  printf ("Unknown record type %d\n", thisrec->type);
+	  printf ("Unknown record type %d (%s)\n", thisrec->type,
+		  thisrec->extname);
 	}
 
     }
@@ -566,7 +569,8 @@ show_devinfo (int dev)
 	  break;
 
 	default:
-	  printf ("Unknown mixer extension type %d", thisrec->type);
+	  printf ("Unknown mixer extension type %d (%s)", thisrec->type,
+		  thisrec->extname);
 	}
 
       if ((thisrec->flags & MIXF_WRITEABLE) == 0) printf(" (Read-only)");
@@ -902,6 +906,9 @@ change_level (int dev, const char * cname, const char * arg)
       case MIXT_MONODB:
       case MIXT_MONOVU:
       case MIXT_MONOPEAK:
+      case MIXT_SLIDER:
+	val.value = lefti;
+	break;
       default:
 	if (lefti > 255) lefti = 255;
 	if (righti > 255) righti = 255;
