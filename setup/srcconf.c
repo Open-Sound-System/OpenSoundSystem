@@ -117,6 +117,16 @@ static int config_vxworks=0;
 
 static char arch[32] = "";
 
+static void
+generate_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
+		 char *dirname, char *topdir);
+
+typedef void
+(*generate_driver_t) (char *name, conf_t * conf, char *cfg_name, char *cfg_header,
+                 char *dirname, char *topdir);
+
+generate_driver_t driver_gen = generate_driver;
+
 #include "srcconf_vxworks.inc"
 
 static int
@@ -606,6 +616,9 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
 	&& conf.mode != MD_UNDEF)
       return 0;
 
+  if (conf.mode == MD_MODULE)
+    driver_gen (name, &conf, cfg_name, cfg_header, path, topdir);
+
   if ((dir = opendir (path)) == NULL)
     {
       perror (path);
@@ -784,19 +797,28 @@ printf("Symlink %s -> %s\n", source, target);
       subdirs[ndirs++] = strdup (this_os);
     }
 
+#if 0
+  // This block is no longer necessary because the driver_gen () call was moved.
+  // Now the _cfg.c file should get created so that it gets picked by the readdir() loop.
+  // However keep it here for a while.
   if (!cfg_seen && conf.mode == MD_MODULE)
     {
-#if !defined(linux) && !defined(__FreeBSD__)
+# if !defined(linux) && !defined(__FreeBSD__)
       sprintf (tmp, "%s_cfg.c", name);
       sources[nsources++] = strdup (tmp);
 
       obj_src[nobjects] = strdup (tmp);
       sprintf (tmp, "%s_cfg.o", name);
       objects[nobjects++] = strdup (tmp);
-#endif
+# endif
     }
+#endif
+
+#if 0
+  // This stuff has been moved above the readdir() loop.
   if (conf.mode == MD_MODULE)
-    generate_driver (name, &conf, cfg_name, cfg_header, path, topdir);
+    driver_gen (name, &conf, cfg_name, cfg_header, path, topdir);
+#endif
 
   if (do_cleanup || (ndirs == 0 && nobjects == 0))
     {

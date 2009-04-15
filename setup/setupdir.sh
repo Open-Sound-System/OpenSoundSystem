@@ -273,8 +273,9 @@ then
 
 	if test "$PHPMAKE_LIBPATH " = " "
 	then
-	   echo PHPMAKE_LIBPATH not set - cannot continue
-	   exit 1
+	   PHPMAKE_LIBPATH="`pwd`/phpmake/"
+	   export PHPMAKE_LIBPATH
+	   echo PHPMAKE_LIBPATH not set - assuming $PHPMAKE_LIBPATH
 	fi
 
 	phpmake
