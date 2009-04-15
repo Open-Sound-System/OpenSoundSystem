@@ -12,6 +12,7 @@ function phpmake_makefile_top_rules()
  echo ".SUFFIXES: .PHc .PHh .PHinc .inc\t# PHP source files\n";
  echo "PHP=php\n";
  echo "PHPMAKE_PROJECT=" . getenv("PHPMAKE_PROJECT") . "\n";
+ echo "PHPMAKE_LIBPATH=" . getenv("PHPMAKE_LIBPATH") . "\n";
  echo "# ** End of phpmake definitions\n";
 }
 
@@ -21,13 +22,13 @@ function phpmake_makefile_rules()
  echo "# ** Start of phpmake generated rules\n";
  echo "\n";
  echo ".PHc.c:\n";
- echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) $(PHP) $< > $@' . "\n";
+ echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) PHPMAKE_LIBPATH=$(PHPMAKE_LIBPATH) $(PHP) $< > $@' . "\n";
  echo "\n";
  echo ".PHh.h:\n";
- echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) $(PHP) $< > $@' . "\n";
+ echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) PHPMAKE_LIBPATH=$(PHPMAKE_LIBPATH) $(PHP) $< > $@' . "\n";
  echo "\n";
  echo ".PHinc.inc:\n";
- echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) $(PHP) $< > $@' . "\n";
+ echo "\t" . 'PHPMAKE_PROJECT=$(PHPMAKE_PROJECT) PHPMAKE_LIBPATH=$(PHPMAKE_LIBPATH) $(PHP) $< > $@' . "\n";
  echo "\n";
  echo "# ** End of phpmake generated rules\n";
  echo "\n";
