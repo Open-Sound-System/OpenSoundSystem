@@ -85,14 +85,7 @@ generate_vxworks_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_he
   fprintf (src, " * Automatically generated file - do not edit.\n");
   fprintf (src, " */\n");
 
-  fprintf (src, "#define DRIVER_NAME\t%s\n", name);
-  fprintf (src, "#define DRIVER_NICK\t\"%s\"\n", name);
-  fprintf (src, "#define DRIVER_PURPOSE\t\"%s\"\n", conf->purpose);
-  fprintf (src, "#define DRIVER_STR_INFO\t%s_str_info\n", name);
-  fprintf (src, "#define DRIVER_ATTACH\t%s_attach\n", name);
-  fprintf (src, "#define DRIVER_DETACH\t%s_detach\n", name);
-  fprintf (src, "#define DRIVER_TYPE\tDRV_%s\n", conf->bus);
-  fprintf (src, "\n");
+  fprintf (src, "#include \"%s\"\n\n", cfg_header);
 
 /*
  * Handle driver specific configuration options
@@ -236,7 +229,6 @@ generate_vxworks_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_he
 
   fprintf (src, "#define DRIVER_NAME\t%s\n", name);
   fprintf (src, "#define DRIVER_NICK\t\"%s\"\n", name);
-  fprintf (src, "#define DRIVER_STR_INFO\t%s_str_info\n", name);
   fprintf (src, "#define DRIVER_ATTACH\t%s_attach\n", name);
   fprintf (src, "#define DRIVER_DETACH\t%s_detach\n", name);
   fprintf (src, "#define DRIVER_TYPE\tDRV_%s\n", conf->bus);
