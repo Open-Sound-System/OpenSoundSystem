@@ -271,4 +271,19 @@ extern int oss_hz;
 #define GET_PROCESS_UID(x)  0
 #define GET_PROCESS_NAME(x) NULL
 
+/*
+ * Floating point save/restore support for vmix
+ */
+#define FP_SUPPORT
+
+#ifdef FP_SUPPORT
+typedef short fp_env_t[512];
+typedef unsigned int fp_flags_t[4];
+extern int oss_fp_check (void);
+extern void oss_fp_save (short *envbuf, fp_flags_t flags);
+extern void oss_fp_restore (short *envbuf, fp_flags_t flags);
+#   define FP_SAVE(envbuf, flags)		oss_fp_save(envbuf, flags)
+#   define FP_RESTORE(envbuf, flags)		oss_fp_restore(envbuf, flags)
+#endif
+
 #endif
