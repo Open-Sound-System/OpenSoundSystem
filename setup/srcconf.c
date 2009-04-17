@@ -939,7 +939,7 @@ printf("Symlink %s -> %s\n", source, target);
 #ifdef linux
 # if defined(__x86_64__)
       fprintf (f,
-	       "CFLAGS += -O6 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
+	       "#CFLAGS += -O6 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
 # else
 #   ifndef __arm__
       if (getenv ("NO_REGPARM") == NULL)

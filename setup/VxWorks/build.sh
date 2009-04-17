@@ -4,7 +4,12 @@ rm -rf prototype
 mkdir prototype
 mkdir prototype/oss-install
 
-ld -r -o prototype/oss-install/osscore.o target/objects/*.o
+if test "$LD " = " "
+then
+  LD=ar
+fi
+
+$LD -r -o prototype/oss-install/osscore.o target/objects/*.o
 
 cp target/modules/*.o prototype/oss-install/
 

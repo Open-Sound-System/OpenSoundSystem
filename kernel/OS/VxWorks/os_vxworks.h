@@ -99,8 +99,14 @@ typedef int offset_t;
 /*
  * uio_/uiomove()
  */
-typedef int uio_t;
 typedef enum uio_rw uio_rw_t;
+typedef struct oss_uio
+{
+  char *ptr;
+  int resid;
+  int kernel_space;		/* Set if this uio points to a kernel space buffer */
+  uio_rw_t rw;
+} uio_t;
 extern int oss_uiomove (void *address, size_t nbytes, enum uio_rw rwflag,
 			uio_t * uio_p);
 extern int oss_create_uio (uio_t * uiop, char *buf, size_t count, uio_rw_t rw,

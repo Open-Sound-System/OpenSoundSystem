@@ -1,5 +1,5 @@
 build: 	kernel/framework/include/buildid.h all
-	sh build.sh
+	LD=$(LD) AR=$(AR) sh build.sh
 
 package:	build
 		sh setup/VxWorks/mkpkg.sh

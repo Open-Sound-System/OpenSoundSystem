@@ -13,7 +13,7 @@ vxworks_setup(conf_t *conf, char *arch)
 	hostcc="cc";
 
 #ifdef linux
-	targetcc="cc";
+	targetcc="ccpentium";
 #else
 	sprintf(tmp, "cc%s", arch);
 	targetcc=strdup(tmp);
@@ -39,10 +39,13 @@ vxworks_genheader(FILE *f, char *path)
 {
 #ifdef linux
 	fprintf (f, "\n");
-	fprintf (f, "WIND_BASE=/disk6/vxworks/tornado-2.0\n");
-	//fprintf (f, "CFLAGS+=-mpentium -ansi -nostdinc -O2 -fvolatile -nostdlib -fno-builtin -fno-defer-pop -Wall -I$(WIND_BASE)/target/config/all\n");
-	fprintf (f, "CFLAGS+=-nostdinc -O2 -nostdlib -fno-builtin -fno-defer-pop -Wall -I$(WIND_BASE)/target/config/all\n");
-	fprintf (f, "CFLAGS+=-I$(WIND_BASE)/target/h -I$(WIND_BASE)/target/src/config -I$(WIND_BASE)/target/src/drv -DCPU=PENTIUM\n");
+	fprintf (f, "WIND_BASE=/WindRiver/vxworks-6.6\n");
+	fprintf (f, "LD=ldpentium\n");
+	fprintf (f, "AR=arpentium\n");
+	fprintf (f, "CFLAGS+=-mpentium -nostdinc -O2 -fvolatile -nostdlib -fno-builtin -fno-defer-pop -Wall -I$(WIND_BASE)/target/config/all -I-I/WindRiver/vxworks-6.6/target/h/wrn/coreip -I/WindRiver/vxworks-6.6/target/h/wrn/coreip\n");
+	//fprintf (f, "CFLAGS+=-nostdinc -O2 -nostdlib -fno-builtin -fno-defer-pop -Wall -I$(WIND_BASE)/target/config/all\n");
+	fprintf (f, "CFLAGS+=-I$(WIND_BASE)/target/h -I$(WIND_BASE)/target/src/config -I$(WIND_BASE)/target/src/drv -I/WindRiver/diab/5.6.0.0/include -DCPU=PENTIUM\n");
+	fprintf (f, "PATH+=:/WindRiver/gnu/4.1.2-vxworks-6.6/x86-linux2/bin\n");
 	fprintf (f, "\n");
 #else
 	fprintf (f, "\n");

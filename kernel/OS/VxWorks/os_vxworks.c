@@ -20,6 +20,172 @@ static int oss_driver_num = ERROR;
 static int oss_expired = 0;
 static oss_device_t *core_osdev = NULL;
 
+void
+oss_cmn_err (int level, const char *s, ...)
+{
+  char tmp[1024], *a[6];
+  va_list ap;
+  int i, n = 0;
+
+  va_start (ap, s);
+
+  for (i = 0; i < strlen (s); i++)
+    if (s[i] == '%')
+      n++;
+
+  for (i = 0; i < n && i < 6; i++)
+    a[i] = ( (sizeof(char *) == 32) ? ( *((char * **)(ap += ((sizeof(char * *)+sizeof(int)-1) & ~(sizeof(int)-1))))[-1] ) : ( ((char * *)(ap += ((sizeof(char *)+sizeof(int)-1) & ~(sizeof(int)-1))))[-1] ));
+    //a[i] = va_arg (ap, char *); // This was supposed to be used instead of above. Unfortunately va_arg() seems to be buggy
+
+  for (i = n; i < 6; i++)
+    a[i] = NULL;
+
+  if (level == CE_CONT)
+    {
+      sprintf (tmp, s, a[0], a[1], a[2], a[3], a[4], a[5], NULL,
+	       NULL, NULL, NULL);
+      printf ("%s", tmp);
+    }
+  else
+    {
+      strcpy (tmp, "osscore: ");
+      sprintf (tmp + strlen (tmp), s, a[0], a[1], a[2], a[3], a[4], a[5],
+	       NULL, NULL, NULL, NULL);
+      if (level == CE_PANIC)
+	panic (tmp);
+
+      printf ("%s", tmp);
+    }
+
+  va_end (ap);
+}
+
+int
+oss_uiomove (void *addr, size_t nbytes, enum uio_rw rwflag, uio_t * uio)
+{
+/*
+ * NOTE! Returns 0 upon success and EFAULT on failure (instead of -EFAULT
+ * (for Solaris/BSD compatibilityi)).
+ */
+
+  int c;
+  char *address = addr;
+
+  if (rwflag != uio->rw)
+    {
+      oss_cmn_err (CE_WARN, "uiomove: Bad direction\n");
+      return EFAULT;
+    }
+
+  if (uio->resid < nbytes)
+    {
+      oss_cmn_err (CE_WARN, "uiomove: Bad count %d (%d)\n", nbytes,
+		   uio->resid);
+      return EFAULT;
+    }
+
+  if (uio->kernel_space)
+    return EFAULT;
+
+#if 0
+  // TODO
+  switch (rwflag)
+    {
+    case UIO_READ:
+      c = nbytes;
+      if (c > 10)
+	c = 0;
+
+      if ((c = copy_to_user (uio->ptr, address, nbytes) != 0))
+	{
+	  uio->resid -= nbytes;
+	  oss_cmn_err (CE_CONT, "copy_to_user(%d) failed (%d)\n", nbytes, c);
+	  return EFAULT;
+	}
+      break;
+
+    case UIO_WRITE:
+      if (copy_from_user (address, uio->ptr, nbytes) != 0)
+	{
+	  oss_cmn_err (CE_CONT, "copy_from_user failed\n");
+	  uio->resid -= nbytes;
+	  return EFAULT;
+	}
+      break;
+    }
+#endif
+
+  uio->resid -= nbytes;
+  uio->ptr += nbytes;
+
+  return 0;
+}
+
+int
+oss_create_uio (uio_t * uio, char *buf, size_t count, uio_rw_t rw,
+		int is_kernel)
+{
+  memset (uio, 0, sizeof (*uio));
+
+  if (is_kernel)
+    {
+      oss_cmn_err (CE_CONT,
+		   "oss_create_uio: Kernel space buffers not supported\n");
+      return -EIO;
+    }
+
+  uio->ptr = buf;
+  uio->resid = count;
+  uio->kernel_space = is_kernel;
+  uio->rw = rw;
+
+  return 0;
+}
+
+void
+oss_cmn_err (int level, const char *s, ...)
+{
+  char tmp[1024], *a[6];
+  va_list ap;
+  int i, n = 0;
+
+  va_start (ap, s);
+
+  for (i = 0; i < strlen (s); i++)
+    if (s[i] == '%')
+      n++;
+
+  for (i = 0; i < n && i < 6; i++)
+    a[i] = va_arg (ap, char *);
+
+  for (i = n; i < 6; i++)
+    a[i] = NULL;
+
+  if (level == CE_CONT)
+    {
+      sprintf (tmp, s, a[0], a[1], a[2], a[3], a[4], a[5], NULL,
+	       NULL, NULL, NULL);
+      printf ("%s", tmp);
+    }
+  else
+    {
+      strcpy (tmp, "osscore: ");
+      sprintf (tmp + strlen (tmp), s, a[0], a[1], a[2], a[3], a[4], a[5],
+	       NULL, NULL, NULL, NULL);
+      if (level == CE_PANIC)
+	panic (tmp);
+
+      printf ("%s", tmp);
+    }
+#if 0
+  /* This may cause a crash under SMP */
+  if (sound_started)
+    store_msg (tmp);
+#endif
+
+  va_end (ap);
+}
+
 static int
 grow_array(oss_device_t *osdev, oss_cdev_t ***arr, int *size, int increment)
 {
