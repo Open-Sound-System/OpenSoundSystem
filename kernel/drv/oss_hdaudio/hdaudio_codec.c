@@ -1988,7 +1988,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
     {
       if (group_type == 1)
          sprintf (hw_info, " Codec %2d: Unknown (0x%08x", cad, a);
-      cmn_err (CE_NOTE, "Unknown HDA codec 0x%08x\n", a);
+      cmn_err (CE_NOTE, "HDA codec 0x%08x not known yet\n", a);
       /* 
        * Create hexadecimal codec ID
        */
