@@ -22,12 +22,6 @@
 #define EXTERN_C extern "C"
 
 /*
- * Debugging and misc settings
- */
-#undef  MUTEX_CHECKS
-#undef  MEMDEBUG
-
-/*
  * Disable support for per-application features such as /dev/dsp device
  * selection based on command name. Requires working GET_PROCESS_NAME
  * macro implementation.
