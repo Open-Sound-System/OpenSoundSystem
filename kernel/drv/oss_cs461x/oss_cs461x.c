@@ -1752,8 +1752,7 @@ init_cs461x (cs461x_devc * devc)
   devc->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "CS461x",
 			 "CS461x MIDI Port", &cs461x_midi_driver,
-			 sizeof (midi_driver_t), NULL,
-			 /*&std_midi_synth, */
+			 sizeof (midi_driver_t),
 			 0, devc, devc->osdev);
 #endif
   devc->midi_opened = 0;

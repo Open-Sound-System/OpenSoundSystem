@@ -748,7 +748,6 @@ create_inputs (midisport_devc * devc, char *name, int ep, int ninputs)
 	oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "MIDISPORT", tmp,
 			     &midisport_midi_input_driver,
 			     sizeof (midi_driver_t),
-			     NULL /* &std_midi_synth */ ,
 			     flags, midic, midic->osdev);
     }
 }
@@ -784,7 +783,7 @@ create_output (midisport_devc * devc, char *name, int queue_ix)
   midic->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "MIDISPORT", tmp,
 			 &midisport_midi_output_driver,
-			 sizeof (midi_driver_t), NULL /* &std_midi_synth */ ,
+			 sizeof (midi_driver_t),
 			 flags, midic, midic->osdev);
 }
 

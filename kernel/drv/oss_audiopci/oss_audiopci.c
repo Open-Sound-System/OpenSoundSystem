@@ -1415,7 +1415,7 @@ init_apci (apci_devc * devc)
 	}
     }
 
-  if ((devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "AUDIOPCI", "AudioPCI UART", &apci_midi_driver, sizeof (midi_driver_t), NULL,	/*&std_midi_synth, */
+  if ((devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "AUDIOPCI", "AudioPCI UART", &apci_midi_driver, sizeof (midi_driver_t),
 					     0, devc, devc->osdev)) < 0)
     {
       cmn_err (CE_WARN, "Couldn't install MIDI device\n");

@@ -420,7 +420,6 @@ ossusb_init_midistream (ossusb_devc * devc, udi_usb_devc * usbdev, int inum,
   midic->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "USBMIDI", tmp,
 			 &usb_midi_driver, sizeof (midi_driver_t),
-			 NULL /* &std_midi_synth */ ,
 			 0, midic, devc->osdev);
   devc->num_mididevs++;
 

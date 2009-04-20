@@ -40,7 +40,6 @@ int
 oss_install_mididev (int version,
 		     char *id, char *name,
 		     midi_driver_t * d, int driver_size,
-		     struct synth_operations *cnv,
 		     unsigned int flags, void *devc, oss_device_t * osdev)
 {
   return 0;

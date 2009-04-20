@@ -934,7 +934,7 @@ init_cs4281 (cs4281_devc * devc)
 	}
     }
 
-  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "CS4281", "CS4281 MIDI Port", &cs4281_midi_driver, sizeof (midi_driver_t), NULL,	/*&std_midi_synth, */
+  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "CS4281", "CS4281 MIDI Port", &cs4281_midi_driver, sizeof (midi_driver_t),
 					0, devc, devc->osdev);
   devc->midi_opened = 0;
   return 1;

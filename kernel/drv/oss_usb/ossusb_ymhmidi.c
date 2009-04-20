@@ -529,7 +529,6 @@ add_input_device (ymhusb_devc * devc, char *name, void *desc, int caps)
        oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "YMHMIDI", tmp,
 			    &ymhusb_input_driver,
 			    sizeof (ymhusb_input_driver),
-			    NULL /* &std_midi_synth */ ,
 			    MFLAG_INPUT, midic, midic->osdev)) < 0)
     {
       cmn_err (CE_CONT, "Failed to install MIDI device\n");
@@ -578,7 +577,6 @@ add_output_device (ymhusb_devc * devc, char *name, void *desc, int caps)
        oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "YMHMIDI", tmp,
 			    &ymhusb_output_driver,
 			    sizeof (ymhusb_output_driver),
-			    NULL /* &std_midi_synth */ ,
 			    MFLAG_OUTPUT, midic, midic->osdev)) < 0)
     {
       cmn_err (CE_CONT, "Failed to install MIDI device\n");

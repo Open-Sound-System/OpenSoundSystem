@@ -840,8 +840,7 @@ attach_emu10k1xuart (emu10k1x_devc * devc)
 
   devc->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "EMU10K1X", "SB P16X UART",
-			 &emu10k1x_midi_driver, sizeof (midi_driver_t), NULL,
-			 /*&std_midi_synth, */
+			 &emu10k1x_midi_driver, sizeof (midi_driver_t),
 			 0, devc, devc->osdev);
   devc->midi_opened = 0;
 }

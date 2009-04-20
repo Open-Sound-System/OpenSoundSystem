@@ -336,7 +336,7 @@ attach_midiloop_dev (oss_device_t * osdev)
   client_devc->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "LOOP", CLIENT_NAME,
 			 &midiloop_client_driver, sizeof (midi_driver_t),
-			 NULL, MFLAG_VIRTUAL | MFLAG_CLIENT, client_devc,
+			 MFLAG_VIRTUAL | MFLAG_CLIENT, client_devc,
 			 client_devc->osdev);
 
   server_devc = &midiloop_devs[ndevs * 2 + 1];
@@ -349,7 +349,6 @@ attach_midiloop_dev (oss_device_t * osdev)
   server_devc->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "LOOP_S", SERVER_NAME,
 			 &midiloop_server_driver, sizeof (midi_driver_t),
-			 NULL,
 			 MFLAG_NOSEQUENCER | MFLAG_VIRTUAL | MFLAG_SERVER |
 			 MFLAG_SELFTIMING, server_devc, server_devc->osdev);
 

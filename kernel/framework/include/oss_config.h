@@ -95,31 +95,9 @@ typedef void (*oss_bottomhalf_handler_t) (struct _oss_device_t * osdev);
 
 #define DSP_DEFAULT_SPEED	48000
 #define DSP_DEFAULT_FMT		AFMT_S16_LE
-#define AUDIO_DEFAULT_SPEED	8000
 
 #define ON		1
 #define OFF		0
-
-#define SYNTH_MAX_VOICES	64
-
-struct voice_alloc_info
-{
-  int max_voice;
-  int used_voices;
-  int ptr;			/* For device specific use */
-  unsigned short map[SYNTH_MAX_VOICES];	/* (ch << 8) | (note+1) */
-  int timestamp;
-  int alloc_times[SYNTH_MAX_VOICES];
-};
-
-struct channel_info
-{
-  int pgm_num;
-  int bender_value;
-  int bender_range;
-  unsigned char controllers[128];
-};
-
 
 typedef struct oss_wait_queue oss_wait_queue_t;
 
