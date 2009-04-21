@@ -564,8 +564,11 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       fclose (cf);
     }
   else
-    if (exact_architectures) /* .config required for this arch */
-       return 0;
+    if (conf.mode == MD_MODULE && exact_architectures) /* .config required for this arch */
+     {
+	printf ("Ignoring %s - No CPU specified\n", path);
+        return 0;
+     }
 
   sprintf (tmp, "%s/.nativemake", path);	/* Use the existing makefile */
   if (stat (tmp, &st) != -1)

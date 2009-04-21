@@ -60,6 +60,37 @@ then
    exit 1
 fi
 
-ld -r tmp_build/osscore.ko target/objects/*.o bpabi.o -o prototype/usr/lib/oss/modules/osscore.ko
+ld -r tmp_build/osscore.ko target/objects/*.o -o prototype/usr/lib/oss/modules/osscore.ko
+
+if test -f tmp_build/Module.symvers
+then
+	#Take generated symbol information and add it to module.inc
+	echo "static const struct modversion_info ____versions[]" > tmp_build/osscore_symbols.inc
+	echo " __attribute__((used))" >> tmp_build/osscore_symbols.inc
+	echo "__attribute__((section(\"__versions\"))) = {" >> tmp_build/osscore_symbols.inc
+	sed -e "s:^:{:" -e "s:\t:, \":" -e "s:\t\(.\)*:\"},:" < tmp_build/Module.symvers >> tmp_build/osscore_symbols.inc
+	echo "};" >> tmp_build/osscore_symbols.inc
+else
+	echo > tmp_build/osscore_symbols.inc
+fi
+
+cp origdir/setup/Linux/oss/build/*.inc tmp_build/
+
+for n in target/modules/*.o
+do
+	N=`basename $n .o` 
+
+	cp target/build/$N.c tmp_build/$N.c
+
+	sed "s/MODNAME/$N/" < origdir/setup/Linux/arm/Makefile.tmpl.arm > tmp_build/Makefile
+	if ! (cd tmp_build && make KERNELDIR=$KERNELDIR) > build.log 2>&1
+	then
+	   cat build.log
+	   echo
+	   echo Building $N module failed
+	   exit 1
+	fi
+	ld -r tmp_build/$N.ko bpabi.o target/modules/$N.o -o prototype/usr/lib/oss/modules/$N.ko
+done
 
 exit 0
