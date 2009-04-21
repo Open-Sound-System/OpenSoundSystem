@@ -25,12 +25,13 @@ cp target/sbin/* prototype/usr/sbin
 cp target/lib/* prototype/$OSSLIBDIR/lib
 
 # Compile the 64 bit div/mod functions required by gcc
-rm -f bpabi.s bpabi_s.o bpabi_c.o
+rm -f bpabi.s bpabi_s.o bpabi_c.o bpabi.o
 cc -c origdir/setup/Linux/arm/bpabi.c -o bpabi_c.o
 
 for n in L_udivsi3 L_idivsi3 L_divsi3 L_aeabi_ldivmod L_aeabi_uldivmod L_dvmd_lnx
 do
-cpp -D$n origdir/setup/Linux/arm/lib1funcs.asm > $n.s
+# Strip position independent code (PLT) from the asm sources before compile
+cpp -static -D$n origdir/setup/Linux/arm/lib1funcs.asm | sed 's/..PLT.//g' > $n.s
 as -o $n.o $n.s
 done
 

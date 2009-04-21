@@ -1497,6 +1497,15 @@ __udivdi3 (UDItype n, UDItype d)
 }
 #endif
 
+#ifdef __arm__
+void
+raise(void)
+{
+	oss_cmn_err (CE_PANIC, "raise() got called\n");
+}
+
+#endif
+
 dev_info_t *
 oss_create_pcidip (struct pci_dev * pcidev)
 {
@@ -2147,6 +2156,8 @@ EXPORT_FUNC (oss_timing_leave);
 EXPORT_SYMBOL (__udivdi3);
 EXPORT_SYMBOL (__umoddi3);
 EXPORT_SYMBOL (__divdi3);
+#else
+EXPORT_SYMBOL (raise);
 #endif
 EXPORT_SYMBOL (oss_copy_from_user);
 EXPORT_SYMBOL (oss_copy_to_user);
