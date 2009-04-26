@@ -33,17 +33,12 @@
 extern int oss_max_audio_devfiles;
 extern int oss_max_audio_engines;
 
-#define MAX_SYNTH_DEV	6
-#define MAX_MIXER_DEV	16
-#define	MAX_MIDI_DEV	32
-#define MAX_TIMER_DEV	(MAX_MIDI_DEV+4)
+#define MAX_SYNTH_DEV	6	// TODO: Remove
 #define MAX_AUDIO_DEVFILES 	oss_max_audio_devfiles
-#define HARD_MAX_AUDIO_DEVFILES 256
 #define MAX_AUDIO_ENGINES 	oss_max_audio_engines
 #define SYNC_DEVICE_MASK	0xffff
 
-#define MAX_MIDI_DRIVER		4
-
+#include "oss_limits.h"
 /*
  * Device file class codes. Note that these numbers don't have any kind of relationship with minor numbers.
  */

@@ -287,6 +287,10 @@ then
 	phpmake
 
 	(cd targetos && phpmake)
+
+	make kernel/framework/include/ossddk/oss_limits.h	# Generate this file from PHh
+else
+	ln -s oss_limits.PHh kernel/framework/include/ossddk/oss_limits.h
 fi 
 
 make dep

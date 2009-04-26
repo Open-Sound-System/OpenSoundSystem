@@ -3,6 +3,8 @@
  */
 
 #include <oss_config.h>
+#include <oss_pci.h>
+#include <drv/pci/pciConfigLib.h>
 
 #if 0
 // TODO: Obsoletew
@@ -51,8 +53,6 @@ oss_cmn_err (int level, const char *s, ...)
       strcpy (tmp, "osscore: ");
       sprintf (tmp + strlen (tmp), s, a[0], a[1], a[2], a[3], a[4], a[5],
 	       NULL, NULL, NULL, NULL);
-      if (level == CE_PANIC)
-	panic (tmp);
 
       printf ("%s", tmp);
     }
@@ -61,15 +61,81 @@ oss_cmn_err (int level, const char *s, ...)
 }
 
 int
+oss_pci_read_config_byte (oss_device_t * osdev, offset_t where,
+			  unsigned char *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_irq (oss_device_t * osdev, offset_t where,
+			 unsigned char *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_word (oss_device_t * osdev, offset_t where,
+			  unsigned short *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  if (osdev == NULL)
+    {
+      cmn_err (CE_CONT, "oss_pci_read_config_word: osdev==NULL\n");
+      return PCIBIOS_FAILED;
+    }
+
+  return pciConfigInWord (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_dword (oss_device_t * osdev, offset_t where,
+			   unsigned int *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInLong (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_byte (oss_device_t * osdev, offset_t where,
+			   unsigned char val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_word (oss_device_t * osdev, offset_t where,
+			   unsigned short val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutWord (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_dword (oss_device_t * osdev, offset_t where,
+			    unsigned int val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutLong (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
 oss_uiomove (void *addr, size_t nbytes, enum uio_rw rwflag, uio_t * uio)
 {
 /*
  * NOTE! Returns 0 upon success and EFAULT on failure (instead of -EFAULT
- * (for Solaris/BSD compatibilityi)).
+ * (for Solaris/BSD compatibility)).
  */
-
-  int c;
-  char *address = addr;
 
   if (rwflag != uio->rw)
     {
@@ -87,33 +153,16 @@ oss_uiomove (void *addr, size_t nbytes, enum uio_rw rwflag, uio_t * uio)
   if (uio->kernel_space)
     return EFAULT;
 
-#if 0
-  // TODO
   switch (rwflag)
     {
     case UIO_READ:
-      c = nbytes;
-      if (c > 10)
-	c = 0;
-
-      if ((c = copy_to_user (uio->ptr, address, nbytes) != 0))
-	{
-	  uio->resid -= nbytes;
-	  oss_cmn_err (CE_CONT, "copy_to_user(%d) failed (%d)\n", nbytes, c);
-	  return EFAULT;
-	}
+      memcpy(uio->ptr, addr, nbytes);
       break;
 
     case UIO_WRITE:
-      if (copy_from_user (address, uio->ptr, nbytes) != 0)
-	{
-	  oss_cmn_err (CE_CONT, "copy_from_user failed\n");
-	  uio->resid -= nbytes;
-	  return EFAULT;
-	}
+      memcpy(addr, uio->ptr, nbytes);
       break;
     }
-#endif
 
   uio->resid -= nbytes;
   uio->ptr += nbytes;
@@ -140,50 +189,6 @@ oss_create_uio (uio_t * uio, char *buf, size_t count, uio_rw_t rw,
   uio->rw = rw;
 
   return 0;
-}
-
-void
-oss_cmn_err (int level, const char *s, ...)
-{
-  char tmp[1024], *a[6];
-  va_list ap;
-  int i, n = 0;
-
-  va_start (ap, s);
-
-  for (i = 0; i < strlen (s); i++)
-    if (s[i] == '%')
-      n++;
-
-  for (i = 0; i < n && i < 6; i++)
-    a[i] = va_arg (ap, char *);
-
-  for (i = n; i < 6; i++)
-    a[i] = NULL;
-
-  if (level == CE_CONT)
-    {
-      sprintf (tmp, s, a[0], a[1], a[2], a[3], a[4], a[5], NULL,
-	       NULL, NULL, NULL);
-      printf ("%s", tmp);
-    }
-  else
-    {
-      strcpy (tmp, "osscore: ");
-      sprintf (tmp + strlen (tmp), s, a[0], a[1], a[2], a[3], a[4], a[5],
-	       NULL, NULL, NULL, NULL);
-      if (level == CE_PANIC)
-	panic (tmp);
-
-      printf ("%s", tmp);
-    }
-#if 0
-  /* This may cause a crash under SMP */
-  if (sound_started)
-    store_msg (tmp);
-#endif
-
-  va_end (ap);
 }
 
 static int

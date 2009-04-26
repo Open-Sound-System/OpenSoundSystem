@@ -204,7 +204,7 @@ extern void oss_unreserve_pages (oss_native_word start_addr,
 #define CONTIG_MALLOC(osdev, sz, memlimit, phaddr, handle)	oss_contig_malloc(osdev, sz, memlimit, phaddr)
 #define CONTIG_FREE(osdev, p, sz, handle)	oss_contig_free(osdev, p, sz)
 
-typedef int dev_info_t;
+typedef void dev_info_t;
 
 struct _oss_device_t
 {
@@ -235,15 +235,12 @@ struct _oss_device_t
   int iblock_cookie;	/* Dummy field under Linux */
   void *irqparms;
   int intrcount, ackcount;
-
-/* PCI related fields */
-
-#ifdef _KERNEL
-  //ddi_acc_handle_t pci_config_handle;
-  //ddi_acc_handle_t acc_handle;
-  //int swap_mode;		/* 0=DDI_STRUCTURE_NEVERSWAP_ACC, 1=DDI_STRUCTURE_LE_ACC */
-#endif
 };
+
+typedef struct
+{
+	int bus, dev, func;
+} oss_pci_device_t;
 
 typedef int timeout_id_t;
 extern timeout_id_t oss_timeout (void (*func) (void *), void *arg,
