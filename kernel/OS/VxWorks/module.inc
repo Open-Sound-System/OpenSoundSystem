@@ -1,4 +1,77 @@
+#if DRIVER_TYPE == DRV_PCI
 #include <drv/pci/pciConfigLib.h>
+#undef PCI_LATENCY_TIMER
+#include <oss_pci.h>
+
+int
+oss_pci_read_config_byte (oss_device_t * osdev, offset_t where,
+			  unsigned char *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_irq (oss_device_t * osdev, offset_t where,
+			 unsigned char *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_word (oss_device_t * osdev, offset_t where,
+			  unsigned short *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  if (osdev == NULL)
+    {
+      cmn_err (CE_CONT, "oss_pci_read_config_word: osdev==NULL\n");
+      return PCIBIOS_FAILED;
+    }
+
+  return pciConfigInWord (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_read_config_dword (oss_device_t * osdev, offset_t where,
+			   unsigned int *val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigInLong (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_byte (oss_device_t * osdev, offset_t where,
+			   unsigned char val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutByte (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_word (oss_device_t * osdev, offset_t where,
+			   unsigned short val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutWord (pd->bus, pd->dev, pd->func, where, val);
+}
+
+int
+oss_pci_write_config_dword (oss_device_t * osdev, offset_t where,
+			    unsigned int val)
+{
+  oss_pci_device_t *pd = osdev->dip;
+
+  return pciConfigOutLong (pd->bus, pd->dev, pd->func, where, val);
+}
+#endif
 
 int
 DRIVER_NAME(void)

@@ -7,7 +7,7 @@
 #include <drv/pci/pciConfigLib.h>
 
 #if 0
-// TODO: Obsoletew
+// TODO: Obsolete
 typedef struct oss_device_handle
 {
   DEV_HDR devHdr;
@@ -17,10 +17,19 @@ typedef struct oss_device_handle
 }
 oss_device_handle;
 #endif
+/*
+ * Number of cards supported in the same system.
+ */
+#define MAX_CARDS 8
+
+static oss_device_t *cards[MAX_CARDS];
+int oss_num_cards = 0;
 
 static int oss_driver_num = ERROR;
 static int oss_expired = 0;
 static oss_device_t *core_osdev = NULL;
+
+int oss_hz = 100;
 
 void
 oss_cmn_err (int level, const char *s, ...)
@@ -58,75 +67,6 @@ oss_cmn_err (int level, const char *s, ...)
     }
 
   va_end (ap);
-}
-
-int
-oss_pci_read_config_byte (oss_device_t * osdev, offset_t where,
-			  unsigned char *val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_read_config_irq (oss_device_t * osdev, offset_t where,
-			 unsigned char *val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigInByte (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_read_config_word (oss_device_t * osdev, offset_t where,
-			  unsigned short *val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  if (osdev == NULL)
-    {
-      cmn_err (CE_CONT, "oss_pci_read_config_word: osdev==NULL\n");
-      return PCIBIOS_FAILED;
-    }
-
-  return pciConfigInWord (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_read_config_dword (oss_device_t * osdev, offset_t where,
-			   unsigned int *val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigInLong (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_write_config_byte (oss_device_t * osdev, offset_t where,
-			   unsigned char val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigOutByte (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_write_config_word (oss_device_t * osdev, offset_t where,
-			   unsigned short val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigOutWord (pd->bus, pd->dev, pd->func, where, val);
-}
-
-int
-oss_pci_write_config_dword (oss_device_t * osdev, offset_t where,
-			    unsigned int val)
-{
-  oss_pci_device_t *pd = osdev->dip;
-
-  return pciConfigOutLong (pd->bus, pd->dev, pd->func, where, val);
 }
 
 int
@@ -445,9 +385,177 @@ ossIoctl (oss_cdev_t *cdev, int cmd, int *arg)
   return OK;
 }
 
+oss_device_t *
+osdev_create (dev_info_t * dip, int dev_type,
+	      int instance, const char *nick, const char *handle)
+{
+  oss_device_t *osdev;
+
+  osdev = PMALLOC (NULL, sizeof (*osdev));
+  if (osdev == NULL)
+    {
+      cmn_err (CE_WARN, "osdev_create: Out of memory\n");
+      return NULL;
+    }
+
+  memset (osdev, 0, sizeof (*osdev));
+
+  sprintf (osdev->nick, "%s%d", nick, instance);
+  osdev->instance = instance;
+  osdev->dip = dip;
+  osdev->available = 1;
+  osdev->first_mixer = -1;
+
+  strcpy (osdev->modname, nick);
+
+  if (handle == NULL)
+    handle = nick;
+
+  if (oss_num_cards >= MAX_CARDS)
+    cmn_err (CE_WARN, "Too many OSS devices. At most %d permitted.\n",
+	     MAX_CARDS);
+  else
+    {
+      osdev->cardnum = oss_num_cards;
+      cards[oss_num_cards++] = osdev;
+    }
+/*
+ * Create the device handle
+ */
+  switch (dev_type)
+    {
+    case DRV_PCI:
+      {
+#if 0
+	// TODO
+	unsigned int subvendor;
+	char *devpath;
+	devpath = oss_pci_read_devpath (osdev->dip);
+	oss_pci_read_config_dword (osdev, 0x2c, &subvendor);
+
+	sprintf (osdev->handle, "PCI%08x-%s", subvendor, devpath);
+#else
+	strcpy(osdev->handle, "PCICARD");
+#endif
+      }
+      break;
+
+    case DRV_USB:
+      // TODO: Get the vendor information
+      sprintf (osdev->handle, "USB-%s%d", handle, instance);
+      break;
+
+    default:
+      sprintf (osdev->handle, "%s%d", handle, instance);
+    }
+
+  return osdev;
+}
+
+oss_device_t *
+osdev_clone (oss_device_t * orig_osdev, int new_instance)
+{
+  oss_device_t *osdev;
+
+  osdev = PMALLOC (NULL, sizeof (*osdev));
+  if (osdev == NULL)
+    {
+      cmn_err (CE_WARN, "osdev_create: Out of memory\n");
+      return NULL;
+    }
+  memcpy (osdev, orig_osdev, sizeof (*osdev));
+  osdev->dev_type = DRV_CLONE;
+  osdev->instance = new_instance;
+  sprintf (osdev->nick, "%s%d", orig_osdev->modname, new_instance);
+  sprintf (osdev->handle, "%s%d", orig_osdev->modname, new_instance);
+
+  return osdev;
+}
+
+void
+osdev_delete (oss_device_t * osdev)
+{
+  int i;
+
+  if (osdev == NULL)
+    return;
+
+  osdev->available = 0;
+/*
+ * Mark all minor nodes for this module as invalid.
+ */
+  for (i = 0; i < oss_num_cdevs; i++)
+    if (oss_cdevs[i]->osdev == osdev)
+      {
+	oss_cdevs[i]->d = NULL;
+	oss_cdevs[i]->osdev = NULL;
+	strcpy (oss_cdevs[i]->name, "Removed device");
+      }
+}
+
+int
+oss_register_device (oss_device_t * osdev, const char *name)
+{
+  if (name == NULL)
+    {
+      cmn_err (CE_WARN, "oss_register_device: name==NULL\n");
+      osdev->name = "Undefined name";
+      return 0;
+    }
+
+  if ((osdev->name = PMALLOC (NULL, strlen (name) + 1)) == NULL)
+    {
+      cmn_err (CE_WARN, "Cannot allocate memory for device name\n");
+      osdev->name = "Unknown device";
+    }
+  strcpy (osdev->name, name);
+  return 0;
+}
+
+void
+oss_unregister_device (oss_device_t * osdev)
+{
+/*
+ * Notice! The driver calling this routine (the owner of the osdev parameter)
+ * has already uninitialized itself. Do not do any actions that may call this
+ * driver directly or indirectly.
+ */
+
+// TODO: Move this to some common OSS module (also under Solaris)
+}
+
+int
+oss_get_cardinfo (int cardnum, oss_card_info * ci)
+{
+/*
+ * Print information about a 'card' in a format suitable for /dev/sndstat
+ */
+
+  if (cardnum < 0 || cardnum >= oss_num_cards)
+    return OSS_ENXIO;
+
+  if (cards[cardnum]->name != NULL)
+    strncpy (ci->longname, cards[cardnum]->name, 128);
+  ci->longname[127] = 0;
+
+  if (cards[cardnum]->nick != NULL)
+    strncpy (ci->shortname, cards[cardnum]->nick, 16);
+  ci->shortname[15] = 0;
+
+  if (cards[cardnum]->hw_info != NULL)
+    strncpy (ci->hw_info, cards[cardnum]->hw_info, sizeof (ci->hw_info));
+  ci->hw_info[sizeof (ci->hw_info) - 1] = 0;
+  ci->intr_count = cards[cardnum]->intrcount;
+  ci->ack_count = cards[cardnum]->ackcount;
+
+  return 0;
+}
+
 int
 ossDrv (void)
 {
+  oss_hz = sysClkRateGet();
+
   if (oss_driver_num != ERROR)
     {
       cmn_err (CE_WARN, "OSS is already running\n");
@@ -520,3 +628,173 @@ ossDrvRemove (void)
   return OK;
 #endif
 }
+
+#ifdef CONFIG_OSS_VMIX_FLOAT
+
+#undef FP_SAVE
+#undef FP_RESTORE
+#define FP_SAVE(envbuf)		asm ("fnsave %0":"=m" (*envbuf));
+#define FP_RESTORE(envbuf)		asm ("frstor %0":"=m" (*envbuf));
+
+/* SSE/SSE2 compatible macros */
+#define FX_SAVE(envbuf)		asm ("fxsave %0":"=m" (*envbuf));
+#define FX_RESTORE(envbuf)		asm ("fxrstor %0":"=m" (*envbuf));
+
+static int old_arch = 0;	/* No SSE/SSE2 instructions */
+
+#if defined(__amd64__)
+#define AMD64
+#endif
+
+static inline void
+cpuid (int op, int *eax, int *ebx, int *ecx, int *edx)
+{
+__asm__ ("cpuid": "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx):"0" (op), "c"
+	   (0));
+}
+
+#ifdef AMD64
+#  define local_save_flags(x)     asm volatile("pushfq ; popq %0":"=g" (x):)
+#  define local_restore_flags(x)  asm volatile("pushq %0 ; popfq"::"g" (x):"memory", "cc")
+#else
+#  define local_save_flags(x)     asm volatile("pushfl ; popl %0":"=g" (x):)
+#  define local_restore_flags(x)  asm volatile("pushl %0 ; popfl"::"g" (x):"memory", "cc")
+#endif
+
+static inline unsigned long
+read_cr0 (void)
+{
+  unsigned long cr0;
+#ifdef AMD64
+asm ("movq %%cr0,%0":"=r" (cr0));
+#else
+asm ("movl %%cr0,%0":"=r" (cr0));
+#endif
+  return cr0;
+}
+
+static inline void
+write_cr0 (unsigned long val)
+{
+#ifdef AMD64
+  asm ("movq %0,%%cr0"::"r" (val));
+#else
+  asm ("movl %0,%%cr0"::"r" (val));
+#endif
+}
+
+static inline unsigned long
+read_cr4 (void)
+{
+  unsigned long cr4;
+#ifdef AMD64
+asm ("movq %%cr4,%0":"=r" (cr4));
+#else
+asm ("movl %%cr4,%0":"=r" (cr4));
+#endif
+  return cr4;
+}
+
+static inline void
+write_cr4 (unsigned long val)
+{
+#ifdef AMD64
+  asm ("movq %0,%%cr4"::"r" (val));
+#else
+  asm ("movl %0,%%cr4"::"r" (val));
+#endif
+}
+static inline unsigned long long
+read_mxcsr (void)
+{
+  unsigned long long mxcsr;
+  asm volatile ("stmxcsr %0":"=m" (mxcsr));
+  return mxcsr;
+}
+
+static inline void
+write_mxcsr (unsigned long long val)
+{
+  asm volatile ("ldmxcsr %0"::"m" (val));
+}
+
+int
+oss_fp_check (void)
+{
+  int eax, ebx, ecx, edx;
+#define FLAGS_ID (1<<21)
+
+  oss_native_word flags_reg;
+
+  local_save_flags (flags_reg);
+  flags_reg &= ~FLAGS_ID;
+  local_restore_flags (flags_reg);
+
+  local_save_flags (flags_reg);
+  if (flags_reg & FLAGS_ID)
+    return 0;
+
+  flags_reg |= FLAGS_ID;
+  local_restore_flags (flags_reg);
+
+  local_save_flags (flags_reg);
+  if (!(flags_reg & FLAGS_ID))
+    return 0;
+
+//#define CPUID_FXSR	(1<<24)
+//#define CPUID_SSE	(1<<25)
+//#define CPUID_SSE2	(1<<26)
+
+  cpuid (1, &eax, &ebx, &ecx, &edx);
+
+  if (!(edx & CPUID_FXSR))
+    return -1;
+
+  /*
+   * Older machines require different FP handling than the latest ones. Use the SSE
+   * instruction set as an indicator.
+   */
+  if (!(edx & CPUID_SSE))
+    old_arch = 1;
+
+  return 1;
+}
+
+void
+oss_fp_save (short *envbuf, unsigned int flags[])
+{
+  flags[0] = read_cr0 ();
+  write_cr0 (flags[0] & ~0x0e);	/* Clear CR0.TS/MP/EM */
+
+  if (old_arch)
+    {
+      FP_SAVE (envbuf);
+    }
+  else
+    {
+      flags[1] = read_cr4 ();
+      write_cr4 (flags[1] | 0x600);	/* Set OSFXSR & OSXMMEXCEPT */
+      FX_SAVE (envbuf);
+      asm ("fninit");
+      asm ("fwait");
+      write_mxcsr (0x1f80);
+    }
+  flags[2] = read_cr0 ();
+}
+
+void
+oss_fp_restore (short *envbuf, unsigned int flags[])
+{
+  asm ("fwait");
+  if (old_arch)
+    {
+      FP_RESTORE (envbuf);
+    }
+  else
+    {
+      FX_RESTORE (envbuf);
+      write_cr4 (flags[1]);	/* Restore cr4 */
+    }
+  write_cr0 (flags[0]);		/* Restore cr0 */
+}
+#endif

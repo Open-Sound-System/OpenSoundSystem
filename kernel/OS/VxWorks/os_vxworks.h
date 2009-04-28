@@ -121,9 +121,8 @@ extern void oss_cmn_err (int level, const char *format, ...);
 
 /* Busy wait routine */
 extern void oss_udelay(unsigned long t);
-extern unsigned long long oss_get_jiffies(void);
 /* System wall timer access */
-#define GET_JIFFIES()	oss_get_jiffies()
+#define GET_JIFFIES()	tickGet()
 extern inline unsigned int
 __inb (unsigned short port)
 {
@@ -279,6 +278,8 @@ typedef unsigned int fp_flags_t[4];
 extern int oss_fp_check (void);
 extern void oss_fp_save (short *envbuf, fp_flags_t flags);
 extern void oss_fp_restore (short *envbuf, fp_flags_t flags);
+#undef FP_SAVE
+#undef FP_RESTORE
 #   define FP_SAVE(envbuf, flags)		oss_fp_save(envbuf, flags)
 #   define FP_RESTORE(envbuf, flags)		oss_fp_restore(envbuf, flags)
 #endif
