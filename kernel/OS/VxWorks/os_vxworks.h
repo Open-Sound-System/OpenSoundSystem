@@ -120,7 +120,7 @@ extern void oss_cmn_err (int level, const char *format, ...);
 #define CE_PANIC	3
 
 /* Busy wait routine */
-extern void oss_udelay(unsigned long t);
+extern void oss_udelay(unsigned long ticks);
 /* System wall timer access */
 #define GET_JIFFIES()	tickGet()
 extern inline unsigned int

@@ -493,6 +493,12 @@ osdev_delete (oss_device_t * osdev)
       }
 }
 
+void *
+oss_get_osid (oss_device_t * osdev)
+{
+  return NULL;			// TODO
+}
+
 int
 oss_register_device (oss_device_t * osdev, const char *name)
 {
@@ -798,3 +804,123 @@ oss_fp_restore (short *envbuf, unsigned int flags[])
   write_cr0 (flags[0]);		/* Restore cr0 */
 }
 #endif
+
+typedef struct tmout_desc
+{
+  volatile int active;
+  int timestamp;
+  void (*func) (void *);
+  void *arg;
+
+  WDOG_ID id;
+
+} tmout_desc_t;
+
+static volatile int next_id = 0;
+#define MAX_TMOUTS 128
+
+tmout_desc_t tmouts[MAX_TMOUTS] = { {0} };
+
+int timeout_random = 0x12123400;
+
+void
+oss_timer_callback (int id)
+{
+  tmout_desc_t *tmout;
+  int ix;
+  void *arg;
+
+  timeout_random++;
+
+  ix = id & 0xff;
+  if (ix < 0 || ix >= MAX_TMOUTS)
+    return;
+  tmout = &tmouts[ix];
+
+  if (tmout->timestamp != id)	/* Expired timer */
+    return;
+
+  if (!tmout->active)
+    return;
+
+  arg = tmout->arg;
+  tmout->active = 0;
+  tmout->timestamp = 0;
+
+  tmout->func (arg);
+  wdDelete(tmout->id);
+}
+
+timeout_id_t
+oss_timeout (void (*func) (void *), void *arg,
+				 unsigned long long ticks)
+{
+
+  tmout_desc_t *tmout = NULL;
+  int id, n;
+
+  timeout_random++;
+
+  n = 0;
+  id = -1;
+
+  while (id == -1 && n < MAX_TMOUTS)
+    {
+      if (!tmouts[next_id].active)
+	{
+	  tmouts[next_id].active = 1;
+	  id = next_id++;
+	  tmout = &tmouts[id];
+	  break;
+	}
+
+      next_id = (next_id + 1) % MAX_TMOUTS;
+    }
+
+  if (id == -1)			/* No timer slots available */
+    {
+      oss_cmn_err (CE_WARN, "Timeout table full\n");
+      return 0;
+    }
+
+  tmout->func = func;
+  tmout->arg = arg;
+  tmout->timestamp = id | (timeout_random & ~0xff);
+
+  if ((tmout->id=wdCreate()) == NULL)
+     return 0;
+
+  wdStart(tmout->id, ticks, (FUNCPTR)oss_timer_callback, (int)tmout->timestamp);
+  return id | (timeout_random & ~0xff);
+}
+
+void
+oss_untimeout (timeout_id_t id)
+{
+  tmout_desc_t *tmout;
+  int ix;
+
+  ix = id & 0xff;
+  if (ix < 0 || ix >= MAX_TMOUTS)
+    return;
+
+  timeout_random++;
+  tmout = &tmouts[ix];
+
+  if (tmout->timestamp != id)	/* Expired timer */
+    return;
+  if (tmout->active)
+     {
+	wdCancel(tmout->id);
+	wdDelete(tmout->id);
+     }
+
+  tmout->active = 0;
+  tmout->timestamp = 0;
+}
+
+void
+oss_udelay(unsigned long ticks)
+{
+	// TODO
+}
