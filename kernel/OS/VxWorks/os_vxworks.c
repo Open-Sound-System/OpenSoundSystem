@@ -1042,3 +1042,92 @@ oss_free_dmabuf (int dev, dmap_p dmap)
   oss_contig_free (NULL, buf, dmap->buffsize);
   dmap->dmabuf_phys = 0;
 }
+
+/*
+ * Sleep/wakeup
+ */
+
+struct oss_wait_queue
+{
+  volatile int flags;
+  SEM_ID wq;
+};
+
+struct oss_wait_queue *
+oss_create_wait_queue (oss_device_t * osdev, const char *name)
+{
+  struct oss_wait_queue *wq;
+
+  if ((wq = malloc (sizeof (*wq))) == NULL)
+    {
+      oss_cmn_err (CE_WARN, "vmalloc(%d) failed (wq)\n", sizeof (*wq));
+      return NULL;
+    }
+  wq->wq = semBCreate(SEM_Q_FIFO, SEM_EMPTY);
+
+  return wq;
+}
+
+void
+oss_reset_wait_queue (struct oss_wait_queue *wq)
+{
+	// TODO: ?
+}
+
+void
+oss_remove_wait_queue (struct oss_wait_queue *wq)
+{
+  free (wq);
+}
+
+int
+oss_sleep (struct oss_wait_queue *wq, oss_mutex_t * mutex, int ticks,
+	   oss_native_word * flags, unsigned int *status)
+{
+  int result;
+
+  *status = 0;
+
+  if (wq == NULL)
+    return 0;
+
+  wq->flags = 0;
+
+  if (ticks <= 0)
+     ticks = WAIT_FOREVER;
+
+    result =
+	    semTake(wq->wq, ticks);
+
+  if (result == ERROR)		/* Signal received */
+    {
+      *status |= WK_SIGNAL;
+      return 1;
+    }
+
+  if (!(wq->flags & WK_WAKEUP))	/* Timeout */
+    {
+      return 0;
+    }
+
+  return 1;
+}
+
+int
+oss_register_poll (struct oss_wait_queue *wq, oss_mutex_t * mutex,
+		   oss_native_word * flags, oss_poll_event_t * ev)
+{
+  // TODO: ?
+  return 0;
+}
+
+void
+oss_wakeup (struct oss_wait_queue *wq, oss_mutex_t * mutex,
+	    oss_native_word * flags, short events)
+{
+  if (wq == NULL)
+    return;
+
+  wq->flags |= WK_WAKEUP;
+  semFlush(wq->wq);
+}
