@@ -5,6 +5,7 @@
 #include <oss_config.h>
 #include <oss_pci.h>
 #include <drv/pci/pciConfigLib.h>
+#include <memLib.h>
 
 #if 0
 // TODO: Obsolete
@@ -923,4 +924,121 @@ void
 oss_udelay(unsigned long ticks)
 {
 	// TODO
+}
+
+void *
+oss_contig_malloc (oss_device_t * osdev, int buffsize, oss_uint64_t memlimit,
+		   oss_native_word * phaddr)
+{
+  char *start_addr, *end_addr;
+
+  *phaddr = 0;
+
+  start_addr = NULL;
+
+  // TODO: See if there is a previously freed buffer available
+
+  start_addr = (char *) valloc (buffsize);
+
+  if (start_addr == NULL)
+    {
+      cmn_err (CE_NOTE, "Failed to allocate memory buffer of %d bytes\n",
+	       buffsize);
+      return NULL;
+    }
+  else
+    {
+      /* make some checks */
+      end_addr = start_addr + buffsize - 1;
+    }
+
+  *phaddr = (oss_native_word)start_addr;
+  return start_addr;
+}
+
+void
+oss_contig_free (oss_device_t * osdev, void *p, int buffsize)
+{
+  if (p == NULL)
+    return;
+
+  // TODO: Put the freed memory block to available list
+  cmn_err (CE_WARN, "Cannot free %d bytes of DMA buffer\n", buffsize);
+}
+
+int
+__oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
+		    oss_uint64_t maxaddr, int direction)
+{
+  void *buf;
+  int err;
+  oss_native_word phaddr;
+  int size = 64 * 1024;
+  extern int dma_buffsize;
+
+  if (dma_buffsize > 16 && dma_buffsize <= 128)
+    size = dma_buffsize * 1024;
+
+  if (dmap->dmabuf != NULL)
+    return 0;			/* Already done */
+
+  if (dmap == NULL)
+    {
+      cmn_err (CE_WARN, "oss_alloc_dmabuf: dmap==NULL\n");
+      return OSS_EIO;
+    }
+
+/*
+ * Some applications and virtual drivers need shorter buffer.
+ */
+  if (dmap->flags & DMAP_SMALLBUF)
+    {
+      size = SMALL_DMABUF_SIZE;
+    }
+  else if (dmap->flags & DMAP_MEDIUMBUF)
+    {
+      size = MEDIUM_DMABUF_SIZE;
+    }
+
+  if ((alloc_flags & DMABUF_SIZE_16BITS) && size > 32 * 1024)
+    size = 32 * 1024;
+
+  dmap->dmabuf = NULL;
+  dmap->buffsize = size;
+
+  err = -1;
+
+  while (err < 0 && dmap->dmabuf == NULL && dmap->buffsize >= 4 * 1024)
+    {
+      if ((buf =
+	   oss_contig_malloc (dmap->osdev, dmap->buffsize, maxaddr,
+			      &phaddr)) == NULL)
+	{
+	  if ((dmap->buffsize = (dmap->buffsize / 2)) < 8 * 1024)
+	    return OSS_ENOMEM;
+	  cmn_err (CE_CONT, "Dropping DMA buffer size to %d bytes.\n",
+		   dmap->buffsize);
+	  continue;
+	}
+
+      dmap->dmabuf = buf;
+      dmap->dmabuf_phys = phaddr;
+
+      return 0;
+    }
+
+  return OSS_ENOMEM;
+}
+
+void
+oss_free_dmabuf (int dev, dmap_p dmap)
+{
+  void *buf = dmap->dmabuf;
+
+  if (dmap->dmabuf == NULL)
+    return;
+
+  dmap->dmabuf = NULL;
+  oss_contig_free (NULL, buf, dmap->buffsize);
+  dmap->dmabuf_phys = 0;
 }
