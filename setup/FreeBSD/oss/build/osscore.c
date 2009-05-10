@@ -261,9 +261,9 @@ oss_contig_malloc (unsigned long buffsize, unsigned long memlimit,
 			   PAGE_SIZE, 0ul);
   if (tmpbuf == NULL)
     {
-      printf ("OSS: Unable to allocate %lu bytes for a DMA buffer\n",
-	      buffsize);
-      printf ("run soundoff and run soundon again.\n");
+      cmn_err (CE_CONT, "OSS: Unable to allocate %lu bytes for a DMA buffer\n",
+	       buffsize);
+      cmn_err (CE_CONT, "run soundoff and run soundon again.\n");
       return NULL;
     }
   *phaddr = vtophys (tmpbuf);

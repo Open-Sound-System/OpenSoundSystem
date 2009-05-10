@@ -36,7 +36,6 @@
 #include <sys/systm.h>
 #endif
 #include <sys/param.h>
-#include <oss_errno.h>
 #include <sys/uio.h>
 #include <sys/fcntl.h>
 #include <sys/poll.h>
@@ -48,6 +47,13 @@
 #include <vm/vm.h>
 #include <vm/pmap.h>
 #include <sys/selinfo.h>
+#include <oss_errno.h>
+
+#if __FreeBSD_version >= 800062
+#define MINOR(x) dev2unit(x)
+#else
+#define MINOR(x) minor(x)
+#endif
 
 #undef timeout
 #define timeout oss_timeout

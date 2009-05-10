@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/pciio.h>
-#include </sys/dev/pci/pcireg.h>
+#include <dev/pci/pcireg.h>
 
 #define PCI_PASS	0
 #define USB_PASS	1
@@ -364,9 +364,7 @@ main (int argc, char *argv[])
 	  break;
 
 	case 'u':
-#if 0
 	  drvl = prepend_drvlist ("oss_userdev");
-#endif
 	  break;
 
 	case 'a':
