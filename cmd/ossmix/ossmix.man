@@ -2,7 +2,7 @@ NAME
 ossmix - Open Sound System command-line mixer program.
 
 SYNOPSIS
-ossmix [-d <dev#>] [-chqD] [control name] [value]
+ossmix [-d <dev#>] [-achqD] [control name] [value]
 
 DESCRIPTION
 ossmix is a simple command-line mixer utility that is used to display the mixer
@@ -12,7 +12,8 @@ using other mixer applications.
 
 OPTIOMS
 -D		Display device information.
--c		Dump mixer settings for all mixers.
+-a		Dump mixer settings for all mixers (normal format).
+-c		Dump mixer settings for all mixers (command format).
 -h		Display usage information.
 -q		Quiet mode.
 -v[1|2]		Verbose mode. -v2 prints more detailed infoamation than -v1.
@@ -27,7 +28,10 @@ their possible values. Currently all controls accept an ON/OFF value, a
 mono value (0 to 100) or a stereo value (left:right where both channel
 volumes can be between 0 and 100). The value can also be expressed in a
 relative form (e.g. +1 to add 1 to the previous volume). An ON/OFF control
-can also receive a TOGGLE value.
+can also receive a TOGGLE value. If a control has a name in quotes following
+the normal output, than the name can be used instead of the control when
+setting a value.
+
 The following is a sample printout produced by ossmix:
 
 	Selected mixer 0/Creative AudioPCI
@@ -97,16 +101,16 @@ the value. For example: "ossmix -d0 mic.micboost ON".
 ."To use this mode you need to give the MIDI device file and a list of the
 ."volume sliders on command line. For example:
 ."
-."    ossmix -d1 -m/dev/midi00 vol mic pcm line gain.out1/2 gain.in3/4
+    ."ossmix -d1 -m/dev/midi00 vol mic pcm line gain.out1/2 gain.in3/4
 ."
 ."After that the MIDI channels will be assigned in the following way:
 ."
-."    Ch 0 = "vol"
-."    Ch 1 = "mic"
-."    Ch 2 = "pcm"
-."    Ch 3 = "line"
-."    Ch 4 = "gain.out1/2"
-."    Ch 5 = "gain.in3/4"
+    ."Ch 0 = "vol"
+    ."Ch 1 = "mic"
+    ."Ch 2 = "pcm"
+    ."Ch 3 = "line"
+    ."Ch 4 = "gain.out1/2"
+    ."Ch 5 = "gain.in3/4"
 ."
 ."Other MIDI channels (6 to 15) will be ignored.
 ."
@@ -122,6 +126,35 @@ the value. For example: "ossmix -d0 mic.micboost ON".
 ."For example the FM3 MIDI Mixer (AKA "FaderBaby") by JLCooper is compatible
 ."with ossmix.
 ."
+
+EXAMPLES
+
+  ossmix vol 50  
+    Set the vol control volume to 50. If the pcm control is a stereo control,
+    than both channels will be set to 50.
+
+  ossmix vol 50:60  
+    Set the vol control so that the left channel volume is 50 and the right
+    channel volume is 60.
+
+  ossmix vol +2  
+    Raise vol volume by 2.
+
+  ossmix -- vol +2:-2  
+    Raise the left channel volume by 2, and lower right channel volume by 2.
+    The "--" is needed on some systems so that the "-2" won't be mistaken for
+    a parameter.
+
+  ossmix micboost ON  
+    Set micboost to ON.
+
+  ossmix micboost TOGGLE  
+    Toggle micboost.
+
+  ossmix mplayer +2  
+    Raise mplayer volume by 2. This would only work if mplayer is using the
+    virtual mixer.
+
 FILES
 /usr/bin/ossmix
 
