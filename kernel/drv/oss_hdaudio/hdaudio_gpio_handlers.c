@@ -94,8 +94,6 @@ cmn_err(CE_CONT, "iMac Realtek hdaudio initialization\n");
 int
 hdaudio_asus_a7k_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
 {
-        codec_t *codec = mixer->codecs[cad];
-
         DDB(cmn_err(CE_CONT, "hdaudio_asus_a7k_GPIO_init got called.\n"));
 
         corb_write (mixer, cad, 0x01, 0, SET_GPIO_ENABLE, 3);
