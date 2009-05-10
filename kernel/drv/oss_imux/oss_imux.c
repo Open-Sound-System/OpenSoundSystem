@@ -475,7 +475,7 @@ start_device (imux_devc * devc)
   oss_audio_ioctl (devc->hw_dev, NULL, SNDCTL_DSP_GETBLKSIZE,
 		   (ioctl_arg) & devc->fragsize);
 
-  if ((!devc->hw_fmt & SUPPORTED_FORMATS))
+  if (!(devc->hw_fmt & SUPPORTED_FORMATS))
     {
       oss_audio_release (devc->hw_dev, &devc->finfo);
       cmn_err (CE_WARN,
