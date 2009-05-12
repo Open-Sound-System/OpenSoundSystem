@@ -49,6 +49,8 @@ clamp8 (int sample)
 
 /***********************************************************************/
 
+#ifdef GRC3_COMPILE_L
+
 #define QSUFFIX(a) a##L
 
 #if 0
@@ -97,7 +99,11 @@ clamp8 (int sample)
 
 #undef QSUFFIX
 
+#endif
+
 /***********************************************************************/
+
+#ifdef GRC3_COMPILE_M
 
 #define QSUFFIX(a) a##M
 
@@ -147,7 +153,11 @@ clamp8 (int sample)
 
 #undef QSUFFIX
 
+#endif
+
 /***********************************************************************/
+
+#ifdef GRC3_COMPILE_H
 
 #define QSUFFIX(a) a##H
 
@@ -197,7 +207,11 @@ clamp8 (int sample)
 
 #undef QSUFFIX
 
+#endif
+
 /***********************************************************************/
+
+#ifdef GRC3_COMPILE_H
 
 #define QSUFFIX(a) a##HX
 
@@ -247,7 +261,11 @@ clamp8 (int sample)
 
 #undef QSUFFIX
 
+#endif
+
 /***********************************************************************/
+
+#ifdef GRC3_COMPILE_P
 
 #define QSUFFIX(a) a##P
 
@@ -297,7 +315,11 @@ clamp8 (int sample)
 
 #undef QSUFFIX
 
+#endif
+
 /***********************************************************************/
+
+#ifdef GRC3_COMPILE_P
 
 #define QSUFFIX(a) a##PX
 
@@ -346,5 +368,7 @@ clamp8 (int sample)
 #include "grc3inc.inc"
 
 #undef QSUFFIX
+
+#endif
 
 /***********************************************************************/

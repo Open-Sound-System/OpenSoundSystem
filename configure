@@ -7,6 +7,13 @@ OSSLIBDIR="/usr/lib/oss"
 OSS_CONFIG_OPTIONS="$*"
 export OSS_CONFIG_OPTIONS
 
+#
+# Set GRC3 min/max conversion quality setting to 3 to conserve space.
+# TODO: Add support for configurable quality settings.
+GRC_MIN_QUALITY=3
+GRC_MAX_QUALITY=3
+export GRC_MIN_QUALITY GRC_MAX_QUALITY
+
 # MIDI support is enabled by default. Use --config-midi=NO to disable
 CONFIG_MIDI=ENABLED
 

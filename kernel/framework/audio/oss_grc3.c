@@ -7,7 +7,7 @@
 #define COPYING4 Copyright (C) George Yohng 2000-2002. All rights reserved.
 
 #ifdef _KERNEL
-#include "oss_config.h"
+//#include "oss_config.h"
 #endif
 
 #include <inttypes.h>
@@ -16,26 +16,43 @@
 
 char _grc3_copyright[] =
   "GRC library version 3.0\n"
-  "Copyright (C)2001-2005 4Front Technologies\n"
+  "Copyright (C)2001-2009 4Front Technologies\n"
   "Copyright (C)2001-2002 by George Yohng\n\0" "GRC3 ENGINE";
 
+#ifdef GRC3_COMPILE_L
 #define filter_data filter_data_L
 #include "fltdata3_l.inc"
 #undef filter_data
+#endif
 
+#ifdef GRC3_COMPILE_M
 #define filter_data filter_data_M
 #include "fltdata1_m.inc"
 #undef filter_data
+#endif
 
+#ifdef GRC3_COMPILE_H
 #define filter_data filter_data_H
 #include "fltdata2_h.inc"
 #undef filter_data
 #define filter_data_HX filter_data_H
+#endif
 
+#ifdef GRC3_COMPILE_P
 #define filter_data filter_data_P
 #include "fltdata4_p.inc"
 #undef filter_data
 #define filter_data_PX filter_data_P
+#endif
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY>CONFIG_OSS_GRC_MAX_QUALITY)
+#error Invalid values specified in CONFIG_OSS_GRC_XXX_QUALITY
+#endif
+
+#if !defined(GRC3_COMPILE_L) && !defined(GRC3_COMPILE_M) && !defined(GRC3_COMPILE_H) && !defined(GRC3_COMPILE_P)
+#error Invalid values specified in CONFIG_OSS_GRC_XXX_QUALITY
+#endif
+
 
 /* TODO: Wy doesn't -O and inlining work? */
 #undef __inline__
@@ -93,10 +110,25 @@ _grc_sat31 (GRCpreg int32_t a, GRCpreg int32_t b)
     }
 
 
+#ifdef GRC3_COMPILE_L
 DEFINE_FILTER (L)
+#endif
+
+#ifdef GRC3_COMPILE_M
 DEFINE_FILTER (M)
+#endif
+
+#ifdef GRC3_COMPILE_H
 DEFINE_FILTER (H)
-DEFINE_FILTER_HQ (HX) DEFINE_FILTER (P) DEFINE_FILTER_HQ (PX) int32_t
+DEFINE_FILTER_HQ (HX)
+#endif
+
+#ifdef GRC3_COMPILE_P 
+DEFINE_FILTER (P) 
+DEFINE_FILTER_HQ (PX)
+#endif 
+
+int32_t
 _clamp24 (int32_t v)
 {
   return (v <= -0x007FFFFF) ? -0x007FFFFF :
@@ -120,26 +152,41 @@ _clamp24 (int32_t v)
         return accum;\
     }
 
+#ifdef GRC3_COMPILE_L
 DEFINE_CONVD (L, 4096)
+#endif
+
+#ifdef GRC3_COMPILE_M
 DEFINE_CONVD (M, 8192)
+#endif
+
+#ifdef GRC3_COMPILE_H
 DEFINE_CONVD (H, 16384)
-DEFINE_CONVD (HX, 16384) DEFINE_CONVD (P, 32768) DEFINE_CONVD (PX, 32768)
-     static
-       __inline__
-       int32_t
-     _conv31_L (GRCpreg int32_t * history, GRCpreg uint32_t filter)
-{
-  GRCvreg int32_t accum = 0;
+DEFINE_CONVD (HX, 16384)
+#endif
+
+#ifdef GRC3_COMPILE_P
+DEFINE_CONVD (P, 32768)
+DEFINE_CONVD (PX, 32768)
+#endif
 
 #define ITERATION(p)\
         accum+=_filt31_##p(*history,filter);\
         filter+=(1024<<15);\
         history--;
 
+#ifdef GRC3_COMPILE_L
+static __inline__ int32_t 
+_conv31_L (GRCpreg int32_t * history, GRCpreg uint32_t filter)
+{
+  GRCvreg int32_t accum = 0;
+
   ITERATION (L) ITERATION (L) ITERATION (L) ITERATION (L) return accum;
 }
+#endif
 
 
+#ifdef GRC3_COMPILE_M
 static __inline__ int32_t
 _conv31_M (GRCpreg int32_t * history, GRCpreg uint32_t filter)
 {
@@ -148,7 +195,9 @@ _conv31_M (GRCpreg int32_t * history, GRCpreg uint32_t filter)
   ITERATION (M) ITERATION (M) ITERATION (M) ITERATION (M)
     ITERATION (M) ITERATION (M) ITERATION (M) ITERATION (M) return accum;
 }
+#endif
 
+#ifdef GRC3_COMPILE_H
 static __inline__ int32_t
 _conv31_H (GRCpreg int32_t * history, GRCpreg uint32_t filter)
 {
@@ -170,7 +219,9 @@ _conv31_HX (GRCpreg int32_t * history, GRCpreg uint32_t filter)
     ITERATION (HX) ITERATION (HX) ITERATION (HX) ITERATION (HX)
     ITERATION (HX) ITERATION (HX) ITERATION (HX) ITERATION (HX) return accum;
 }
+#endif
 
+#ifdef GRC3_COMPILE_P
 static __inline__ int32_t
 _conv31_P (GRCpreg int32_t * history, GRCpreg uint32_t filter)
 {
@@ -200,6 +251,7 @@ _conv31_PX (GRCpreg int32_t * history, GRCpreg uint32_t filter)
     ITERATION (PX) ITERATION (PX) ITERATION (PX) ITERATION (PX)
     ITERATION (PX) ITERATION (PX) ITERATION (PX) ITERATION (PX) return accum;
 }
+#endif
 
 static __inline__ int16_t
 _swap16 (GRCpreg int32_t v)
@@ -240,21 +292,25 @@ grc3_convert (grc3state_t * grc,
 
 again:
 
-  DECLCVT (8, 0, L8_8)
+#ifdef GRC3_COMPILE_L
+    DECLCVT (8, 0, L8_8)
     DECLCVT (16, 0, L16_16)
     DECLCVT (-16, 0, Lv16_v16)
-    DECLCVT (32, 0, L32_32) DECLCVT (-32, 0, Lv32_v32)
-#ifdef GRC3_COMPILE_L
+    DECLCVT (32, 0, L32_32) 
+    DECLCVT (-32, 0, Lv32_v32)
+
     DECLCVT (8, 1, L8_8)
     DECLCVT (16, 1, L16_16)
     DECLCVT (-16, 1, Lv16_v16)
-    DECLCVT (32, 1, L32_32) DECLCVT (-32, 1, Lv32_v32)
+    DECLCVT (32, 1, L32_32) 
+    DECLCVT (-32, 1, Lv32_v32)
 #endif
 #ifdef GRC3_COMPILE_M
     DECLCVT (8, 2, M8_8)
     DECLCVT (16, 2, M16_16)
     DECLCVT (-16, 2, Mv16_v16)
-    DECLCVT (32, 2, M32_32) DECLCVT (-32, 2, Mv32_v32)
+    DECLCVT (32, 2, M32_32) 
+    DECLCVT (-32, 2, Mv32_v32)
 #endif
 #ifdef GRC3_COMPILE_H
     DECLCVT (8, 3, H8_8)
@@ -265,7 +321,8 @@ again:
     DECLCVT (8, 4, HX8_8)
     DECLCVT (16, 4, HX16_16)
     DECLCVT (-16, 4, HXv16_v16)
-    DECLCVT (32, 4, HX32_32) DECLCVT (-32, 4, HXv32_v32)
+    DECLCVT (32, 4, HX32_32) 
+    DECLCVT (-32, 4, HXv32_v32)
 #endif
 #ifdef GRC3_COMPILE_P
     DECLCVT (8, 5, P8_8)
@@ -276,12 +333,13 @@ again:
     DECLCVT (8, 6, PX8_8)
     DECLCVT (16, 6, PX16_16)
     DECLCVT (-16, 6, PXv16_v16)
-    DECLCVT (32, 6, PX32_32) DECLCVT (-32, 6, PXv32_v32)
+    DECLCVT (32, 6, PX32_32) 
+    DECLCVT (-32, 6, PXv32_v32)
 #endif
   {
     if ((quality > 6) && (grc))
       {
-	quality = 0;
+	quality = DEFAULT_GRC_QUALITY;
 	goto again;
       }
 
