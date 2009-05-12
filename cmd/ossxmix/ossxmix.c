@@ -201,13 +201,13 @@ get_fd(int dev)
 	int fd;
 	oss_mixerinfo mi;
 
-	if (dev< 0 || dev >= MAX_DEVS)
+	if (dev < 0 || dev >= MAX_DEVS)
 	   {
 		   fprintf (stderr, "Bad mixer device number %d\n", dev);
 		   exit (EXIT_FAILURE);
 	   }
 
-	if (local_fd[dev] > 0)
+	if (local_fd[dev] != -1)
 	   return local_fd[dev];
 
 	mi.dev = dev;
@@ -1565,6 +1565,11 @@ reload_gui (void)
     {
       free (extrec[i]);
       extrec[i] = NULL;
+      if (local_fd[i] != -1)
+        {
+          close (local_fd[i]);
+          local_fd[i] = -1;
+        }
     }
 
   gtk_widget_destroy (scrolledwin);
@@ -2108,7 +2113,7 @@ cleanup (void)
   close (global_fd);
 
   for (i=0;i<MAX_DEVS;i++)
-      if (local_fd[i] > 0)
+      if (local_fd[i] != -1)
 	 close (local_fd[i]);
 
 #if !defined(GTK1_ONLY) && GTK_CHECK_VERSION(2,2,0)

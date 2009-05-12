@@ -71,7 +71,6 @@ typedef struct _midi_operations
   int working_mode;		/* See SNDCTL_MIDI_SETMODE */
   int timebase;
   int tempo;
-  struct synth_operations *converter;
   struct midi_input_info in_info;
   struct coproc_operations *coproc;
   void *devc;
@@ -156,65 +155,8 @@ typedef struct
 extern int num_midi_clients;
 extern oss_midi_client_t *oss_midi_clients[MAX_MIDI_CLIENTS];
 
-
-struct synth_operations
-{
-  char *id;			/* Unique identifier (ASCII) max 29 char */
-  struct synth_info *info;
-  int midi_dev;
-  int synth_type;
-  int synth_subtype;
-
-  int (*open) (int dev, int mode);
-  void (*close) (int dev);
-  int (*ioctl) (int dev, unsigned int cmd, ioctl_arg arg);
-  int (*kill_note) (int dev, int voice, int note, int velocity);
-  int (*start_note) (int dev, int voice, int note, int velocity);
-  int (*set_instr) (int dev, int voice, int instr);
-  void (*reset) (int dev);
-  void (*hw_control) (int dev, unsigned char *event);
-  int (*load_patch) (int dev, int format, uio_t * addr,
-		     int offs, int count, int pmgr_flag);
-  void (*aftertouch) (int dev, int voice, int pressure);
-  void (*controller) (int dev, int voice, int ctrl_num, int value);
-  void (*panning) (int dev, int voice, int value);
-  void (*volume_method) (int dev, int mode);
-  void (*bender) (int dev, int chn, int value);
-  int (*alloc_voice) (int dev, int chn, int note,
-		      struct voice_alloc_info * alloc);
-  void (*setup_voice) (int dev, int voice, int chn);
-  int (*send_sysex) (int dev, unsigned char *bytes, int len);
-
-  struct voice_alloc_info alloc;
-  struct channel_info chn_info[16];
-  int emulation;
-#define	EMU_GM			1	/* General MIDI */
-#define	EMU_XG			2	/* Yamaha XG */
-#define MAX_SYSEX_BUF	64
-  unsigned char sysex_buf[MAX_SYSEX_BUF];
-  int sysex_ptr;
-  void *devc;
-  oss_device_t *osdev;
-  oss_device_t *master_osdev;	/* osdev struct of the master device (for virtual drivers) */
-  int enabled;
-};
-
-extern int sequencer_disabled;
-extern volatile int sequencer_busy;
-
 extern mididev_t **midi_devs;
-/* OBSOLETE extern struct synth_operations *synth_devs[MAX_SYNTH_DEV + MAX_MIDI_DEV]; */
 extern int num_mididevs;
-extern int oss_num_timers;
-extern oss_uint64_t seq_time;
-extern void sequencer_init (void);
-extern void sequencer_timer (oss_uint64_t dummy);
-extern int note_to_freq (int note_num);
-extern oss_native_word compute_finetune (oss_native_word base_freq,
-					 int bend, int range,
-					 int vibrato_bend);
-extern void seq_input_event (unsigned char *event, int len);
-extern void seq_copy_to_input (unsigned char *event, int len);
 
 struct oss_timer_driver;
 typedef void (*oss_midi_wait_callback_t) (void *arg);
@@ -350,7 +292,6 @@ extern int
 oss_install_mididev (int version,
 		     char *id, char *name,
 		     midi_driver_t * d, int driver_size,
-		     struct synth_operations *cnv,
 		     unsigned int flags, void *devc, oss_device_t * osdev);
 
 extern void install_vmidi (oss_device_t * osdev);

@@ -173,6 +173,8 @@ extern "C"
 #include <semaphore.h>
 #include <alsa/asoundlib.h>
 #elif defined(OSS)
+#include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/soundcard.h>
@@ -861,6 +863,34 @@ oss_thread (void *ptr)
     }
 }
 
+static int
+open_dsp (struct SoundOutput_Instance * instance)
+{
+  size_t len;
+  char s[1024] = "", *devdsp = "/dev/dsp", *home;
+  FILE *fp = NULL;
+
+  home = getenv ("HOME");
+  if (home == NULL) goto dexit;
+  len = snprintf (s, sizeof (s), "%s/.flashsupport", home);
+  if ((len < 0) || (len >= sizeof (s))) goto dexit;
+  fp = fopen (s, "r");
+  if (fp == NULL) goto dexit;
+  do {
+    if (fgets (s, sizeof(s), fp) == NULL) goto dexit;
+  } while (s[0] == '#');
+  len = strlen (s);
+  if (len <= 7) goto dexit;
+  if (s[len-1] == '\n') s[len-1] = '\0';
+  if (strncmp ("device=", s, 7) || (s[7] == '\0')) goto dexit;
+  devdsp = (char *)s + 7;
+
+dexit:
+  if (fp != NULL) fclose (fp);
+  if ((instance->oss_fd = open (devdsp, O_WRONLY)) < 0) return -1;
+  return 0;
+}
+
 static void *
 FPX_SoundOutput_Open ()
 	// return = instance pointer
@@ -881,7 +911,7 @@ FPX_SoundOutput_Open ()
     FPI_Mem_Alloc (sizeof (struct SoundOutput_Instance));
   memset (instance, 0, sizeof (struct SoundOutput_Instance));
 
-  if ((instance->oss_fd = open ("/dev/dsp", O_WRONLY)) < 0)
+  if (open_dsp (instance))
     goto fail;
 
   if (ioctl (instance->oss_fd, SNDCTL_DSP_SETFRAGMENT, &frags) < 0)

@@ -20,16 +20,18 @@
 #include <errno.h>
 #include <soundcard.h>
 #include <sys/ioctl.h>
+#ifndef LOCAL_BUILD
 #include <local_config.h>
+#endif
 
 static char *progname = NULL;
-static int mixerfd = -1, nrext = 0, quiet = 0, verbose = 0;
+static int mixerfd = -1, nrext = 0, quiet = 0, verbose = 0, verbose_info = 0;
 
 static oss_mixext *extrec;
 static oss_mixext_root *root;
 
 static void change_level (int, const char *, const char *);
-static void dump_all (void);
+static void dump_all (int);
 static void dump_devinfo (int);
 static int find_enum (const char *, oss_mixext *, const char *);
 static int find_name (const char *);
@@ -54,7 +56,8 @@ usage (void)
   printf ("Usage: %s [-d<devno>] [arguments]\n", progname);
   printf ("arguments:\n");
   printf ("\t-D			Display device information\n");
-  printf ("\t-c			Dump mixer settings for all mixers\n");
+  printf ("\t-a			Dump mixer settings for all mixers (normal format)\n");
+  printf ("\t-c			Dump mixer settings for all mixers (command format)\n");
   printf ("\tctrl# value		Change value of a mixer control\n");
   printf ("\t-q			Quiet mode\n");
   printf ("\t-v1|-v2		Verbose mode (-v2 is more verbose).\n");
@@ -160,7 +163,7 @@ verbose_devinfo (int dev)
       switch (thisrec->type)
 	{
 	case MIXT_DEVROOT:
-	  printf ("\nDevice root '%s' / %s\n", root->id, root->name);
+	  printf ("Device root '%s' / %s\n", root->id, root->name);
 	  break;
 
 	case MIXT_GROUP:
@@ -272,7 +275,8 @@ verbose_devinfo (int dev)
 	  break;
 
 	default:
-	  printf ("Unknown record type %d\n", thisrec->type);
+	  printf ("Unknown record type %d (%s)\n", thisrec->type,
+		  thisrec->extname);
 	}
 
     }
@@ -432,6 +436,12 @@ show_devinfo (int dev)
   oss_mixext *thisrec;
   oss_mixer_value val;
 
+  if (verbose_info)
+    {
+      verbose_devinfo (dev);
+      return;
+    }
+
   val.dev = dev;
   printf ("Selected mixer %d/%s\n", dev, root->name);
   printf ("Known controls are:\n");
@@ -566,7 +576,8 @@ show_devinfo (int dev)
 	  break;
 
 	default:
-	  printf ("Unknown mixer extension type %d", thisrec->type);
+	  printf ("Unknown mixer extension type %d (%s)", thisrec->type,
+		  thisrec->extname);
 	}
 
       if ((thisrec->flags & MIXF_WRITEABLE) == 0) printf(" (Read-only)");
@@ -902,6 +913,9 @@ change_level (int dev, const char * cname, const char * arg)
       case MIXT_MONODB:
       case MIXT_MONOVU:
       case MIXT_MONOPEAK:
+      case MIXT_SLIDER:
+	val.value = lefti;
+	break;
       default:
 	if (lefti > 255) lefti = 255;
 	if (righti > 255) righti = 255;
@@ -1178,7 +1192,7 @@ midi_mixer (int dev, char *mididev, char *argv[], int argp, int argc)
 #endif
 
 static void
-dump_all (void)
+dump_all (int type)
 {
   int dev, nummixers;
 
@@ -1193,7 +1207,12 @@ dump_all (void)
   for (dev = 0; dev < nummixers; dev++)
     {
       load_devinfo (dev);
-      dump_devinfo (dev);
+      if (type)
+        {
+          show_devinfo (dev);
+          if (dev < nummixers-1) printf ("\n");
+        }
+      else dump_devinfo (dev);
     }
 }
 
@@ -1217,66 +1236,67 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  while ((c = getopt (argc, argv, "Dcd:hmqv:")) != EOF)
-	{
-	  switch (c)
-	    {
-	    case 'q':
-	      quiet = 1;
-	      verbose = 0;
-	      break;
+  while ((c = getopt (argc, argv, "Dacd:hmqv:")) != EOF)
+   {
+     switch (c)
+       {
+         case 'D':
+           verbose_info = 1;
+           break;
 
-	    case 'v':
-	      verbose = atoi (optarg);
-	      if (verbose==0)
-		 verbose = 1;
-	      quiet = 0;
-	      break;
+         case 'a':
+           dump_all (1);
+           exit (0);
+           break;
 
-	    case 'd':
-	      dev = atoi (optarg);
-	      break;
+         case 'c':
+           dump_all (0);
+           exit (0);
+           break;
 
-	    case 'D':
-	      load_devinfo (dev);
-	      verbose_devinfo (dev);
-	      exit (0);
-	      break;
-
-	    case 'c':
-	      dump_all ();
-	      exit (0);
-	      break;
+         case 'd':
+           dev = atoi (optarg);
+           break;
 
 #ifdef CONFIG_OSS_MIDI
-	    case 'm':
-	      midi_mixer (dev, optarg, argv, optind, argc);
-	      exit (0);
-	      break;
+         case 'm':
+           midi_mixer (dev, optarg, argv, optind, argc);
+           exit (0);
+           break;
 #endif
 
-	    case 'h':
-	    default:
-	      usage ();
-	    }
-	}
+         case 'q':
+           quiet = 1;
+           verbose = 0;
+           break;
 
-  	if (optind==argc)
-	{
-      		load_devinfo (dev);
-      		show_devinfo (dev);
-		exit (0);
-	}
+         case 'v':
+           verbose = atoi (optarg);
+           if (verbose == 0) verbose = 1;
+           quiet = 0;
+           break;
 
-	  load_devinfo (dev);
-	  if (optind >= argc-1)
-	     {
-	    	show_level (dev, argv[optind]);
-	     }
-	  else
-	     {
-	    	change_level (dev, argv[optind], argv[optind + 1]);
-	     }
+         case 'h':
+         default:
+          usage ();
+      }
+    }
+
+  if (optind == argc)
+    {
+      load_devinfo (dev);
+      show_devinfo (dev);
+      exit (0);
+    }
+
+  load_devinfo (dev);
+  if (!strcmp (argv[optind], "--")) optind++;
+  if (optind >= argc-1)
+    {
+      show_level (dev, argv[optind]);
+    } else {
+      change_level (dev, argv[optind], argv[optind + 1]);
+    }
 
   close (mixerfd);
   return 0;

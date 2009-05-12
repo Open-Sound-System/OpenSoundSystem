@@ -335,10 +335,10 @@ attach_midi (envy24ht_devc * devc)
   enter_uart_mode (devc);
 
   sprintf (name, "%s input", devc->model_data->product);
-  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "ENVY24HT", name, &envy24ht_midi_driver, sizeof (midi_driver_t), NULL,	/* &std_midi_synth, */
+  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "ENVY24HT", name, &envy24ht_midi_driver, sizeof (midi_driver_t),
 					MFLAG_INPUT, devc, devc->osdev);
   sprintf (name, "%s output", devc->model_data->product);
-  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "ENVY24HT", name, &envy24ht_midi_driver, sizeof (midi_driver_t), NULL,	/* &std_midi_synth, */
+  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "ENVY24HT", name, &envy24ht_midi_driver, sizeof (midi_driver_t),
 					MFLAG_OUTPUT, devc, devc->osdev);
   devc->midi_opened = 0;
   devc->midi_attached = 1;

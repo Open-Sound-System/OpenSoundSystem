@@ -57,7 +57,7 @@ DetectAndConfigureHardware (sbxfi_devc_t * devc)
 
   // Default setting for hendrix card is memory access, so must get IO access port from bar5.
   // bar0 will be converted to IO access in SwitchToXFiCore()
-  if ((devc->wSubsystemID & 0x6000) == 0x6000)
+  if (devc->hw_family == HW_UAA)
     {
       // Base IO address is at register lcoation 0x24 (bar5)
       pci_read_config_word (devc->osdev, PCI_BASE_ADDRESS_5, &wData);
@@ -77,7 +77,7 @@ unsigned char
 IsVistaCompatibleHardware (sbxfi_devc_t * devc)
 {
   // Check the subsystem id
-  if ((devc->wSubsystemID & 0x6000) == 0x6000)	// Hendrix card ranged 0x600X
+  if (devc->hw_family == HW_UAA)
     {
       return TRUE;
     }

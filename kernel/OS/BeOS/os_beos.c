@@ -916,8 +916,6 @@ oss_disable_device (oss_device_t * osdev)
       if (midi_devs[i]->osdev == osdev)
 	{
 	  midi_devs[i]->unloaded = 1;
-	  if (midi_devs[i]->converter != NULL)
-	    midi_devs[i]->converter->enabled = 0;
 	}
     }
 

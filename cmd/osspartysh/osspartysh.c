@@ -334,12 +334,12 @@ pty_session(int connfd)
 {
 	mode_t mode;
 	pid_t pid;
-	int ptyfd;
+	int ptyfd, fd;
 	FILE *f;
 	char tmpl[32]="/tmp/osspartyshXXXXXX";
 
 	mode = umask(077);
-	if (mkstemp(tmpl) == -1)
+	if ((fd = mkstemp(tmpl)) == -1)
 	{
 		perror("mkstemp");
 		exit(-1);
@@ -347,12 +347,13 @@ pty_session(int connfd)
 	chmod(tmpl, 0700);
 	umask(mode);
 
-	if ((f=fopen(tmpl, "w"))!=NULL)
+	if ((f = fdopen(fd, "w")) != NULL)
 	{
 		fprintf(f, "PS1=\"[SHARED]@\\h:\\w $ \"\n");
 		fprintf(f, "export PS1\n");
 		fclose(f);
 	}
+	else close(fd);
 
 	if ((pid=forkpty(&ptyfd, NULL, NULL, NULL))==-1)
 	{

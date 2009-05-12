@@ -2240,7 +2240,7 @@ attach_audigyuart (sblive_devc * devc)
 {
   enter_uart_mode (devc);
 
-  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "AUDIGY", "Audigy UART", &audigy_midi_driver, sizeof (midi_driver_t), NULL,	/*&std_midi_synth, */
+  devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "AUDIGY", "Audigy UART", &audigy_midi_driver, sizeof (midi_driver_t),
 					0, devc, devc->osdev);
   devc->midi_opened = 0;
 }

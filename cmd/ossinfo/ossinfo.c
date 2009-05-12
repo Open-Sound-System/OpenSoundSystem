@@ -45,11 +45,13 @@ static void
 print_symlink(const char *link)
 {
 	char devname[256];
+	ssize_t len;
 
-	memset(devname, 0, sizeof(devname));
-
-	if (readlink(link, devname, sizeof(devname)-1) != -1)
-	   printf("  %s -> %s\n", link, devname);
+	if ((len = readlink(link, devname, sizeof(devname)-1)) != -1)
+	  {
+	     devname[len] = '\0';
+	     printf("  %s -> %s\n", link, devname);
+	  }
 }
 
 /*
@@ -446,7 +448,7 @@ print_audio_info (void)
       printf ("\n");
     }
 
-  printf ("\n");
+  printf ("\nNodes\n");
   print_symlink ("/dev/dsp");
   print_symlink ("/dev/dsp_in");
   print_symlink ("/dev/dsp_out");

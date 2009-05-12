@@ -2,7 +2,7 @@ NAME
 ossdetect - Open Sound System audio device detection program.
 
 SYNOPSIS
-ossdetect [-div] [-L<path>]
+ossdetect [-diuv] [-L<path>]
 
 DESCRIPTION
 The ossdetect application performs automatic detection of soundcards. 
@@ -16,6 +16,7 @@ can be added to the OSS configuration using the -i option.
 OPTIONS
 -d		Create device file links.
 -i	 	Adds the oss_imux driver.
+-u		Adds the oss_userdev driver.
 -v		Verbose output.
 -L<path>	Use <path> as root directory for OSS files.
 		Default: Path from /etc/oss.conf, followed by /usr/lib/oss.

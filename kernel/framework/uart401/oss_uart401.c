@@ -295,7 +295,7 @@ uart401_init (uart401_devc * devc, oss_device_t * osdev, int base, char *name)
 
   enter_uart_mode (devc);
 
-  devc->my_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "UART401", name, &uart401_driver, sizeof (midi_driver_t), NULL,	/* TODO: std_midi_synth */
+  devc->my_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "UART401", name, &uart401_driver, sizeof (midi_driver_t),
 				      0, devc, devc->osdev);
   devc->opened = 0;
 #ifdef USE_POLLING

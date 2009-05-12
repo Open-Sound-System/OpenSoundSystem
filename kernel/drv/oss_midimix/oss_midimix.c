@@ -293,7 +293,7 @@ attach_midimix_dev (oss_device_t * osdev)
   devc->midi_dev =
     oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "MIX",
 			 "Mixer access MIDI device", &midimix_driver,
-			 sizeof (midi_driver_t), NULL,
+			 sizeof (midi_driver_t),
 			 MFLAG_VIRTUAL | MFLAG_QUIET, devc, devc->osdev);
 }
 

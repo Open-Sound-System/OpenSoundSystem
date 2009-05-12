@@ -1257,7 +1257,7 @@ init_apci97 (apci97_devc * devc, int device_id)
       audio_engines[adev]->mixer_dev = my_mixer;
     }
 
-  if ((devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "APCI97", "APCI97 UART", &apci97_midi_driver, sizeof (midi_driver_t), NULL,	/* &std_midi_synth, */
+  if ((devc->midi_dev = oss_install_mididev (OSS_MIDI_DRIVER_VERSION, "APCI97", "APCI97 UART", &apci97_midi_driver, sizeof (midi_driver_t),
 					     0, devc, devc->osdev)) < 0)
     {
       cmn_err (CE_WARN, "Couldn't install MIDI device\n");

@@ -54,7 +54,7 @@ do
 		exit 2
 	fi
 
-	mv $N.ko ../modules/
+	mv $N.ko* ../modules/
 	make clean > /dev/null 2>&1
 	rm -f Makefile
 done

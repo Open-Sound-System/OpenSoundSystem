@@ -1033,6 +1033,7 @@ extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, in
 extern int hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_asus_a7k_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
@@ -1087,6 +1088,11 @@ static const codec_desc_t subdevices[] = {
  * Asus Eee PC (model 900 at least)
  */
   {0x10438337, "Asus Eee PC", VF_NONE, NULL, 0, hdaudio_eeepc_mixer_init},
+
+ /*
+  * Asus A7K
+  */
+  {0x10431339, "Asus A7K", VF_ALC88X_HACK, (char **) &alc880remap, 0, hdaudio_asus_a7k_GPIO_init}, // ALC660
 
 /*
  * Known Macintosh systems

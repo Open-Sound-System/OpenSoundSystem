@@ -293,8 +293,9 @@ handle_playdev (envy24_devc * devc, envy24_portc * portc, int this_frag)
 	    for (ch = 0; ch < portc->channels; ch++)
 	      {
 		short s = (short) (((*(unsigned short *) ip & 0xff) << 8) |
-				   ((*(unsigned short *) ip++ & 0xff00) >>
+				   ((*(unsigned short *) ip & 0xff00) >>
 				    8));
+		ip++;
 		*p++ = s << 16;
 	      }
 	  }

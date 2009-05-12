@@ -66,6 +66,12 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   if (dmap->dmabuf != NULL)
     return 0;
 
+  if (dmap == NULL)
+    {
+      cmn_err (CE_WARN, "oss_alloc_dmabuf: dmap==NULL\n");
+      return OSS_EIO;
+    }
+
 /*
  * Some applications and virtual drivers need shorter buffer.
  */
@@ -273,8 +279,6 @@ oss_disable_device (oss_device_t * osdev)
       if (midi_devs[i]->osdev == osdev)
 	{
 	  midi_devs[i]->unloaded = 1;
-	  if (midi_devs[i]->converter != NULL)
-	    midi_devs[i]->converter->enabled = 0;
 	}
     }
 
@@ -656,7 +660,7 @@ oss_read (struct cdev *bsd_dev, struct uio *buf, int flags)
   oss_cdev_t *cdev;
 #ifndef VDEV_SUPPORT
   struct fileinfo _fi, * fi = &_fi;
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
   init_fileinfo (fi, flags);
 #else
   struct fileinfo * fi;
@@ -690,7 +694,7 @@ oss_write (struct cdev *bsd_dev, struct uio *buf, int flags)
   oss_cdev_t *cdev;
 #ifndef VDEV_SUPPORT
   struct fileinfo _fi, * fi = &_fi;
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
   init_fileinfo (fi, flags);
 #else
   struct fileinfo * fi;
@@ -718,7 +722,7 @@ oss_write (struct cdev *bsd_dev, struct uio *buf, int flags)
 static int
 oss_open (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
 {
-  int dev = minor (bsd_dev);
+  int dev = MINOR (bsd_dev);
   oss_cdev_t *cdev;
   struct fileinfo fi;
   int tmpdev, retval;
@@ -763,7 +767,7 @@ oss_close (struct cdev *bsd_dev, int flags, int mode, struct thread *p)
   oss_cdev_t *cdev;
 #ifndef VDEV_SUPPORT
   struct fileinfo _fi, * fi = &_fi;
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
   init_fileinfo (fi, flags);
 #else
   struct fileinfo * fi;
@@ -796,7 +800,7 @@ oss_ioctl (struct cdev *bsd_dev, u_long cmd, caddr_t arg, int mode,
   oss_cdev_t *cdev;
 #ifndef VDEV_SUPPORT
   struct fileinfo _fi, * fi = &_fi;
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
   init_fileinfo (fi, mode);
 #else
   struct fileinfo * fi;
@@ -853,7 +857,7 @@ oss_poll (struct cdev *bsd_dev, int events, struct thread *p)
   int err;
 #ifndef VDEV_SUPPORT
   struct fileinfo _fi, * fi = &_fi;
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
   init_fileinfo (fi, 0);
 #else
   struct fileinfo * fi;
@@ -896,7 +900,7 @@ oss_mmap (struct cdev *bsd_dev, vm_offset_t offset, vm_paddr_t * paddr,
   dmap_p dmap = NULL;
   int err;
 #ifndef VDEV_SUPPORT
-  dev = minor (bsd_dev);
+  dev = MINOR (bsd_dev);
 #else
   struct fileinfo * fi;
   if (oss_file_get_private ((void **)&fi)) return ENXIO;

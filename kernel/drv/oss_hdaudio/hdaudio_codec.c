@@ -1988,7 +1988,7 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
     {
       if (group_type == 1)
          sprintf (hw_info, " Codec %2d: Unknown (0x%08x", cad, a);
-      cmn_err (CE_NOTE, "Unknown HDA codec 0x%08x\n", a);
+      cmn_err (CE_NOTE, "HDA codec 0x%08x not known yet\n", a);
       /* 
        * Create hexadecimal codec ID
        */
@@ -3220,15 +3220,15 @@ hda_codec_add_insrcselect (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
     return 0;
 
   ext = mixer_find_ext (mixer->mixer_dev, *ctl);
-  /* Copy RGB color */
-  if (widget->color != 0)
-     ext->rgbcolor = widget->rgbcolor;
-
   if (ext == NULL)
     {
       cmn_err (CE_WARN, "Cannot locate the mixer extension (x)\n");
       return OSS_EIO;
     }
+
+  /* Copy RGB color */
+  if (widget->color != 0)
+     ext->rgbcolor = widget->rgbcolor;
 
   memset (ext->enum_present, 0, sizeof (ext->enum_present));
 

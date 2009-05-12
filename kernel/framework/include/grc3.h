@@ -4,16 +4,45 @@
  * GRC3 is a high quality sample rate conversion module that uses fixed point
  * arithmetic.
  */
-#define COPYING30 Copyright (C) George Young, Hannu Savolainen and Dev Mazumdar 1996-2007. All rights reserved.
-
+#define COPYING30 Copyright (C) George Yohng, Hannu Savolainen and Dev Mazumdar 1996-2009. All rights reserved.§
 
 #ifndef GRC3_H_INCLUDED
 #define GRC3_H_INCLUDED
 
+#if !defined(CONFIG_OSS_GRC_MIN_QUALITY) || CONFIG_OSS_GRC_MIN_QUALITY > 6
+#define CONFIG_OSS_GRC_MIN_QUALITY 0
+#endif
+
+#if !defined(CONFIG_OSS_GRC_MAX_QUALITY) || CONFIG_OSS_GRC_MAX_QUALITY < CONFIG_OSS_GRC_MIN_QUALITY
+#define CONFIG_OSS_GRC_MAX_QUALITY 6
+#endif
+
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY<=1)&&(CONFIG_OSS_GRC_MAX_QUALITY>=0)
 #define GRC3_COMPILE_L
+#endif
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY<=2)&&(CONFIG_OSS_GRC_MAX_QUALITY>=2)
 #define GRC3_COMPILE_M
+#endif
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY<=4)&&(CONFIG_OSS_GRC_MAX_QUALITY>=3)
 #define GRC3_COMPILE_H
+#endif
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY<=6)&&(CONFIG_OSS_GRC_MAX_QUALITY>=5)
 #define GRC3_COMPILE_P
+#endif
+
+#if (CONFIG_OSS_GRC_MIN_QUALITY<=3)
+    #if (CONFIG_OSS_GRC_MAX_QUALITY>=3)
+        #define DEFAULT_GRC_QUALITY 3
+    #else
+        #define DEFAULT_GRC_QUALITY CONFIG_OSS_GRC_MAX_QUALITY
+    #endif
+#else
+    #define DEFAULT_GRC_QUALITY CONFIG_OSS_GRC_MIN_QUALITY
+#endif
 
 
 #define GRCinline inline static

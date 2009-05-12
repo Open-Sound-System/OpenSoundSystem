@@ -1497,6 +1497,15 @@ __udivdi3 (UDItype n, UDItype d)
 }
 #endif
 
+#ifdef __arm__
+void
+raise(void)
+{
+	oss_cmn_err (CE_PANIC, "raise() got called\n");
+}
+
+#endif
+
 dev_info_t *
 oss_create_pcidip (struct pci_dev * pcidev)
 {
@@ -1609,7 +1618,11 @@ extern int oss_pci_read_config_irq (oss_device_t * osdev, unsigned long where,
 char *
 oss_pci_read_devpath (dev_info_t * dip)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
+  return dev_name(dip->pcidev);
+#else
   return dip->pcidev->dev.bus_id;
+#endif
 }
 
 int
@@ -2021,17 +2034,12 @@ EXPORT_FUNC (oss_spdif_uninstall);
 EXPORT_FUNC (oss_spdif_close);
 EXPORT_FUNC (oss_spdif_mix_init);
 EXPORT_FUNC (oss_spdif_setrate);
-EXPORT_FUNC (compute_finetune);
 EXPORT_FUNC (create_new_card);
-EXPORT_FUNC (note_to_freq);
 EXPORT_FUNC (oss_audio_ioctl);
 EXPORT_FUNC (oss_audio_open_engine);
 EXPORT_FUNC (oss_audio_release);
 EXPORT_FUNC (oss_audio_set_rate);
 EXPORT_SYMBOL (oss_uiomove);
-EXPORT_FUNC (sequencer_timer);
-EXPORT_DATA (synth_devs);
-EXPORT_DATA (softsynthp);
 EXPORT_SYMBOL (oss_get_pid);
 EXPORT_SYMBOL (oss_get_uid);
 EXPORT_SYMBOL (oss_get_procname);
@@ -2152,6 +2160,8 @@ EXPORT_FUNC (oss_timing_leave);
 EXPORT_SYMBOL (__udivdi3);
 EXPORT_SYMBOL (__umoddi3);
 EXPORT_SYMBOL (__divdi3);
+#else
+EXPORT_SYMBOL (raise);
 #endif
 EXPORT_SYMBOL (oss_copy_from_user);
 EXPORT_SYMBOL (oss_copy_to_user);
