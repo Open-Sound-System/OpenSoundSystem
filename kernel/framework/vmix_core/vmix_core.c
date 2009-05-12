@@ -295,6 +295,7 @@ static int
 create_output_controls (int mixer_dev)
 {
   int  ctl;
+  oss_mixext *ext;
   vmix_mixer_t *mixer = mixer_devs[mixer_dev]->vmix_devc;
   char tmp[32];
 
@@ -361,6 +362,20 @@ create_output_controls (int mixer_dev)
          "'Fast' will work best in most cases. Only users with high end audio\n"
          "cards and speakers should use the other settings.\n"
 		      );
+  	ext = mixer_find_ext (mixer_dev, ctl);
+  	if (ext != NULL)
+	{
+		int i;
+		
+  		memset (ext->enum_present, 0, sizeof (ext->enum_present));
+		ext->enum_present[0] = 0x01; // "Fast" is always present
+#if CONFIG_OSS_GRC_MAX_QUALITY > 7
+#error CONFIG_OSS_GRC_MAX_QUALITY is out of range
+#endif
+
+		for (i=CONFIG_OSS_GRC_MIN_QUALITY; i <= CONFIG_OSS_GRC_MAX_QUALITY; i++)
+			ext->enum_present[0] |= (1 << i);
+	}
 
       /*
        * Create the vmix volume slider and peak meter to the top panel.
