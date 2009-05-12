@@ -87,6 +87,7 @@ cp -f $SRCDIR/kernel/framework/include/udi.h prototype/$OSSLIBDIR/build/
 cp -a $SRCDIR/kernel/framework/include/*_core.h kernel/framework/include/local_config.h prototype/$OSSLIBDIR/include/internals
 cp $SRCDIR/kernel/framework/include/ossddk/*.h prototype/$OSSLIBDIR/include/internals
 cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/include/internals
+cp kernel/framework/include/ossddk/oss_limits.h prototype/$OSSLIBDIR/include/internals
 
 cat > prototype/$OSSLIBDIR/include/internals/WARNING.txt << EOF
 Caution: All header files included in this directory are there only because

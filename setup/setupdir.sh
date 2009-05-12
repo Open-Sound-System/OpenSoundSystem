@@ -266,14 +266,21 @@ then
 	echo include setup/$OS/make.local >> Makefile
   fi
 fi
+PHPMAKE=phpmake
 
-if test -f Makefile.php && test -d phpmake
+if test ! -d phpmake && test -d ../phpmake
+then
+	PHPMAKE=../phpmake
+fi
+
+if test -f Makefile.php && test -d $PHPMAKE
 then
 	echo Running phpmake for all subdirectories - please wait
 
 	if test "$PHPMAKE_LIBPATH " = " "
 	then
-	   PHPMAKE_LIBPATH="`pwd`/phpmake/"
+	   PHPMAKE_LIBPATH="`pwd`/$PHPMAKE/"
+
 	   export PHPMAKE_LIBPATH
 	   echo PHPMAKE_LIBPATH not set - assuming $PHPMAKE_LIBPATH
 	fi

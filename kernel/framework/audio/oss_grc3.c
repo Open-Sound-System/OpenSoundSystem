@@ -10,7 +10,9 @@
 //#include "oss_config.h"
 #endif
 
-//#include <inttypes.h>
+#ifdef _KERNEL
+#include <inttypes.h>
+#endif
 
 #include "grc3.h"
 
