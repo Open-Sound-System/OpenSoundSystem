@@ -48,7 +48,7 @@ read_all (int sock, void *b, int count)
   return l;
 }
 
-static __inline__ int
+static inline int
 bswap32 (int x)
 {
 
