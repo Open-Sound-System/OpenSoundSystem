@@ -934,7 +934,7 @@ printf("Symlink %s -> %s\n", source, target);
 
   if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
-      fprintf (f, "CFLAGS+=-D_KERNEL\n");
+      fprintf (f, "CFLAGS += -D_KERNEL\n");
 #ifdef sun
       /* fprintf(f, "CFLAGS += -xmodel=kernel\n"); */
 #endif
