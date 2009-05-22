@@ -28,8 +28,6 @@ static char channel_names[4][10] = {
 };
 
 static card_spec models[] = {
-  /* {0x17241412, "Generic Envy24HT based card", 6, 2, */
-  /* MF_SPDIFOUT | MF_MIDI, &envy24ht_viaref_auxdrv}, */
   {0x17241412, "Generic Envy24PT motherboard audio", 6, 2,
    MF_SPDIFOUT | MF_ENVY24PT, &envy24ht_ac97_auxdrv},
   {0xf641270f, "Chaintech ZNF3-150", 6, 2,
@@ -62,6 +60,8 @@ static card_spec models[] = {
    &envy24ht_ap192_auxdrv},
   {0x24031412, "VIA Vinyl Tremor Audio", 6, 2,
    MF_SPDIFOUT | MF_ENVY24PT, &envy24ht_ac97_auxdrv},
+  /* {0x17241412, "VIA Envy24HT reference design", 6, 2, */
+  /* MF_SPDIFOUT | MF_MIDI, &envy24ht_viaref_auxdrv}, */
   {0}
 };
 
@@ -2141,7 +2141,7 @@ oss_envy24ht_attach (oss_device_t * osdev)
   pci_read_config_dword (osdev, 0x2c, &subvendor);
 
   DDB (cmn_err (CE_CONT,
-		"Envy24HT: Device found at I/O %x, %x\n", pci_ioaddr & ~3,
+		"Device found at I/O %x, %x\n", pci_ioaddr & ~3,
 		pci_ioaddr1 & ~3));
 
   devc->subvendor = subvendor;
@@ -2176,7 +2176,7 @@ oss_envy24ht_attach (oss_device_t * osdev)
 	  {
 	    name = models[i].product;
 	    devc->model_data = &models[i];
-	    DDB (cmn_err (CE_CONT, "Envy24HT: card id '%s'\n", name));
+	    DDB (cmn_err (CE_CONT, "Card id '%s'\n", name));
 
 	    break;
 	  }
@@ -2186,9 +2186,9 @@ oss_envy24ht_attach (oss_device_t * osdev)
 
   if (models[i].svid == 0)
     {
-      cmn_err (CE_CONT, "Envy24HT: Unknown device ID (%08x).\n", subvendor);
-      cmn_err (CE_CONT, "Envy24HT: This card is not supported (yet).\n");
-      return 0;
+      cmn_err (CE_CONT, "Unknown device ID (%08x).\n", subvendor);
+      cmn_err (CE_CONT, "This card may not be supported (yet).\n");
+      i = 0; /* Assume AC97 based Envy23PT */
     }
 
   oss_register_device (osdev, name);
@@ -2335,7 +2335,7 @@ oss_envy24ht_attach (oss_device_t * osdev)
 				    DIG_PRO | DIG_CONSUMER)) != 0)
 	{
 	  cmn_err (CE_CONT,
-		   "Envy24HT: S/PDIF driver install failed. error %d\n", err);
+		   "S/PDIF driver install failed. error %d\n", err);
 	  return 0;
 	}
     }
