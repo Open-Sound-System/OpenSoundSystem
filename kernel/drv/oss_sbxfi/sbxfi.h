@@ -1,4 +1,9 @@
-#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2006. All rights reserved.
+#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
+
+#define PCI_SUBDEVICE_ID_CREATIVE_SB0760        0x0024
+#define PCI_SUBDEVICE_ID_CREATIVE_SB08801       0x0041
+#define PCI_SUBDEVICE_ID_CREATIVE_SB08802       0x0042
+#define PCI_SUBDEVICE_ID_CREATIVE_SB08803       0x0043
 
 #define MAX_OUTPUTDEVS 	1
 #define MAX_INPUTDEVS 	1
@@ -99,11 +104,19 @@ typedef struct
 
   char *name;
   int hw_family;
+
+// 20K1 models
 #define HW_ORIG		0x0001
 #define HW_073x		0x0002
 #define HW_055x		0x0004
 #define HW_UAA		0x0008
-#define HW_055x_PCIE	0x0010
+
+// 20K2 models
+#define HW_0760        0x0010
+#define HW_08801       0x0020
+#define HW_08802       0x0040
+#define HW_08803       0x0080
+
 
   unsigned int interrupt_count;
 

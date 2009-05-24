@@ -195,7 +195,6 @@ InitHardware (sbxfi_devc_t * devc)
     case HW_073x:
       HwWrite20K1 (devc, GPIOCTL, 0x00e6);
       break;
-    case HW_055x_PCIE:
     case HW_UAA:
       HwWrite20K1 (devc, GPIOCTL, 0x00c2);
       break;

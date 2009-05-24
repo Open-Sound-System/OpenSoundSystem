@@ -12,17 +12,14 @@
 #include "hwaccess.h"
 
 #define PCI_VENDOR_CREATIVE	0x1102
-#define 	CREATIVE_SBXFI	0x0005
-#define 	CREATIVE_SBXFI_E	0x0009
-#define 	CREATIVE_SBXFI_E2	0x000b
+#define 	CREATIVE_SBXFI_K1	0x0005
+#define 	CREATIVE_SBXFI_K2	0x000b
 
 #define TIMER_INTERVAL	5	/* In milliseconds */
 
 #define DEFAULT_PLAY_RATE	96000	/* Default rate of play devices */
 #define DEFAULT_REC_RATE	96000	/* Default rate of rec devices */
 #define HARDWARE_RATE	96000	/* Internal rate used by the hardware */
-
-extern int sbxfi_type;
 
 static void
 set_interval_timer(sbxfi_devc_t *devc, int msecs)
@@ -770,6 +767,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
   unsigned short pci_command, vendor, device, revision;
   unsigned short subvendor, subdevice;
   int pdev, rdev;
+  extern int sbxfi_type;
 
   sbxfi_devc_t *devc;
   sbxfi_portc_t *portc;
@@ -795,8 +793,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
        (CE_CONT, "oss_sbxfi_attach(Vendor %x, device %x)\n", vendor, device));
 
   if (vendor != PCI_VENDOR_CREATIVE ||
-		  (device != CREATIVE_SBXFI && device != CREATIVE_SBXFI_E &&
-		   device != CREATIVE_SBXFI_E2))
+		  (device != CREATIVE_SBXFI_K1 && device != CREATIVE_SBXFI_K2))
     {
       cmn_err (CE_WARN, "Hardware not recognized (vendor=%x, dev=%x)\n",
 	       vendor, device);
@@ -837,13 +834,34 @@ oss_sbxfi_attach (oss_device_t * osdev)
       devc->hw_family = HW_UAA;
       break;
 
+    case 5:
+      devc->name = "Sound Blaster X-Fi (SB076x)";
+      devc->hw_family = HW_0760;
+      break;
+
+    case 6:
+      devc->name = "Sound Blaster X-Fi (SB0880-1)";
+      devc->hw_family = HW_08801;
+      break;
+
+    case 7:
+      devc->name = "Sound Blaster X-Fi (SB0880-2)";
+      devc->hw_family = HW_08802;
+      break;
+
+    case 8:
+      devc->name = "Sound Blaster X-Fi (SB0880-3)";
+      devc->hw_family = HW_08803;
+      break;
+
     case 0:
     default:
       devc->hw_family = 0;
       break;
     }
 
-  if (!devc->hw_family) switch (subdevice)
+  if (!devc->hw_family && device == CREATIVE_SBXFI_K2) // EMU20K1 models
+  switch (subdevice)
     {
     case 0x0021:		/* SB0460 */
     case 0x0023:
@@ -879,25 +897,46 @@ oss_sbxfi_attach (oss_device_t * osdev)
       devc->hw_family = HW_055x;
       break;
 
-    case 0x0018:
-      devc->name = "Sound Blaster X-Fi (PCI-E)";
-      devc->hw_family = HW_055x_PCIE;
-      break;
-
     default:
       if (subdevice >= 0x6000 && subdevice <= 0x6fff)	/* "Vista compatible" HW */
 	{
 	  devc->name = "Sound Blaster X-Fi (UAA)";
 	  devc->hw_family = HW_UAA;
 	}
-      else
-	{
-	  /* Default guess. User can modify sbxfi_type to try the others */
-	  devc->hw_family = HW_ORIG;
-	}
     }
 
-  if (subdevice == 0x0018) oss_pcie_init (osdev, 0);
+  if (!devc->hw_family && device == CREATIVE_SBXFI_K2) // EMU 20K2 models
+  switch (subdevice)
+    {
+    case PCI_SUBDEVICE_ID_CREATIVE_SB0760:
+      devc->name = "Sound Blaster X-Fi (SB076x)";
+      devc->hw_family = HW_0760;
+      break;
+
+    case PCI_SUBDEVICE_ID_CREATIVE_SB08801:
+      devc->name = "Sound Blaster X-Fi (SB0880-1)";
+      devc->hw_family = HW_08801;
+      break;
+
+    case PCI_SUBDEVICE_ID_CREATIVE_SB08802:
+      devc->name = "Sound Blaster X-Fi (SB0880-2)";
+      devc->hw_family = HW_08802;
+      break;
+
+    case PCI_SUBDEVICE_ID_CREATIVE_SB08803:
+      devc->name = "Sound Blaster X-Fi (SB0880-3)";
+      devc->hw_family = HW_08803;
+      break;
+
+    default:
+      devc->name = "Sound Blaster X-Fi (20K2)";
+      devc->hw_family = HW_UAA;	// Just a wild guess
+  }
+
+#if 1
+// Temporary hacking until proper 20K2 support is in place
+  if (devc->hw_family > HW_UAA) devc->hw_family = HW_UAA;
+#endif
 
   oss_register_device (osdev, devc->name);
 
