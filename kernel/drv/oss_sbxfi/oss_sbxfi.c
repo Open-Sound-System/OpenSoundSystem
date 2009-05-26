@@ -14,6 +14,7 @@
 #define PCI_VENDOR_CREATIVE	0x1102
 #define 	CREATIVE_SBXFI_K1	0x0005
 #define 	CREATIVE_SBXFI_K2	0x000b
+#define 	CREATIVE_SBXFI_E	0x0009
 
 #define TIMER_INTERVAL	5	/* In milliseconds */
 
@@ -793,7 +794,8 @@ oss_sbxfi_attach (oss_device_t * osdev)
        (CE_CONT, "oss_sbxfi_attach(Vendor %x, device %x)\n", vendor, device));
 
   if (vendor != PCI_VENDOR_CREATIVE ||
-		  (device != CREATIVE_SBXFI_K1 && device != CREATIVE_SBXFI_K2))
+		  (device != CREATIVE_SBXFI_K1 && device != CREATIVE_SBXFI_K2 &&
+		   device != CREATIVE_SBXFI_E))
     {
       cmn_err (CE_WARN, "Hardware not recognized (vendor=%x, dev=%x)\n",
 	       vendor, device);
@@ -860,7 +862,7 @@ oss_sbxfi_attach (oss_device_t * osdev)
       break;
     }
 
-  if (!devc->hw_family && device == CREATIVE_SBXFI_K2) // EMU20K1 models
+  if (!devc->hw_family && device == CREATIVE_SBXFI_K1) // EMU20K1 models
   switch (subdevice)
     {
     case 0x0021:		/* SB0460 */
@@ -932,6 +934,13 @@ oss_sbxfi_attach (oss_device_t * osdev)
       devc->name = "Sound Blaster X-Fi (20K2)";
       devc->hw_family = HW_UAA;	// Just a wild guess
   }
+
+  if (!devc->hw_family && device == CREATIVE_SBXFI_E) // PCI-e models
+     {
+	devc->name = "Sound Blaster X-Fi (PCI-e)";
+        devc->hw_family = HW_UAA;	// Just a wild guess
+     }
+     
 
 #if 1
 // Temporary hacking until proper 20K2 support is in place
