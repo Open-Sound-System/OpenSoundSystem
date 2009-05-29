@@ -1189,6 +1189,7 @@ oss_ich_attach (oss_device_t * osdev)
     {
        case 0x202f161f:	/* Gateway 7326GZ */
        case 0x203a161f:	/* Gateway 4028GZ or 4542GZ */
+       case 0x203e161f:	/* Gateway 3520GZ/M210 */
        case 0x204c161f:	/* Kvazar-Micro Senator 3592XT */
        case 0x8144104d:	/* Sony VAIO PCG-TR* */
        case 0x8197104d:	/* Sony S1XP */

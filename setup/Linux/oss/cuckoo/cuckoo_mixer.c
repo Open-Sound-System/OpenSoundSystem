@@ -28,11 +28,16 @@
 
 #include "cuckoo.h"
 
+MODULE_AUTHOR ("Hannu Savolainen <hannu@opensound.com>");
+MODULE_LICENSE ("GPL v2");
+MODULE_DESCRIPTION ("OSS mixer low level driver interface for ALSA");
+
 typedef struct
 {
   char *name, *data;
 } enum_entry_t;
 
+#if 0
 static void
 downshift (char *s)
 {
@@ -43,6 +48,7 @@ downshift (char *s)
       s++;
     }
 }
+#endif
 
 static int
 get_mixer_info (snd_kcontrol_t * kcontrol, snd_ctl_elem_info_t * uinfo)

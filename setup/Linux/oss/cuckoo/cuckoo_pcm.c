@@ -28,6 +28,10 @@
 
 #include "cuckoo.h"
 
+MODULE_AUTHOR ("Hannu Savolainen <hannu@opensound.com>");
+MODULE_LICENSE ("GPL v2");
+MODULE_DESCRIPTION ("OSS PCM low level driver interface for ALSA");
+
 static snd_pcm_substream_t *cuckoo_playsubstream[256] = { NULL };
 static snd_pcm_substream_t *cuckoo_capturesubstream[256] = { NULL };
 
@@ -183,7 +187,7 @@ copy_hw_caps (snd_pcm_runtime_t * runtime, adev_t * adev, int dir)
   if (adev->min_block > 0)
     runtime->hw.period_bytes_min = adev->min_block;
   if (adev->max_block > 0)
-    runtime->hw.period_bytes_max = adev->min_block;
+    runtime->hw.period_bytes_max = adev->max_block;
 
   if (adev->flags & ADEV_NOMMAP)
     runtime->hw.info &= ~(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID);

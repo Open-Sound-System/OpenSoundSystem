@@ -926,6 +926,7 @@ ac97_install_full (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       break;
 
     case 0x414c4760:
+    case 0x414c4761:
       strcpy (devc->name, "ALC655");	/* www.realtek.com.tw */
       devc->spdifout_support = ALC_SPDIFOUT;
       devc->spdifin_support = ALC_SPDIFIN;

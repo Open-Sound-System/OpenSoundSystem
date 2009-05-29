@@ -60,6 +60,11 @@ static card_spec models[] = {
    &envy24ht_ap192_auxdrv},
   {0x24031412, "VIA Vinyl Tremor Audio", 6, 2,
    MF_SPDIFOUT | MF_ENVY24PT, &envy24ht_ac97_auxdrv},
+  /* XXX Do a separate auxdrv, to adjust for Envy24HT-S and other differences. */                
+  {SSID_PRODIGYHD2, "Audiotrak Prodigy HD2", 2, 2,                                               
+   MF_SPDIFOUT | MF_192K | MF_NOAC97, &envy24ht_ap192_auxdrv},                                   
+  {SSID_PRODIGYHD2_ADE, "Audiotrak Prodigy HD2 Advance DE", 2, 2,                                
+   MF_SPDIFOUT | MF_192K | MF_NOAC97, &envy24ht_ap192_auxdrv},         
   /* {0x17241412, "VIA Envy24HT reference design", 6, 2, */
   /* MF_SPDIFOUT | MF_MIDI, &envy24ht_viaref_auxdrv}, */
   {0}
