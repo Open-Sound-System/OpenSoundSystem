@@ -58,6 +58,7 @@ cp $SRCDIR/kernel/framework/include/ossddk/oss_exports.h prototype/$OSSLIBDIR/bu
 cp $SRCDIR/include/*.h prototype/$OSSLIBDIR/include/sys/
 cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/$OSSLIBDIR/include/
 cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/build/
+cp kernel/framework/include/ossddk/oss_limits.h prototype/$OSSLIBDIR/include/internals
 
 ld -r -o prototype/$OSSLIBDIR/build/osscore.lib target/objects/*.o
 

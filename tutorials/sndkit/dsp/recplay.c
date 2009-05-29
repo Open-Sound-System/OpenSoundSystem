@@ -33,7 +33,7 @@
 /* #include <getopt.h> */
 #include <fcntl.h>
 #include <string.h>
-#include <sys/soundcard.h>
+#include <soundcard.h>
 
 #define DEFAULT_DSP_SPEED 8000
 

@@ -17,7 +17,7 @@ static: libOSSlib.a
 	cp libOSSlib.a $(INSTALLLIB)
 
 libOSSlib.so:	$(OBJS)
-	gcc $(LDFLAGS) -o libOSSlib.so $(OBJS)
+	${CC} $(LDFLAGS) -o libOSSlib.so $(OBJS)
 
 dep:
 

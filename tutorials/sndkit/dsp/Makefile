@@ -1,6 +1,6 @@
 #CC	= gcc
 #CFLAGS	= -O6 -m486 -funroll-loops -Wall
-CFLAGS	= -O 
+CFLAGS	= -O -I../../../include
 #LD	= gcc
 LD	= cc
 #LDFLAGS	= -s -N

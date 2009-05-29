@@ -103,6 +103,7 @@ cp -f target/sbin/* prototype/usr/sbin
 
 cp -a $SRCDIR/setup/Linux/oss/* prototype/$OSSLIBDIR/
 cp -a $SRCDIR/setup/Linux/sbin prototype/usr/
+chmod +x prototype/$OSSLIBDIR/scripts/*
 
 ld -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
 

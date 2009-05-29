@@ -140,7 +140,7 @@ do
 		;;
 
 	"--only-drv="*)
-		ONLY_DRVS=`echo $1 | sed 's/--only-drv=/,/'`
+		ONLY_DRVS=`echo $1 | sed 's/--only-drv=/,/'`,osscore
 		export ONLY_DRVS
 		;;
 

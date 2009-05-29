@@ -1,5 +1,6 @@
 INSTALLDIR=/usr/local/bin
 TARGETS=morse morse2 morse3 testgen loadcw 
+CFLAGS=-I../../../include
 LDLAGS=
 
 all: $(TARGETS)

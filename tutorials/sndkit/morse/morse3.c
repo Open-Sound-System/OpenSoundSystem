@@ -25,12 +25,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <sys/soundcard.h>
 #include <math.h>
 #include <termios.h>
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <soundcard.h>
 
 #define BUFSZ (16*1024)
 #define SRATE 48000
