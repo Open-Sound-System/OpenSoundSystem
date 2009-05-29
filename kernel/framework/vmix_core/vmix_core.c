@@ -369,9 +369,9 @@ create_output_controls (int mixer_dev)
 		
   		memset (ext->enum_present, 0, sizeof (ext->enum_present));
 #ifdef CONFIG_OSS_VMIX_FLOAT
-		ext->enum_present[0] = 0x01; // "Fast" is always present
+		ext->enum_present[0] |= 0x01; // "Fast" is always present
 #endif
-		ext->enum_present[0] = 0x040; // As well as "OFF"
+		ext->enum_present[0] |= 0x040; // As well as "OFF"
 #if CONFIG_OSS_GRC_MAX_QUALITY > 7
 #error CONFIG_OSS_GRC_MAX_QUALITY is out of range
 #endif
