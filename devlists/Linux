@@ -8,11 +8,6 @@ lynxtwo	pci1621,25	Lynx AES16-SRC Studio Interface
 lynxtwo	pci1621,28	Lynx AES16e Studio Interface 
 lynxtwo	pci1621,29	Lynx AES16e-SRC Studio Interface 
 oss_ali5455	pci10b9,5455	ALI M5455
-oss_allegro	pci125d,1988	ESS Allegro ES1988
-oss_allegro	pci125d,1990	ESS Canyon 3D ES1990
-oss_allegro	pci125d,1992	ESS Canyon 3D-2 ES1992
-oss_allegro	pci125d,1998	ESS Maestro3 ES1998
-oss_allegro	pci125d,199a	ESS Maestro3 ES199A
 oss_atiaudio	pci1002,4341	ATI IXP200
 oss_atiaudio	pci1002,4361	ATI IXP300
 oss_atiaudio	pci1002,4370	ATI IXP400
@@ -50,6 +45,8 @@ oss_envy24ht	pcs153b,1149	Terratec PHASE 28
 oss_envy24ht	pcs153b,1153	Terratec Aureon 7.1 Universe
 oss_envy24ht	pcs3031,4553	Ego Systems Juli@ *BETA*
 oss_envy24ht	pcs4933,4553	Audiotrak Prodigy 7.1
+oss_envy24ht	pcs3137,4154	Audiotrak Prodigy HD2
+oss_envy24ht	pcs1412,2401	Audiotrak Prodigy HD2 Advance DE
 oss_envy24	pci1412,1712	Generic ENVY24 based device
 oss_envy24	pcs1412,d630	M Audio Delta 1010
 oss_envy24	pcs1412,d631	M Audio Delta DiO 2496
@@ -76,6 +73,7 @@ oss_hdaudio	pci8086,293e	Intel High Definition Audio (P35)
 oss_hdaudio	pci8086,293f	Intel High Definition Audio (ICH9)
 oss_hdaudio	pci8086,3a3e	Intel High Definition Audio (ICH10)
 oss_hdaudio	pci8086,3a6e	Intel High Definition Audio (ICH10)
+oss_hdaudio	pci8086,3b56	Intel High Definition Audio (PCH)
 oss_hdaudio	pci10de,26c	Nvidia High Definition Audio (MCP51)
 oss_hdaudio	pci10de,371	Nvidia High Definition Audio (MCP55)
 oss_hdaudio	pci10de,3e4	Nvidia High Definition Audio (MCP61)
@@ -127,9 +125,8 @@ oss_sbpci	pci1274,1371	Creative AudioPCI97 (ES1371/ES1373)
 oss_sbpci	pci1274,5880	Creative Sound Blaster PCI128 (5880B)
 oss_sbpci	pci1274,8001	Creative Sound Blaster PCI128 (CT5880)
 oss_sbpci	pci1274,8002	Creative Sound Blaster PCI128 (5880A)
-oss_sbxfi	pci1102,5	Creative SB X-Fi *EARLY BETA*
-oss_sbxfi	pci1102,9	Creative SB X-Fi (PCI-e) *EARLY BETA*
-oss_sbxfi	pci1102,b	Creative SB X-Fi (PCI-e) *EARLY BETA*
+oss_sbxfi	pci1102,5	Creative SB X-Fi 20K1 *EARLY BETA*
+oss_sbxfi	pci1102,b	Creative SB X-Fi 20K2 *EARLY BETA*
 oss_solo	pci125d,1969	ESS Solo-1 
 oss_trident	pci1023,2000	Trident 4DWave-DX
 oss_trident	pci1023,2001	Trident 4DWave-NX
