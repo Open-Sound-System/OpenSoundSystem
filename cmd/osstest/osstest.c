@@ -80,6 +80,7 @@ extern void describe_error (void);	/* From ../dsp/help.c */
 static int mixerfd;
 static int cardno = -1;
 static int num_devices_tested = 0;
+int play_gain = 100;
 
 static short *sample_buf;
 
@@ -553,7 +554,7 @@ main (int argc, char *argv[])
  * Simple command line switch handling.
  */
 
-  while ((i = getopt (argc, argv, "CVfls")) != EOF)
+  while ((i = getopt (argc, argv, "CVflsg:")) != EOF)
     {
       switch (i)
         {
@@ -572,10 +573,14 @@ main (int argc, char *argv[])
 	  case 'l':
 	    flags |= TF_LOOP;
 	    break;
+	  case 'g':
+	    play_gain = atoi (optarg);
+	    break;
           default:
             printf ("Usage: osstest [options...] [device number]\n"
                     "	-V	Test virtual mixer devices as well\n"
                     "	-l	Loop indefinately until interrupted\n"
+		    "   -g gain	Set playback gain (0-100). Default 100.\n"
                     "	-f	Faster test\n");
             exit (-1);
         }

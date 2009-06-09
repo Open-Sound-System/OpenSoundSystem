@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "wavedata.h"
+extern int play_gain; // 0 to 100
 
 static int
 le_int (const unsigned char *p, int l)
@@ -95,7 +96,7 @@ uncompress_wave (short *outbuf)
  */
 #define OUT_SAMPLE(s) { \
 	if (s>32767)s=32767;else if(s<-32768)s=-32768; \
-	outbuf[outp++] = s; \
+	outbuf[outp++] = (s*play_gain) / 100; \
 	n+=2; \
 	}
 
