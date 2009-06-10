@@ -1,22 +1,4 @@
-/*
- * This file is part of Open Sound System
- *
- * Copyright (C) 4Front Technologies 1996-2007.
- *
- * This software is released under CDDL 1.0 source license for operating systems
- * that have their full source code available under the BSD or CDDL licenses.
- *
- * See the COPYING file included in the main directory of this source
- * distribution. Please contact sales@opensound.com for further info.
- */
-
-/*
- * NOTE! This is not the development version of this file. Please download the
- * sources of the latest Open Sound System version from 
- * http://developer.opensound.com/sources if you plan to make any changes
- * to the software. We may not be able to incorporate changes made to this
- * file back to the official OSS version.
- */
+#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
 
 #include <stdio.h>
 #include <stdlib.h>
