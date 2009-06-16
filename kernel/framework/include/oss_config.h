@@ -332,7 +332,8 @@ extern void oss_audio_set_error (int dev, int mode, int err, int parm);
 #ifndef OSS_DMA_SYNC
 //#  define OSS_DMA_SYNC_INBOUND	For direction device to CPU
 //#  define OSS_DMA_SYNC_OUTBOUND	For direction CPU to device
-#  define OSS_DMA_SYNC(handle, offs, len, direc)
+#  define OSS_DMA_SYNC(handle, offs, len, direc) do { \
+  } while (0)
 #endif
 
 /*

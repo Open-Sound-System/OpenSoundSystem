@@ -23,6 +23,7 @@ mkdir -p prototype/$OSSLIBDIR
 mkdir prototype/$OSSLIBDIR/etc
 mkdir prototype/$OSSLIBDIR/lib
 mkdir prototype/$OSSLIBDIR/include
+mkdir prototype/$OSSLIBDIR/include/internals
 mkdir prototype/$OSSLIBDIR/include/sys
 mkdir prototype/$OSSLIBDIR/modules
 mkdir prototype/$OSSLIBDIR/objects

@@ -3,6 +3,12 @@
 # This script will restgore selected ALSA modules that were earlier removed by
 # remove_drv.sh
 
+if test -d /proc/asound
+then
+# ALSA is already loaded
+  exit 0
+fi
+
 if ! test -f /lib/modules/`uname -r`/sound-preoss.tar.bz2
 then
   echo ALSA backup archive /lib/modules/`uname -r`/sound-preoss.tar.bz2 not found. Cannot continue.

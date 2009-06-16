@@ -78,8 +78,8 @@ static int set_counter[MAX_DEVS] = { 0 };
 static int prev_update_counter[MAX_DEVS] = { 0 };
 static oss_mixext_root * root[MAX_DEVS] = { NULL };
 static oss_mixext * extrec[MAX_DEVS] = { NULL };
-static int global_fd = -1;		// Global /dev/mixer fd for SNDCTL_SYSINFO/MIXERINFO/etc
-static int local_fd[MAX_DEVS];		// Mixer specific fd(s) for actual mixer access
+static int global_fd = -1;		/* Global /dev/mixer fd for SNDCTL_SYSINFO/MIXERINFO/etc */
+static int local_fd[MAX_DEVS];		/* Mixer specific fd(s) for actual mixer access */
 static int dev = -1;
 static int show_all = 1;
 static int fully_started = 0;
@@ -167,6 +167,7 @@ static void do_update (ctlrec_t *);
 static int findenum (oss_mixext *, const char *);
 static int find_default_mixer (void);
 static void gang_change (GtkToggleButton *, gpointer);
+static int get_fd (int);
 static int get_value (oss_mixext *);
 static GtkWidget * load_devinfo (int);
 static GList * load_enum_values (char *, oss_mixext *);
@@ -196,7 +197,7 @@ static GtkStatusIcon *status_icon = NULL;
 #endif /* STATUSICON */
 
 static int
-get_fd(int dev)
+get_fd (int dev)
 {
 	int fd;
 	oss_mixerinfo mi;
@@ -220,7 +221,6 @@ get_fd(int dev)
 	if ((fd = open (mi.devnode, O_RDWR, 0)) == -1)
 	   {
 		perror (mi.devnode);
-		exit (EXIT_FAILURE);
 	   }
 
 	return local_fd[dev] = fd;
@@ -808,7 +808,7 @@ connect_onoff (oss_mixext * thisrec, GtkObject * entry)
 static GtkWidget *
 load_multiple_devs (void)
 {
-  int i;
+  int i, first_page = -1;
   GtkWidget *notebook, *mixer_page, *label, *vbox, *hbox;
 
   if (ioctl (global_fd, SNDCTL_MIX_NRMIX, &mixer_num) == -1)
@@ -825,8 +825,10 @@ load_multiple_devs (void)
   notebook = gtk_notebook_new ();
   for (i = 0; i < mixer_num; i++)
     {
+      if (get_fd(i) == -1) continue;
       mixer_page = load_devinfo (i);
       if (mixer_page == NULL) continue;
+      if (first_page == -1) first_page = i;
       vbox = gtk_vbox_new (FALSE, 0);
       hbox = gtk_hbox_new (FALSE, 0);
       gtk_box_pack_start (GTK_BOX (vbox), mixer_page, FALSE, TRUE, 0);
@@ -841,6 +843,15 @@ load_multiple_devs (void)
       label = gtk_label_new (root[i]->name);
       gtk_notebook_append_page (GTK_NOTEBOOK (notebook), vbox, label);
     }
+
+  if (root[dev] != NULL) first_page = dev;
+  else if (first_page != -1) dev = first_page;
+  else
+    {
+      fprintf (stderr, "No mixers could be opened\n");
+      exit (EXIT_FAILURE);
+    }
+
 #ifndef GTK1_ONLY
   gtk_notebook_set_current_page (GTK_NOTEBOOK (notebook), dev);
 #else
@@ -909,8 +920,11 @@ load_devinfo (int dev)
     {
       perror ("SNDCTL_MIX_NREXT");
       if (errno == EINVAL)
-	fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
-      exit (-1);
+	{
+  	  fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
+	  exit (EXIT_FAILURE);
+	}
+      return NULL;
     }
   extrec[dev] = ossxmix_calloc (n+1, sizeof (oss_mixext));
   extnames = ossxmix_malloc ((n+1) * sizeof (char *));
@@ -1563,6 +1577,7 @@ reload_gui (void)
   FREECTL (check_list); FREECTL (value_poll_list);
   for (i=0; i < MAX_DEVS; i++)
     {
+      root[i] = NULL;
       free (extrec[i]);
       extrec[i] = NULL;
       if (local_fd[i] != -1)

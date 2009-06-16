@@ -105,7 +105,11 @@ cp -a $SRCDIR/setup/Linux/oss/* prototype/$OSSLIBDIR/
 cp -a $SRCDIR/setup/Linux/sbin prototype/usr/
 chmod +x prototype/$OSSLIBDIR/scripts/*
 
-ld -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
+if ! ld -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
+then
+  echo Linking osscore failed!
+  exit 1
+fi
 
 rm -f devlist.txt devices.list
 
