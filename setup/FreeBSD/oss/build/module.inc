@@ -12,7 +12,6 @@
  */
 
 #include <machine/stdarg.h>
-#include "timestamp.h"
 #include <sys/param.h>		/* defines used in kernel.h */
 #include <sys/module.h>
 #include <sys/systm.h>
@@ -27,7 +26,8 @@
 #include <sys/rman.h>
 #include <machine/resource.h>
 
-#include "oss_exports.h"
+#include <timestamp.h>
+#include <oss_exports.h>
 #include "bsddefs.h"
 
 void

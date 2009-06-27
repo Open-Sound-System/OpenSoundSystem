@@ -54,11 +54,10 @@ rm -f /tmp/confgen
 
 cp -r $SRCDIR/setup/FreeBSD/oss/* prototype/$OSSLIBDIR/
 cp $SRCDIR/kernel/OS/FreeBSD/wrapper/bsddefs.h prototype/$OSSLIBDIR/build/
-cp $SRCDIR/kernel/framework/include/ossddk/oss_exports.h prototype/$OSSLIBDIR/build/
 
 cp $SRCDIR/include/*.h prototype/$OSSLIBDIR/include/sys/
 cp $SRCDIR/lib/libOSSlib/midiparser.h prototype/$OSSLIBDIR/include/
-cp kernel/framework/include/timestamp.h prototype/$OSSLIBDIR/build/
+cp kernel/framework/include/timestamp.h kernel/framework/include/local_config.h $SRCDIR/kernel/framework/include/*_core.h $SRCDIR/kernel/framework/include/ossddk/*.h prototype/$OSSLIBDIR/include/internals
 cp kernel/framework/include/ossddk/oss_limits.h prototype/$OSSLIBDIR/include/internals
 
 ld -r -o prototype/$OSSLIBDIR/build/osscore.lib target/objects/*.o
