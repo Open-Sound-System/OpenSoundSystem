@@ -916,7 +916,12 @@ printf("Symlink %s -> %s\n", source, target);
 
   if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
+#if defined(__SCO_VERSION__)
+      fprintf (f, "CFLAGS = -D_KERNEL\n");
+#else
       fprintf (f, "CFLAGS += -D_KERNEL\n");
+#endif
+
 #ifdef sun
       /* fprintf(f, "CFLAGS += -xmodel=kernel\n"); */
 #endif
@@ -1464,6 +1469,12 @@ check_system (conf_t * conf)
 #ifdef HAVE_SYSDEP
   check_sysdep (conf, &un);
 #else
+
+# if defined(__SCO_VERSION__)
+	shlib_cflags = "-G";
+	shlib_ldflags = "-lsocket -lnsl";
+# endif
+
   if (strcmp (un.machine, "i386") == 0 ||
       strcmp (un.machine, "i486") == 0 ||
       strcmp (un.machine, "i586") == 0 || strcmp (un.machine, "i686") == 0)

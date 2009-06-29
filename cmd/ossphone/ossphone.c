@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <signal.h>
 #include <ctype.h>
 #include <math.h>
