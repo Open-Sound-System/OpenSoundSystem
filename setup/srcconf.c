@@ -1471,8 +1471,7 @@ check_system (conf_t * conf)
 #else
 
 # if defined(__SCO_VERSION__)
-	shlib_cflags = "-G";
-	shlib_ldflags = "-lsocket -lnsl";
+	shlib_ldflags = "-G -lsocket -lnsl";
 # endif
 
   if (strcmp (un.machine, "i386") == 0 ||

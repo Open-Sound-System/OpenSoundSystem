@@ -11,7 +11,11 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#ifdef __SCO_VERSION__
+#include <sys/time.h>
+#else
 #include <time.h>
+#endif
 #include <sched.h>
 #include <soundcard.h>
 
