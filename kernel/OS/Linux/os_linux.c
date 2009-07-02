@@ -635,6 +635,7 @@ oss_cdev_ioctl (oss_inode_handle_t * inode, oss_file_handle_t * file,
 
   if (dev > oss_num_cdevs)
     return OSS_ENXIO;
+
   if ((cdev = oss_cdevs[dev]) == NULL || cdev->d->ioctl == NULL)
     {
       return OSS_ENXIO;

@@ -63,6 +63,7 @@ find_audiodev(char *fname, int mode, int *fd_)
 	if (ioctl(fd, SNDCTL_ENGINEINFO, &ai)==-1)
 	{
 		perror("SNDCTL_ENGINEINFO");
+		fprintf (stderr, "Cannot get engine info for %s\n", fname);
 		exit(-1);
 	}
 

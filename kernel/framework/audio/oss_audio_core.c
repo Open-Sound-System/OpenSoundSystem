@@ -3096,10 +3096,10 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       if (((cmd >> 8) & 0xff) == 'M' && num_mixers > 0)	/* Mixer ioctl */
 	if ((ret = oss_legacy_mixer_ioctl (mixdev, dev, cmd, arg)) != OSS_EINVAL)
 	  return ret;
-
-      if (((cmd >> 8) & 0xff) == 'X')	/* Mixer extension API */
-	return oss_mixer_ext (adev->engine_num, OSS_DEV_DSP, cmd, arg);
     }
+
+  if (((cmd >> 8) & 0xff) == 'X')	/* Mixer extension API */
+     return oss_mixer_ext (adev->engine_num, OSS_DEV_DSP, cmd, arg);
 
   switch (cmd)
     {
