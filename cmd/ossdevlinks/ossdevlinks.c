@@ -11,6 +11,7 @@
  * previously available devices.
  *
  * Commad line options:
+ * -f      Write legacydev file to <argument>.
  * -v      Produce verbose output.
  * -r      Remove all pre-existing legacy devices and reset the device
  *         numbering (not recommended).
@@ -32,26 +33,84 @@
 
 #define MAXDEV	HARD_MAX_AUDIO_DEVFILES
 
-oss_sysinfo si;
-int mixerfd = -1;
-int verbose = 0;
+static oss_sysinfo si;
+static char * legacydev_file = NULL;
+static int err = 0, mixerfd = -1, recreate_all = 0, verbose = 0;
 
-static int recreate_all = 0;
-static int err = 0;
-/*
- * Some gccs bundled with Ubuntu will error out if output of some functions
- * isn't checked and -Wall is used. They won't accept casting to void.
- */
+static void create_dsplinks (void);
+static void create_mixerlinks (void);
+static int find_dsplink (oss_audioinfo *);
+static int find_mixerlink (oss_mixerinfo *);
+static void save_link (FILE *, char *);
+static void save_links (void);
+static int remove_nodes (const char *, const char *);
+#ifdef CONFIG_OSS_MIDI
+static void create_midilinks (void);
+static int find_midilink (oss_midi_info *);
+#endif
 
-static int
-remove_nodes (const char * dirname, const char * pattern)
-{
 #if PATH_MAX == -1
 #undef PATH_MAX
 #endif 
 #ifndef PATH_MAX
-#define PATH_MAX 64
+#define PATH_MAX 1024 
 #endif
+
+#if defined(sun)
+#define DEFAULT_OSSLIBDIR "/etc/oss"
+#else
+#define DEFAULT_OSSLIBDIR "/usr/lib/oss"
+#endif
+
+static char *
+get_mapname (void)
+{
+  FILE *f;
+#define OSSLIBDIRLEN PATH_MAX
+  char tmp[OSSLIBDIRLEN+11];
+  static char name[OSSLIBDIRLEN];
+  struct stat st;
+
+  if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
+    {
+      perror ("/etc/oss.conf");
+      goto oexit;
+    }
+
+  while (fgets (tmp, sizeof (tmp), f) != NULL)
+    {
+      int l = strlen (tmp);
+      if (l > 0 && tmp[l - 1] == '\n')
+	tmp[l - 1] = '\0';
+
+      if (strncmp (tmp, "OSSLIBDIR=", 10) == 0)
+	{
+	  l = snprintf (name, sizeof (name), "%s", &tmp[10]);
+	  if ((l >= OSSLIBDIRLEN) || (l < 0))
+	    {
+	      fprintf (stderr, "String in /etc/oss.conf is too long!\n");
+	      goto oexit;
+	    }
+	  if ((stat (name, &st) == -1) || !S_ISDIR(st.st_mode))
+	    {
+	      fprintf (stderr, "Directory %s from /etc/oss.conf cannot "
+			       "be used!\n", name);
+	      goto oexit;
+	    }
+	  fclose (f);
+	  return name;
+	}
+    }
+
+oexit:
+  fclose (f);
+  snprintf (name, sizeof (name), DEFAULT_OSSLIBDIR);
+  return name;
+}
+
+static int
+remove_nodes (const char * dirname, const char * pattern)
+{
   char path[PATH_MAX];
   DIR * dr;
   struct dirent * de;
@@ -71,7 +130,7 @@ remove_nodes (const char * dirname, const char * pattern)
 
       snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
 
-      /* We want to remove dangling symlinks and such, so no error check here */
+      /* We want to remove dangling symlinks too, so no error check here */
       stat (path, &st);
       /* No nodes that ossdevlinks may need to remove are directories */
       if (S_ISDIR (st.st_mode)) continue;
@@ -911,15 +970,21 @@ save_links (void)
   int i;
   char devfile[32];
 
-#if defined(sun)
-#define LEGACYDEV_FILE "/etc/oss/legacy_devices"
-#else
-#define LEGACYDEV_FILE "/usr/lib/oss/etc/legacy_devices"
-#endif
-
-  if ((f = fopen (LEGACYDEV_FILE, "w")) == NULL)
+  if (legacydev_file == NULL)
     {
-      perror (LEGACYDEV_FILE);
+      char lfile[PATH_MAX+20], * osslibdir;
+
+      osslibdir = get_mapname ();
+      snprintf (lfile, sizeof (lfile), "%s/%s", osslibdir, "etc/legacy_devices");
+      if ((f = fopen (lfile, "w")) == NULL)
+	{
+	  perror (lfile);
+	  return;
+	}
+    }
+  else if ((f = fopen (legacydev_file, "w")) == NULL)
+    {
+      perror (legacydev_file);
       return;
     }
 
@@ -933,9 +998,12 @@ save_links (void)
       save_link (f, devfile);
     }
 
+  save_link (f, "/dev/dsp");
   save_link (f, "/dev/dsp_ac3");
+  save_link (f, "/dev/dsp_in");
   save_link (f, "/dev/dsp_mmap");
   save_link (f, "/dev/dsp_multich");
+  save_link (f, "/dev/dsp_out");
   save_link (f, "/dev/dsp_spdifout");
   save_link (f, "/dev/dsp_spdifin");
 
@@ -993,9 +1061,13 @@ main (int argc, char *argv[])
 	}
     }
 
-  while ((c = getopt (argc, argv, "vr")) != EOF)
+  while ((c = getopt (argc, argv, "f:rv")) != EOF)
   switch (c)
     {
+    case 'f':
+      legacydev_file = optarg;
+      break;
+
     case 'r':
       recreate_all = 1;
       break;

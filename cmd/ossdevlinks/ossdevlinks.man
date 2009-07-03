@@ -15,12 +15,13 @@ names as symbolic links to the new style devices.
 
 OPTIONS
 Normally ossdevlinks is used without command line arguments. However
-there are few command line options.
+there are a few command line options.
 
--v		Verbose output
+-f<name>	Write legacydev file to <fname>. 
 -r		Reset the legacy device numbering (do not use).
+-v		Verbose output
 
-The -r option will invalidate audio device selections in the setup files
+The -r option may invalidate audio device selections in the setup files
 of various applications. This is considered highly undesirable. Applications
 using wrong audio devices may cause serious security and privacy problems.
 For this reason the -r option should never be used unless there are no other
