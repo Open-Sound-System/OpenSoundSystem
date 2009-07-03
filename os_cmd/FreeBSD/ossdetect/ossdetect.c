@@ -236,7 +236,7 @@ create_devlinks (void)
       if (verbose)
 	printf ("mknod %s c %d %d\n", dev, major, minor);
       perm = umask (0);
-      if (mknod (dev, S_IFCHR | 0666, (major << 8) | minor) == -1)
+      if (mknod (dev, S_IFCHR | 0666, makedev (major, minor)) == -1)
 	perror (dev);
       umask (perm);
     }

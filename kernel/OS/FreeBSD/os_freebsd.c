@@ -171,7 +171,9 @@ int
 oss_register_poll (oss_wait_queue_t * wq, oss_mutex_t * mutex,
 		   oss_native_word * flags, oss_poll_event_t * ev)
 {
+  MUTEX_EXIT_IRQRESTORE (*mutex, *flags);
   selrecord (ev->p, &wq->poll_info);
+  MUTEX_ENTER_IRQDISABLE (*mutex, *flags);
   return 0;
 }
 
@@ -179,8 +181,10 @@ void
 oss_wakeup (oss_wait_queue_t * wq, oss_mutex_t * mutex,
 	    oss_native_word * flags, short events)
 {
+  MUTEX_EXIT_IRQRESTORE (*mutex, *flags);
   wakeup (wq);
   selwakeup (&wq->poll_info);
+  MUTEX_ENTER_IRQDISABLE (*mutex, *flags);
 }
 
 void

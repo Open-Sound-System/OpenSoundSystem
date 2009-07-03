@@ -1945,7 +1945,7 @@ find_default_mixer (void)
 
       if (mi.enabled)
         {
-          if ((best == -1) && (mi.priority > -2)) best = i;
+          if (best == -1) best = i;
 
           if (mi.priority > bestpri)
             {
