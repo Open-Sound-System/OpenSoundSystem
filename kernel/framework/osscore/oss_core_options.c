@@ -23,7 +23,7 @@
 
 int max_intrate = 100;		/* 10 msec minimum interrupt interval */
 int src_quality = 3;		/* Sample rate conversion quality (0-5) */
-int ac97_amplifier = 1;		/* External amplifier enable for AC97 */
+int ac97_amplifier = -1;	/* External amplifier enable for AC97 */
 int ac97_recselect = 0;		/* Enables independent L/R ch rec source selection */
 int cooked_enable = 1;
 int dma_buffsize = 0;		/* Size of the DMA buffer in kbytes (0=use default) */
@@ -32,6 +32,7 @@ int detect_trace = 0;		/* Se to 1 if detection tracing is required */
 int vmix_disabled = 0;		/* 1=disable virtual mixer, 0=enable */
 int vmix_loopdevs = 0;		/* Number of vmix loopback devices for all instances (0 to 2) */
 int vmix_no_autoattach = 0;	/* Do not attach vmix devices during boot */
+int excl_policy = 0;		/* Allow O_EXCL to occupy soundcard */
 
 oss_option_map_t oss_global_options[] = {
   {"max_intrate", &max_intrate},
@@ -45,6 +46,7 @@ oss_option_map_t oss_global_options[] = {
   {"vmix_disabled", &vmix_disabled},
   {"vmix_loopdevs", &vmix_loopdevs},
   {"vmix_no_autoattach", &vmix_no_autoattach},
+  {"excl_policy", &excl_policy},
   {NULL, NULL}
 };
 #endif

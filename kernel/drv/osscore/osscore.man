@@ -65,6 +65,11 @@ o vmix_no_autoattach	By default (0) the low level
 		can use vmixctl attach command to attach virtual mixer manually to
 		the device(s).
 		Default: 0 - Automatically attach virtual mixer.
+o excl_policy	The O_EXCL open() flag can be used by programs to bypass the
+		virtual mixer. Setting excl_policy to 1 or 2 makes OSS ignore O_EXCL.
+		A setting of 1 ignores O_EXCL from all but root processes,
+		while a setting of 2 always ignores O_EXCL.
+		Default: 0 - Do not ignore O_EXCL.
 
 FILES
 CONFIGFILEPATH/osscore.conf Device configuration file

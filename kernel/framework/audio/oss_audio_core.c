@@ -17,6 +17,7 @@
 
 extern int src_quality;
 extern int vmix_disabled;
+extern int excl_policy;
 
 oss_mutex_t audio_global_mutex;
 
@@ -1633,7 +1634,10 @@ oss_audio_open_devfile (int dev, int dev_class, struct fileinfo *file,
       open_flags = get_open_flags (mode, open_flags, file);
       if (file->acc_flags & O_EXCL)
 	{
-	  open_excl = 1;
+	  if (excl_policy == 0) open_excl = 1;
+#ifdef GET_PROCESS_UID
+	  else if ((excl_policy == 1) && (GET_PROCESS_UID () == 0)) open_excl = 1;
+#endif
 	}
     }
 

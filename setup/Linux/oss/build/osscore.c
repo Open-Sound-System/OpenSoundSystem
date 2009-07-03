@@ -217,6 +217,7 @@ extern int ac97_amplifier;
 extern int ac97_recselect;
 extern int cooked_enable;
 extern int dma_buffsize;
+extern int excl_policy;
 
 module_param (oss_hz, int, S_IRUGO);
 module_param (max_intrate, int, S_IRUGO);
@@ -230,6 +231,7 @@ module_param (ac97_amplifier, int, S_IRUGO);
 module_param (ac97_recselect, int, S_IRUGO);
 module_param (cooked_enable, int, S_IRUGO);
 module_param (dma_buffsize, int, S_IRUGO);
+module_param (excl_policy, int, S_IRUGO);
 
 static struct proc_dir_entry *oss_proc_root = NULL;
 static struct proc_dir_entry *oss_proc_devfiles = NULL;
