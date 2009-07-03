@@ -260,10 +260,10 @@ case `uname` in
 	  # REGPARM/NOTREGPARM not set so compile a version for both of them
 	        echo Using the Linux specific script
 		exec sh $SRCDIR/setup/Linux/linsetup.sh
+	else
+		echo Using the default script
+		exec sh $SRCDIR/setup/setupdir.sh
 	fi
-
-	echo Using the default script
-	exec sh $SRCDIR/setup/setupdir.sh
 	;;
 
 *)

@@ -41,8 +41,10 @@ mkdir noregparm
 unset USE_REGPARM
 export NO_REGPARM=1
 
+echo > .nocopy
 echo Setting up kernel-only NOREGPARM compiling environment
 (cd noregparm;sh $SRCDIR/setup/setupdir.sh -K)
+rm -f .nocopy
 
 # Make sure both versions share the same timestamp.h file.
 cp -f kernel/framework/include/timestamp.h noregparm/kernel/framework/include/timestamp.h

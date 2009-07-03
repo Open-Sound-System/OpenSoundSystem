@@ -40,6 +40,7 @@ ln -s $SRCDIR/setup/SunOS/build.sh build.sh
 ln -s $SRCDIR origdir
 ln -s $SRCDIR/misc/samples/ddksample .
 echo SRCDIR=$SRCDIR>.directories
+echo > .nocopy
 
 # Make the 32bit kernel drivers
 mkdir $KERNEL32
@@ -135,6 +136,8 @@ config:
 
 THE_END_IS_NEAR
 fi
+
+rm -f .nocopy
 
 #
 # Check if some mandatory Solaris packages have been installed

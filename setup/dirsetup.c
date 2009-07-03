@@ -10,9 +10,16 @@
 #include <dirent.h>
 #include <time.h>
 
-char *srcdir = NULL, *blddir = NULL;
+#if PATH_MAX == -1                                      
+#undef PATH_MAX                                           
+#endif
+#ifndef PATH_MAX                                          
+#define PATH_MAX 1024                                     
+#endif
 
+char *srcdir = NULL, *blddir = NULL;
 int verbose = 0, copy_files = 0;
+struct stat bld_stat, src_stat;
 
 static void
 copy_file (char *sname, char *tname, char *pname, int native_make)
@@ -94,7 +101,7 @@ copy_tree (char *fromdir, char *tgtdir, int native_make)
 
   while ((de = readdir (dir)) != NULL)
     {
-      char sname[1024], tname[1024];
+      char sname[PATH_MAX+20], tname[PATH_MAX+20];
 
       sprintf (sname, "%s/%s", fromdir, de->d_name);
       if (tgtdir != NULL)
@@ -108,18 +115,24 @@ copy_tree (char *fromdir, char *tgtdir, int native_make)
 	  exit (-1);
 	}
 
+      if ((st.st_dev == bld_stat.st_dev) && (st.st_ino == bld_stat.st_ino)) continue;
+      if ((st.st_dev == src_stat.st_dev) && (st.st_ino == src_stat.st_ino)) continue;
+
       if (S_ISDIR (st.st_mode))
 	{
 	  if (de->d_name[0] != '.')
 	    {
-	      char tmp[256];
+	      char tmp[PATH_MAX+20];
 	      int is_native = 0;
 	      struct stat st2;
 
 	      sprintf (tmp, "%s/.nativemake", sname);
 	      if (stat (tmp, &st2) != -1)
 		is_native = 1;
-	      copy_tree (sname, tname, is_native);
+
+	      sprintf (tmp, "%s/.nocopy", sname);
+	      if (stat (tmp, &st2) == -1)
+		copy_tree (sname, tname, is_native);
 	    }
 	}
       else
@@ -148,6 +161,18 @@ main (int argc, char *argv[])
 
   srcdir = argv[1];
   blddir = argv[2];
+
+  if (stat (blddir, &bld_stat) == -1)
+    {
+      perror (blddir);
+      exit (-1);
+    }
+
+  if (stat (srcdir, &src_stat) == -1)
+    {
+      perror (srcdir);
+      exit (-1);
+    }
 
   for (i = 3; i < argc; i++)
     {
