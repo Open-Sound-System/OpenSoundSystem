@@ -47,7 +47,7 @@ static int ndrivers = 0;
 
 static int add_drv (const char *, int);
 static int decode_descriptor (unsigned char *, int);
-static void create_devlinks (void);
+static void create_devlinks (mode_t);
 static char * get_mapname (void);
 static unsigned short get_uint16 (unsigned char *);
 static int is_audio (unsigned char *, int);
@@ -460,8 +460,7 @@ remove_devlinks (const char * dirname)
 
       snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
 
-      stat (path, &st);
-      if (S_ISDIR (st.st_mode)) remove_devlinks (path);
+      if ((stat (path, &st) != -1) && (S_ISDIR (st.st_mode))) remove_devlinks (path);
       else
 	{
 	  if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
@@ -480,11 +479,11 @@ remove_devlinks (const char * dirname)
 }
 
 static void
-create_devlinks (void)
+create_devlinks (mode_t node_m)
 {
   FILE *f;
   char line[256], tmp[300], *p, *s;
-  int perm;
+  mode_t perm;
 
   if ((f = fopen ("/proc/opensound/devfiles", "r")) == NULL)
     {
@@ -495,6 +494,7 @@ create_devlinks (void)
     }
 
   remove_devlinks ("/dev/oss");
+  perm = umask (0);
   mkdir ("/dev/oss", 0755);
 
   while (fgets (line, sizeof (line), f) != NULL)
@@ -533,13 +533,12 @@ create_devlinks (void)
 
       unlink (dev);
       if (verbose)
-	printf ("mknod %s c %d %d\n", dev, major, minor);
-      perm = umask (0);
-      if (mknod (dev, S_IFCHR | 0666, makedev (major, minor)) == -1)
+	printf ("mknod %s c %d %d -m %o\n", dev, major, minor, node_m);
+      if (mknod (dev, node_m, makedev (major, minor)) == -1)
 	perror (dev);
-      umask (perm);
     }
 
+  umask (perm);
   fclose (f);
 }
 
@@ -563,12 +562,13 @@ prepend_drvlist (const char * name)
 int
 main (int argc, char *argv[])
 {
-  char instfname[2*OSSLIBDIRLEN];
-  int i, pass, do_license = 0, make_devs = 0;
+  char instfname[2*OSSLIBDIRLEN], *p;
+  int i, do_license = 0, make_devs = 0, pass;
+  mode_t node_m = S_IFCHR | 0666;
   struct stat st;
   FILE *f;
 
-  while ((i = getopt(argc, argv, "L:a:diluv")) != EOF)
+  while ((i = getopt(argc, argv, "L:a:dilm:uv")) != EOF)
     switch (i)
       {
 	case 'v':
@@ -599,6 +599,18 @@ main (int argc, char *argv[])
 	  osslibdir = optarg;
 	  break;
 
+	case 'm':
+	  p = optarg;
+	  node_m = 0;
+	  while ((*p >= '0') && (*p <= '7')) node_m = node_m * 8 + *p++ - '0';
+	  if ((*p) || (node_m & ~(S_IRWXU|S_IRWXG|S_IRWXO)))
+	    {
+	      fprintf (stderr, "Invalid permissions: %s\n", optarg);
+	      exit(1);
+	    }
+	  node_m |= S_IFCHR;
+	  break;
+
 	default:
 	  fprintf (stderr, "%s: bad usage\n", argv[0]);
 	  exit (-1);
@@ -608,7 +620,7 @@ main (int argc, char *argv[])
 
   if (make_devs == 1)
     {
-      create_devlinks ();
+      create_devlinks (node_m);
       exit (0);
     }
 

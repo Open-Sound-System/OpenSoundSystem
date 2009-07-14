@@ -45,7 +45,10 @@ static driver_def_t drivers[MAX_DRIVERS];
 static int ndrivers = 0;
 
 static int add_drv (const char *, int);
-static void create_devlinks (void);
+static void create_devlinks (mode_t);
+#if 0
+static int remove_devlinks (const char *);
+#endif
 static drvlist_t * prepend_drvlist (const char *);
 static char * get_mapname (void);
 static void load_license (const char *);
@@ -203,12 +206,54 @@ add_drv (const char * id, int pass)
   return 0;
 }
 
-static void
-create_devlinks (void)
+#if 0
+static int
+remove_devlinks (const char * dirname)
 {
+  char path[PATH_MAX];
+  DIR * dr;
+  struct dirent * de;
+  struct stat st;
+
+  if ((dr = opendir (dirname)) == NULL)
+    {
+      if (errno == ENONET) return 0;
+      perror ("opendir");
+      return -1;
+    }
+
+  while ((de = readdir (dr)) != NULL)
+    {
+      if ((!strcmp (de->d_name, ".")) || (!strcmp (de->d_name, ".."))) continue;
+
+      snprintf (path, sizeof (path), "%s/%s", dirname, de->d_name);
+
+      if ((stat (path, &st) != -1) && (S_ISDIR (st.st_mode))) remove_devlinks (path);
+      else
+	{
+	  if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
+	  unlink (path);
+	}
+    }
+
+  closedir (dr);
+  if (verbose > 2) fprintf (stderr, "Removing %s\n", path);
+  if (rmdir (dirname) == -1)
+    {
+      fprintf (stderr, "Couldn't remove %s\n", path);
+      return -1;
+    }
+  return 0;
+}
+#endif
+
+static void
+create_devlinks (mode_t node_m)
+{
+/* Doesn't work, since /proc isn't mounted by default on FreeBSD */
   FILE *f;
-  char line[256], tmp[300], *s;
-  int perm;
+  char line[256], tmp[300], *p, *s;
+  mode_t perm;
 
   if ((f = fopen ("/proc/opensound/devfiles", "r")) == NULL)
     {
@@ -218,9 +263,13 @@ create_devlinks (void)
       exit (-1);
     }
 
+/* remove_devlinks("/dev/oss"); */
+  perm = umask (0);
+  mkdir ("/dev/oss", 0755);
+
   while (fgets (line, sizeof (line), f) != NULL)
     {
-      char dev[20] = "/dev/";
+      char dev[64] = "/dev/";
       int minor, major;
       s = line + strlen (line) - 1;
       *s = 0;
@@ -232,15 +281,34 @@ create_devlinks (void)
 	  exit (-1);
 	}
 
+/*
+ * Check if the device is located in a subdirectory (say /dev/oss/sblive0/pcm0).
+ */
+      strcpy (tmp, dev);
+
+      s = tmp + 5;
+      p = s;
+      while (*s)
+        {
+          if (*s == '/')
+            p = s;
+          s++;
+        }
+
+      if (*p == '/')
+        {
+          *p = 0;               /* Extract the directory name part */
+          mkdir (tmp, 0755);
+        }
+
       unlink (dev);
       if (verbose)
-	printf ("mknod %s c %d %d\n", dev, major, minor);
-      perm = umask (0);
-      if (mknod (dev, S_IFCHR | 0666, makedev (major, minor)) == -1)
+	printf ("mknod %s c %d %d -m %o\n", dev, major, minor, node_m);
+      if (mknod (dev, node_m, makedev (major, minor)) == -1)
 	perror (dev);
-      umask (perm);
     }
 
+  umask (perm);
   fclose (f);
 }
 
@@ -343,12 +411,13 @@ prepend_drvlist (const char * name)
 int
 main (int argc, char *argv[])
 {
-  char instfname[2*OSSLIBDIRLEN];
-  int i, pass, do_license = 0, make_devs = 0;
+  char instfname[2*OSSLIBDIRLEN], *p;
+  int i, do_license = 0, make_devs = 0, pass;
+  mode_t node_m = S_IFCHR | 0666;
   struct stat st;
   FILE *f;
 
-  while ((i = getopt(argc, argv, "L:a:diluv")) != EOF)
+  while ((i = getopt(argc, argv, "L:a:dilm:uv")) != EOF)
     switch (i)
       {
 	case 'v':
@@ -377,6 +446,18 @@ main (int argc, char *argv[])
 
 	case 'L':
 	  osslibdir = optarg;
+	  break;
+
+	case 'm':
+	  p = optarg;
+	  node_m = 0;
+	  while ((*p >= '0') && (*p <= '7')) node_m = node_m * 8 + *p++ - '0';
+	  if ((*p) || (node_m & ~(S_IRWXU|S_IRWXG|S_IRWXO)))
+	    {
+	      fprintf (stderr, "Invalid permissions: %s\n", optarg);
+	      exit(1);
+	    }
+	  node_m |= S_IFCHR;
 	  break;
 
 	default:

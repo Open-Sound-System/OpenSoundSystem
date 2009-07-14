@@ -46,8 +46,8 @@ static driver_def_t drivers[MAX_DRIVERS];
 static int ndrivers = 0;
 
 static int add_drv (const char *, int);
-static void create_devlinks (void);
-static void create_node (char *, char *, int);
+static void create_devlinks (mode_t);
+static void create_node (char *, char *, int, mode_t);
 static drvlist_t * prepend_drvlist (const char *);
 static char * get_mapname (void);
 static void load_license (const char *);
@@ -205,13 +205,12 @@ add_drv (const char * id, int pass)
 }
 
 static void
-create_node (char *drvname, char *name, int devno)
+create_node (char *drvname, char *name, int devno, mode_t node_m)
 {
   struct stat st;
   char tmp[64], *s, *p;
   char cmd[128];
   dev_t dev;
-  mode_t perm;
 
   sprintf (tmp, "/dev/%s", drvname);
 
@@ -250,21 +249,20 @@ create_node (char *drvname, char *name, int devno)
   sprintf (tmp, "/dev/%s", name);
   dev += devno;
   if (verbose)
-    printf ("mknod %s c %d %d\n", tmp, major, minor);
+    printf ("mknod %s c %d %d -m %o\n", tmp, major, minor, node_m);
   unlink (tmp);
 
-  perm = umask (0);
-  if (mknod (tmp, S_IFCHR | 0666, dev) == -1)
+  if (mknod (tmp, node_m, dev) == -1)
     perror (tmp);
-  umask (perm);
 }
 
 static void
-create_devlinks (void)
+create_devlinks (mode_t node_m)
 {
   FILE *drvf, *f;
   struct stat st;
   char drvname[32], name[32], line[64], *s, tmp[256], instfname[2*OSSLIBDIRLEN];
+  mode_t perm;
 
   snprintf (instfname, sizeof (instfname), "%s/%s", osslibdir,
  	    "etc/installed_drivers");
@@ -275,6 +273,7 @@ create_devlinks (void)
       return;
     }
 
+  perm = umask (0);
   mkdir ("/dev/oss", 0755);
 
   while (fgets (drvname, sizeof (drvname), drvf) != NULL)
@@ -313,13 +312,14 @@ create_devlinks (void)
 	      exit (-1);
 	    }
 
-	  create_node (drvname, name, minor);
+	  create_node (drvname, name, minor, node_m);
 	}
 
       fclose (f);
       break;
     }
 
+  umask (perm);
   fclose (drvf);
 }
 
@@ -379,12 +379,13 @@ prepend_drvlist (const char * name)
 int
 main (int argc, char *argv[])
 {
-  char instfname[2*OSSLIBDIRLEN];
+  char instfname[2*OSSLIBDIRLEN], *p;
   int i, pass, do_license = 0, make_devs = 0;
+  mode_t node_m = S_IFCHR | 0666;
   struct stat st;
   FILE *f;
 
-  while ((i = getopt(argc, argv, "L:a:diluv")) != EOF)
+  while ((i = getopt(argc, argv, "L:a:dilm:uv")) != EOF)
     switch (i)
       {
 	case 'v':
@@ -415,6 +416,18 @@ main (int argc, char *argv[])
 	  osslibdir = optarg;
 	  break;
 
+	case 'm':
+	  p = optarg;
+	  node_m = 0;
+	  while ((*p >= '0') && (*p <= '7')) node_m = node_m * 8 + *p++ - '0';
+	  if ((*p) || (node_m & ~(S_IRWXU|S_IRWXG|S_IRWXO)))
+	    {
+	      fprintf (stderr, "Invalid permissions: %s\n", optarg);
+	      exit(1);
+	    }
+	  node_m |= S_IFCHR;
+	  break;
+
 	default:
 	  fprintf (stderr, "%s: bad usage\n", argv[0]);
 	  exit (-1);
@@ -424,7 +437,7 @@ main (int argc, char *argv[])
 
   if (make_devs == 1)
     {
-      create_devlinks ();
+      create_devlinks (node_m);
       exit (0);
     }
 
