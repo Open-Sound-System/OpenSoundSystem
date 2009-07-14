@@ -1621,7 +1621,7 @@ char *
 oss_pci_read_devpath (dev_info_t * dip)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)
-  return dev_name(dip->pcidev);
+  return dev_name(&dip->pcidev->dev);
 #else
   return dip->pcidev->dev.bus_id;
 #endif
