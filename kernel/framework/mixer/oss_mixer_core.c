@@ -2227,8 +2227,10 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 #endif
 #endif
     default:
+#if 0
       if (mixer_devs[orig_dev]->d->ioctl != NULL)
          return mixer_devs[orig_dev]->d->ioctl (orig_dev, -1, cmd, arg);
+#endif
 
       return OSS_EINVAL;
     }

@@ -203,7 +203,7 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
         afh.bits = BE_SH (bits);
         switch (format)
           {
-            case AFMT_U8: 
+            case AFMT_S8: 
             case AFMT_S16_BE:
             case AFMT_S24_PACKED_BE:
             case AFMT_S32_BE:

@@ -1810,6 +1810,9 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case INTEL_DEVICE_ICH10_B:
     case INTEL_DEVICE_PCH:
       devc->chip_name = "Intel HD Audio";
+      /* Reset TCSEL to TC0 */
+      pci_read_config_byte (osdev, 0x44, &btmp);
+      pci_write_config_byte (osdev, 0x44, btmp & 0xf8);
       break;
 
     case NVIDIA_DEVICE_MCP51:

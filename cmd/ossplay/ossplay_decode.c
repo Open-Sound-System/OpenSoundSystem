@@ -359,7 +359,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   /* 
    * Write the initial header
    */
-  if (write_head (wave_fp, type, datalimit, format, channels, speed) == -1)
+  if (write_head (wave_fp, type, datalimit, format, channels, speed))
     return E_ENCODE;
 
   decoders = dec = ossplay_malloc (sizeof (decoders_queue_t));
