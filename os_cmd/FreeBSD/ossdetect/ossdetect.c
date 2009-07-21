@@ -469,7 +469,7 @@ main (int argc, char *argv[])
 
   if (make_devs == 1)
     {
-      create_devlinks ();
+      create_devlinks (node_m);
       exit (0);
     }
 
