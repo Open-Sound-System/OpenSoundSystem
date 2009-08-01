@@ -42,6 +42,19 @@ ln -s $SRCDIR/misc/samples/ddksample .
 echo SRCDIR=$SRCDIR>.directories
 echo > .nocopy
 
+# Check if SADA headers are present in the system.
+
+if test -f /usr/include/sys/audiovar.h
+then
+  HAVE_SADA=1
+  export HAVE_SADA
+else
+  echo
+  echo Warning! oss_sadasupport cannot be compiled in systems that have
+  echo          Boomer installed.
+  echo
+fi
+
 # Make the 32bit kernel drivers
 mkdir $KERNEL32
 echo "cd $KERNEL32;sh $SRCDIR/setup/setupdir.sh -A$KERNEL32 $KERNEL32FLAGS"
