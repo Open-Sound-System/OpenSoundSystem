@@ -34,7 +34,11 @@
 #define MAXDEV	HARD_MAX_AUDIO_DEVFILES
 
 static oss_sysinfo si;
-static char * legacydev_file = NULL;
+#ifdef sun
+  static char * legacydev_file = "/etc/oss/legacy_devices";
+#else
+  static char * legacydev_file = NULL;
+#endif
 static int err = 0, mixerfd = -1, recreate_all = 0, verbose = 0;
 
 static void create_dsplinks (void);
@@ -73,7 +77,7 @@ get_mapname (void)
 
   if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
     {
-      perror ("/etc/oss.conf");
+      // perror ("/etc/oss.conf");
       goto oexit;
     }
 

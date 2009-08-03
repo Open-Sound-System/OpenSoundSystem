@@ -23,6 +23,7 @@ fi
 case $state in
 
 'start')
+	soundoff
 	soundon
         exit 0
         ;;

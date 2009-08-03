@@ -272,7 +272,7 @@ get_mapname (void)
 
   if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
     {
-      perror ("/etc/oss.conf");
+      // perror ("/etc/oss.conf");
       goto dexit;
     }
 

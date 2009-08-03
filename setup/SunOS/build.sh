@@ -1,4 +1,3 @@
-#!/bin/sh
 
 . ./.directories
 
@@ -53,6 +52,7 @@ mkdir prototype/kernel/misc/$KERNEL64
 
 mkdir prototype/etc
 mkdir prototype/etc/oss
+mkdir prototype/etc/init.d
 mkdir prototype/usr
 mkdir prototype/usr/bin
 mkdir prototype/usr/sbin
@@ -74,6 +74,7 @@ cp $SRCDIR/include/oss_userdev_exports.h prototype/usr/include/oss
 cp $KERNEL32/target/bin/* prototype/usr/bin
 cp $KERNEL32/target/sbin/* prototype/usr/sbin
 cp $KERNEL32/setup/SunOS/sbin/* prototype/usr/sbin
+cp origdir/setup/SunOS/S89oss prototype/etc/init.d/oss
 chmod 500 prototype/usr/sbin/*
 echo "autosave_mixer yes" > prototype/etc/oss/userdefs
 #echo "usbif,class1" > prototype/etc/oss/forceload.conf

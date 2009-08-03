@@ -11,6 +11,7 @@ rem_drv ossaudios > /dev/null 2>&1	# Old name for sadasupport
 
 for n in `ls /kernel/drv|grep audio|grep -v .conf` usb_ac usb_as
 do
+	echo Removing old driver $n
 	# Copy the /etc/driver_aliases entries for the SADA drivers to a backup
 	# file so that the drivers could be restored later.
 	grep "^$n " ${PKG_INSTALL_ROOT}/etc/driver_aliases >> ${PKG_INSTALL_ROOT}/etc/oss/driver_aliases.removed
@@ -32,6 +33,8 @@ rm -f ${PKG_INSTALL_ROOT}/dev/midi*
 rm -f ${PKG_INSTALL_ROOT}/dev/sndstat 
 rm -f ${PKG_INSTALL_ROOT}/dev/sequencer 
 rm -f ${PKG_INSTALL_ROOT}/dev/music
+
+(cd ${PKG_INSTALL_ROOT}/etc/rc3.d;ln -s ../init.d/oss S89oss)
 
 sync
 
