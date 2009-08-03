@@ -27,6 +27,8 @@ fi
 
 LOG=/var/log/soundon.log
 
+rm -f /dev/sndstat # Just in case Boomer is installed in the system
+
 echo "Open Sound System starting" `date` > $LOG
 echo "OSS version: " `cat /etc/oss/version.dat` >> $LOG 2>&1
 echo Solaris version: `uname -a` >> $LOG
