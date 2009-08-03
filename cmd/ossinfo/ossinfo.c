@@ -457,6 +457,8 @@ print_audio_info (void)
   print_symlink ("/dev/dsp_multich");
   print_symlink ("/dev/dsp_spdifout");
   print_symlink ("/dev/dsp_spdifin");
+  print_symlink ("/dev/mixer");
+  print_symlink ("/dev/sndstat");
 }
 
 

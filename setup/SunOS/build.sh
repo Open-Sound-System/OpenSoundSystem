@@ -76,7 +76,7 @@ cp $KERNEL32/target/sbin/* prototype/usr/sbin
 cp $KERNEL32/setup/SunOS/sbin/* prototype/usr/sbin
 chmod 500 prototype/usr/sbin/*
 echo "autosave_mixer yes" > prototype/etc/oss/userdefs
-echo "usbif,class1" > prototype/etc/oss/forceload.conf
+#echo "usbif,class1" > prototype/etc/oss/forceload.conf
 rm -f devlist.txt
 
 # Create the driver modules (for 64 bit)
