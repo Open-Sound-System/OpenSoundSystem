@@ -1480,11 +1480,10 @@ install_audio_devices (audigyls_devc * devc)
 
       audio_engines[adev]->portc = portc;
       audio_engines[adev]->max_fragments = 2;
-      //audio_engines[adev]->dmabuf_alloc_flags |= DMABUF_SIZE_16BITS;
+      audio_engines[adev]->dmabuf_alloc_flags |= DMABUF_SIZE_16BITS;
       audio_engines[adev]->rate_source = frontdev;
       audio_engines[adev]->mixer_dev = devc->mixer_dev;
       audio_engines[adev]->binding = bindings[i];
-      audio_engines[adev]->dmabuf_maxaddr = MEMLIMIT_ISA;
       if (audio_engines[adev]->flags & ADEV_FIXEDRATE)
 	{
 	  audio_engines[adev]->fixed_rate = DEFAULT_RATE;

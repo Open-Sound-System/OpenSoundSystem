@@ -597,8 +597,8 @@ scan_dir (char *path, char *name, char *topdir, conf_t * cfg, int level)
       return 0;
 
   if (useronly)
-    if (conf.mode != MD_USERLAND && conf.mode != MD_SBIN
-	&& conf.mode != MD_UNDEF)
+    if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE ||
+	conf.mode == MD_KERNEL_ || conf.mode == MD_MODULE_)
       return 0;
 
   if (conf.mode == MD_MODULE)
