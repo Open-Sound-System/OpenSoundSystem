@@ -41,6 +41,7 @@ usage(void)
 	fprintf (stderr, "\n");
 	fprintf (stderr, "\t-r\tDisable recording\n");
 	fprintf (stderr, "\t-p\tDo not preallocate client engines\n");
+	fprintf (stderr, "\t-M\tUse more fragments\n");
 	fprintf (stderr, "\t-V\tMake clients visible by creating device files for them.\n");
 	fprintf (stderr, "\t-c<N>\tPrecreate <N> client engines (see -p).\n");
 
@@ -88,7 +89,7 @@ vmix_attach(int argc, char **argv)
  */
 	argv++;argc--; /* Skip the initial command ("attach") */
 
-  	while ((c = getopt (argc, argv, "rpVc:")) != EOF)
+  	while ((c = getopt (argc, argv, "MVc:pr")) != EOF)
     	   {
       		switch (c)
         	{
@@ -103,6 +104,10 @@ vmix_attach(int argc, char **argv)
 		case 'V': /* Allocate private device files for all clients */
 			att.attach_flags |= VMIX_INSTALL_VISIBLE;
 			relink_devices=1;
+			break;
+
+		case 'M': /* Use more fragments */
+			att.attach_flags |= VMIX_MULTIFRAG;
 			break;
 
 		case 'c': /* Force prealloc of N client devices */

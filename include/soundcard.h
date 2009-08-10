@@ -915,7 +915,7 @@ typedef struct
 /*
  * Packet header for MIDI_MODE_TIMED and MIDI_MODE_TIMED_ABS
  */
-#ifndef OSS_NO_LONG_LONG
+#ifdef OSS_NO_LONG_LONG
   typedef unsigned long oss_midi_time_t;	/* This will not be enough but anyway */
 #else
   typedef unsigned long long oss_midi_time_t;	/* Variable type for MIDI time (clock ticks) */

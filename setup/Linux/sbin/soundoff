@@ -19,6 +19,15 @@ then
 fi
 
 
+# Save mixer settings automatically if requested
+if test -f $OSSLIBDIR/etc/userdefs && grep -q "autosave_mixer yes" $OSSLIBDIR/etc/userdefs
+then
+	/usr/sbin/savemixer
+fi
+
+# Save legacy devices
+/usr/sbin/ossdevlinks 
+
 PROGRAMS="`fuser /dev/mixer* /dev/dsp* /dev/midi* /dev/oss/*/* 2>/dev/null`"
   
 if test "$PROGRAMS " != " "
@@ -41,15 +50,6 @@ then
   echo Please stop these applications and run soundoff again
   exit 2
 fi
-
-# Save mixer settings automatically if requested
-if test -f $OSSLIBDIR/etc/userdefs && grep -q "autosave_mixer yes" $OSSLIBDIR/etc/userdefs
-then
-	/usr/sbin/savemixer
-fi
-
-# Save legacy devices
-/usr/sbin/ossdevlinks
 
 for i in 1 2 3
 do

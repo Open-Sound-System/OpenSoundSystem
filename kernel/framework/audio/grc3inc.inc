@@ -12,11 +12,11 @@ static __inline__ int32_t SUFFIX (grc3_upsample_) (grc3state_t * grc,
 						   int32_t inc,
 						   int32_t offset)
 {
-  GRCvreg int32_t ptr = grc->ptr;
-  int32_t srcrate = grc->srcrate;
-  int32_t dstrate = grc->dstrate;
+  GRCvreg uint32_t ptr = grc->ptr;
+  uint32_t srcrate = grc->srcrate;
+  uint32_t dstrate = grc->dstrate;
   GRCvreg int32_t *history = grc->historyptr;
-  int32_t filtfactor = grc->filtfactor;
+  uint32_t filtfactor = grc->filtfactor;
   uint32_t dstsz = 0;
 
   grc->insz = sz;
@@ -72,12 +72,12 @@ __inline__ int32_t SUFFIX (grc3_dnsample_) (grc3state_t * grc, TYPEIN * src,
 					    uint32_t bufsz, int32_t inc,
 					    int32_t offset)
 {
-  GRCvreg int32_t ptr = grc->ptr;
-  int32_t srcrate = grc->srcrate;
-  int32_t dstrate = grc->dstrate;
-  int32_t sat = grc->sat;
+  GRCvreg uint32_t ptr = grc->ptr;
+  uint32_t srcrate = grc->srcrate;
+  uint32_t dstrate = grc->dstrate;
+  uint32_t sat = grc->sat;
   GRCvreg int32_t *history = grc->historyptr;
-  int32_t filtfactor = grc->filtfactor;
+  uint32_t filtfactor = grc->filtfactor;
   uint32_t dstsz = 0;
 
   grc->insz = sz;
