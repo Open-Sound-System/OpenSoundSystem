@@ -3658,8 +3658,16 @@ oss_sblive_attach (oss_device_t * osdev)
     }
   else if (device == PCI_DEVICE_ID_AUDIGY)
     {
-      devc->card_name = "SB Audigy2";
-      devc->feature_mask = SB_AUDIGY | SB_AUDIGY2;
+      if (devc->subvendor >= 0x10021102 && devc->subvendor <= 0x20051102)
+	    {
+      	      devc->card_name = "SB Audigy2";
+      	      devc->feature_mask = SB_AUDIGY | SB_AUDIGY2;
+	    }
+	  else
+	    {
+      	      devc->card_name = "SB Audigy";
+      	      devc->feature_mask = SB_AUDIGY;
+	    }
     }
   else if (device == PCI_DEVICE_ID_AUDIGY_CARDBUS)
     {
