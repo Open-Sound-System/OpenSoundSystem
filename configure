@@ -24,7 +24,7 @@ export CONFIGURE CONFIG_MIDI
 
 unset CDPATH >/dev/null 2>&1
 
-if test -f /usr/include/vorbis/codec.h || test -f /usr/local/include/vorbis.h
+if test -f /usr/include/vorbis/vorbisfile.h || test -f /usr/local/include/vorbisfile.h
 then
 	OGG_SUPPORT=YES
 	export OGG_SUPPORT

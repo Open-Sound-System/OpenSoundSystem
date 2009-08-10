@@ -114,7 +114,6 @@ typedef enum errors_t {
 errors_t;
 
 #ifdef OGG_SUPPORT
-#include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 
 typedef struct {

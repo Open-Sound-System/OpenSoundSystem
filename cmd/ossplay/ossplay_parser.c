@@ -86,8 +86,10 @@ play_ogg (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
         }
 
       /*
-       * The opengroup, glibc examples use a similar method (assigning to the
-       * address pointed from the casted lvalue), so this should be safe.
+       * Assigning to the adress pointed by the casted lvalue is the
+       * POSIX.1-2003 workaround to the dlsym return type issue, and both the
+       * opengroup and glibc examples use that method, so this should be safe
+       * on POSIX systems.
        */
       if (ossplay_vdlsym ((*vft)->vorbisfile_handle,
                      (void **)&(*vft)->ov_clear, "ov_clear",
@@ -396,7 +398,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 #define ANNO_HUNK 0x414E4E4F
 #define NAME_HUNK 0x4E414D45
 #define AUTH_HUNK 0x41555448
-#define COPY_HUNK 0x434F5059
+#define COPY_HUNK 0x28632920 /* "(c) " */ 
 
 #define VHDR_HUNK 0x56484452
 #define BODY_HUNK 0x424f4459
@@ -455,6 +457,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return E_DECODE; \
       } \
+    chunk_pos += len; \
    } while(0)
 
 #define ASEEK(fd, offset) \
@@ -467,11 +470,12 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
         if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
         else return E_DECODE; \
       } \
+    chunk_pos += offset; \
   } while (0)
 
 #define AREAD(fd, buf, len) \
   do { \
-    if (chunk_size < len) \
+    if (chunk_size < len + chunk_pos) \
       { \
         print_msg (ERRORM, \
                    "%s: error: chunk size is too small (chunk id: 0x%04X).\n", \
@@ -480,13 +484,11 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
         else return E_DECODE; \
       } \
     READ_MACRO (fd, buf, len); \
-    ASEEK (fd, chunk_size + (chunk_size & 1) - len); \
   } while (0)
 
 #define ONLYF(f) \
   if (!(type & (f))) \
     { \
-      ASEEK (fd, chunk_size + (chunk_size & 1)); \
       break; \
     } \
 
@@ -504,7 +506,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 
   int channels = 1, bits = 8, format, speed = 11025;
   big_t csize = 12;
-  uint32 chunk_id, chunk_size = 18, found = 0, offset = 0,
+  uint32 chunk_id, chunk_size = 18, chunk_pos, found = 0, offset = 0,
          sound_loc = 0, sound_size = 0, timestamp, total_size;
   int (*ne_int) (const unsigned char *p, int l) = be_int;
 
@@ -530,6 +532,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
     print_msg (NORMALM, "Filelen = %u\n", total_size);
   do
     {
+      chunk_pos = 0;
       if (read (fd, buf, 8) < 8)
         {
           print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
@@ -547,7 +550,8 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
           print_msg (ERRORM, "%s: Chunk size equals 0 (pos: %u)!\n",
                      filename, csize);
           if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta;
-          return E_DECODE;
+          csize += 8;
+          continue;
         }
 
       switch (chunk_id)
@@ -604,12 +608,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               speed = COMM_rate;
             }
 
-            if (type != AIFC_FILE)
-              {
-                csize += chunk_size + (chunk_size & 1) + 8;
-                continue;
-              }
-
+            if (type != AIFC_FILE) break;
             if (force_fmt != 0) break;
             switch (be_int (buf + 18, 4))
               {
@@ -653,18 +652,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                            "%s: error: SSND hunk not singular!\n", filename);
                 return E_DECODE;
               }
-            if (chunk_size < 8)
-              {
-                print_msg (ERRORM,
-                           "%s: error: impossibly small SSND hunk\n", filename);
-                return E_DECODE;
-              }
-            if (read (fd, buf, 8) < 8)
-              {
-                print_msg (ERRORM, "%s: error: cannot read SSND chunk.\n",
-                           filename);
-                return E_DECODE;
-              }
+            AREAD (fd, buf, 8);
             found |= SSND_FOUND;
 
             offset = be_int (buf, 4);
@@ -676,7 +664,6 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 
             if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
-            ASEEK (fd, chunk_size - 8);
             break;
           case FVER_HUNK:
             ONLYF (AIFC_FILE);
@@ -717,7 +704,6 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
             found |= SSND_FOUND;
             if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
               goto stdinext;
-            ASEEK (fd, chunk_size);
             break;
           case CHAN_HUNK:
             /* Used in 8SVX too: http://amigan.1emu.net/reg/8SVX.CHAN.PAN.txt */
@@ -874,44 +860,24 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
             uint32 i, cssize = 4, len, subchunk_id, subchunk_size;
 
             ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if ((!verbose) || (chunk_size < 12))
-              {
-                ASEEK (fd, chunk_size);
-                break;
-              }
+            if ((!verbose) || (chunk_size < 12)) break;
             READ_MACRO (fd, buf, 4);
             chunk_id = be_int (buf, 4);
-            if (chunk_id != INFO_HUNK)
-              {
-                ASEEK (fd, chunk_size);
-                break;
-              }
+            if (chunk_id != INFO_HUNK) break;
             do
               {
                 cssize += 8;
-                if (cssize > chunk_size)
-                  {
-                    ASEEK (fd, chunk_size + 8 - cssize);
-                    break;
-                  }
+                if (cssize > chunk_size) break;
                 READ_MACRO (fd, buf, 8);
                 subchunk_id = be_int (buf, 4);
                 subchunk_size = ne_int (buf + 4, 4);
                 if (verbose > 3)
-                  print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size %d\n",
+                  print_msg (VERBOSEM, "%s: Reading subchunk %c%c%c%c, size %d\n",
                              filename, buf[0], buf[1], buf[2], buf[3],
                              subchunk_size);
-                if (subchunk_size == 0)
-                  {
-                    ASEEK (fd, chunk_size - cssize);
-                    break;
-                  }
+                if (subchunk_size == 0) break;
                 cssize += subchunk_size;
-                if (cssize > chunk_size)
-                  {
-                    ASEEK (fd, chunk_size + subchunk_size - cssize);
-                    break;
-                  }
+                if (cssize > chunk_size) break;
                 switch (subchunk_id)
                   {
                     case IARL_HUNK:
@@ -960,19 +926,19 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                       print_msg (STARTM, "%s: Technician: ", filename);
                       break;
                     default:
-                      ASEEK (fd, subchunk_size);
+                      ASEEK (fd, subchunk_size + (subchunk_size & 1));
                       continue;
                   }
 
                 if (subchunk_size > 1024)
                   {
                     READ_MACRO (fd, buf, 1024);
-                    ASEEK (fd, subchunk_size - 1024);
+                    ASEEK (fd, subchunk_size + (subchunk_size & 1) - 1024);
                     len = 1024;
                   }
                 else
                   {
-                    len = subchunk_size;
+                    len = subchunk_size + (subchunk_size & 1);
                     READ_MACRO (fd, buf, len);
                   }
 
@@ -992,23 +958,15 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                } while (cssize < chunk_size);
             } break;
 
-          /* Cool Edit can create this chunk */
+          /* Cool Edit can create this chunk. Also some Windows files use it */
           case DISP_HUNK: {
             unsigned char * tag;
             uint32 i, len;
 
             ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if ((verbose < 2) || (chunk_size < 4))
-              {
-                ASEEK (fd, chunk_size);
-                break;
-              }
+            if ((verbose < 2) || (chunk_size < 4)) break;
             READ_MACRO (fd, buf, 4);
-            if (ne_int (buf, 4) != 1)
-              {
-                ASEEK (fd, chunk_size - 4);
-                break;
-              }
+            if (ne_int (buf, 4) != 1) break;
             if (chunk_size > 1028) len = 1024;
             else len = chunk_size - 4;
             AREAD (fd, buf, len);
@@ -1053,7 +1011,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
                 else len = chunk_size;
                 AREAD (fd, buf, len);
 
-                tag = buf + len;
+                tag = buf + len + 1;
                 for (i = 0; i < len; i++)
                   {
                     if (!isprint (buf[i])) buf[i] = ' ';
@@ -1065,11 +1023,11 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
               }
 
           default:
-            ASEEK (fd, chunk_size);
             break;
        }
 
       csize += chunk_size + (chunk_size & 1) + 8;
+      ASEEK (fd, chunk_size + (chunk_size & 1) - chunk_pos);
 
     } while (csize < total_size);
 

@@ -360,10 +360,16 @@ usb_detect (void)
     }
 #endif
 
-  if (stat ("/proc/bus/usb", &st) == -1)
-    return;
-  usb_ok = 1;
-  usb_scandir ("/proc/bus/usb");
+  if (stat ("/dev/bus/usb", &st) != -1)
+    {
+      usb_ok = 1;
+      usb_scandir ("/dev/bus/usb");
+    }
+  else if (stat ("/proc/bus/usb", &st) != -1)
+    {
+      usb_ok = 1;
+      usb_scandir ("/proc/bus/usb");
+    }
 }
 
 static void
