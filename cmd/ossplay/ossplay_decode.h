@@ -11,20 +11,20 @@
 
 typedef struct verbose_values {
   char tstring[20];
+  double secs;
   double next_sec;
-  double next_sec2;
+  double secs_timer2;
+  double next_sec_timer2;
   double tsecs;
   double constant;
   int format;
-  unsigned long long * datamark;
 }
 verbose_values_t;
 
-errors_t decode_sound (dspdev_t *, int, unsigned long long, int, int, int,
-                       void *);
+errors_t decode_sound (dspdev_t *, int, big_t, int, int, int, void *);
 errors_t encode_sound (dspdev_t *, fctypes_t, const char *, int, int, int,
-                       unsigned long long);
+                       big_t);
 int get_db_level (const unsigned char *, ssize_t, int);
-verbose_values_t * setup_verbose (int, double, unsigned long long *);
+verbose_values_t * setup_verbose (int, double, double);
 
 #endif

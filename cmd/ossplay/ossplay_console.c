@@ -3,13 +3,16 @@
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2008. All rights reserved.
 
-#include <sys/wait.h>
 #include "ossplay_console.h"
 #include "ossplay_parser.h"
 #include "ossplay_decode.h"
+#include <sys/wait.h>
+#ifdef OGG_SUPPORT
+#include <dlfcn.h>
+#endif
 
-extern int eflag, verbose;
-extern flag from_stdin, loop, quiet;
+extern int eflag, quiet, verbose;
+extern flag from_stdin, loop;
 
 static FILE * normalout;
 static int dots = -11, direction = 0;
@@ -31,17 +34,17 @@ clear_update (void)
 void
 print_update (int v, double secs, const char * total)
 {
-  char template[12] = "-------++!!", * rtime;
+  char vu[12] = "-------++!!", * rtime;
 
-  if (v > 0) template[v] = '\0';
-  else
+  if (v > 0) vu[v] = '\0';
+  else /* v == 0 */
     {
-      template[0] = '0';
-      template[1] = '\0';
+      vu[0] = '0';
+      vu[1] = '\0';
     }
 
   rtime = totime (secs);
-  fprintf (stdout, "\rTime: %s of %s VU %-11s", rtime, total, template);
+  fprintf (stdout, "\rTime: %s of %s VU %-11s", rtime, total, vu);
   fflush (stdout);
   ossplay_free (rtime);
 }
@@ -49,7 +52,7 @@ print_update (int v, double secs, const char * total)
 void
 print_record_update (int v, double secs, const char * fname, int update)
 {
-  char template[12] = "-------++!!";
+  char vu[12] = "-------++!!";
 
   int x1, x2, i;
   extern int level_meters;
@@ -71,7 +74,7 @@ print_record_update (int v, double secs, const char * fname, int update)
           if (dots <= -10) direction = 0;
         }
     }
- 
+
   if (dots < 0)
     {
       x1 = 0;
@@ -111,10 +114,10 @@ print_record_update (int v, double secs, const char * fname, int update)
     }
   else if (v > 0)
     {
-      template[v] = '\0';
-      fprintf (stderr, " VU %-11s", template);
+      vu[v] = '\0';
+      fprintf (stderr, " VU %-11s", vu);
     }
-  else
+  else if (v == 0)
     {
       fprintf (stderr, " VU %-11s", "0");
     }
@@ -172,6 +175,27 @@ ossplay_free (void * ptr)
   free (ptr);
 }
 
+off_t
+ossplay_lseek_stdin (int fd, off_t off, int w)
+{
+  off_t i;
+  ssize_t bytes_read;
+  char buf[BUFSIZ];
+
+  if (w == SEEK_END) return -1;
+  if (off < 0) return -1;
+  if (off == 0) return 0;
+  i = off;
+  while (i > 0)
+    {
+      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
+      if (bytes_read == -1) return -1;
+      else if (bytes_read == 0) return off;
+      i -= bytes_read;
+    }
+  return off;
+}
+
 char *
 ossplay_strdup (const char * s)
 {
@@ -187,12 +211,61 @@ ossplay_strdup (const char * s)
   return p;
 }
 
+#ifdef OGG_SUPPORT
+int
+ossplay_dlclose (void * handle)
+{
+  return dlclose (handle);
+}
+
+void *
+ossplay_dlopen (const char * filename)
+{
+  return dlopen (filename, RTLD_LAZY | RTLD_LOCAL);
+}
+
+int
+ossplay_vdlsym (void * handle, ...)
+{
+  va_list ap;
+  const char * symbol;
+  void ** v = NULL;
+
+  va_start (ap, handle);
+
+  while (1)
+    {
+      v = va_arg (ap, void **);
+      if (v == (void **)NULL) break;
+      symbol = va_arg (ap, const char *);
+      *v = dlsym (handle, symbol);
+      if (*v == NULL)
+        {
+          const char * msg = dlerror();
+
+          print_msg (ERRORM, "Can't find symbol %s! (Error: %s)\n",
+                     symbol, msg?msg:"");
+          return -1;
+        }
+    }
+
+  return 0;
+}
+
+const char *
+ossplay_dlerror (void)
+{
+  return dlerror();
+}
+#endif
+
 static int
 ossplay_main (int argc, char ** argv)
 {
   int i, loop_flag;
   dspdev_t dsp = { -1 };
-  errors_t ret = 0;
+  errors_t ret = E_OK;
+  dlopen_funcs_t * vft = NULL;
 
   normalout = stdout;
 
@@ -213,11 +286,19 @@ ossplay_main (int argc, char ** argv)
                  sizeof (dsp.current_songname));
         dsp.current_songname[sizeof (dsp.current_songname) - 1] = '\0';
         from_stdin = !strcmp (argv[i], "-");
-        ret = play_file (&dsp, argv[i]);
+        ret = play_file (&dsp, argv[i], &vft);
         if (ret == 0) loop_flag = 1;
         eflag = 0;
       }
   } while (loop && loop_flag);
+
+#ifdef OGG_SUPPORT
+  if (vft != NULL)
+    {
+      ossplay_dlclose (vft->vorbisfile_handle);
+      ossplay_free (vft);
+    }
+#endif
 
   close_device (&dsp);
   return ret;
@@ -232,7 +313,7 @@ ossrecord_main (int argc, char ** argv)
   errors_t err;
 
   extern int force_fmt, force_channels, force_speed, nfiles;
-  extern unsigned long long datalimit;
+  extern big_t datalimit;
   extern fctypes_t type;
   extern char script[512];
 
@@ -252,7 +333,9 @@ ossrecord_main (int argc, char ** argv)
   for (i = 0; i < nfiles; i++)
     {
       if (nfiles > 1)
-        sprintf (current_filename, argv[oind], i + 1);
+        /* XXX */
+        snprintf (current_filename, sizeof (current_filename),
+                  argv[oind], i + 1);
       else
         snprintf (current_filename, sizeof (current_filename),
                   "%s", argv[oind]);

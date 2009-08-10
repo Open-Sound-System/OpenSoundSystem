@@ -29,11 +29,12 @@ int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0;
 flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, overwrite = 0,
      quiet = 0, raw_file = 0, raw_mode = 0;
 double seek_time = 0;
+long seek_byte = 0;
 off_t (*ossplay_lseek) (int, off_t, int) = lseek;
 
 char script[512] = "";
 unsigned int nfiles = 1;
-unsigned long long datalimit = 0;
+big_t datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
 static void describe_error (void);
@@ -188,7 +189,7 @@ format2bits (int format)
   switch (format)
     {
       case AFMT_CR_ADPCM_2: return 2;
-      case AFMT_CR_ADPCM_3: return 2.66F;
+      case AFMT_CR_ADPCM_3: return 2.6666F;
       case AFMT_CR_ADPCM_4:
       case AFMT_MS_IMA_ADPCM_3BITS: return 3;
       case AFMT_MAC_IMA_ADPCM:
@@ -505,7 +506,7 @@ select_recsrc (dspdev_t * dsp)
   exit (E_USAGE);
 }
 
-int
+errors_t
 setup_device (dspdev_t * dsp, int format, int channels, int speed)
 {
   int tmp;
@@ -526,7 +527,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
   else
     {
       ioctl (dsp->fd, SNDCTL_SETSONG, dsp->current_songname);
-      return 0;
+      return E_OK;
     }
 
   /*
@@ -600,7 +601,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
         perror ("SNDCTL_DSP_SETRECVOL");
     }
 
-  return 0;
+  return E_OK;
 }
 
 static void
@@ -616,32 +617,12 @@ ossplay_getint (int signum)
   eflag = signum + 128;
 }
 
-off_t
-ossplay_lseek_stdin (int fd, off_t off, int w)
-{
-  off_t i;
-  ssize_t bytes_read;
-  char buf[BUFSIZ];
-
-  if (w == SEEK_END) return -1;
-  if (off < 0) return -1;
-  if (off == 0) return 0;
-  i = off;
-  while (i > 0)
-    {
-      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
-      if (bytes_read == -1) return -1;
-      else if (bytes_read == 0) return off;
-      i -= bytes_read;
-    }
-  return off;
-}
-
 int
 ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 {
   extern char * optarg;
   extern int optind;
+  char * p;
   int c;
 
   while ((c = getopt (argc, argv, "FRS:c:d:f:g:hlo:qs:v")) != EOF)
@@ -714,8 +695,19 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 	  break;
 
 	case 'S':
-	  sscanf (optarg, "%lf", &seek_time);
-	  if (seek_time < 0) seek_time = 0;
+          c = strlen (optarg);
+          if ((c > 0) && ((optarg[c - 1] == 'b') || (optarg[c - 1] == 'B')))
+            {
+              errno = 0;
+              seek_byte = strtol (optarg, &p, 10);
+              if ((*p != '\0') || (seek_byte < 0)) ossplay_usage (argv[0]);
+            }
+          else
+            {
+              errno = 0;
+              seek_time = strtod (optarg, &p);
+              if ((*p != '\0') || (errno) || (seek_time < 0)) ossplay_usage (argv[0]);
+            }
 	  break;
 
 	default:
@@ -774,7 +766,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
         case 'b':
           c = atoi (optarg);
-          c += c % 8; /* WAV format always pads to a multiple of 8 */ 
+          c += c % 8; /* Simple WAV format always pads to a multiple of 8 */
           switch (c)
             {
               case 8: force_fmt = AFMT_U8; break;
@@ -808,6 +800,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
         case 'l':
           level_meters = 1;
+          verbose = 1;
           break;
 
         case 'i':
@@ -837,7 +830,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 
         case 'r':
           c = snprintf (script, sizeof (script), "%s", optarg);
-          if ((c >= sizeof (script)) || (c < 0))
+          if (((size_t)c >= sizeof (script)) || (c < 0))
             {
               print_msg (ERRORM, "-r argument is too long!\n");
               exit (E_USAGE);
@@ -845,7 +838,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 't':
-          sscanf (optarg, "%llu", &datalimit);
+          sscanf (optarg, _PRIbig_t, &datalimit);
           break;
 
         case 'w':
@@ -897,11 +890,11 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
   return optind;
 }
 
-long double
-ossplay_ldexpl (long double num, int exp)
+ldouble_t
+ossplay_ldexpl (ldouble_t num, int exp)
 {
   /*
-   * Very simple emulation of ldexpl to avoid linking to libm, or assuming
+   * Very simple emulation of ldexpl to avoid linking to libm or assuming
    * anything about float representation.
    */
   if (exp > 0)
@@ -911,7 +904,7 @@ ossplay_ldexpl (long double num, int exp)
           num *= 1UL << 31;
           exp -= 31;
         }
-      num *= 1L << exp;
+      num *= 1UL << exp;
     }
   else if (exp < 0)
     {
@@ -920,7 +913,7 @@ ossplay_ldexpl (long double num, int exp)
           num /= 1UL << 31;
           exp += 31;
         }
-      num /= 1L << -exp;
+      num /= 1UL << -exp;
     }
 
   return num;
@@ -934,14 +927,18 @@ print_play_verbose_info (const unsigned char * buf, ssize_t l, void * metadata)
  */
 
   verbose_values_t * val = (verbose_values_t *)metadata;
-  double secs;
 
-  secs = *val->datamark / val->constant;
-  if (secs < val->next_sec) return;
+  val->secs += l/val->constant;
+  if (val->secs < val->next_sec) return;
   val->next_sec += PLAY_UPDATE_INTERVAL/1000;
-  if (val->next_sec > val->tsecs) val->next_sec = val->tsecs;
+  /*
+   * This check is done to ensure an update at the end of the playback.
+   * Note that some files lie about total time, so the second condition is
+   * necessary so that updates will still be constricted by PLAY_UPDATE_INTERVAL.
+   */
+  if ((val->next_sec > val->tsecs) && (val->secs < val->tsecs)) val->next_sec = val->tsecs;
 
-  print_update (get_db_level (buf, l, val->format), secs, val->tstring);
+  print_update (get_db_level (buf, l, val->format), val->secs, val->tstring);
 
   return;
 }
@@ -955,43 +952,35 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
  */
 
   verbose_values_t * val = (verbose_values_t *)metadata;
-  double secs;
-  int v = -1, update_secs;
+  int update_dots = 1;
 
-  secs = *val->datamark / val->constant;
-  if ((secs < val->next_sec) &&
-      (!level_meters || secs < val->next_sec2)) return;
-  if (level_meters)
-    {
-      update_secs = 0;
-      val->next_sec += LMETER_UPDATE_INTERVAL/1000;
-      v = get_db_level (buf, l, val->format);
-      if (secs >= val->next_sec2)
-        {
-          update_secs = 1;
-          val->next_sec2 += REC_UPDATE_INTERVAL/1000;
-          if (val->next_sec2 > val->tsecs) val->next_sec2 = val->tsecs;
-        }
-      else secs = val->next_sec2 - REC_UPDATE_INTERVAL/1000;
-    }
-  else
+  val->secs += l / val->constant;
+
+  if (val->secs >= val->next_sec)
     {
       val->next_sec += REC_UPDATE_INTERVAL/1000;
-      update_secs = 1;
+      if (val->next_sec > val->tsecs) val->next_sec = val->tsecs;
+      if (level_meters)
+        {
+          val->secs_timer2 = val->next_sec_timer2 = val->secs;
+          goto print_level;
+        }
+      print_record_update (-1, val->secs, val->tstring, 1);
     }
-
-  if (val->next_sec > val->tsecs) val->next_sec = val->tsecs;
-  if (secs > val->tsecs) secs = val->tsecs;
-
-  print_record_update (v, secs, val->tstring, update_secs);
-
-  return;
+  else if ((level_meters) && (val->secs >= val->next_sec_timer2))
+    {
+      update_dots = 0;
+print_level:
+      val->next_sec_timer2 += LMETER_UPDATE_INTERVAL/1000;
+      if (val->next_sec_timer2 > val->tsecs) val->next_sec_timer2 = val->tsecs;
+      print_record_update (get_db_level (buf, l, val->format), val->secs_timer2,
+                           val->tstring, update_dots);
+    }
 }
 
 int
-play (dspdev_t * dsp, int fd, unsigned long long * datamark,
-      unsigned long long bsize, double constant, decoders_queue_t * dec,
-      seekfunc_t * seekf)
+play (dspdev_t * dsp, int fd, big_t * datamark, big_t bsize, double total_time,
+      double constant, readfunc_t * readf, decoders_queue_t * dec, seekfunc_t * seekf)
 {
 #define EXITPLAY(code) \
   do { \
@@ -1002,17 +991,22 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark,
     return (code); \
   } while (0)
 
-  unsigned long long rsize = bsize;
-  unsigned long long filesize = *datamark;
+  big_t rsize = bsize;
+  big_t filesize = *datamark;
   ssize_t outl;
   unsigned char * buf, * obuf, contflag = 0;
   decoders_queue_t * d;
   verbose_values_t * verbose_meta = NULL;
 
-  buf = ossplay_malloc (bsize);
+  buf = (unsigned char *)ossplay_malloc (bsize);
 
   if (verbose)
-    verbose_meta = (void *)setup_verbose (dsp->format, constant, datamark);
+    {
+      verbose_meta = setup_verbose (dsp->format,
+                              format2bits(dsp->format) * dsp->channels *
+                              dsp->speed / 8.0, total_time);
+      if (seek_time == 0) print_play_verbose_info (NULL, 0, verbose_meta);
+    }
 
   *datamark = 0;
 
@@ -1027,21 +1021,30 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark,
         {
           errors_t ret;
 
-          ret = seekf (fd, datamark, filesize, constant, rsize, dsp->channels);
-          if (ret == 0) continue;
+          ret = seekf (fd, datamark, filesize, constant, rsize, dsp->channels,
+                       dec->metadata);
+          if (ret == E_OK)
+            {
+              if (verbose)
+                {
+                  verbose_meta->secs = (double)seek_time;
+                  verbose_meta->next_sec = (double)seek_time;
+                  print_play_verbose_info (NULL, 0, verbose_meta);
+                }
+              seek_time = 0;
+              continue;
+            }
           else if (ret == SEEK_CONT_AFTER_DECODE) contflag = 1;
           else EXITPLAY (ret);
         }
 
-      if ((outl = read (fd, buf, rsize)) <= 0)
+      if ((outl = readf (fd, buf, rsize, dec->metadata)) <= 0)
         {
-          if (errno) perror_msg (dsp->dname);
-          if ((filesize != UINT_MAX) && (*datamark < filesize) && (!eflag))
+          if (errno) perror_msg ("read");
+          if ((filesize != BIG_SPECIAL) && (*datamark < filesize) && (!eflag))
             {
-              clear_update ();
-              print_msg (WARNM, "Sound data ended prematurily!\n");
+              print_msg (NOTIFYM, "Sound data ended prematurely!\n");
             }
-          if ((outl == 0) && (!eflag)) return 0;
           EXITPLAY (eflag);
         }
       *datamark += outl;
@@ -1072,14 +1075,14 @@ play (dspdev_t * dsp, int fd, unsigned long long * datamark,
     }
 
   ossplay_free (buf);
+  ossplay_free (verbose_meta);
   clear_update ();
   return 0;
 }
 
 int
 record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
-        unsigned long long datalimit, unsigned long long * data_size,
-        decoders_queue_t * dec)
+        big_t datalimit, big_t * data_size, decoders_queue_t * dec)
 {
 #define EXITREC(code) \
   do { \
@@ -1099,16 +1102,14 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
 
   if (verbose)
     {
-      *data_size = datalimit;
-      verbose_meta = (void *)setup_verbose (dsp->format, constant, data_size);
+      verbose_meta = setup_verbose (dsp->format, constant, datalimit/constant);
       strncpy (verbose_meta->tstring, filename, 20)[19] = 0;
     }
 
   *data_size = 0;
-  buf = ossplay_malloc (RECBUF_SIZE);
+  buf = (unsigned char *)ossplay_malloc (RECBUF_SIZE);
    /*LINTED*/ while (1)
     {
-//printf("datalimit %llu, *data_size %llu\n", datalimit, *data_size);
       if ((l = read (dsp->fd, buf, RECBUF_SIZE)) < 0)
 	{
           if ((errno == EINTR) && (eflag)) EXITREC (eflag);
@@ -1147,12 +1148,14 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
     }
 
   ossplay_free (buf);
+  ossplay_free (verbose_meta);
   clear_update ();
   print_msg (VERBOSEM, "\nDone.\n");
   return 0;
 }
 
-int silence (dspdev_t * dsp, unsigned long long len, int speed)
+errors_t
+silence (dspdev_t * dsp, big_t len, int speed)
 {
   errors_t ret;
   ssize_t i;
@@ -1160,7 +1163,7 @@ int silence (dspdev_t * dsp, unsigned long long len, int speed)
 
   ret = setup_device (dsp, AFMT_U8, 1, speed);
 
-  if (ret == E_FORMAT_UNSUPPORTED) 
+  if (ret == E_FORMAT_UNSUPPORTED)
     {
       len *= 4;
       if ((ret = setup_device (dsp, AFMT_S16_NE, 2, speed))) return ret;
@@ -1172,11 +1175,11 @@ int silence (dspdev_t * dsp, unsigned long long len, int speed)
   while (len > 0)
     {
       i = 1024;
-      if (i > len) i = len;
+      if ((big_t)i > len) i = len;
       if ((i = write (dsp->fd, empty, i)) < 0) return -1;
 
       len -= i;
     }
 
-  return 0;
+  return E_OK;
 }

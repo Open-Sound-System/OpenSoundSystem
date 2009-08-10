@@ -157,6 +157,18 @@ parse_config (FILE * f, conf_t * conf, char *comment)
 	    parms = "`pkg-config gtk+-2.0 --libs`";
 	}
 
+      if (strcmp (parms, "$DLOPENLDFLAGS") == 0)
+	{
+	  if (getenv ("OGG_SUPPORT") != NULL)
+	    parms = "-ldl";
+	}
+
+      if (strcmp (parms, "$OGGDEFINE") == 0)
+	{
+	  if (getenv ("OGG_SUPPORT") != NULL)
+	    parms = "-DOGG_SUPPORT";
+	}
+
       if (strcmp (line, "project") == 0)
 	{
 	  strcpy (conf->project_name, parms);

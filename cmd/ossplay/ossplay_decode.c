@@ -24,6 +24,13 @@ typedef struct fib_values {
 }
 fib_values_t;
 
+typedef struct ima_values {
+  int channels;
+  int16 pred[MAX_CHANNELS];
+  int8 index[MAX_CHANNELS];
+}
+ima_values_t;
+
 extern int amplification, force_speed, force_fmt, force_channels;
 extern flag int_conv, overwrite, verbose;
 extern char audio_devname[32];
@@ -47,8 +54,9 @@ static decfunc_t decode_float32_le;
 static decfunc_t decode_mac_ima;
 static decfunc_t decode_mono_to_stereo;
 static decfunc_t decode_ms_ima;
-static decfunc_t decode_ms_adpcm; 
+static decfunc_t decode_ms_adpcm;
 static decfunc_t decode_nul;
+static decfunc_t decode_raw_ima;
 
 static int32 float32_to_s32 (int, int, int);
 static int32 double64_to_s32 (int, int32, int32, int);
@@ -60,14 +68,22 @@ static decoders_queue_t * setup_normalize (int *, int *, decoders_queue_t *);
 static seekfunc_t seek_normal;
 static seekfunc_t seek_compressed;
 
+static readfunc_t read_normal;
+
+#ifdef OGG_SUPPORT
+static readfunc_t read_ogg;
+static seekfunc_t seek_ogg;
+#endif
+
 errors_t
-decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
+decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
               int channels, int speed, void * metadata)
 {
   decoders_queue_t * dec, * decoders;
-  seekfunc_t * seekf = NULL;
+  readfunc_t * readf;
+  seekfunc_t * seekf;
   int bsize, obsize;
-  double constant;
+  double constant, total_time;
   errors_t ret = E_DECODE;
 
   if (force_speed != 0) speed = force_speed;
@@ -81,6 +97,7 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
     }
 
   constant = format2bits (format) * speed * channels / 8.0;
+  if (constant == 0) return E_DECODE; /* Shouldn't ever happen */
 #if 0
   /*
    * There is no reason to use SNDCTL_DSP_GETBLKSIZE in applications like this.
@@ -91,21 +108,29 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
   bsize = PLAYBUF_SIZE;
 #endif
 
-  if (filesize < 2) return 0;
-  decoders = dec = ossplay_malloc (sizeof (decoders_queue_t));
+  if (filesize < 2) return E_OK;
+  decoders = dec = (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
   dec->next = NULL;
   dec->flag = 0;
   seekf = seek_normal;
+  readf = read_normal;
+  if (filesize != BIG_SPECIAL) total_time = filesize / constant;
+  else total_time = 0;
 
   switch (format)
     {
       case AFMT_MS_ADPCM:
         if (metadata == NULL)
           {
-            msadpcm_values_t * val = ossplay_malloc (sizeof (msadpcm_values_t));
+            msadpcm_values_t * val =
+              (msadpcm_values_t *)ossplay_malloc (sizeof (msadpcm_values_t));
 
-            val->nBlockAlign = 256; val->wSamplesPerBlock = 496;
-            val->wNumCoeff = 7; val->channels = DEFAULT_CHANNELS;
+            val->channels = channels;
+            if (speed < 22000) val->nBlockAlign = 256;
+            else if (speed < 44000) val->nBlockAlign = 512;
+            else val->nBlockAlign = 1024;
+            val->wSamplesPerBlock = 8 * (val->nBlockAlign - 7 * channels) / (4 * channels) + 2;
+            val->wNumCoeff = 7;
             val->coeff[0].coeff1 = 256; val->coeff[0].coeff2 = 0;
             val->coeff[1].coeff1 = 512; val->coeff[1].coeff2 = -256;
             val->coeff[2].coeff1 = 0; val->coeff[2].coeff2 = 0;
@@ -114,55 +139,90 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
             val->coeff[5].coeff1 = 460; val->coeff[5].coeff2 = -208;
             val->coeff[6].coeff1 = 392; val->coeff[6].coeff2 = -232;
 
+            /* total_time = val->wSamplesPerBlock * filesize / val->nBlockAlign / constant; */
+            bsize = val->nBlockAlign;
+            total_time = 0;
             dec->metadata = (void *)val;
-            dec->flag |= FREE_META;
+            dec->flag = FREE_META;
           }
-        else dec->metadata = metadata;
+        else
+          {
+            msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+
+            /* Let's try anyway */
+            if (val->nBlockAlign == 0)
+              {
+                val->nBlockAlign = filesize - filesize % 4;
+              }
+            else
+              {
+                total_time = val->wSamplesPerBlock * filesize * channels /
+                             val->nBlockAlign / constant / 2; /* 4/8 == 1/2 */
+              }
+            if ((val->nBlockAlign > 16*1024*1024) || (val->nBlockAlign == 0))
+              {
+                print_msg (ERRORM, "Unreasonable nBlockAlign (%d), aborting\n",
+                           val->nBlockAlign);
+                goto exit;
+              }
+            bsize = val->nBlockAlign;
+            dec->metadata = metadata;
+          }
+
         dec->decoder = decode_ms_adpcm;
-        bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
-        if (bsize == 0) /* Let's try anyway */
-          {
-            bsize = filesize - filesize % 4;
-          }
-        if ((bsize > 16*1024*1024) || (bsize == 0))
-          {
-            print_msg (ERRORM,
-                       "Unreasonable nBlockAlign (%d), aborting\n", bsize);
-            goto exit;
-          }
         obsize = 4 * bsize;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag |= FREE_OBUF;
         seekf = seek_compressed;
 
-        format = AFMT_S16_LE;
+        format = AFMT_S16_NE;
         break;
       case AFMT_MS_IMA_ADPCM:
       case AFMT_MS_IMA_ADPCM_3BITS:
         dec->metadata = metadata;
-        if (dec->metadata == NULL) goto exit;
+        if (dec->metadata == NULL)
+          {
+            msadpcm_values_t * val =
+              (msadpcm_values_t *)ossplay_malloc (sizeof (msadpcm_values_t));
+
+            val->channels = channels;
+            val->bits = (format == AFMT_MS_IMA_ADPCM)?4:3;
+            val->nBlockAlign = 256 * channels * (speed > 11000)?speed/11000:1;
+          }
+        else
+          {
+            msadpcm_values_t * val = (msadpcm_values_t *)metadata;
+
+            /* Let's try anyway - some cameras make defective WAVs */
+            if (val->nBlockAlign == 0)
+              {
+                val->nBlockAlign = filesize - filesize % 4;
+              }
+            else
+              {
+                total_time = val->wSamplesPerBlock * filesize * val->bits * channels /
+                             val->nBlockAlign / constant / 8.0;
+              }
+             if ((val->nBlockAlign > 16*1024*1024) || (val->nBlockAlign == 0))
+              {
+                print_msg (ERRORM, "Unreasonable nBlockAlign (%d), aborting\n",
+                           val->nBlockAlign);
+                goto exit;
+              }
+            bsize = val->nBlockAlign;
+          }
+
         dec->decoder = decode_ms_ima;
-        bsize = ((msadpcm_values_t *)dec->metadata)->nBlockAlign;
-        if (bsize == 0) /* Let's try anyway */
-          {
-            bsize = filesize - filesize % 4;
-          }
-        if ((bsize > 16*1024*1024) || (bsize == 0))
-          {
-            print_msg (ERRORM,
-                       "Unreasonable nBlockAlign (%d), aborting\n", bsize);
-            goto exit;
-          }
         if (format == AFMT_MS_IMA_ADPCM_3BITS)
           obsize = (bsize * 16)/3 + 2;
          /*
           * 8 sample words per 3 bytes, each expanding to 2 bytes, plus 2 bytes
           * to deal with fractions. Slight overestimation because bsize
-          * includes the headers too. 
+          * includes the headers too.
           */
         else
           obsize = 4 * bsize;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag = FREE_OBUF;
         seekf = seek_compressed;
 
@@ -171,10 +231,23 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
       case AFMT_MAC_IMA_ADPCM:
         dec->metadata = (void *)(long)channels;
         dec->decoder = decode_mac_ima;
-        bsize = PLAYBUF_SIZE - PLAYBUF_SIZE % (MAC_IMA_BLKLEN * channels);
+        bsize -=  bsize % (MAC_IMA_BLKLEN * channels);
         obsize = 4 * bsize;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag = FREE_OBUF;
+        seekf = seek_compressed;
+
+        format = AFMT_S16_NE;
+        break;
+      case AFMT_IMA_ADPCM:
+        dec->metadata = (void *)ossplay_malloc (sizeof (ima_values_t));
+        memset (dec->metadata, 0, sizeof (ima_values_t));
+        ((ima_values_t *)(dec->metadata))->channels = channels;
+
+        dec->decoder = decode_raw_ima;
+        obsize = 4 * bsize;
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
+        dec->flag = FREE_OBUF | FREE_META;
         seekf = seek_compressed;
 
         format = AFMT_S16_NE;
@@ -186,11 +259,11 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
         if (dec->metadata == NULL) goto exit;
         dec->decoder = decode_cr;
         obsize = ((cradpcm_values_t *)dec->metadata)->ratio * bsize;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag = FREE_OBUF | FREE_META;
         seekf = seek_compressed;
 
-        if (filesize != UINT_MAX) filesize--;
+        if (filesize != BIG_SPECIAL) filesize--;
         format = AFMT_U8;
         break;
       case AFMT_FIBO_DELTA:
@@ -199,20 +272,20 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
         if (dec->metadata == NULL) goto exit;
         dec->decoder = decode_fib;
         obsize = 2 * bsize;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag = FREE_OBUF | FREE_META;
         seekf = seek_compressed;
 
-        if (filesize != UINT_MAX) filesize--;
+        if (filesize != BIG_SPECIAL) filesize--;
         format = AFMT_U8;
         break;
       case AFMT_S24_PACKED:
       case AFMT_S24_PACKED_BE:
         dec->metadata = (void *)(long)format;
         dec->decoder = decode_24;
-        bsize = PLAYBUF_SIZE - PLAYBUF_SIZE % 3;
+        bsize -= bsize % 3;
         obsize = bsize/3*4;
-        dec->outbuf = ossplay_malloc (obsize);
+        dec->outbuf = (unsigned char *)ossplay_malloc (obsize);
         dec->flag = FREE_OBUF;
 
         format = AFMT_S32_NE;
@@ -221,7 +294,7 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
       case AFMT_FLOAT32_LE:
         if (format == AFMT_FLOAT32_BE) dec->decoder = decode_float32_be;
         else dec->decoder = decode_float32_le;
-        bsize = PLAYBUF_SIZE;
+        bsize -= bsize % 4;
         obsize = bsize;
         dec->outbuf = NULL;
 
@@ -231,12 +304,37 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
       case AFMT_DOUBLE64_LE:
         if (format == AFMT_DOUBLE64_BE) dec->decoder = decode_double64_be;
         else dec->decoder = decode_double64_le;
-        bsize = PLAYBUF_SIZE - PLAYBUF_SIZE % 2;
+        bsize -= bsize % 8;
         obsize = bsize/2;
         dec->outbuf = NULL;
 
         format = AFMT_S32_NE;
         break;
+#ifdef OGG_SUPPORT
+      case AFMT_VORBIS:
+        readf = read_ogg;
+        dec->decoder = decode_nul;
+        dec->metadata = metadata;
+        obsize = bsize;
+        if (metadata == NULL) return E_DECODE;
+        else
+          {
+            ogg_data_t * val = (ogg_data_t *)metadata;
+            if (val->f->ov_seekable (&val->vf))
+              {
+                seekf = seek_ogg;
+                total_time = val->f->ov_time_total (&val->vf, -1);
+              }
+           else
+             {
+               seekf = NULL;
+               total_time = 0;
+             }
+         }
+
+        format = AFMT_S16_NE;
+        break;
+#endif
       default:
         dec->decoder = decode_nul;
 
@@ -249,7 +347,8 @@ decode_sound (dspdev_t * dsp, int fd, unsigned long long filesize, int format,
 
   if ((amplification > 0) && (amplification != 100))
     {
-      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders->next =
+        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->metadata = (void *)(long)format;
       decoders->decoder = decode_amplify;
@@ -282,19 +381,21 @@ dcont:
     {
       channels = 2;
       if ((ret = setup_device (dsp, format, channels, speed))) goto exit;
-      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders->next =
+        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->metadata = (void *)(long)format;
       decoders->decoder = decode_mono_to_stereo;
       decoders->next = NULL;
       obsize *= 2;
-      decoders->outbuf = ossplay_malloc (obsize);
+      decoders->outbuf = (unsigned char *)ossplay_malloc (obsize);
       decoders->flag = FREE_OBUF;
     }
 
   if (ret) goto exit;
 
-  ret = play (dsp, fd, &filesize, bsize, constant, dec, seekf);
+  ret = play (dsp, fd, &filesize, bsize, total_time, constant, readf,
+              dec, seekf);
 
 exit:
   decoders = dec;
@@ -312,9 +413,9 @@ exit:
 
 errors_t
 encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
-              int channels, int speed, unsigned long long datalimit)
+              int channels, int speed, big_t datalimit)
 {
-  unsigned long long datasize = 0;
+  big_t datasize = 0;
   double constant;
   int fd = -1;
   decoders_queue_t * dec, * decoders = NULL;
@@ -356,20 +457,22 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
     print_msg (VERBOSEM, "Recording wav: Speed %dHz %d bits %d channels\n",
                speed, (int)format2bits (format), channels);
 
-  /* 
+  /*
    * Write the initial header
    */
   if (write_head (wave_fp, type, datalimit, format, channels, speed))
     return E_ENCODE;
 
-  decoders = dec = ossplay_malloc (sizeof (decoders_queue_t));
+  decoders = dec =
+    (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
   dec->next = NULL;
   dec->flag = 0;
   dec->decoder = decode_nul;
 
   if ((amplification > 0) && (amplification != 100))
     {
-      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders->next =
+        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->metadata = (void *)(long)format;
       decoders->decoder = decode_amplify;
@@ -403,11 +506,11 @@ static ssize_t
 decode_24 (unsigned char ** obuf, unsigned char * buf,
            ssize_t l, void * metadata)
 {
-  unsigned long long outlen = 0;
+  big_t outlen = 0;
   ssize_t i;
   int v1;
   uint32 * u32;
-  int32 sample_s32, * outbuf = (int32 *) * obuf;;
+  int32 sample_s32, * outbuf = (int32 *) * obuf;
   int format = (int)(long)metadata;
 
   if (format == AFMT_S24_PACKED) v1 = 8;
@@ -436,7 +539,7 @@ setup_fib (int fd, int format)
   unsigned char buf;
   fib_values_t * val;
 
-  val = ossplay_malloc (sizeof (fib_values_t));
+  val = (fib_values_t *)ossplay_malloc (sizeof (fib_values_t));
   if (format == AFMT_EXP_DELTA) val->table = CodeToExpDelta;
   else val->table = CodeToDelta;
 
@@ -473,7 +576,7 @@ setup_cr (int fd, int format)
   cradpcm_values_t * val;
   int i;
 
-  val = ossplay_malloc (sizeof (cradpcm_values_t));
+  val = (cradpcm_values_t *)ossplay_malloc (sizeof (cradpcm_values_t));
   val->table = t_row;
 
   if (format == AFMT_CR_ADPCM_2)
@@ -511,74 +614,74 @@ decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
   int format = (int)(long)metadata;
   ssize_t i;
   int16 * outbuf = (int16 *) * obuf;
-  static const int16 mu_law_table[256] = { 
-    -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956, 
-    -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764, 
-    -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412, 
-    -11900,-11388,-10876,-10364,-9852, -9340, -8828, -8316, 
-    -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140, 
-    -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092, 
-    -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004, 
-    -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980, 
-    -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436, 
-    -1372, -1308, -1244, -1180, -1116, -1052, -988,  -924, 
-    -876,  -844,  -812,  -780,  -748,  -716,  -684,  -652, 
-    -620,  -588,  -556,  -524,  -492,  -460,  -428,  -396, 
-    -372,  -356,  -340,  -324,  -308,  -292,  -276,  -260, 
-    -244,  -228,  -212,  -196,  -180,  -164,  -148,  -132, 
-    -120,  -112,  -104,  -96,   -88,   -80,   -72,   -64, 
-    -56,   -48,   -40,   -32,   -24,   -16,   -8,     0, 
-    32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956, 
-    23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764, 
-    15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412, 
-    11900, 11388, 10876, 10364, 9852,  9340,  8828,  8316, 
-    7932,  7676,  7420,  7164,  6908,  6652,  6396,  6140, 
-    5884,  5628,  5372,  5116,  4860,  4604,  4348,  4092, 
-    3900,  3772,  3644,  3516,  3388,  3260,  3132,  3004, 
-    2876,  2748,  2620,  2492,  2364,  2236,  2108,  1980, 
-    1884,  1820,  1756,  1692,  1628,  1564,  1500,  1436, 
-    1372,  1308,  1244,  1180,  1116,  1052,  988,   924, 
-    876,   844,   812,   780,   748,   716,   684,   652, 
-    620,   588,   556,   524,   492,   460,   428,   396, 
-    372,   356,   340,   324,   308,   292,   276,   260, 
-    244,   228,   212,   196,   180,   164,   148,   132, 
-    120,   112,   104,   96,    88,    80,    72,    64, 
-    56,    48,    40,    32,    24,    16,    8,     0 
+  static const int16 mu_law_table[256] = {
+    -32124,-31100,-30076,-29052,-28028,-27004,-25980,-24956,
+    -23932,-22908,-21884,-20860,-19836,-18812,-17788,-16764,
+    -15996,-15484,-14972,-14460,-13948,-13436,-12924,-12412,
+    -11900,-11388,-10876,-10364,-9852, -9340, -8828, -8316,
+    -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140,
+    -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092,
+    -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004,
+    -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980,
+    -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436,
+    -1372, -1308, -1244, -1180, -1116, -1052, -988,  -924,
+    -876,  -844,  -812,  -780,  -748,  -716,  -684,  -652,
+    -620,  -588,  -556,  -524,  -492,  -460,  -428,  -396,
+    -372,  -356,  -340,  -324,  -308,  -292,  -276,  -260,
+    -244,  -228,  -212,  -196,  -180,  -164,  -148,  -132,
+    -120,  -112,  -104,  -96,   -88,   -80,   -72,   -64,
+    -56,   -48,   -40,   -32,   -24,   -16,   -8,     0,
+    32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956,
+    23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764,
+    15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412,
+    11900, 11388, 10876, 10364, 9852,  9340,  8828,  8316,
+    7932,  7676,  7420,  7164,  6908,  6652,  6396,  6140,
+    5884,  5628,  5372,  5116,  4860,  4604,  4348,  4092,
+    3900,  3772,  3644,  3516,  3388,  3260,  3132,  3004,
+    2876,  2748,  2620,  2492,  2364,  2236,  2108,  1980,
+    1884,  1820,  1756,  1692,  1628,  1564,  1500,  1436,
+    1372,  1308,  1244,  1180,  1116,  1052,  988,   924,
+    876,   844,   812,   780,   748,   716,   684,   652,
+    620,   588,   556,   524,   492,   460,   428,   396,
+    372,   356,   340,   324,   308,   292,   276,   260,
+    244,   228,   212,   196,   180,   164,   148,   132,
+    120,   112,   104,   96,    88,    80,    72,    64,
+    56,    48,    40,    32,    24,    16,    8,     0
   };
 
-  static const int16 a_law_table[256] = { 
-    -5504, -5248, -6016, -5760, -4480, -4224, -4992, -4736, 
-    -7552, -7296, -8064, -7808, -6528, -6272, -7040, -6784, 
-    -2752, -2624, -3008, -2880, -2240, -2112, -2496, -2368, 
-    -3776, -3648, -4032, -3904, -3264, -3136, -3520, -3392, 
-    -22016,-20992,-24064,-23040,-17920,-16896,-19968,-18944, 
-    -30208,-29184,-32256,-31232,-26112,-25088,-28160,-27136, 
-    -11008,-10496,-12032,-11520,-8960, -8448, -9984, -9472, 
-    -15104,-14592,-16128,-15616,-13056,-12544,-14080,-13568, 
-    -344,  -328,  -376,  -360,  -280,  -264,  -312,  -296, 
-    -472,  -456,  -504,  -488,  -408,  -392,  -440,  -424, 
-    -88,   -72,   -120,  -104,  -24,   -8,    -56,   -40, 
-    -216,  -200,  -248,  -232,  -152,  -136,  -184,  -168, 
-    -1376, -1312, -1504, -1440, -1120, -1056, -1248, -1184, 
-    -1888, -1824, -2016, -1952, -1632, -1568, -1760, -1696, 
-    -688,  -656,  -752,  -720,  -560,  -528,  -624,  -592, 
-    -944,  -912,  -1008, -976,  -816,  -784,  -880,  -848, 
-    5504,  5248,  6016,  5760,  4480,  4224,  4992,  4736, 
-    7552,  7296,  8064,  7808,  6528,  6272,  7040,  6784, 
-    2752,  2624,  3008,  2880,  2240,  2112,  2496,  2368, 
-    3776,  3648,  4032,  3904,  3264,  3136,  3520,  3392, 
-    22016, 20992, 24064, 23040, 17920, 16896, 19968, 18944, 
-    30208, 29184, 32256, 31232, 26112, 25088, 28160, 27136, 
-    11008, 10496, 12032, 11520, 8960,  8448,  9984,  9472, 
-    15104, 14592, 16128, 15616, 13056, 12544, 14080, 13568, 
-    344,   328,   376,   360,   280,   264,   312,   296, 
-    472,   456,   504,   488,   408,   392,   440,   424, 
-    88,    72,    120,   104,   24,    8,     56,    40, 
-    216,   200,   248,   232,   152,   136,   184,   168, 
-    1376,  1312,  1504,  1440,  1120,  1056,  1248,  1184, 
-    1888,  1824,  2016,  1952,  1632,  1568,  1760,  1696, 
-    688,   656,   752,   720,   560,   528,   624,   592, 
-    944,   912,   1008,  976,   816,   784,   880,   848 
+  static const int16 a_law_table[256] = {
+    -5504, -5248, -6016, -5760, -4480, -4224, -4992, -4736,
+    -7552, -7296, -8064, -7808, -6528, -6272, -7040, -6784,
+    -2752, -2624, -3008, -2880, -2240, -2112, -2496, -2368,
+    -3776, -3648, -4032, -3904, -3264, -3136, -3520, -3392,
+    -22016,-20992,-24064,-23040,-17920,-16896,-19968,-18944,
+    -30208,-29184,-32256,-31232,-26112,-25088,-28160,-27136,
+    -11008,-10496,-12032,-11520,-8960, -8448, -9984, -9472,
+    -15104,-14592,-16128,-15616,-13056,-12544,-14080,-13568,
+    -344,  -328,  -376,  -360,  -280,  -264,  -312,  -296,
+    -472,  -456,  -504,  -488,  -408,  -392,  -440,  -424,
+    -88,   -72,   -120,  -104,  -24,   -8,    -56,   -40,
+    -216,  -200,  -248,  -232,  -152,  -136,  -184,  -168,
+    -1376, -1312, -1504, -1440, -1120, -1056, -1248, -1184,
+    -1888, -1824, -2016, -1952, -1632, -1568, -1760, -1696,
+    -688,  -656,  -752,  -720,  -560,  -528,  -624,  -592,
+    -944,  -912,  -1008, -976,  -816,  -784,  -880,  -848,
+    5504,  5248,  6016,  5760,  4480,  4224,  4992,  4736,
+    7552,  7296,  8064,  7808,  6528,  6272,  7040,  6784,
+    2752,  2624,  3008,  2880,  2240,  2112,  2496,  2368,
+    3776,  3648,  4032,  3904,  3264,  3136,  3520,  3392,
+    22016, 20992, 24064, 23040, 17920, 16896, 19968, 18944,
+    30208, 29184, 32256, 31232, 26112, 25088, 28160, 27136,
+    11008, 10496, 12032, 11520, 8960,  8448,  9984,  9472,
+    15104, 14592, 16128, 15616, 13056, 12544, 14080, 13568,
+    344,   328,   376,   360,   280,   264,   312,   296,
+    472,   456,   504,   488,   408,   392,   440,   424,
+    88,    72,    120,   104,   24,    8,     56,    40,
+    216,   200,   248,   232,   152,   136,   184,   168,
+    1376,  1312,  1504,  1440,  1120,  1056,  1248,  1184,
+    1888,  1824,  2016,  1952,  1632,  1568,  1760,  1696,
+    688,   656,   752,   720,   560,   528,   624,   592,
+    944,   912,   1008,  976,   816,   784,   880,   848
   };
 
   switch (format)
@@ -663,9 +766,10 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
     230, 230, 230, 230, 307, 409, 512, 614,
     768, 614, 512, 409, 307, 230, 230, 230
   };
-  int32 delta[MAX_CHANNELS], samp1[MAX_CHANNELS], samp2[MAX_CHANNELS],
-        predictor[MAX_CHANNELS], new, pred, n = 0;
   ssize_t outp = 0, x = 0;
+  int16 * wbuf = (int16 *)*obuf;
+  int32 delta[MAX_CHANNELS], samp1[MAX_CHANNELS], samp2[MAX_CHANNELS],
+        predictor[MAX_CHANNELS], new_samp, pred, n = 0;
 
 /*
  * Playback procedure
@@ -673,8 +777,7 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
 #define OUT_SAMPLE(s) \
  do { \
    if (s > 32767) s = 32767; else if (s < -32768) s = -32768; \
-   (*obuf)[outp++] = (uint8)(s & 0xff); \
-   (*obuf)[outp++] = (uint8)((s >> 8) & 0xff); \
+   wbuf[outp++] = s; \
    n += 2; \
  } while(0)
 
@@ -700,7 +803,7 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
     {
       samp1[i] = (int16) le_int (&buf[x], 2);
       x += 2;
-      OUT_SAMPLE (samp2[i]);
+      OUT_SAMPLE (samp1[i]);
     }
 
   for (i = 0; i < channels; i++)
@@ -716,23 +819,23 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
         pred = ((samp1[i] * val->coeff[predictor[i]].coeff1)
                 + (samp2[i] * val->coeff[predictor[i]].coeff2)) / 256;
 
-        if (x > l) return outp;
+        if (x > l) return 2*outp;
         i_delta = error_delta = GETNIBBLE;
 
         if (i_delta & 0x08)
         i_delta -= 0x10;	/* Convert to signed */
 
-        new = pred + (delta[i] * i_delta);
-        OUT_SAMPLE (new);
+        new_samp = pred + (delta[i] * i_delta);
+        OUT_SAMPLE (new_samp);
 
         delta[i] = delta[i] * AdaptionTable[error_delta] / 256;
         if (delta[i] < 16) delta[i] = 16;
 
         samp2[i] = samp1[i];
-        samp1[i] = new;
+        samp1[i] = new_samp;
       }
 
-  return outp;
+  return 2*outp;
 }
 
 static ssize_t
@@ -789,7 +892,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
 #ifdef OSS_LITTLE_ENDIAN
       case AFMT_U16_LE: /* U16_LE -> S16_LE */
 #else
-      case AFMT_U16_BE: /* U16_BE -> S16_BE */ 
+      case AFMT_U16_BE: /* U16_BE -> S16_BE */
 #endif
        {
           short * s = (short *)buf;
@@ -899,7 +1002,7 @@ decode_ima_3bits (unsigned char * obuf, unsigned char * buf, ssize_t l,
   ssize_t i;
 
   int32 pred = *pred0, raw;
-  int8 index = *index0, value; 
+  int8 index = *index0, value;
   int16 * outbuf = (int16 *) obuf, step;
 
   static const int step_tab[89] = {
@@ -1030,7 +1133,7 @@ decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
              * Each sample word for a channel in an IMA ADPCM RIFF file is 4
              * bits. This doesn't resolve to an integral number of samples
              * in a 3 bit ADPCM, so we use a simple method around this.
-             * This shouldn't skip samples since the spec gurantees the
+             * This shouldn't skip samples since the spec guarantees the
              * number of sample words in a block is divisible by 3.
              */
               for (j = 0; j < 12; j++)
@@ -1044,6 +1147,20 @@ decode_ms_ima (unsigned char ** obuf, unsigned char * buf,
           olen += 64*val->channels;
         }
     }
+  return olen;
+}
+
+static ssize_t
+decode_raw_ima (unsigned char ** obuf, unsigned char * buf,
+                ssize_t l, void * metadata)
+{
+  ima_values_t * val = (ima_values_t *)metadata;
+  ssize_t olen = 0;
+
+  /* We can't tell if/how it's interleaved. */
+  decode_ima (*obuf, buf, l, &val->pred[0], &val->index[0], 1, 0);
+  olen = 4*l;
+
   return olen;
 }
 
@@ -1093,7 +1210,7 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
             }
         }
         break;
-    } 
+    }
   return 2*l;
 }
 
@@ -1186,7 +1303,7 @@ decode_double64_le (unsigned char ** obuf, unsigned char * buf, ssize_t l,
 static int32
 double64_to_s32 (int exp, int32 upper, int32 lower, int sign)
 {
-  long double value, out;
+  ldouble_t out, value;
 
   if ((exp != 0) && (exp != 2047))
     {
@@ -1196,12 +1313,12 @@ double64_to_s32 (int exp, int32 upper, int32 lower, int sign)
   else if (exp == 0)
     {
 #if 0
-      /* So low, that it's pretty much 0 for us */
       int j;
 
       out = (upper + lower / ((double)0x1000000))/((double)0x10000000);
       for (j=0; j < 73; j++) out /= 1 << 14;
 #endif
+      /* So low, that it's pretty much 0 for us */
       return 0;
     }
   else /* exp == 2047 */
@@ -1224,7 +1341,7 @@ double64_to_s32 (int exp, int32 upper, int32 lower, int sign)
 static int32
 float32_to_s32 (int exp, int man, int sign)
 {
-  long double out, value;
+  ldouble_t out, value;
 
   if ((exp != 0) && (exp != 255))
     {
@@ -1234,11 +1351,11 @@ float32_to_s32 (int exp, int man, int sign)
   else if (exp == 0)
     {
 #if 0
-      /* So low, that it's pretty much 0 for us */
       value = (float)man / (float)0x800000;
       value /= 1UL << 31; value /= 1UL << 31; value /= 1UL << 32;
       value /= 1UL << 32;
 #endif
+      /* So low, that it's pretty much 0 for us */
       return 0;
     }
   else /* exp == 255 */
@@ -1254,7 +1371,7 @@ float32_to_s32 (int exp, int man, int sign)
   out = (sign ? -1 : 1) * value * S32_MAX;
   if (out > S32_MAX) out = S32_MAX;
   else if (out < S32_MIN) out = S32_MIN;
- 
+
   return out;
 }
 
@@ -1298,6 +1415,7 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
   ssize_t i;
 
   level = 0;
+  if ((buf == NULL) || (l == 0)) return 0;
 
   switch (format)
     {
@@ -1309,7 +1427,7 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
 
           for (i = 0; i < l; i++)
             {
-              v = ((*p++) - 128) << 24;
+              v = ((*p++) - 128);
               if (v < 0) v = -v;
               if (v > level) level = v;
             }
@@ -1324,11 +1442,12 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
 
           for (i = 0; i < l / 2; i++)
             {
-              v = (*p++) << 16;
+              v = *p++;
               if (v < 0) v = -v;
               if (v > level) level = v;
             }
         }
+        level >>= 8;
         break;
 
       case AFMT_S24_NE:
@@ -1345,11 +1464,10 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
              if (v > level) level = v;
            }
         }
+        level >>= 24;
         break;
       default: return -1;
     }
-
-  level >>= 24;
 
   if (level > 255) level = 255;
   v = db_table[level];
@@ -1364,7 +1482,8 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
       (*format == AFMT_S24_OE) || (*format == AFMT_U16_LE) ||
       (*format == AFMT_U16_BE))
     {
-      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders->next =
+        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->decoder = decode_endian;
       decoders->metadata = (void *)(long)*format;
@@ -1380,13 +1499,14 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
     }
   else if (format2bits (*format) == 8)
     {
-      decoders->next = ossplay_malloc (sizeof (decoders_queue_t));
+      decoders->next =
+        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->decoder = decode_8_to_s16;
       decoders->metadata = (void *)(long)*format;
       decoders->next = NULL;
       *obsize *= 2;
-      decoders->outbuf = ossplay_malloc (*obsize);
+      decoders->outbuf = (unsigned char *)ossplay_malloc (*obsize);
       decoders->flag = FREE_OBUF;
       *format = AFMT_S16_NE;
     }
@@ -1394,65 +1514,68 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
 }
 
 verbose_values_t *
-setup_verbose (int format, double constant, unsigned long long * filesize)
+setup_verbose (int format, double oconstant, double total_time)
 {
   verbose_values_t * val;
 
-  val = ossplay_malloc (sizeof (verbose_values_t));
+  val = (verbose_values_t *)ossplay_malloc (sizeof (verbose_values_t));
 
-  if ((*filesize == UINT_MAX) || (*filesize == 0))
+  if (total_time == 0)
     {
-      val->tsecs = UINT_MAX;
+      val->tsecs = 0;
       strcpy (val->tstring, "unknown");
     }
   else
     {
       char * p;
 
-      val->tsecs = *filesize / constant;
+      val->tsecs = total_time;
       p = totime (val->tsecs);
-      val->tsecs -= UPDATE_EPSILON/1000;
       strncpy (val->tstring, p, sizeof (val->tstring));
       ossplay_free (p);
+      val->tsecs -= UPDATE_EPSILON/1000;
     }
 
+  val->secs = 0;
+  val->secs_timer2 = 0;
   val->next_sec = 0;
-  val->next_sec2 = 0;
+  val->next_sec_timer2 = 0;
   val->format = format;
-  val->constant = constant;
-  val->datamark = filesize;
+  val->constant = oconstant;
 
   return val;
 }
 
-static ssize_t
-seek_normal (int fd, unsigned long long * datamark, unsigned long long filesize,
-             double constant, unsigned long long rsize, int channels)
+static errors_t
+seek_normal (int fd, big_t * datamark, big_t filesize, double constant,
+             big_t rsize, int channels, void * metadata)
 {
-  off_t pos = seek_time * constant;
+  big_t pos = seek_time * constant;
   int ret;
 
-  seek_time = 0;
-  if ((pos > filesize) || (pos < *datamark)) return E_DECODE;
   pos -= pos % channels;
+  if ((pos > filesize) || (pos < *datamark)) return E_DECODE;
 
   ret = ossplay_lseek (fd, pos - *datamark, SEEK_CUR);
-  if (ret == -1) return E_DECODE;
+  if (ret == -1)
+    {
+      seek_time = 0;
+      return E_DECODE;
+    }
   *datamark = ret;
 
-  return 0;
+  return E_OK;
 }
 
-static ssize_t
-seek_compressed (int fd, unsigned long long * datamark, 
-                 unsigned long long filesize, double constant,
-                 unsigned long long rsize, int channels)
+static errors_t
+seek_compressed (int fd, big_t * datamark, big_t filesize, double constant,
+                 big_t rsize, int channels, void * metadata)
 /*
- * We have to use this method because some compressed formats depend on
- * the previous state of the decoder.
+ * We have to use this method because some compressed formats depend on the
+ * previous state of the decoder, and don't (yet?) have own seek function.
  */
 {
-  unsigned long long pos = seek_time * constant;
+  big_t pos = seek_time * constant;
 
   if (pos > filesize)
     {
@@ -1461,12 +1584,83 @@ seek_compressed (int fd, unsigned long long * datamark,
     }
 
   if (*datamark + rsize < pos)
-     {
-       return SEEK_CONT_AFTER_DECODE;
-     }
+    {
+      return SEEK_CONT_AFTER_DECODE;
+    }
   else
     {
-      seek_time = 0;
-      return 0;
+      /* Still not entirely accurate. */
+      seek_time = *datamark / constant;
+      return E_OK;
     }
 }
+
+static ssize_t
+read_normal (int fd, void * buf, size_t len, void * metadata)
+{
+  return read (fd, buf, len);
+}
+
+#ifdef OGG_SUPPORT
+static errors_t
+seek_ogg (int fd, big_t * datamark, big_t filesize, double constant,
+          big_t rsize, int channels, void * metadata)
+{
+  ogg_data_t * val = (ogg_data_t *)metadata;
+
+  if (val->f->ov_time_seek (&val->vf, seek_time) < 0)
+    {
+      seek_time = 0;
+      return E_DECODE;
+    }
+  *datamark = (big_t)val->f->ov_raw_tell (&val->vf);
+  return E_OK;
+}
+
+static ssize_t
+read_ogg (int fd, void * buf, size_t len, void * metadata)
+{
+  int c_bitstream;
+  ssize_t ret = 0;
+  ogg_data_t * val = (ogg_data_t *)metadata;
+
+  if (val->setup == 1)
+    {
+      vorbis_info * vi;
+
+      vi = val->f->ov_info (&val->vf, -1);
+
+      ret = setup_device (val->dsp, AFMT_S16_NE, vi->channels, vi->rate);
+      if (ret < 0) return -1;
+      val->setup = 0;
+    }
+
+  do
+    {
+#if 0
+      if (ret == OV_HOLE)
+          print_msg (NOTIFYM, "Hole in the OggVorbis stream!\n");
+#endif
+      c_bitstream = val->bitstream;
+      ret = (ssize_t)val->f->ov_read (&val->vf, (char *)buf, (int)len,
+#ifdef OSS_LITTLE_ENDIAN
+                     0,
+#else
+                     1,
+#endif
+                     2, 1, &val->bitstream);
+    }
+  while (ret == OV_HOLE);
+
+  if (ret == 0) return 0;
+  else if (ret < 0) return ret;
+
+  if ((c_bitstream != val->bitstream) && (c_bitstream != -1))
+    {
+      val->bitstream = c_bitstream;
+      val->setup = 1;
+    }
+
+  return ret;
+}
+#endif

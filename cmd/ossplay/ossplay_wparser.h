@@ -3,8 +3,8 @@
 
 #include "ossplay.h"
 
-int write_head (FILE *, fctypes_t, unsigned long long, int, int, int);
-int finalize_head (FILE *, fctypes_t, unsigned long long, int, int, int);
+int write_head (FILE *, fctypes_t, big_t, int, int, int);
+int finalize_head (FILE *, fctypes_t, big_t, int, int, int);
 
 #ifdef OSS_BIG_ENDIAN
 #define BE_INT(x) x

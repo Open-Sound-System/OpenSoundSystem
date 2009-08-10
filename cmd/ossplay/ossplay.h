@@ -4,14 +4,15 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 
 #include <soundcard.h>
+#include "ossplay_console.h"
 
 #undef  MPEG_SUPPORT
 #define PLAYBUF_SIZE		1024
@@ -32,6 +33,17 @@
 /* Should be smaller than the others. Used to ensure an update at end of file */
 #define UPDATE_EPSILON			1.0
 
+#ifdef OSS_NO_LONG_LONG
+typedef unsigned long big_t;
+#define _PRIbig_t "%lu"
+#define BIG_SPECIAL ULONG_MAX
+#else
+typedef unsigned long long big_t;
+#define _PRIbig_t "%llu"
+#define BIG_SPECIAL ULONG_MAX
+#endif
+
+typedef long double ldouble_t;
 typedef signed char int8;
 typedef unsigned char uint8;
 typedef short int16;
@@ -85,24 +97,79 @@ typedef struct {
 }
 dspdev_t;
 
-typedef enum {
+typedef enum errors_t {
+  E_OK,
+  E_SETUP_ERROR,
+  E_FORMAT_UNSUPPORTED,
+  E_CHANNELS_UNSUPPORTED,
+  E_DECODE,
+  E_ENCODE,
+  E_USAGE,
+  /*
+   * Not an error, but since seek function can also return an error this needs
+   * to be different from the others
+   */
+  SEEK_CONT_AFTER_DECODE
+}
+errors_t;
+
+#ifdef OGG_SUPPORT
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
+
+typedef struct {
+  void * vorbisfile_handle;
+  int (*ov_clear) (OggVorbis_File *);
+  vorbis_comment * (*ov_comment) (OggVorbis_File *, int);
+  vorbis_info * (*ov_info) (OggVorbis_File *, int);
+  int (*ov_open_callbacks) (void *, OggVorbis_File *, char *, long, ov_callbacks);
+  long (*ov_raw_tell) (OggVorbis_File *);
+  long (*ov_read) (OggVorbis_File *, char *, int, int, int, int, int *);
+  int (*ov_seekable) (OggVorbis_File *);
+  double (*ov_time_total) (OggVorbis_File *, int);
+  int (*ov_time_seek) (OggVorbis_File *, double);
+} dlopen_funcs_t;
+
+typedef struct {
+  OggVorbis_File vf;
+  dlopen_funcs_t * f;
+
+  int bitstream, setup;
+  dspdev_t * dsp;
+}
+ogg_data_t;
+#else
+typedef void * dlopen_funcs_t;
+#endif
+
+/*
+ * ossplay supports more containers than the list below. This type is used by
+ * the IFF parser, ossrecord and some other functions though.
+ */
+typedef enum fctypes_t {
+  RAW_FILE,
   WAVE_FILE,
   AU_FILE,
-  RAW_FILE,
   AIFF_FILE,
   AIFC_FILE,
   WAVE_FILE_BE,
   _8SVX_FILE,
   _16SV_FILE,
-  MAUD_FILE
+  MAUD_FILE,
+  OGG_FILE
 }
 fctypes_t;
 
+#define IS_IFF_FILE(t) (((t) == WAVE_FILE) || ((t) == WAVE_FILE_BE) || \
+                        ((t) == AIFF_FILE) || ((t) == AIFC_FILE) || \
+                        ((t) == _8SVX_FILE) || ((t) == _16SV_FILE) || \
+                        ((t) == MAUD_FILE) \
+                       )
 /*
  * Used in the format_t table below.
  * Shows what actions can be done with the format - Play, Record or both.
  */
-typedef enum {
+typedef enum direction_t {
   CP = 0x1,
   CR = 0x2,
   CRP = 0x3
@@ -132,21 +199,22 @@ typedef struct {
 adpcm_coeff;
 
 typedef struct msadpcm_values {
-  int nBlockAlign;
-  int wSamplesPerBlock;
-  int wNumCoeff;
-  int bits;
+  uint16 nBlockAlign;
+  uint16 wSamplesPerBlock;
+  uint16 wNumCoeff;
+  uint16 bits;
   adpcm_coeff coeff[32];
   int channels;
 }
 msadpcm_values_t;
 
-typedef ssize_t (decfunc_t) (unsigned char **, unsigned char *,
-                             ssize_t, void *);
-typedef ssize_t (seekfunc_t) (int, unsigned long long *, unsigned long long,
-                              double, unsigned long long, int);
+typedef ssize_t (decfunc_t) (unsigned char **, unsigned char *, ssize_t,
+                             void *);
+typedef errors_t (seekfunc_t) (int, big_t *, big_t, double, big_t, int, void *);
+typedef ssize_t (readfunc_t) (int, void *, size_t, void *);
 
-typedef enum {
+typedef enum decoder_flag_t {
+  FREE_NONE = 0,
   FREE_OBUF = 1,
   FREE_META = 2
 }
@@ -161,22 +229,6 @@ typedef struct decoders_queue {
 }
 decoders_queue_t;
 
-typedef enum {
-  E_OK,
-  E_SETUP_ERROR,
-  E_FORMAT_UNSUPPORTED,
-  E_CHANNELS_UNSUPPORTED,
-  E_DECODE,
-  E_ENCODE,
-  E_USAGE,
-  /*
-   * Not an error, but since seek function can also return an error this needs
-   * to be different from the others
-   */
-  SEEK_CONT_AFTER_DECODE
-}
-errors_t;
-
 static const format_t format_a[] = {
   {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},
   {"U8",		AFMT_U8,		CRP,		AFMT_S16_NE},
@@ -190,47 +242,46 @@ static const format_t format_a[] = {
   {"S32_BE",		AFMT_S32_BE,		CRP,		AFMT_S32_NE},
   {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
   {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
-  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
-  {"IMA_ADPCM_3BITS",	AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
-  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
-  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
-  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
-  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
   {"FLOAT32_LE",	AFMT_FLOAT32_LE,	CP,		0},
   {"FLOAT32_BE",	AFMT_FLOAT32_BE,	CP,		0},
   {"DOUBLE64_LE",	AFMT_DOUBLE64_LE,	CP,		0},
   {"DOUBLE64_BE",	AFMT_DOUBLE64_BE,	CP,		0},
   {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
   {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
+  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
+  {"IMA_ADPCM_3BITS",	AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
+  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
+  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
+  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
+  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
   {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
   {"FIBO_DELTA",	AFMT_FIBO_DELTA,	CP,		0},
   {"EXP_DELTA",		AFMT_EXP_DELTA,		CP,		0},
-  {NULL,		0,			0,		0}
+  {NULL,		0,			CP,		0}
 };
 
 static const container_t container_a[] = {
+  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
   {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
   {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
-  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
   {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
-  {NULL,		0,		0,		0,	0}
+  {NULL,		RAW_FILE,	0,		0,	0}
 }; /* Order should match fctypes_t enum so that container_a[type] works */
 
 int be_int (const unsigned char *, int);
 const char * filepart (const char *);
 float format2bits (int);
 int le_int (const unsigned char *, int);
-long double ossplay_ldexpl (long double, int);
-off_t ossplay_lseek_stdin (int, off_t, int);
+ldouble_t ossplay_ldexpl (ldouble_t, int);
 int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);
-int play (dspdev_t *, int, unsigned long long *, unsigned long long, double,
-          decoders_queue_t *, seekfunc_t *);
-int record (dspdev_t *, FILE *, const char *, double, unsigned long long,
-            unsigned long long *, decoders_queue_t * dec);
+int play (dspdev_t *, int, big_t *, big_t, double, double,
+          readfunc_t *, decoders_queue_t *, seekfunc_t *);
+int record (dspdev_t *, FILE *, const char *, double, big_t,
+            big_t *, decoders_queue_t * dec);
 const char * sample_format_name (int);
-int setup_device (dspdev_t *, int, int, int);
-int silence (dspdev_t *, unsigned long long, int);
+errors_t setup_device (dspdev_t *, int, int, int);
+errors_t silence (dspdev_t *, big_t, int);
 
 void select_playtgt (dspdev_t *);
 void select_recsrc (dspdev_t *);
@@ -244,7 +295,5 @@ void close_device (dspdev_t *);
 #define OSS_LITTLE_ENDIAN
 #endif /* AFMT_S16_NE == AFMT_S16_BE */
 #endif /* !OSS_BIG_ENDIAN && !OSS_LITTLE_ENDIAN */
-
-#include "ossplay_console.h"
 
 #endif

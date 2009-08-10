@@ -103,7 +103,7 @@ bswaps (short x)
 }
 
 int
-write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
+write_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
             int format, int channels, int speed)
 {
   uint32 dl = datalimit;
@@ -118,12 +118,15 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
         WaveHeader wh;
         int bits = format2bits (format);
 
-        if (datalimit > U32_MAX - sizeof(WaveHeader) + 8)
+        if (datalimit > U32_MAX - sizeof (WaveHeader) + 8)
           print_msg (WARNM, "Data size exceeds file format limit!\n");
-        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof(WaveHeader) + 8))
-          dl = U32_MAX - sizeof(WaveHeader) + 8;
+        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (WaveHeader) + 8))
+          dl = U32_MAX - sizeof (WaveHeader) + 8;
         memcpy ((char *) &wh.main_chunk, "RIFF", 4);
-        wh.length = LE_INT (dl + sizeof (WaveHeader) - 8);
+        if (dl % 2)
+          wh.length = LE_INT (dl + sizeof (WaveHeader) - 7);
+        else
+          wh.length = LE_INT (dl + sizeof (WaveHeader) - 8);
         memcpy ((char *) &wh.chunk_type, "WAVE", 4);
         memcpy ((char *) &wh.sub_chunk, "fmt ", 4);
         wh.sc_len = LE_INT (16);
@@ -137,7 +140,6 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
               break;
             case AFMT_U8:
             case AFMT_S16_LE:
-            case AFMT_S24_LE:
             case AFMT_S24_PACKED:
             case AFMT_S32_LE:
               wh.format = LE_SH (1);
@@ -188,13 +190,15 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
         int bits = format2bits (format);
         uint32 i;
 
-        if (datalimit > U32_MAX - sizeof(AiffHeader) + 8)
+        if (datalimit > U32_MAX - sizeof (AiffHeader) + 8)
           print_msg (WARNM, "Data size exceeds file format limit!\n");
-        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof(AiffHeader) + 8))
-          dl = U32_MAX - (U32_MAX % 2) - sizeof(AiffHeader) + 8;
-        if (dl % 2) dl++;
+        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (AiffHeader) + 8))
+          dl = U32_MAX - (U32_MAX % 2) - sizeof (AiffHeader) + 8;
         memcpy ((char *) &afh.main_chunk, "FORM", 4);
-        afh.length = BE_INT (dl + sizeof (AiffHeader) - 8);
+        if (dl % 2)
+          afh.length = BE_INT (dl + sizeof (AiffHeader) - 7);
+        else
+          afh.length = BE_INT (dl + sizeof (AiffHeader) - 8);
         memcpy ((char *) &afh.chunk_type, "AIFF", 4);
         memcpy ((char *) &afh.sub_chunk, "COMM", 4);
         afh.comm_len = BE_INT (18);
@@ -203,7 +207,7 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
         afh.bits = BE_SH (bits);
         switch (format)
           {
-            case AFMT_S8: 
+            case AFMT_S8:
             case AFMT_S16_BE:
             case AFMT_S24_PACKED_BE:
             case AFMT_S32_BE:
@@ -240,18 +244,19 @@ write_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
 }
 
 int
-finalize_head (FILE * wave_fp, fctypes_t type, unsigned long long datalimit,
+finalize_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
                int format, int channels, int speed)
 {
-  if ((type == AIFF_FILE) && (datalimit % 2))
+  if ((IS_IFF_FILE (type)) && (datalimit % 2))
     {
       /*
-       * All chunks must have an even length in an AIFF file,
+       * All chunks must have an even length in an IFF file,
        * so we have to add a pad byte in this case.
+       * Since we always write the data chunk last, we can
+       * just append it to end of file.
        */
       char flag = 0;
 
-      datalimit++;
       fseek (wave_fp, 0, SEEK_END);
       if (fwrite (&flag , 1, 1, wave_fp) == 0)
         print_msg (WARNM, "Couldn't add padding byte to SSND chunk!\n");
