@@ -12,10 +12,20 @@ check_sysdep (conf_t * conf, struct utsname *un)
 #ifdef USE_GCC
   strcpy (conf->ccomp, "gcc -Wall -O");
 #else
+
+# if 0
+// Using -fast seems to cause crash if OSS is compiled with certain version of Sun Studio. 
+// The produced binary uses some instructions that are not permitted in kernel mode. For this reason
+// -fast cannot be used at this moment.
+
   if (getenv("PORTABLE_BUILD") != NULL)
      strcpy (conf->ccomp, "cc -xO5");	/* Produce code for generic target */
   else
      strcpy (conf->ccomp, "cc -fast");	/* Optimize for the current system/arch */
+# else
+  strcpy (conf->ccomp, "cc -xO5");	/* Produce code for generic target */
+# endif 
+
   shlib_cflags = "-Bdynamic -Kpic";
   shlib_ldflags = "-G -z text";
 #endif
