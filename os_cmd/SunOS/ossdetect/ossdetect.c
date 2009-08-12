@@ -731,7 +731,7 @@ main (int argc, char *argv[])
       add_drv ("OSS User space device deiver", "oss_userdev", "-m '* 0666 root sys'");
     }
 
-  if (stat("/kernel/drv/oss_sadasupport", &st) != -1)
+  if (stat("/kernel/drv/oss_sadasupport.conf", &st) != -1)
   if (stat("/kernel/misc/audiosup", &st) != -1)
      {
   	check_conf ("oss_sadasupport", 1, "");

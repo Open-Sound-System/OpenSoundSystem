@@ -98,9 +98,12 @@ via8233intr (oss_device_t * osdev)
   status = INL (devc->osdev, devc->base + 0x84);
   if (status == 0)
     {
-      OUTL (devc->osdev, status, devc->base + 0x84);
+      /*
+       * No interrupts are pending so we can stop without
+       * polling all the individual status registers.
+       */
       MUTEX_EXIT (devc->mutex, flags);
-      return serviced;
+      return 0;
     }
 
   for (i = 0; i < MAX_PORTC; i++)
@@ -138,8 +141,6 @@ via8233intr (oss_device_t * osdev)
 	    OUTB (devc->osdev, engine_stat, eng->base + 0x00);
 	  }
     }
-  /* ack the interrupt */
-  OUTL (devc->osdev, status, devc->base + 0x84);
   MUTEX_EXIT (devc->mutex, flags);
 
   return serviced;
