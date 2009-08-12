@@ -113,7 +113,7 @@
 #define AI_EAI		(1<< 24)
 
 
-#define MAX_PORTC	4
+#define MAX_PORTC	3
 
 extern int audigyls_spdif_enable;
 
@@ -142,7 +142,6 @@ typedef struct
   oss_native_word base;
   oss_mutex_t mutex;
   oss_mutex_t low_mutex;
-  int open_mode;
   char *card_name;
   unsigned int subvendor;
   int rec_src;			/* record channel src spdif/i2s/ac97/src */
@@ -449,14 +448,6 @@ audigyls_open (int dev, int mode, int open_flags)
       MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
       return OSS_EBUSY;
     }
-
-  if (devc->open_mode & mode)
-    {
-      MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
-      return OSS_EBUSY;
-    }
-
-  devc->open_mode |= mode;
   portc->open_mode = mode;
   portc->audio_enabled = ~mode;
   portc->play_ptr = portc->rec_ptr = 0;
@@ -474,7 +465,6 @@ audigyls_close (int dev, int mode)
   audigyls_reset (dev);
   portc->open_mode = 0;
   portc->audio_enabled &= ~mode;
-  devc->open_mode &= ~mode;
 }
 
 /*ARGSUSED*/
@@ -1409,7 +1399,6 @@ audigyls_mix_init (int dev)
 
 static const int bindings[MAX_PORTC] = {
   DSP_BIND_FRONT,
-  0,
   DSP_BIND_CENTER_LFE,
   DSP_BIND_SURR
 };
@@ -1423,7 +1412,6 @@ install_audio_devices (audigyls_devc * devc)
   int fmts = AFMT_S16_LE | AFMT_AC3;
   static char *names[] = {
     "AudigyLS front",
-    "AudigyLS (shadow)",
     "AudigyLS center/lfe",
     "AudigyLS surround"
   };
@@ -1448,16 +1436,11 @@ install_audio_devices (audigyls_devc * devc)
 	  flags |= ADEV_DUPLEX;
 	  break;
 	case 1:
-	  portc->play_port = 0;
-	  portc->rec_port = 2;
-	  flags |= ADEV_DUPLEX | ADEV_SHADOW;
-	  break;
-	case 2:
 	  portc->play_port = 1;
 	  portc->rec_port = 2;
 	  flags |= ADEV_NOINPUT;
 	  break;
-	case 3:
+	case 2:
 	  portc->play_port = 3;
 	  portc->rec_port = 2;
 	  flags |= ADEV_NOINPUT;
@@ -1507,10 +1490,10 @@ install_audio_devices (audigyls_devc * devc)
     {
       if (audigyls_spdif_enable && devc->has_ac97)
 	remux_install ("AudigyLS 4.0 output", devc->osdev, frontdev,
-		       frontdev + 3, -1, -1);
+		       frontdev + 2, -1, -1);
       else
 	remux_install ("AudigyLS 5.1 output", devc->osdev, frontdev,
-		       frontdev + 3, frontdev + 2, -1);
+		       frontdev + 2, frontdev + 1, -1);
     }
 #endif
 
@@ -1669,7 +1652,6 @@ oss_audigyls_attach (oss_device_t * osdev)
   devc->subvendor = subvendor;
 
   pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
-  pci_command &= ~(PCI_COMMAND_SERR | PCI_COMMAND_PARITY);
   pci_write_config_word (osdev, PCI_COMMAND, pci_command);
 
   devc->base = MAP_PCI_IOADDR (devc->osdev, 0, pci_ioaddr);
