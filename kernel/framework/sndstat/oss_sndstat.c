@@ -59,10 +59,12 @@ init_status (void)
 
   int i, p, missing_devs = 0;
   int notify = 0;
+  extern char *oss_license_string;
 
   sndstat_ptr = 0;
 
-  put_status ("OSS " OSS_VERSION_STRING " " OSS_LICENSE);
+  put_status ("OSS " OSS_VERSION_STRING);
+  put_status (oss_license_string);
   put_status (" (C) 4Front Technologies 1996-2009\n");
 
   if (riptide_notice)

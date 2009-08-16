@@ -11,6 +11,8 @@
 #include <stdarg.h>
 oss_mutex_t oss_timing_mutex;
 
+char *oss_license_string = OSS_LICENSE;
+
 #ifdef DO_TIMINGS
 static int timing_is_active = 0; /* 1=The readtimings utility has been active */
 #endif
@@ -1641,7 +1643,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	strcpy (info->product, "OSS");
 	strncpy (info->version, OSS_VERSION_STRING, sizeof (info->version));
 	info->version [sizeof (info->version) - 1] = '\0';
-	strcpy (info->license, OSS_LICENSE);
+	strcpy (info->license, oss_license_string);
 	info->versionnum = OSS_VERSION;
 
 #ifdef OSS_HG_INFO
