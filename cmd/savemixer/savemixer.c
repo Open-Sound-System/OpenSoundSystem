@@ -278,7 +278,7 @@ get_mapname (void)
 
   while (fgets (tmp, sizeof (tmp), f) != NULL)
     {
-      int l = strlen (tmp);
+      size_t l = strlen (tmp);
       if (l > 0 && tmp[l - 1] == '\n')
 	tmp[l - 1] = '\0';
 
@@ -340,7 +340,8 @@ find_mixerdev (const char *handle)
 
       if (strcmp (mixerinfo.handle, handle) == 0)	/* Match */
 	{
-	  mixerdefs = malloc (sizeof (*mixerdefs) * mixerinfo.nrext);
+	  mixerdefs =
+            (oss_mixext *)malloc (sizeof (*mixerdefs) * mixerinfo.nrext);
 	  if (mixerdefs == NULL)
 	    {
 	      fprintf (stderr, "Out of memory\n");
@@ -371,7 +372,7 @@ find_mixerdev (const char *handle)
 static void
 change_mixer (const char *fname, char *line)
 {
-  int value, i;
+  unsigned int value, i;
   char name[SLINELEN];
 
   if (sscanf (line, "%s %x", name, &value) != 2)

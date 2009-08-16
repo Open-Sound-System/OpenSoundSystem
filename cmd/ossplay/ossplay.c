@@ -25,9 +25,10 @@
 #include <unistd.h>
 
 unsigned int amplification = 100;
-int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0;
+int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0,
+    quiet = 0;
 flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, overwrite = 0,
-     quiet = 0, raw_file = 0, raw_mode = 0;
+     raw_file = 0, raw_mode = 0;
 double seek_time = 0;
 long seek_byte = 0;
 off_t (*ossplay_lseek) (int, off_t, int) = lseek;
@@ -130,9 +131,9 @@ find_devname (char * devname, const char * num)
   int dev;
   int mixer_fd;
   oss_audioinfo ai;
-  char *devmixer;
+  const char * devmixer;
 
-  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+  if ((devmixer = getenv("OSS_MIXERDEV")) == NULL)
      devmixer = "/dev/mixer";
 
   if (sscanf (num, "%d", &dev) != 1)
@@ -236,14 +237,14 @@ close_device (dspdev_t * dsp)
 void
 open_device (dspdev_t * dsp)
 {
-  char *devdsp;
+  const char * devdsp;
 
   if (dsp->fd >= 0)
      close_device (dsp);
 
   dsp->format = 0; dsp->channels = 0; dsp->speed = 0;
 
-  if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
+  if ((devdsp = getenv("OSS_AUDIODEV")) == NULL)
      devdsp = "/dev/dsp";
 
   if (raw_mode)
@@ -541,7 +542,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
   tmp = format;
 
   if (verbose > 1)
-    print_msg (NORMALM, "Setup device %s/%d/%d\n", sample_format_name (format),
+    print_msg (VERBOSEM, "Setup device %s/%d/%d\n", sample_format_name (format),
                channels, speed);
 
   if (ioctl (dsp->fd, SNDCTL_DSP_SETFMT, &tmp) == -1)

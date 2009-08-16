@@ -106,13 +106,12 @@ static int mixer_num;
 #define EIDRM EFAULT
 #endif
 
-enum uflag {
+typedef enum uflag {
   WHAT_LABEL,
   WHAT_UPDATE,
   WHAT_VMIX
-};
-
-typedef enum uflag uflag_t;
+}
+uflag_t;
 
 typedef struct ctlrec
 {
@@ -136,17 +135,6 @@ static ctlrec_t * check_list[MAX_DEVS] = { NULL };
 
 static GtkWidget * window, * scrolledwin;
 
-#ifdef DEBUG
-static void * _ossxmix_malloc (size_t, char *, int);
-static void * _ossxmix_calloc (size_t, size_t, char *, int);
-#define ossxmix_malloc(sz) _ossxmix_malloc (sz, __FILE__, __LINE__)
-#define ossxmix_calloc(nm, sz) _ossxmix_calloc (nm, sz, __FILE__, __LINE__)
-#else
-static void * _ossxmix_malloc (size_t);
-static void * _ossxmix_calloc (size_t, size_t);
-#define ossxmix_malloc(sz) _ossxmix_malloc (sz)
-#define ossxmix_calloc(nm, sz) _ossxmix_calloc (nm, sz)
-#endif /* DEBUG */
 static gint add_timeout (gpointer);
 static void change_enum (GtkToggleButton *, gpointer);
 static void change_on_off (GtkToggleButton *, gpointer);
@@ -270,9 +258,10 @@ static void
 store_name (int dev, int n, char *name, char **extnames)
 {
   char *src = name;
-  int i;
+  size_t i, l;
 
-  for (i = 0; i < strlen (name); i++)
+  l = strlen (name);
+  for (i = 0; i < l; i++)
     {
       if (name[i] >= 'A' && name[i] <= 'Z')
         name[i] += 32;
@@ -355,7 +344,7 @@ load_enum_values (char *extname, oss_mixext * rec)
 	if (rec->enum_present[i / 8] & (1 << (i % 8)))
 	  {
 	    p = ei.strings + ei.strindex[i];
-	    list = g_list_append (list, strdup (p));
+	    list = g_list_append (list, g_strdup (p));
 	  }
 
       return list;
@@ -367,7 +356,7 @@ load_enum_values (char *extname, oss_mixext * rec)
   for (i = 0; i < rec->maxvalue; i++)
     if (rec->enum_present[i / 8] & (1 << (i % 8)))
       {
-	list = g_list_append (list, strdup (showenum (rec, i)));
+	list = g_list_append (list, g_strdup (showenum (rec, i)));
       }
 
   return list;
@@ -503,7 +492,7 @@ create_update (GtkWidget * frame, GtkObject * left, GtkObject * right,
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->parm = parm;
   srec->what_to_do = what;
@@ -716,7 +705,7 @@ connect_scrollers (oss_mixext * thisrec, GtkObject * left, GtkObject * right,
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->left = left;
   srec->right = right;
@@ -740,7 +729,7 @@ connect_peak (oss_mixext * thisrec, GtkWidget * left, GtkWidget * right)
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->left = GTK_OBJECT (left);
   if (right == NULL)
@@ -760,7 +749,7 @@ connect_value_poll (oss_mixext * thisrec, GtkWidget * wid)
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->left = GTK_OBJECT (wid);
   srec->right = NULL;
@@ -777,7 +766,7 @@ connect_enum (oss_mixext * thisrec, GtkObject * entry)
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->left = entry;
   srec->right = NULL;
@@ -792,7 +781,7 @@ connect_onoff (oss_mixext * thisrec, GtkObject * entry)
 {
   ctlrec_t *srec;
 
-  srec = ossxmix_malloc (sizeof (*srec));
+  srec = g_new (ctlrec_t, 1);
   srec->mixext = thisrec;
   srec->left = entry;
   srec->right = NULL;
@@ -926,10 +915,10 @@ load_devinfo (int dev)
 	}
       return NULL;
     }
-  extrec[dev] = ossxmix_calloc (n+1, sizeof (oss_mixext));
-  extnames = ossxmix_malloc ((n+1) * sizeof (char *));
-  widgets = ossxmix_calloc (n, sizeof (GtkWidget *));
-  orient = ossxmix_calloc (n, sizeof (gboolean));
+  extrec[dev] = g_new0 (oss_mixext, n+1);
+  extnames = g_new (char *, n+1);
+  widgets = g_new0 (GtkWidget *, n);
+  orient = g_new0 (gboolean, n);
 
   for (i = 0; i < n; i++)
     {
@@ -1472,14 +1461,14 @@ load_devinfo (int dev)
 	  break;
 
 	default:
-	  fprintf (stderr, "Unknown type for control %s\n", extnames[i]);
+	  fprintf (stderr, "Unknown type for control %s\n", thisrec->extname);
 	}
 
     }
 
-  free (extnames);
-  free (widgets);
-  free (orient);
+  g_free (extnames);
+  g_free (widgets);
+  g_free (orient);
   return rootwid;
 }
 
@@ -1561,7 +1550,7 @@ reload_gui (void)
                          for (p = x[i]; p != NULL;) \
                            { \
                              nextp = p->next; \
-                             free (p); \
+                             g_free (p); \
                              p = nextp; \
                            } \
                          x[i] = NULL; \
@@ -1578,7 +1567,7 @@ reload_gui (void)
   for (i=0; i < MAX_DEVS; i++)
     {
       root[i] = NULL;
-      free (extrec[i]);
+      g_free (extrec[i]);
       extrec[i] = NULL;
       if (local_fd[i] != -1)
         {
@@ -1967,6 +1956,7 @@ find_default_mixer (void)
 int
 main (int argc, char **argv)
 {
+  extern char * optarg;
   int i, v, c;
   GtkRequisition Dimensions;
 #ifndef GTK1_ONLY
@@ -1976,7 +1966,7 @@ main (int argc, char **argv)
   GdkBitmap *icon_mask;
 #endif /* !GTK1_ONLY */
 
-  char *devmixer;
+  const char *devmixer;
   oss_sysinfo si;
 
   for (i=0; i< MAX_DEVS; i++)
@@ -1985,6 +1975,9 @@ main (int argc, char **argv)
   if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
      devmixer = "/dev/mixer";
 
+#if !defined(GTK1_ONLY) && defined(DEBUG)
+  g_mem_set_vtable (glib_mem_profiler_table);
+#endif
   /* Get Gtk to process the startup arguments */
   gtk_init (&argc, &argv);
 
@@ -2108,7 +2101,7 @@ main (int argc, char **argv)
 				  DefaultScreen (GDK_DISPLAY ()));
   icon_pix = gdk_pixmap_create_from_xpm_d (window->window, &icon_mask,
                                           &window->style->bg[GTK_STATE_NORMAL],
-                                          ossxmix);
+                                          (gchar **)ossxmix);
   gdk_window_set_icon (window->window, NULL, icon_pix, icon_mask);
 #endif /* !GTK1_ONLY */
 
@@ -2134,6 +2127,10 @@ cleanup (void)
 #if !defined(GTK1_ONLY) && GTK_CHECK_VERSION(2,2,0)
   gdk_notify_startup_complete ();
 #endif /* !GTK1_ONLY */
+
+#ifdef DEBUG
+  g_mem_profile ();
+#endif
 }
 
 /*
@@ -2305,47 +2302,4 @@ trayicon_popupmenu (GtkStatusIcon * icon, guint button, guint etime,
                   button, etime);
 }
 #endif /* STATUSICON */
-
-static void *
-#ifdef DEBUG
-_ossxmix_malloc (size_t sz, char *f, int l)
-#else
-_ossxmix_malloc (size_t sz)
-#endif
-{
-  void *ptr;
-
-#ifdef DEBUG
-  printf ("malloc(%lu)\t%s:%d\n", (unsigned long)sz, f, l);
-#endif
-  ptr = malloc (sz);
-  if (ptr == NULL) {
-    /* Not all libcs support using %z for size_t */
-    fprintf (stderr, "Can't allocate %lu bytes\n", (unsigned long)sz);
-    exit (-1);
-  }
-  return ptr;
-}
-
-static void *
-#ifdef DEBUG
-_ossxmix_calloc (size_t nm, size_t sz, char *f, int l)
-#else
-_ossxmix_calloc (size_t nm, size_t sz)
-#endif
-{
-  void *ptr;
-
-#ifdef DEBUG
-  printf ("calloc(%lu, %lu)\t%s:%d\n", (unsigned long)nm, (unsigned long)sz,
-	  f, l);
-#endif
-  ptr = calloc (nm, sz);
-  if (ptr == NULL) {
-    fprintf (stderr, "Couldn't allocate %lu entries of size %lu\n",
-	     (unsigned long)nm, (unsigned long)sz);
-    exit (-1);
-  }
-  return ptr;
-}
 

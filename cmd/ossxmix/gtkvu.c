@@ -57,15 +57,15 @@ gtk_vu_get_type (void)
 }
 
 static void
-gtk_vu_class_init (GtkVUClass * class)
+gtk_vu_class_init (GtkVUClass * gvclass)
 {
   GtkObjectClass *object_class;
   GtkWidgetClass *widget_class;
 
-  object_class = (GtkObjectClass *) class;
-  widget_class = (GtkWidgetClass *) class;
+  object_class = (GtkObjectClass *) gvclass;
+  widget_class = (GtkWidgetClass *) gvclass;
 
-  parent_class = gtk_type_class (gtk_widget_get_type ());
+  parent_class = GTK_WIDGET_CLASS (gtk_type_class (gtk_widget_get_type ()));
 
   object_class->destroy = gtk_vu_destroy;
 
@@ -87,7 +87,7 @@ gtk_vu_new (void)
 {
   GtkVU *vu;
 
-  vu = gtk_type_new (gtk_vu_get_type ());
+  vu = GTK_VU (gtk_type_new (gtk_vu_get_type ()));
 
   return GTK_WIDGET (vu);
 }

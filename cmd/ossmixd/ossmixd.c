@@ -409,7 +409,7 @@ main (int argc, char *argv[])
 
   if ((err = ossmix_init ()) < 0)
     {
-      fprintf (stderr, "ossmix_init() failed, err=%d\n");
+      fprintf (stderr, "ossmix_init() failed, err=%d\n", err);
       exit (EXIT_FAILURE);
     }
 

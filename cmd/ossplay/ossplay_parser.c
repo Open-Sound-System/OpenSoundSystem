@@ -420,8 +420,9 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 #define ima4_FMT 0x696D6134
 #define NONE_FMT 0x4E4F4E45
 #define raw_FMT  0x72617720
-#define in24_FMT 0x696e3234
-#define ni24_FMT 0x6e693234
+#define in16_FMT 0x696E3136
+#define in24_FMT 0x696E3234
+#define ni24_FMT 0x6E693234
 #define in32_FMT 0x696E3332
 #define ni32_FMT 0x6E693332
 #define _23ni_FMT 0x32336E69
@@ -613,6 +614,7 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
             switch (be_int (buf + 18, 4))
               {
                 case NONE_FMT: break;
+                case in16_FMT: format = AFMT_S16_BE; break;
                 case in24_FMT: format = AFMT_S24_BE; break;
                 case in32_FMT: format = AFMT_S32_BE; break;
                 case ni24_FMT: format = AFMT_S24_LE; break;
@@ -1389,7 +1391,8 @@ static void
 print_verbose_fileinfo (const char * filename, int type, int format,
                         int channels, int speed)
 {
-  char chn[32], *fmt = "";
+  char chn[32];
+  const char * fmt = "";
 
   switch (type)
     {

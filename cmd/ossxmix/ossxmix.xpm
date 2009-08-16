@@ -1,5 +1,5 @@
 /* XPM */
-static char *ossxmix[] = {
+static const char *ossxmix[] = {
 /* width height num_colors chars_per_pixel */
 "   121    51      254            2",
 /* colors */

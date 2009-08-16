@@ -114,7 +114,7 @@ load_devinfo (int dev)
       exit (-1);
     }
 
-  if ((extrec = malloc ((n + 1) * sizeof (oss_mixext))) == NULL)
+  if ((extrec = (oss_mixext *)malloc ((n + 1) * sizeof (oss_mixext))) == NULL)
     {
       fprintf (stderr, "malloc of %d entries failed\n", n);
       exit (-1);
@@ -432,7 +432,7 @@ print_description (char *descr)
 static void
 show_devinfo (int dev)
 {
-  int i, mask = 0xff, shift = 8, vl, vr;
+  int i, mask, shift, vl, vr;
   oss_mixext *thisrec;
   oss_mixer_value val;
 
@@ -447,6 +447,7 @@ show_devinfo (int dev)
   printf ("Known controls are:\n");
   for (i = 0; i < nrext; i++)
     {
+      shift = 8; mask = 0xff;
       thisrec = &extrec[i];
       val.ctrl = i;
       val.timestamp = thisrec->timestamp;
@@ -493,7 +494,6 @@ show_devinfo (int dev)
 		   *ainfo.label != '\0')
 		printf (" (\"%s\")", ainfo.label);
 	    }
-	  shift = 8; mask = 0xff;
 	  break;
 
 	case MIXT_3D:
@@ -543,7 +543,6 @@ show_devinfo (int dev)
 	    }
 	  else
 	    printf (" (currently %d)", val.value & mask);
-	  mask = 0xff;
 	  break;
 
 	case MIXT_MONOVU:
@@ -604,7 +603,7 @@ static void
 dump_devinfo (int dev)
 {
   char ossmix[256];
-  int i, enabled = 0;
+  int i, mask, shift;
   oss_mixext *thisrec;
   oss_mixer_value val;
 
@@ -613,18 +612,12 @@ dump_devinfo (int dev)
 
   for (i = 0; i < nrext; i++)
     {
+      mask = 0xff; shift = 8;
       thisrec = &extrec[i];
 
       val.ctrl = i;
       val.timestamp = thisrec->timestamp;
       val.value = -1;
-
-      if (!enabled)
-	{
-	  if (thisrec->type == MIXT_MARKER)
-	    enabled = 1;
-	  continue;
-	}
 
       if (thisrec->id[0] == '-')
 	continue;
@@ -640,19 +633,18 @@ dump_devinfo (int dev)
 	case MIXT_MONOPEAK:
 	  break;
 
+	case MIXT_STEREOSLIDER16: mask = 0xffff; shift = 16;
 	case MIXT_STEREOSLIDER:
 	case MIXT_STEREODB:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(stereo2)");
-	  printf ("%d:%d\n", val.value & 0xff, (val.value >> 8) & 0xff);
-	  break;
-
-	case MIXT_STEREOSLIDER16:
-	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(stereo2)");
-	  printf ("%d:%d\n", val.value & 0xffff, (val.value >> 16) & 0xffff);
+	  if (thisrec->flags & MIXF_CENTIBEL)
+  	    printf ("%d.%d:%d.%d\n", (val.value & mask)/10,
+                    (val.value & mask)%10, ((val.value >> shift) & mask)/10,
+                    ((val.value >> shift) & mask)%10);
+	  else
+  	    printf ("%d:%d\n", val.value & mask, (val.value >> shift) & mask);
 	  break;
 
 	case MIXT_3D:
@@ -676,27 +668,19 @@ dump_devinfo (int dev)
 		  show_enum (extrec[i].extname, thisrec, val.value & 0xff));
 	  break;
 
+	case MIXT_SLIDER: mask = ~0;
+	case MIXT_MONOSLIDER16: if (mask == 0xff) mask = 0xfff;
 	case MIXT_MONOSLIDER:
 	case MIXT_MONODB:
 	  printf ("%s %s ", ossmix, extrec[i].extname);
 	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
 	    perror ("SNDCTL_MIX_READ(mono2)");
-	  printf ("%d\n", val.value & 0xff);
+	  if (thisrec->flags & MIXF_CENTIBEL)
+  	    printf ("%d.%d\n", (val.value & mask)/10, (val.value & mask)%10);
+	  else
+  	    printf ("%d\n", val.value & mask);
 	  break;
 
-	case MIXT_SLIDER:
-	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(mono2)");
-	  printf ("%d\n", val.value);
-	  break;
-
-	case MIXT_MONOSLIDER16:
-	  printf ("%s %s ", ossmix, extrec[i].extname);
-	  if (ioctl (mixerfd, SNDCTL_MIX_READ, &val) == -1)
-	    perror ("SNDCTL_MIX_READ(mono2)");
-	  printf ("%d\n", val.value & 0xffff);
-	  break;
 
 	case MIXT_MONOVU:
 	  break;
@@ -724,7 +708,8 @@ dump_devinfo (int dev)
 	  break;
 
 	default:
-	  printf ("Unknown mixer extension type %d\n", thisrec->type);
+	  printf ("Unknown mixer extension type %d (%s)\n",
+                  thisrec->type, thisrec->extname);
 	}
 
     }
@@ -1219,12 +1204,14 @@ dump_all (int type)
 int
 main (int argc, char *argv[])
 {
+  extern char * optarg;
+  extern int optind, optopt;
   int dev = 0, c;
-  char *devmixer;
+  const char * devmixer;
 
   progname = argv[0];
 
-  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+  if ((devmixer = getenv("OSS_MIXERDEV")) == NULL)
      devmixer = "/dev/mixer";
 
 /*
@@ -1276,8 +1263,13 @@ main (int argc, char *argv[])
            quiet = 0;
            break;
 
-         case 'h':
          default:
+           if (optopt >= '0' && optopt <= '9') {
+             printf("Tip: Write '--' before a negative mixer value "
+                    "to satisfy getopt.\n"
+                    "e.g. ossmix -- vmix0-outvol -2\n\n");
+           }
+         case 'h':
           usage ();
       }
     }

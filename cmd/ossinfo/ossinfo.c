@@ -23,7 +23,9 @@
 
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
+#ifndef LOCAL_BUILD
 #include <local_config.h>
+#endif
 #include <soundcard.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,7 +148,7 @@ print_verbose_formats (unsigned long mask)
 static void
 print_engine_info (oss_audioinfo * ainfo, int num)
 {
-  char *lbl = "Engine    ";
+  const char * lbl = "Engine    ";
 
   if (!(ainfo->caps & DSP_CAP_INPUT))
     lbl = "Out engine";
@@ -411,7 +413,7 @@ print_audio_info (void)
 	      ainfo.min_rate, ainfo.max_rate);
       if (ainfo.nrates > 0)
 	{
-	  int j;
+	  unsigned int j;
 	  printf (" (");
 	  for (j = 0; j < ainfo.nrates; j++)
 	    {
@@ -746,11 +748,10 @@ bad_usage (char *progname)
 int
 main (int argc, char *argv[])
 {
+  const char * devmixer;
   int i;
 
-  char *devmixer;
-
-  if ((devmixer=getenv("OSS_MIXERDEV"))==NULL)
+  if ((devmixer = getenv("OSS_MIXERDEV")) == NULL)
      devmixer = "/dev/mixer";
 
   if ((mixerfd = open (devmixer, O_RDWR, 0)) == -1)
