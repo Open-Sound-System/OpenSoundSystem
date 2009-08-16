@@ -96,6 +96,9 @@ via8233intr (oss_device_t * osdev)
 
   MUTEX_ENTER (devc->mutex, flags);
   status = INL (devc->osdev, devc->base + 0x84);
+#if 0
+  // This is reported to cause hang because some status register bits
+  // may be turned on even ehen the device is not interrupting.
   if (status == 0)
     {
       /*
@@ -105,6 +108,7 @@ via8233intr (oss_device_t * osdev)
       MUTEX_EXIT (devc->mutex, flags);
       return 0;
     }
+#endif
 
   for (i = 0; i < MAX_PORTC; i++)
     {
