@@ -141,6 +141,7 @@ parse_config (FILE * f, conf_t * conf, char *comment)
 
       if (strcmp (parms, "$GTKCFLAGS") == 0)
 	{
+	  parms = "";
 	  if (getenv ("GTK1") != NULL)
 	    parms = "`gtk-config --cflags` -DGTK1_ONLY";
 	  else
@@ -150,6 +151,7 @@ parse_config (FILE * f, conf_t * conf, char *comment)
 
       if (strcmp (parms, "$GTKLDFLAGS") == 0)
 	{
+	  parms = "";
 	  if (getenv ("GTK1") != NULL)
 	    parms = "`gtk-config --libs`";
 	  else
@@ -159,12 +161,16 @@ parse_config (FILE * f, conf_t * conf, char *comment)
 
       if (strcmp (parms, "$DLOPENLDFLAGS") == 0)
 	{
+	  parms = "";
+#ifndef __FreeBSD__
 	  if (getenv ("OGG_SUPPORT") != NULL)
 	    parms = "-ldl";
+#endif
 	}
 
       if (strcmp (parms, "$OGGDEFINE") == 0)
 	{
+	  parms = "";
 	  if (getenv ("OGG_SUPPORT") != NULL)
 	    parms = "-DOGG_SUPPORT";
 	}
@@ -947,12 +953,14 @@ printf("Symlink %s -> %s\n", source, target);
       if (getenv ("NO_REGPARM") == NULL)
 	{
 	  fprintf (f,
-		   "CFLAGS += -O3 -fno-common -mregparm=3 -DUSE_REGPARM\n");
+		   "CFLAGS += -O3 -fno-common -ffreestanding -mregparm=3 -DUSE_REGPARM\n");
 	}
       else
 	{
-	  fprintf (f, "CFLAGS += -O3 -fno-common -DNO_REGPARM\n");
+	  fprintf (f, "CFLAGS += -O3 -fno-common -ffreestanding -DNO_REGPARM\n");
 	}
+#   else
+      fprintf (f, "CFLAGS += -ffreestanding\n");
 #   endif
 # endif
       /* fprintf(f, "CFLAGS += -W -Wno-unused -Wno-sign-compare\n"); */

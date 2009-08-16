@@ -25,8 +25,6 @@ check_sysdep (conf_t * conf, struct utsname *un)
 	   }
      }
 
-  sprintf(conf->ccomp, "%s -ffreestanding", targetcc);
-
   /*
    * Check if cc supports -fno-stack-protector
    */
@@ -47,6 +45,7 @@ else
   	   strcpy(conf->OSflags, "-fno-common");
      }
 
+  strcpy (conf->ccomp, targetcc);
   strcpy (conf->cplusplus, "g++ -fno-rtti -fno-exceptions -I.");
   strcpy (conf->platform, "i86pc");
 }

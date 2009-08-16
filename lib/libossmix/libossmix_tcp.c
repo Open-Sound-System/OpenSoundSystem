@@ -105,8 +105,8 @@ bswap_mixerinfo (void *data, int len)
 
   if (len != sizeof (*mi))
     {
-      fprintf (stderr, "bswap_mixerinfo: Bad size (%d/%d)\n", len,
-	       sizeof (*mi));
+      fprintf (stderr, "bswap_mixerinfo: Bad size (%d/%lu)\n", len,
+	       (unsigned long)sizeof (*mi));
       exit (EXIT_FAILURE);
     }
 
@@ -130,8 +130,8 @@ bswap_nodeinfo (void *data, int len)
 
   if (len != sizeof (*ei))
     {
-      fprintf (stderr, "bswap_nodeinfo: Bad size (%d/%d)\n", len,
-	       sizeof (*ei));
+      fprintf (stderr, "bswap_nodeinfo: Bad size (%d/%lu)\n", len,
+	       (unsigned long)sizeof (*ei));
       exit (EXIT_FAILURE);
     }
 
@@ -160,8 +160,8 @@ bswap_nodeinfo_array (void *data, int len)
 
   if (len != n * sizeof (oss_mixext))
     {
-      fprintf (stderr, "bswap_enuminfo_array: Bad size (%d/%d*%d)\n", len, n,
-	       sizeof (*ei));
+      fprintf (stderr, "bswap_enuminfo_array: Bad size (%d/%d*%lu)\n", len, n,
+	       (unsigned long)sizeof (*ei));
       exit (EXIT_FAILURE);
     }
 
@@ -180,8 +180,8 @@ bswap_enuminfo (void *data, int len)
 
   if (len != sizeof (*ei))
     {
-      fprintf (stderr, "bswap_enuminfo: Bad size (%d/%d)\n", len,
-	       sizeof (*ei));
+      fprintf (stderr, "bswap_enuminfo: Bad size (%d/%lu)\n", len,
+	       (unsigned long)sizeof (*ei));
       exit (EXIT_FAILURE);
     }
 
@@ -330,7 +330,7 @@ wait_payload (void *payload, int len, bswap_func_t swapper, int *truelen)
 
       if (msg.cmd == OSSMIX_CMD_ERROR)
 	{
-	  fprintf (stderr, "Remote error: %s\n", payload);
+	  fprintf (stderr, "Remote error: %s\n", (char *)payload);
 	}
 
       if (!msg.unsolicited)
@@ -725,7 +725,8 @@ handle_values(int mixnum, int nvalues, value_record_t values[], int len)
 
 	if (nvalues*sizeof(value_record_t) > len)
 	{
-		fprintf(stderr, "Short value record (%d, %d)\n", nvalues*sizeof(value_record_t), len);
+		fprintf(stderr, "Short value record (%lu, %d)\n",
+                        (unsigned long)(nvalues*sizeof(value_record_t)), len);
 		exit(EXIT_FAILURE);
 	}
 
