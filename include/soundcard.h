@@ -947,7 +947,7 @@ typedef struct
   int budding;
 #endif
   int parm;
-  int filler[4];		/* Fur future expansion - init to zeros */
+  int filler[3];		/* Fur future expansion - init to zeros */
 } midi_packet_header_t;
 /* 
  * MIDI_PAYLOAD_SIZE is the maximum size of one MIDI input chunk. It must be
