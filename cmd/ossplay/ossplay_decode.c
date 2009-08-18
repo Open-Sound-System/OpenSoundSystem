@@ -159,12 +159,6 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
                 total_time = val->wSamplesPerBlock * filesize * channels /
                              val->nBlockAlign / constant / 2; /* 4/8 == 1/2 */
               }
-            if ((val->nBlockAlign > 16*1024*1024) || (val->nBlockAlign == 0))
-              {
-                print_msg (ERRORM, "Unreasonable nBlockAlign (%d), aborting\n",
-                           val->nBlockAlign);
-                goto exit;
-              }
             bsize = val->nBlockAlign;
             dec->metadata = metadata;
           }
@@ -202,12 +196,6 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
               {
                 total_time = val->wSamplesPerBlock * filesize * val->bits * channels /
                              val->nBlockAlign / constant / 8.0;
-              }
-             if ((val->nBlockAlign > 16*1024*1024) || (val->nBlockAlign == 0))
-              {
-                print_msg (ERRORM, "Unreasonable nBlockAlign (%d), aborting\n",
-                           val->nBlockAlign);
-                goto exit;
               }
             bsize = val->nBlockAlign;
           }

@@ -52,8 +52,22 @@ extern void play_mpeg (const char *, int, unsigned char *, int);
 static void print_verbose_fileinfo (const char *, int, int, int, int);
 
 #ifdef OGG_SUPPORT
-static errors_t play_ogg (dspdev_t *, const char *, int, unsigned char *,
-                          int, dlopen_funcs_t ** vft);
+
+/*
+ * OV_CALLBACKS_DEFAULT is not defined by older Vorbis versions so 
+ * we have define our own version.
+ */
+static int _ov_header_fseek_wrap_(FILE *f,ogg_int64_t off,int whence){
+  if(f==NULL)return(-1);
+  return fseek(f,off,whence);
+}
+
+static ov_callbacks OV_CALLBACKS_DEFAULT_ = {
+  (size_t (*)(void *, size_t, size_t, void *))  fread,
+  (int (*)(void *, ogg_int64_t, int))           _ov_header_fseek_wrap_,
+  (int (*)(void *))                             fclose,
+  (long (*)(void *))                            ftell
+};
 
 /* Only handles Ogg/Vorbis */
 static errors_t
@@ -114,7 +128,7 @@ play_ogg (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
   ogg_data.f = *vft;
 
   if (ogg_data.f->ov_open_callbacks (f, &ogg_data.vf, (char *)hdr, l,
-                                     OV_CALLBACKS_DEFAULT) < 0)
+                                     OV_CALLBACKS_DEFAULT_) < 0)
     {
       print_msg (ERRORM, "File %s is not an OggVorbis file!\n", filename);
       return E_DECODE;

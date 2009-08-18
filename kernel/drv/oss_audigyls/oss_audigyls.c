@@ -460,7 +460,6 @@ static void
 audigyls_close (int dev, int mode)
 {
   audigyls_portc *portc = audio_engines[dev]->portc;
-  audigyls_devc *devc = audio_engines[dev]->devc;
 
   audigyls_reset (dev);
   portc->open_mode = 0;
