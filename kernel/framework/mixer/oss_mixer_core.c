@@ -111,6 +111,8 @@ oss_legacy_mixer_ioctl (int mixdev, int audiodev, unsigned int cmd,
  * Handling of initial mixer volumes
  */
 
+static int muted_mixer_levels[32] = {0};
+
 static int default_mixer_levels[32] = {
   0x3232,			/* Master Volume */
   0x3232,			/* Bass */
@@ -141,6 +143,10 @@ int *
 load_mixer_volumes (char *name, int *levels, int present)
 {
   int i, n;
+  extern int mixer_muted;
+
+  if (mixer_muted)		/* Config setting from osscore.conf */
+     return muted_mixer_levels;
 
   if (levels == NULL)
     levels = default_mixer_levels;

@@ -37,7 +37,6 @@ extern int ac97_recselect;	/* From oss_core_options.c */
 				     SOUND_MASK_TREBLE | SOUND_MASK_MONO))
 
 
-
 static int default_mixer_levels[32] = {
   0x4b4b,			/* Master Volume */
   0x3232,			/* Bass */
@@ -1093,7 +1092,9 @@ ac97_install_full (ac97_devc * devc, char *host_name, ac97_readfunc_t readfn,
       devc->mixer_dev = my_mixer;
       devc->is_ok = 1;
       sprintf (tmp_name, "%s_%d", devc->name, nr_ac97++);
+
       devc->levels = load_mixer_volumes (tmp_name, default_mixer_levels, 1);
+
       ac97_mixer_reset (devc);
       /* AD1888 seems to keep muting the headphone out */
       if ((id & mask) == 0x41445368)

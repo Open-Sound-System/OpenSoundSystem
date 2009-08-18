@@ -33,6 +33,7 @@ int vmix_disabled = 0;		/* 1=disable virtual mixer, 0=enable */
 int vmix_loopdevs = 0;		/* Number of vmix loopback devices for all instances (0 to 2) */
 int vmix_no_autoattach = 0;	/* Do not attach vmix devices during boot */
 int excl_policy = 0;		/* Allow O_EXCL to occupy soundcard */
+int mixer_muted = 0;		/* Set all mixer controls to a low level when OSS modules are loaded */
 
 oss_option_map_t oss_global_options[] = {
   {"max_intrate", &max_intrate},
@@ -47,6 +48,7 @@ oss_option_map_t oss_global_options[] = {
   {"vmix_loopdevs", &vmix_loopdevs},
   {"vmix_no_autoattach", &vmix_no_autoattach},
   {"excl_policy", &excl_policy},
+  {"mixer_muted", &mixer_muted},
   {NULL, NULL}
 };
 #endif

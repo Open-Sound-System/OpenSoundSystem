@@ -70,6 +70,13 @@ o excl_policy	The O_EXCL open() flag can be used by programs to bypass the
 		A setting of 1 ignores O_EXCL from all but root processes,
 		while a setting of 2 always ignores O_EXCL.
 		Default: 0 - Do not ignore O_EXCL.
+o mixer_muted	By default OSS will set most volume controls to audible level.
+		If this causes problems then it's possible to ask OSS to set
+		the levels to zero when the drivers are loaded. However the
+		levels saved with the savemixer utility will get loaded few
+		moments later when all OSS drivers have been started. Note that
+		just some of the OSS drivers honor this setting.
+		Values: 0 (default) - Use audible volumes, 1 - Set volumes to low.
 
 FILES
 CONFIGFILEPATH/osscore.conf Device configuration file

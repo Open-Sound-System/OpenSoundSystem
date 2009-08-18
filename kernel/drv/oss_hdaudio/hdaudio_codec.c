@@ -2900,6 +2900,7 @@ hda_codec_add_outamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   int typ, num, maxval, val, ctl = 0;
   int range, step;
   oss_mixext *ent;
+  extern int mixer_muted;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return OSS_ENXIO;
@@ -2950,6 +2951,8 @@ hda_codec_add_outamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
       /* setup volume */
       val = (maxval * percent) / 100;
       val = val | (val << 16);
+      if (mixer_muted)
+	 val = 0;
       /* Copy RGB color */
       if (widget->rgbcolor != 0)
       if ((ent = mixer_find_ext (dev, ctl)) != NULL)
@@ -3013,6 +3016,7 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   codec_t *codec;
   int typ, num, maxval, val, ctl = 0, range, step;
   oss_mixext *ent;
+  extern int mixer_muted;
 
   if (cad < 0 || cad >= mixer->ncodecs)
     return OSS_ENXIO;
@@ -3066,6 +3070,8 @@ hda_codec_add_inamp (int dev, hdaudio_mixer_t * mixer, int cad, int wid,
   /* Setup initial volume */
   val = (maxval * percent) / 100;
   val = val | (val << 16);
+  if (mixer_muted)
+     val = 0;
 
   hdaudio_set_control (mixer->mixer_dev, num, SNDCTL_MIX_WRITE, val);
 

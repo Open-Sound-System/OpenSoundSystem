@@ -2191,6 +2191,7 @@ EXPORT_FUNC (oss_memblk_free);
 EXPORT_FUNC (oss_memblk_unalloc);
 EXPORT_DATA (oss_global_memblk);
 EXPORT_FUNC (oss_get_procinfo);
+EXPORT_DATA (mixer_muted);
 
 #ifdef CONFIG_OSS_MIDI
 EXPORT_FUNC (oss_midi_ioctl);

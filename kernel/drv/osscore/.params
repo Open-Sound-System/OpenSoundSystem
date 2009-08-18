@@ -120,3 +120,13 @@ int excl_policy=0;
  * ignores O_EXCL from all but root processes, while a setting of 2 always
  * ignores O_EXCL. 
  */
+int mixer_muted=0;
+/*
+ * By default mixer volume controls will be set to audible levels
+ * when OSS drivers are loaded. However in some systems it may
+ * be necessary to default to lower levels to avoid feedback or 
+ * noise. Set mixer_muted to 1 to use low default levels and to
+ * 0 to select audible levels.
+ *
+ * Note that just few OSS drivers support this option.
+ */
