@@ -14,7 +14,6 @@
 #include <soundcard.h>
 #include "ossplay_console.h"
 
-#undef  MPEG_SUPPORT
 #define PLAYBUF_SIZE		1024
 #define RECBUF_SIZE		512
 #define DEFAULT_CHANNELS	1
@@ -30,19 +29,42 @@
 #define REC_UPDATE_INTERVAL		1000.0
 /* As above, but used for level meters while recording */
 #define LMETER_UPDATE_INTERVAL		20.0
-/* Should be smaller than the others. Used to ensure an update at end of file */
+/* Should be smaller than the above. Used to ensure an update at end of file */
 #define UPDATE_EPSILON			1.0
 
+/* Sanity check - no allocation by ossplay should pass this. */
+#define OSSPLAY_MAX_MALLOC		32*1024*1024
+
 #ifdef OSS_NO_LONG_LONG
+typedef long sbig_t;
 typedef unsigned long big_t;
 #define _PRIbig_t "%lu"
 #define BIG_SPECIAL ULONG_MAX
 #else
+typedef long long sbig_t;
 typedef unsigned long long big_t;
 #define _PRIbig_t "%llu"
 #define BIG_SPECIAL ULONG_MAX
 #endif
 
+#ifndef OSS_NO_INTTYPES_H
+#define  __STDC_LIMIT_MACROS
+#include <inttypes.h>
+
+typedef long double ldouble_t;
+typedef int8_t int8;
+typedef uint8_t uint8;
+typedef int16_t int16;
+typedef uint16_t uint16;
+typedef int32_t int32;
+typedef uint32_t uint32;
+typedef char flag;
+typedef intptr_t intptr;
+#define S32_MAX INT32_MAX
+#define S32_MIN INT32_MIN
+#define U32_MAX UINT32_MAX
+
+#else
 typedef long double ldouble_t;
 typedef signed char int8;
 typedef unsigned char uint8;
@@ -51,9 +73,11 @@ typedef unsigned short uint16;
 typedef int int32;
 typedef unsigned int uint32;
 typedef char flag;
+typedef long intptr;
 #define S32_MAX 2147483647
 #define S32_MIN (-S32_MAX - 1)
 #define U32_MAX 4294967295U
+#endif /* !OSS_NO_INTTYPES_H */
 
 /*
  * We overload the format definitions to include some "fake" formats.
@@ -227,45 +251,6 @@ typedef struct decoders_queue {
   decoder_flag_t flag;
 }
 decoders_queue_t;
-
-static const format_t format_a[] = {
-  {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},
-  {"U8",		AFMT_U8,		CRP,		AFMT_S16_NE},
-  {"S16_LE",		AFMT_S16_LE,		CRP,		AFMT_S16_NE},
-  {"S16_BE",		AFMT_S16_BE,		CRP,		AFMT_S16_NE},
-  {"U16_LE",		AFMT_U16_LE,		CRP,		AFMT_S16_NE},
-  {"U16_BE",		AFMT_U16_BE,		CRP,		AFMT_S16_NE},
-  {"S24_LE",		AFMT_S24_LE,		CRP,		0},
-  {"S24_BE",		AFMT_S24_BE,		CRP,		0},
-  {"S32_LE",		AFMT_S32_LE,		CRP,		AFMT_S32_NE},
-  {"S32_BE",		AFMT_S32_BE,		CRP,		AFMT_S32_NE},
-  {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
-  {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
-  {"FLOAT32_LE",	AFMT_FLOAT32_LE,	CP,		0},
-  {"FLOAT32_BE",	AFMT_FLOAT32_BE,	CP,		0},
-  {"DOUBLE64_LE",	AFMT_DOUBLE64_LE,	CP,		0},
-  {"DOUBLE64_BE",	AFMT_DOUBLE64_BE,	CP,		0},
-  {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
-  {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
-  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
-  {"IMA_ADPCM_3BITS",	AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
-  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
-  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
-  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
-  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
-  {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
-  {"FIBO_DELTA",	AFMT_FIBO_DELTA,	CP,		0},
-  {"EXP_DELTA",		AFMT_EXP_DELTA,		CP,		0},
-  {NULL,		0,			CP,		0}
-};
-
-static const container_t container_a[] = {
-  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
-  {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
-  {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
-  {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
-  {NULL,		RAW_FILE,	0,		0,	0}
-}; /* Order should match fctypes_t enum so that container_a[type] works */
 
 int be_int (const unsigned char *, int);
 const char * filepart (const char *);

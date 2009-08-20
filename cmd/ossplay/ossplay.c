@@ -38,6 +38,45 @@ unsigned int nfiles = 1;
 big_t datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
+const format_t format_a[] = {
+  {"S8",		AFMT_S8,		CRP,		AFMT_S16_NE},
+  {"U8",		AFMT_U8,		CRP,		AFMT_S16_NE},
+  {"S16_LE",		AFMT_S16_LE,		CRP,		AFMT_S16_NE},
+  {"S16_BE",		AFMT_S16_BE,		CRP,		AFMT_S16_NE},
+  {"U16_LE",		AFMT_U16_LE,		CRP,		AFMT_S16_NE},
+  {"U16_BE",		AFMT_U16_BE,		CRP,		AFMT_S16_NE},
+  {"S24_LE",		AFMT_S24_LE,		CRP,		0},
+  {"S24_BE",		AFMT_S24_BE,		CRP,		0},
+  {"S32_LE",		AFMT_S32_LE,		CRP,		AFMT_S32_NE},
+  {"S32_BE",		AFMT_S32_BE,		CRP,		AFMT_S32_NE},
+  {"A_LAW",		AFMT_A_LAW,		CRP,		AFMT_S16_NE},
+  {"MU_LAW",		AFMT_MU_LAW,		CRP,		AFMT_S16_NE},
+  {"FLOAT32_LE",	AFMT_FLOAT32_LE,	CP,		0},
+  {"FLOAT32_BE",	AFMT_FLOAT32_BE,	CP,		0},
+  {"DOUBLE64_LE",	AFMT_DOUBLE64_LE,	CP,		0},
+  {"DOUBLE64_BE",	AFMT_DOUBLE64_BE,	CP,		0},
+  {"S24_PACKED",	AFMT_S24_PACKED,	CRP,		0},
+  {"S24_PACKED_BE",	AFMT_S24_PACKED_BE,	CP,		0},
+  {"IMA_ADPCM",		AFMT_IMA_ADPCM,		CP,		0},
+  {"IMA_ADPCM_3BITS",	AFMT_MS_IMA_ADPCM_3BITS,CP,		0},
+  {"MS_ADPCM",		AFMT_MS_ADPCM,		CP,		0},
+  {"CR_ADPCM_2",	AFMT_CR_ADPCM_2,	CP,		0},
+  {"CR_ADPCM_3",	AFMT_CR_ADPCM_3,	CP,		0},
+  {"CR_ADPCM_4",	AFMT_CR_ADPCM_4,	CP,		0},
+  {"SPDIF_RAW",		AFMT_SPDIF_RAW,		CR,		0},
+  {"FIBO_DELTA",	AFMT_FIBO_DELTA,	CP,		0},
+  {"EXP_DELTA",		AFMT_EXP_DELTA,		CP,		0},
+  {NULL,		0,			CP,		0}
+};
+
+static const container_t container_a[] = {
+  {"RAW",		RAW_FILE,	AFMT_S16_LE,	2,	44100},
+  {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
+  {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
+  {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
+  {NULL,		RAW_FILE,	0,		0,	0}
+}; /* Order should match fctypes_t enum so that container_a[type] works */
+
 static void describe_error (void);
 static void find_devname (char *, const char *);
 static fctypes_t select_container (const char *);
@@ -664,12 +703,6 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 	  dsp->playtgt = optarg;
 	  break;
 
-#ifdef MPEG_SUPPORT
-	case 'm':
-	  mpeg_enabled = 1;
-	  break;
-#endif
-
 	case 'f':
 	  force_fmt = select_format (optarg, CP);
 	  break;
@@ -960,7 +993,8 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
   if (val->secs >= val->next_sec)
     {
       val->next_sec += REC_UPDATE_INTERVAL/1000;
-      if (val->next_sec > val->tsecs) val->next_sec = val->tsecs;
+      if ((val->tsecs) && (val->next_sec > val->tsecs))
+        val->next_sec = val->tsecs;
       if (level_meters)
         {
           val->secs_timer2 = val->next_sec_timer2 = val->secs;
@@ -973,7 +1007,8 @@ print_record_verbose_info (const unsigned char * buf, ssize_t l,
       update_dots = 0;
 print_level:
       val->next_sec_timer2 += LMETER_UPDATE_INTERVAL/1000;
-      if (val->next_sec_timer2 > val->tsecs) val->next_sec_timer2 = val->tsecs;
+      if ((val->tsecs) && (val->next_sec_timer2 > val->tsecs))
+        val->next_sec_timer2 = val->tsecs;
       print_record_update (get_db_level (buf, l, val->format), val->secs_timer2,
                            val->tstring, update_dots);
     }

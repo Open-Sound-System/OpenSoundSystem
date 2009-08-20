@@ -36,6 +36,7 @@ extern flag int_conv, overwrite, verbose;
 extern char audio_devname[32];
 extern off_t (*ossplay_lseek) (int, off_t, int);
 extern double seek_time;
+extern const format_t format_a[];
 
 static void decode_ima (unsigned char *, unsigned char *, ssize_t, int16 *,
                         int8 *, int, int);
@@ -217,7 +218,7 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
         format = AFMT_S16_NE;
         break;
       case AFMT_MAC_IMA_ADPCM:
-        dec->metadata = (void *)(long)channels;
+        dec->metadata = (void *)(intptr)channels;
         dec->decoder = decode_mac_ima;
         bsize -=  bsize % (MAC_IMA_BLKLEN * channels);
         obsize = 4 * bsize;
@@ -269,7 +270,7 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
         break;
       case AFMT_S24_PACKED:
       case AFMT_S24_PACKED_BE:
-        dec->metadata = (void *)(long)format;
+        dec->metadata = (void *)(intptr)format;
         dec->decoder = decode_24;
         bsize -= bsize % 3;
         obsize = bsize/3*4;
@@ -338,7 +339,7 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
       decoders->next =
         (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
-      decoders->metadata = (void *)(long)format;
+      decoders->metadata = (void *)(intptr)format;
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
       decoders->outbuf = NULL;
@@ -372,7 +373,7 @@ dcont:
       decoders->next =
         (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
-      decoders->metadata = (void *)(long)format;
+      decoders->metadata = (void *)(intptr)format;
       decoders->decoder = decode_mono_to_stereo;
       decoders->next = NULL;
       obsize *= 2;
@@ -462,7 +463,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
       decoders->next =
         (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
-      decoders->metadata = (void *)(long)format;
+      decoders->metadata = (void *)(intptr)format;
       decoders->decoder = decode_amplify;
       decoders->next = NULL;
       decoders->outbuf = NULL;
@@ -472,6 +473,17 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   ret = record (dsp, wave_fp, fname, constant, datalimit, &datasize, dec);
 
   finalize_head (wave_fp, type, datasize, format, channels, speed);
+  fflush (wave_fp);
+  /*
+   * EINVAL and EROFS are returned for "special files which don't support
+   * syncronization". The user should already know he's writing to a special
+   * file (e.g. "ossrecord -O /dev/null"), so no need to warn.
+   */
+  if ((fsync (fileno (wave_fp)) == -1) && (errno != EINVAL) && (errno != EROFS))
+    {
+      perror (fname);
+      ret = E_ENCODE;
+    }
   if (fclose (wave_fp) != 0)
     {
       perror (fname);
@@ -499,7 +511,7 @@ decode_24 (unsigned char ** obuf, unsigned char * buf,
   int v1;
   uint32 * u32;
   int32 sample_s32, * outbuf = (int32 *) * obuf;
-  int format = (int)(long)metadata;
+  int format = (int)(intptr)metadata;
 
   if (format == AFMT_S24_PACKED) v1 = 8;
   else v1 = 24;
@@ -599,7 +611,7 @@ static ssize_t
 decode_8_to_s16 (unsigned char ** obuf, unsigned char * buf,
                  ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata;
+  int format = (int)(intptr)metadata;
   ssize_t i;
   int16 * outbuf = (int16 *) * obuf;
   static const int16 mu_law_table[256] = {
@@ -838,14 +850,14 @@ static ssize_t
 decode_endian (unsigned char ** obuf, unsigned char * buf,
                ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata;
+  int format = (int)(intptr)metadata;
   ssize_t i;
 
   switch (format)
     {
       case AFMT_S16_OE:
         {
-          short * s = (short *)buf;
+          int16 * s = (int16 *)buf;
 
           for (i = 0; i < l / 2; i++)
             s[i] = ((s[i] >> 8) & 0x00FF) |
@@ -855,7 +867,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
       case AFMT_S32_OE:
       case AFMT_S24_OE:
         {
-          int * s = (int *)buf;
+          int32 * s = (int32 *)buf;
 
           for (i = 0; i < l / 4; i++)
             s[i] = ((s[i] >> 24) & 0x000000FF) |
@@ -869,7 +881,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
       case AFMT_U16_LE: /* U16_LE -> S16_BE */
 #endif
         {
-          short * s = (short *)buf;
+          int16 * s = (int16 *)buf;
 
           for (i = 0; i < l / 2; i++)
             s[i] = (((s[i] >> 8) & 0x00FF) | ((s[i] << 8) & 0xFF00)) -
@@ -883,7 +895,7 @@ decode_endian (unsigned char ** obuf, unsigned char * buf,
       case AFMT_U16_BE: /* U16_BE -> S16_BE */
 #endif
        {
-          short * s = (short *)buf;
+          int16 * s = (int16 *)buf;
 
           for (i = 0; i < l / 2; i++)
              s[i] -= USHRT_MAX/2;
@@ -898,26 +910,40 @@ static ssize_t
 decode_amplify (unsigned char ** obuf, unsigned char * buf,
                 ssize_t l, void * metadata)
 {
-  int format = (int)(long)metadata, len;
-  ssize_t i;
+  int format = (int)(intptr)metadata;
+  ssize_t i, len;
 
   switch (format)
     {
       case AFMT_S16_NE:
         {
-          short *s = (short *)buf;
-          len = l / 2;
+          int16 *s = (int16 *)buf;
+          int32 tmp;
 
-          for (i = 0; i < len ; i++) s[i] = s[i] * amplification / 100;
+          len = l / 2;
+          for (i = 0; i < len ; i++)
+            {
+              tmp = (int32)s[i] * amplification / 100;
+              if (tmp > SHRT_MAX) s[i] = SHRT_MAX;
+              else if (tmp < SHRT_MIN) s[i] = SHRT_MIN;
+              else s[i] = tmp;
+            }
         }
         break;
       case AFMT_S32_NE:
       case AFMT_S24_NE:
         {
-          int *s = (int *)buf;
-          len = l / 4;
+          int32 *s = (int32 *)buf;
+          sbig_t tmp;
 
-          for (i = 0; i < len; i++) s[i] = s[i] * (long)amplification / 100;
+          len = l / 4;
+          for (i = 0; i < len; i++)
+            {
+              tmp = (sbig_t)s[i] * amplification / 100;
+              if (tmp > S32_MAX) s[i] = S32_MAX;
+              else if (tmp < S32_MIN) s[i] = S32_MIN;
+              else s[i] = tmp;
+            }
         }
        break;
    }
@@ -1045,7 +1071,7 @@ decode_mac_ima (unsigned char ** obuf, unsigned char * buf,
                 ssize_t l, void * metadata)
 {
   ssize_t len = 0, olen = 0;
-  int i, channels = (int)(long)metadata;
+  int i, channels = (int)(intptr)metadata;
   int16 pred;
   int8 index;
 
@@ -1157,7 +1183,7 @@ decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
                        ssize_t l, void * metadata)
 {
   ssize_t i;
-  int format = (int)(long)metadata;
+  int format = (int)(intptr)metadata;
 
   switch (format)
     {
@@ -1319,7 +1345,7 @@ double64_to_s32 (int exp, int32 upper, int32 lower, int sign)
       return 0;
     }
 
-  out = (sign ? -1 : 1) * value * S32_MAX;
+  out = (sign ? 1 : -1) * value * S32_MIN;
   if (out > S32_MAX) out = S32_MAX;
   else if (out < S32_MIN) out = S32_MIN;
 
@@ -1356,7 +1382,7 @@ float32_to_s32 (int exp, int man, int sign)
       return 0;
     }
 
-  out = (sign ? -1 : 1) * value * S32_MAX;
+  out = (sign ? 1 : -1) * value * S32_MIN;
   if (out > S32_MAX) out = S32_MAX;
   else if (out < S32_MIN) out = S32_MIN;
 
@@ -1474,7 +1500,7 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
         (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->decoder = decode_endian;
-      decoders->metadata = (void *)(long)*format;
+      decoders->metadata = (void *)(intptr)*format;
       switch (*format)
         {
           case AFMT_S32_OE: *format = AFMT_S32_NE; break;
@@ -1485,13 +1511,14 @@ setup_normalize (int * format, int * obsize, decoders_queue_t * decoders)
       decoders->outbuf = NULL;
       decoders->flag = 0;
     }
-  else if (format2bits (*format) == 8)
+  else if ((*format == AFMT_U8) || (*format == AFMT_MU_LAW) ||
+           (*format == AFMT_S8) || (*format == AFMT_A_LAW))
     {
       decoders->next =
         (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
       decoders = decoders->next;
       decoders->decoder = decode_8_to_s16;
-      decoders->metadata = (void *)(long)*format;
+      decoders->metadata = (void *)(intptr)*format;
       decoders->next = NULL;
       *obsize *= 2;
       decoders->outbuf = (unsigned char *)ossplay_malloc (*obsize);

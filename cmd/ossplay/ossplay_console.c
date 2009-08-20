@@ -158,6 +158,12 @@ ossplay_malloc (size_t sz)
   void *ptr;
 
   if (sz == 0) return NULL;
+  if (sz > OSSPLAY_MAX_MALLOC)
+    {
+      fprintf (stderr, "Unreasonable allocation size" _PRIbig_t ", aborting",
+               (big_t)sz);
+      exit (E_SETUP_ERROR);
+    }
   ptr = malloc (sz);
   if (ptr == NULL)
     {
@@ -341,7 +347,6 @@ ossrecord_main (int argc, char ** argv)
                   "%s", argv[oind]);
       err = encode_sound (&dsp, type, current_filename, force_fmt,
                           force_channels, force_speed, datalimit);
-      clear_update ();
       if (*script)
         {
           if (fork () == 0)

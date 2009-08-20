@@ -39,27 +39,23 @@ extern long seek_byte;
 extern flag from_stdin, raw_file;
 extern off_t (*ossplay_lseek) (int, off_t, int);
 
-#ifdef MPEG_SUPPORT
-static int mpeg_enabled = 0;
-#endif
-
 static errors_t play_au (dspdev_t *, const char *, int, unsigned char *, int);
 static errors_t play_iff (dspdev_t *, const char *, int, unsigned char *, int);
 static errors_t play_voc (dspdev_t *, const char *, int, unsigned char *, int);
-#ifdef MPEG_SUPPORT
-extern void play_mpeg (const char *, int, unsigned char *, int);
-#endif
 static void print_verbose_fileinfo (const char *, int, int, int, int);
 
 #ifdef OGG_SUPPORT
+static errors_t play_ogg (dspdev_t *, const char *, int, unsigned char *, int,
+                          dlopen_funcs_t **);
 
 /*
  * OV_CALLBACKS_DEFAULT is not defined by older Vorbis versions so 
- * we have define our own version.
+ * we have to define our own version.
  */
-static int _ov_header_fseek_wrap_(FILE *f,ogg_int64_t off,int whence){
-  if(f==NULL)return(-1);
-  return fseek(f,off,whence);
+static int _ov_header_fseek_wrap_ (FILE *f, ogg_int64_t off, int whence)
+{
+  if (f == NULL) return -1;
+  return fseek(f, off, whence);
 }
 
 static ov_callbacks OV_CALLBACKS_DEFAULT_ = {
@@ -100,7 +96,7 @@ play_ogg (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
         }
 
       /*
-       * Assigning to the adress pointed by the casted lvalue is the
+       * Assigning to the address pointed by the casted lvalue is the
        * POSIX.1-2003 workaround to the dlsym return type issue, and both the
        * opengroup and glibc examples use that method, so this should be safe
        * on POSIX systems.
@@ -346,32 +342,6 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
                           DEFAULT_SPEED, NULL);
       goto done;
     }
-
-#ifdef MPEG_SUPPORT
-  if (strcmp (suffix, ".mpg") == 0 || strcmp (suffix, ".MPG") == 0 ||
-      strcmp (suffix, ".mp2") == 0 || strcmp (suffix, ".MP2") == 0)
-    {				/* Mpeg file */
-      int tmp;
-
-      if (!mpeg_enabled)
-	{
-	  print_msg (ERRORM, "%s: Playing MPEG audio files is not available\n",
-		     filepart (filename));
-	  goto done;
-	}
-
-      print_msg (VERBOSEM, "Playing MPEG audio file %s\n",
-                 filepart (filename));
-
-      if ((ret = setup_device (fd, AFMT_S16_NE, 2, 44100)))
-	return ret;
-
-      tmp = APF_NORMAL;
-      ioctl (audiofd, SNDCTL_DSP_PROFILE, &tmp);
-      play_mpeg (filename, fd, buf, l);
-      goto done;
-    }
-#endif
 
   print_msg (ERRORM, "%s: Unrecognized audio file type.\n", filename);
 done:
