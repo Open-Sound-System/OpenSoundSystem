@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 if test `whoami` != "root"
 then
   echo "You must be super-user or logged in as root to uninstall OSS..."

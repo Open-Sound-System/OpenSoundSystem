@@ -95,8 +95,6 @@ static int nincludes = 0;
 static char *includes[MAX_INCLUDES];
 static int do_cleanup = 0;
 
-static int config_vxworks=0;
-
 static char arch[32] = "";
 
 static void
@@ -109,7 +107,25 @@ typedef void
 
 generate_driver_t driver_gen = generate_driver;
 
+#ifdef VXWORKS
 #include "srcconf_vxworks.inc"
+#endif
+
+#ifdef linux
+#include "srcconf_linux.inc"
+#endif
+
+#ifdef __FreeBSD__
+#include "srcconf_freebsd.inc"
+#endif
+
+#ifdef sun
+#include "srcconf_solaris.inc"
+#endif
+
+#if defined(__BEOS__) || defined(__HAIKU__)
+#include "srcconf_beos.inc"
+#endif
 
 static int
 parse_config (FILE * f, conf_t * conf, char *comment)
@@ -895,8 +911,9 @@ printf("Symlink %s -> %s\n", source, target);
   fprintf (f, "HOSTCC=%s\n", hostcc);
   fprintf (f, "CPLUSPLUS=%s\n", conf.cplusplus);
 
-  if (config_vxworks)
-     vxworks_genheader (f, path);
+#ifdef VXWORKS
+  vxworks_genheader (f, path);
+#endif
 
 #if defined(__SCO_VERSION__)
   if (*conf.cflags != 0)
@@ -935,52 +952,13 @@ printf("Symlink %s -> %s\n", source, target);
   if (conf.mode == MD_KERNEL || conf.mode == MD_MODULE)
     {
 #if defined(__SCO_VERSION__)
-      fprintf (f, "CFLAGS = -D_KERNEL\n");
+      fprintf (f, "CFLAGS=-O -D_KERNEL -D_DDI=8\n");
 #else
       fprintf (f, "CFLAGS += -D_KERNEL\n");
 #endif
-
-#ifdef sun
-      /* fprintf(f, "CFLAGS += -xmodel=kernel\n"); */
+#ifdef HAVE_KERNEL_FLAGS
+      add_kernel_flags (f);
 #endif
-
-#ifdef linux
-# if defined(__x86_64__)
-      fprintf (f,
-	       "CFLAGS += -O3 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
-# else
-#   ifndef __arm__
-      if (getenv ("NO_REGPARM") == NULL)
-	{
-	  fprintf (f,
-		   "CFLAGS += -O3 -fno-common -ffreestanding -mregparm=3 -DUSE_REGPARM\n");
-	}
-      else
-	{
-	  fprintf (f, "CFLAGS += -O3 -fno-common -ffreestanding -DNO_REGPARM\n");
-	}
-#   else
-      fprintf (f, "CFLAGS += -ffreestanding\n");
-#   endif
-# endif
-      /* fprintf(f, "CFLAGS += -W -Wno-unused -Wno-sign-compare\n"); */
-#endif
-
-#if defined(__SCO_VERSION__)
-      fprintf (f, "CFLAGS=-O -D_KERNEL -D_DDI=8\n");
-#endif
-
-#if defined(__FreeBSD__)
-# if defined(__x86_64__)
-      fprintf (f,
-	       "CFLAGS += -O3 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding\n");
-# endif
-#endif
-
-#if defined(__BEOS__) || defined(__HAIKU__)
-      fprintf (f, "CFLAGS=-O2 -D_KERNEL -D_KERNEL_MODE=1 -no-fpic\n");
-#endif
-
     }
 #ifndef __SCO_VERSION__
   else
@@ -1263,22 +1241,6 @@ produce_output (conf_t * conf)
 
   already_configured = 1;
 }
-
-#ifdef linux
-#include "srcconf_linux.inc"
-#endif
-
-#ifdef __FreeBSD__
-#include "srcconf_freebsd.inc"
-#endif
-
-#ifdef sun
-#include "srcconf_solaris.inc"
-#endif
-
-#if defined(__BEOS__) || defined(__HAIKU__)
-#include "srcconf_beos.inc"
-#endif
 
 static void
 check_endianess (conf_t * conf)

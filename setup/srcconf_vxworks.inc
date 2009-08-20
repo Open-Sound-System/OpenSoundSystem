@@ -5,11 +5,12 @@ generate_vxworks_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_he
 static void
 vxworks_setup(conf_t *conf, char *arch)
 {
+#ifndef linux
 	char tmp[256];
+#endif
 
 	printf ("\n*** Setting up cross compiling for VxWorks %s target ***\n\n", arch);
 
-	config_vxworks=1;
 	hostcc="cc";
 
 #ifdef linux
@@ -71,7 +72,7 @@ generate_vxworks_driver (char *name, conf_t * conf, char *cfg_name, char *cfg_he
 
   FILE *f, *src;
   char tmp[256], line[256], *p, *s;
-  int i, n = 0;
+  int n = 0;
   char *options[MAXOPTS];
   char *option_desc[MAXOPTS];
   char desc[65536];

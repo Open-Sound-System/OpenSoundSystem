@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 OSSLIBDIR=/usr/lib/oss
 if [ -e /tmp/OSS_UPGRADE ]; then rm /tmp/OSS_UPGRADE; fi
-if [ -e /etc/oss.conf ]; then source /etc/oss.conf; else echo "OSSLIBDIR=/usr/lib/oss" > /etc/oss.conf; fi
+if [ -e /etc/oss.conf ]; then . /etc/oss.conf; else echo "OSSLIBDIR=/usr/lib/oss" > /etc/oss.conf; fi
 echo "Building OSS Modules for Linux-`uname -p` `uname -r`"
 cd "$OSSLIBDIR"/build
 sh install.sh

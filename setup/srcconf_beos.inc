@@ -1,4 +1,5 @@
 #define HAVE_SYSDEP
+#define HAVE_KERNEL_FLAGS
 static void
 check_sysdep (conf_t * conf, struct utsname *un)
 {
@@ -24,4 +25,10 @@ check_sysdep (conf_t * conf, struct utsname *un)
       strcpy (conf->arch, "ppc");
       strcpy (conf->platform, "ppc");
     }
+}
+
+static void
+add_kernel_flags (FILE * f)
+{
+  fprintf (f, "CFLAGS=-O2 -D_KERNEL -D_KERNEL_MODE=1 -no-fpic\n");
 }

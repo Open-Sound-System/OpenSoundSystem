@@ -7,7 +7,17 @@
 # chkconfig: 2345 80 20
 # description: Open Sound System for Linux (OSS/Linux) is a \
 # commercial quality sound driver distributed by 4Front Technologies \
-# (http://www.opensound.com). 
+# (http://www.opensound.com).
+
+### BEGIN INIT INFO
+# Provides: oss
+# Required-Start: 
+# Should-Start: 
+# Required-Stop:
+# Default-Start: S
+# Default-Stop: 0 6
+# Short-Description: Start OSS
+### END INIT INFO
 
 # Source function library.
 if test -f /etc/rc.d/init.d/functions

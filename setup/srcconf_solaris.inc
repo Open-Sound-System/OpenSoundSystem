@@ -2,6 +2,7 @@
 
 /*#define USE_GCC*/
 #define HAVE_SYSDEP
+/* #define HAVE_KERNEL_FLAGS */
 #include <sys/systeminfo.h>
 static void
 check_sysdep (conf_t * conf, struct utsname *un)
@@ -124,4 +125,12 @@ check_sysdep (conf_t * conf, struct utsname *un)
 		vxworks_setup(conf, "386");
 	   }
      }
+}
+
+static void
+add_kernel_flags (FILE * f)
+{
+#if 0
+  /* fprintf(f, "CFLAGS += -xmodel=kernel\n"); */
+#endif
 }

@@ -136,7 +136,13 @@ then
 	fi
 fi
 
-cc -D`uname -s` -o srcconf $SRCDIR/setup/srcconf.c
+DTARGETOS=
+if ! test -z $TARGETOS
+then
+  DTARGETOS="-D$TARGETOS"
+fi
+
+cc -D`uname -s` $DTARGETOS -o srcconf $SRCDIR/setup/srcconf.c
 
 if ./srcconf $*
 then

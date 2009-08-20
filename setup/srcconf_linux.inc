@@ -1,4 +1,7 @@
+static char * fnsp = " -fno-stack-protector";
+
 #define HAVE_SYSDEP
+#define HAVE_KERNEL_FLAGS
 static void
 check_sysdep (conf_t * conf, struct utsname *un)
 {
@@ -19,33 +22,49 @@ check_sysdep (conf_t * conf, struct utsname *un)
 		hostcc="cc";
 		targetcc="uclinux-blackfin-gcc";
 	   }
-	if (strcmp(p, "vxworks-x86")==0)
+#ifdef VXWORKS
+	else if (strcmp(p, "vxworks-x86")==0)
 	   {
 		vxworks_setup(conf, "386");
 	   }
+#endif
      }
 
   /*
    * Check if cc supports -fno-stack-protector
    */
   sprintf (cmd, "%s -c -o srcconf.o -fno-stack-protector setup/srcconf.c >/dev/null 2>&1", targetcc);
-  if (system(cmd)==0)
-     {
-	if (do_warning_checks)
-  	   strcpy(conf->OSflags, "-fno-common -fno-stack-protector -Wall -Werror");
-else
-  	   strcpy(conf->OSflags, "-fno-common -fno-stack-protector");
-	unlink("srcconf.o");
-     }
-  else
-     {
-	if (do_warning_checks)
-  	   strcpy(conf->OSflags, "-fno-common -Wall -Werror");
-	else
-  	   strcpy(conf->OSflags, "-fno-common");
-     }
+  if (system(cmd))
+    {
+      fnsp = "";
+    }
 
+  if (do_warning_checks)
+    strcpy(conf->OSflags, "-Wall -Werror");
   strcpy (conf->ccomp, targetcc);
   strcpy (conf->cplusplus, "g++ -fno-rtti -fno-exceptions -I.");
   strcpy (conf->platform, "i86pc");
+}
+
+static void
+add_kernel_flags (FILE * f)
+{
+# if defined(__x86_64__)
+  fprintf (f,
+	     "CFLAGS += -O3 -fno-common  -mcmodel=kernel -mno-red-zone  -fno-asynchronous-unwind-tables -ffreestanding%s\n", fnsp);
+# else
+#   ifndef __arm__
+  if (getenv ("NO_REGPARM") == NULL)
+	{
+	  fprintf (f,
+		   "CFLAGS += -O3 -fno-common -ffreestanding -mregparm=3 -DUSE_REGPARM%s\n", fnsp);
+	}
+  else
+	{
+	  fprintf (f, "CFLAGS += -O3 -fno-common -ffreestanding -DNO_REGPARM%s\n", fnsp);
+	}
+#   else
+  fprintf (f, "CFLAGS += -O3 -fno-common -ffreestanding%s\n", fnsp);
+#   endif
+# endif
 }
