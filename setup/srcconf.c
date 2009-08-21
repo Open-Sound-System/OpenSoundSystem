@@ -107,11 +107,8 @@ typedef void
 
 generate_driver_t driver_gen = generate_driver;
 
-#ifdef VXWORKS
-#include "srcconf_vxworks.inc"
-#endif
-
 #ifdef linux
+#include "srcconf_vxworks.inc"
 #include "srcconf_linux.inc"
 #endif
 
@@ -120,6 +117,7 @@ generate_driver_t driver_gen = generate_driver;
 #endif
 
 #ifdef sun
+#include "srcconf_vxworks.inc"
 #include "srcconf_solaris.inc"
 #endif
 
