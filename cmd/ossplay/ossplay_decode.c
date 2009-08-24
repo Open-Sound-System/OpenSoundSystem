@@ -790,6 +790,9 @@ decode_ms_adpcm (unsigned char ** obuf, unsigned char * buf,
   for (i = 0; i < channels; i++)
     {
       predictor[i] = buf[x];
+      if (predictor[i] > val->wNumCoeff)
+        /* Shouldn't ever happen */
+        predictor[i] = val->wNumCoeff;
       x++;
     }
 

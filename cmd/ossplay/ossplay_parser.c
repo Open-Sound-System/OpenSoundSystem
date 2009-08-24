@@ -834,11 +834,12 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 
             for (i = 0; (i < msadpcm_val.wNumCoeff) && (x < chunk_size-3); i++)
               {
-                msadpcm_val.coeff[i].coeff1 = (short) ne_int (buf + x, 2);
+                msadpcm_val.coeff[i].coeff1 = (int16) ne_int (buf + x, 2);
                 x += 2;
-                msadpcm_val.coeff[i].coeff2 = (short) ne_int (buf + x, 2);
+                msadpcm_val.coeff[i].coeff2 = (int16) ne_int (buf + x, 2);
                 x += 2;
               }
+            msadpcm_val.wNumCoeff = i;
             } break;
 
           case LIST_HUNK: {
