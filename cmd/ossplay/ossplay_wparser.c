@@ -118,15 +118,13 @@ write_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
         WaveHeader wh;
         int bits = format2bits (format);
 
-        if (datalimit > U32_MAX - sizeof (WaveHeader) + 8)
+        if (datalimit > U32_MAX - sizeof (WaveHeader))
           print_msg (WARNM, "Data size exceeds file format limit!\n");
-        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (WaveHeader) + 8))
-          dl = U32_MAX - sizeof (WaveHeader) + 8;
+        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (WaveHeader)))
+          dl = U32_MAX - (U32_MAX % 2) - sizeof (WaveHeader);
         memcpy ((char *) &wh.main_chunk, "RIFF", 4);
-        if (dl % 2)
-          wh.length = LE_INT (dl + sizeof (WaveHeader) - 7);
-        else
-          wh.length = LE_INT (dl + sizeof (WaveHeader) - 8);
+        wh.length = LE_INT (dl + sizeof (WaveHeader) - 8);
+        if (dl % 2) dl--;
         memcpy ((char *) &wh.chunk_type, "WAVE", 4);
         memcpy ((char *) &wh.sub_chunk, "fmt ", 4);
         wh.sc_len = LE_INT (16);
@@ -190,15 +188,13 @@ write_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
         int bits = format2bits (format);
         uint32 i;
 
-        if (datalimit > U32_MAX - sizeof (AiffHeader) + 8)
+        if (datalimit > U32_MAX - sizeof (AiffHeader))
           print_msg (WARNM, "Data size exceeds file format limit!\n");
-        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (AiffHeader) + 8))
-          dl = U32_MAX - (U32_MAX % 2) - sizeof (AiffHeader) + 8;
+        if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (AiffHeader)))
+          dl = U32_MAX - (U32_MAX % 2) - sizeof (AiffHeader);
         memcpy ((char *) &afh.main_chunk, "FORM", 4);
-        if (dl % 2)
-          afh.length = BE_INT (dl + sizeof (AiffHeader) - 7);
-        else
-          afh.length = BE_INT (dl + sizeof (AiffHeader) - 8);
+        afh.length = BE_INT (dl + sizeof (AiffHeader) - 8);
+        if (dl % 2) dl--;
         memcpy ((char *) &afh.chunk_type, "AIFF", 4);
         memcpy ((char *) &afh.sub_chunk, "COMM", 4);
         afh.comm_len = BE_INT (18);
