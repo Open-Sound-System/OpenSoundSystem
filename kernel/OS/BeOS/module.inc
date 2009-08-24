@@ -40,15 +40,20 @@ int DRIVER_PROBE()
   /* while there are more pci devices */
   while ((*gPCI->get_nth_pci_info)(pci_index, &pcii) == B_NO_ERROR)
     {
-      int vendor = 0;
+      int vendor;
+      bool match = false;
+      bool sub = true;
 
+      /* we first loop through all subsystem entries, then loop again */
+rescan:
+      vendor = 0;
       /* if we match a supported vendor */
       while (id_table[vendor].vendor)
         {
-          bool match = false;
 
           /* check for function vendor & device id */
-          if (id_table[vendor].subsystem == false &&
+          if (!sub &&
+              id_table[vendor].subsystem == false &&
               id_table[vendor].vendor == pcii.vendor_id &&
               id_table[vendor].product == pcii.device_id)
             {
@@ -57,7 +62,8 @@ int DRIVER_PROBE()
             }
 
           /* check for subsystem vendor & device id */
-          if (id_table[vendor].subsystem == true &&
+          if (sub &&
+              id_table[vendor].subsystem == true &&
               pcii.header_type == 0 &&
               id_table[vendor].vendor == pcii.u.h0.subsystem_vendor_id &&
               id_table[vendor].product == pcii.u.h0.subsystem_id)
@@ -94,6 +100,11 @@ int DRIVER_PROBE()
               break;
             }
           vendor++;
+        }
+        /* we've checked for subsystem IDs, now rescan for IDs */
+        if (!match && sub) {
+          sub = false;
+          goto rescan;
         }
       /* next pci_info struct, please */
       pci_index++;
