@@ -11,10 +11,10 @@
 
 ### BEGIN INIT INFO
 # Provides: oss
-# Required-Start: 
+# Required-Start: $local_fs $remote_fs 
 # Should-Start: 
 # Required-Stop:
-# Default-Start: S
+# Default-Start: 1
 # Default-Stop: 0 6
 # Short-Description: Start OSS
 ### END INIT INFO

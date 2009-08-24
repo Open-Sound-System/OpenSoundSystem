@@ -2054,7 +2054,7 @@ typedef struct oss_card_info
  */
 typedef struct
 {
-	int secret;	// Initialize this to driver spcified secret value
+	int secret;	/* Initialize this to driver spcified secret value */
 	int source, target;
 	int function;
 	int value;
