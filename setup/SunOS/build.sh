@@ -63,6 +63,14 @@ mkdir prototype/usr/man/man7d
 mkdir prototype/usr/include
 mkdir prototype/usr/include/sys
 mkdir prototype/usr/include/oss
+mkdir prototype/usr/lib
+mkdir prototype/usr/lib/oss
+
+cat > prototype/usr/lib/oss/README <<EOF
+This directory is not used any more. Configuration files for OSS are
+located under /etc/oss. The soundon.log file is located in
+/var/log/soundon.log.
+EOF
 
 cp $KERNEL32/.version prototype/etc/oss/version.dat
 
