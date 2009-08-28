@@ -1,6 +1,8 @@
 
 . ./.directories
 
+OSSLIBDIR=/usr/lib/oss
+
 if test "`which gawk|grep 'no gawk in '` " = " " 2>/dev/null
 then
    TXT2MAN=$SRCDIR/setup/txt2man
