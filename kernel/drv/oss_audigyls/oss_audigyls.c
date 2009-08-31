@@ -158,6 +158,8 @@ typedef struct
   int spread;			/* copy front to surr/center channels */
   int loopback;			/* record channel input from /dev/dspXX */
   int input_source;		/* input from mic/line/aux/etc */
+  int captmon;         /* hear what you record*/ 
+  int fbvol;         /* recording monitor volume */ 
 /*
  * UART
  */
@@ -727,10 +729,11 @@ audigyls_prepare_for_input (int dev, int bsize, int bcount)
 	{
 	  devc->rec_src = RECSEL_I2SIN;	/* sb 7.1 value */
 	}
-      recmap = 0xe4;
+      recmap = 0x00; 
     }
   tmp = recmap;			/* default record input map */
-  tmp |= devc->rec_src << (16 + portc->rec_port * 3);	/* Select input */
+  tmp |= devc->rec_src << 28 | devc->rec_src << 24 | devc->rec_src << 20 | devc->rec_src << 16; 
+//write_reg (devc, SMIXMAP_SPDIF, 0, 0x76767676); 
   write_reg (devc, P17RECSEL, 0, tmp);
   portc->audio_enabled &= ~PCM_ENABLE_INPUT;
   portc->trigger_bits &= ~PCM_ENABLE_INPUT;
@@ -1302,9 +1305,15 @@ audigyls_mix_control (int dev, int ctrl, unsigned int cmd, int value)
 	  }
 	  break;
 
-	case 7:
+	case 4: 
 	  value = devc->input_source;
 	  break;
+	case 5: 
+	  value = devc->captmon; 
+	  break; 
+	case 7: 
+	  value = devc->fbvol; 
+	  break; 
 	}
     }
   if (cmd == SNDCTL_MIX_WRITE)
@@ -1330,29 +1339,61 @@ audigyls_mix_control (int dev, int ctrl, unsigned int cmd, int value)
 		       val << 24 | val << 16 | val << 8 | val);
 	    write_reg (devc, P17RECVOLH, 0,
 		       val << 24 | val << 16 | val << 8 | val);
-	    write_reg (devc, SRCTL, 1, 0x30303030);
-	    /* val << 24 | val << 16 | val << 8 | val); */
+      /* write_reg (devc, SRCTL, 1, 
+            0xff << 24 | 0xff << 16 | val << 8 | val); */ 
 	    devc->recvol = value & 0xff;
 	  }
 	  break;
 
 	case 4:
-	  if (value == 0)	/* for mic input remove GPIO */
+	  { 
+	  switch (value) 
+	    {
+          case 0:   /* for mic input remove GPIO */ 
 	    {
 	      OUTL (devc->osdev, INL (devc->osdev, devc->base + 0x18) | 0x400,
 		    devc->base + 0x18);
 	      audigyls_i2c_write (devc, 0x15, 0x2);	/* Mic */
 	    }
-	  else
+            break; 
+          case 1: 
 	    {
 	      OUTL (devc->osdev,
 		    INL (devc->osdev, devc->base + 0x18) & ~0x400,
 		    devc->base + 0x18);
 	      audigyls_i2c_write (devc, 0x15, 0x4);	/* Line */
 	    }
+            break; 
+          case 2: 
+            { 
+              OUTL (devc->osdev, 
+              INL (devc->osdev, devc->base + 0x18) & ~0x400, 
+              devc->base + 0x18); 
+              audigyls_i2c_write (devc, 0x15, 0x8);   /* Aux */ 
+            } 
+          break; 
+	    } 
 	  devc->input_source = value;
-	  break;
-
+	} 
+	break; 
+	case 5: 
+	  { 
+	    devc->captmon = value; 
+	    /* Send analog capture to front speakers */ 
+	    if (value) 
+	      write_reg (devc, SMIXMAP_I2S, 0, 0x76767676); 
+	    else 
+	     write_reg (devc, SMIXMAP_I2S, 0, 0x10101010); 
+	  } 
+	break; 
+	case 7: 
+	  { 
+	    /*Set recording monitor volume */ 
+	    val = (255 - value) & 0xff; 
+	    write_reg (devc, SRCTL, 1, val << 8 | val); 
+	    devc->fbvol = value & 0xff; 
+	  } 
+	break;
 	}
     }
   return value;
@@ -1388,11 +1429,20 @@ audigyls_mix_init (int dev)
     {
       if ((err =
 	   mixer_ext_create_control (dev, group, 4, audigyls_mix_control,
-				     MIXT_ENUM, "RECORDSRC", 2,
+				     MIXT_ENUM, "RECORDSRC", 3, 
 				     MIXF_READABLE | MIXF_WRITEABLE)) < 0)
 	return err;
-      mixer_ext_set_strings (dev, err, "MIC LINE", 0);
+      mixer_ext_set_strings (dev, err, "MIC LINE AUX", 0); 
     }
+  if ((err = mixer_ext_create_control (dev, group, 7, audigyls_mix_control, 
+				       MIXT_MONOSLIDER, "monitorvol", 255,
+				       MIXF_READABLE | MIXF_WRITEABLE |
+				       MIXF_RECVOL)) < 0)
+    return err;
+  if ((err = mixer_ext_create_control (dev, group, 5, audigyls_mix_control, 
+				       MIXT_ONOFF, "RecMon", 1, 
+				       MIXF_READABLE | MIXF_WRITEABLE)) < 0) 
+    return err; 
   return 0;
 }
 

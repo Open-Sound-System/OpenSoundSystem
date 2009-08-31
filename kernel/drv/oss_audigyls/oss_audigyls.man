@@ -27,6 +27,8 @@ o The "spread" button will simply duplicate the front audio on the other 3
 o LoopBack recording allows you to capture any channel that's playing audio.
 o Record Volume slider just adjusts the input gain.
 o Record Source selector selects the input.
+o The "recmon" button enables a passthrough of the analog input signal.
+o Monitor Volume slider sets the passthrough gain if recmon is enabled.
 
 OPTIONS
 o audigyls_spdif_enable=0|1
