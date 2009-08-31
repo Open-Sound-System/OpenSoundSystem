@@ -907,9 +907,14 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
       default: level_meters = 0; /* Not implemented */
     }
 
-  signal (SIGSEGV, ossplay_getint);
-  signal (SIGPIPE, ossplay_getint);
-  signal (SIGINT, ossplay_getint);
+  if ((signal (SIGSEGV, ossplay_getint) == SIG_ERR) ||
+      (signal (SIGPIPE, ossplay_getint) == SIG_ERR) ||
+      (signal (SIGTERM, ossplay_getint) == SIG_ERR) ||
+#ifdef SIGQUIT
+      (signal (SIGQUIT, ossplay_getint) == SIG_ERR) ||
+#endif
+      (signal (SIGINT, ossplay_getint) == SIG_ERR))
+    print_msg (WARNM, "Signal handler not set up!\n");
 
   if (verbose)
     {

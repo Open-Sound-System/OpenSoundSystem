@@ -36,12 +36,8 @@
 #include <sys/utsname.h>
 #include <sys/ioctl.h>
 
-int mixerfd = -1;
-oss_sysinfo sysinfo;
-int verbose = 0;
-int phys_only = 0;
-int show_engines = 0;
-int show_ex = 0;
+static int mixerfd = -1, phys_only = 0, show_engines = 0, show_ex = 0, verbose = 0;
+static oss_sysinfo sysinfo;
 
 static void
 print_symlink(const char *link)

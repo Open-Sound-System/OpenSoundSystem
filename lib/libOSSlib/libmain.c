@@ -27,7 +27,7 @@ int nrsynths = 0;
 extern void play_event (unsigned char *ev);
 
 void
-seqbuf_dump ()
+seqbuf_dump (void)
 {
   int l = _seqbufptr;
 

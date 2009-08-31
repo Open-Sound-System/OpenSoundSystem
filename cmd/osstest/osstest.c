@@ -99,8 +99,7 @@ prepare (void)
 #ifdef SRC_SUPPORT
 /*
  * The src_convert() routine converts the wave data to the requested
- * sampling rate. The GRC3 routines have not been released by 4Front
- * Technologies so this part will not work.
+ * sampling rate.
  */
 static int
 src_convert (short *buf, short *newbuf, int count, int srate, int sz)

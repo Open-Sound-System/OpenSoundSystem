@@ -236,9 +236,9 @@ snd_pcm_open (snd_pcm_t ** pcmp, const char *name,
   snd_pcm_t *pcm;
   int oss_mode = O_WRONLY;
   char dspname[32];
-  char *devdsp;
+  const char *devdsp;
 
-  if ((devdsp=getenv("OSS_AUDIODEV"))==NULL)
+  if ((devdsp = getenv("OSS_AUDIODEV")) == NULL)
      devdsp = "/dev/dsp";
 
   ALIB_INIT ();
@@ -304,7 +304,7 @@ snd_pcm_open (snd_pcm_t ** pcmp, const char *name,
     }
 
   pcm->info.dev = -1;
-  if (ioctl (pcm->fd, SNDCTL_AUDIOINFO, &pcm->info) == -1)
+  if (ioctl (pcm->fd, SNDCTL_ENGINEINFO, &pcm->info) == -1)
     {
       int err = errno;
       close (pcm->fd);
@@ -518,6 +518,16 @@ snd_pcm_hw_params_set_buffer_size (snd_pcm_t * pcm,
 				   snd_pcm_uframes_t val)
 {
   dbg_printf ("snd_pcm_hw_params_set_buffer_size()\n");
+
+  return 0;
+}
+
+int
+snd_pcm_hw_params_set_buffer_size_min (snd_pcm_t * pcm,
+				       snd_pcm_hw_params_t * params,
+				       snd_pcm_uframes_t * val)
+{
+  dbg_printf ("snd_pcm_hw_params_set_buffer_size_min()\n");
 
   return 0;
 }
@@ -1513,6 +1523,24 @@ __snd_pcm_hw_params_get_buffer_size (const snd_pcm_hw_params_t * params,
   return 0;
 }
 
+int
+snd_pcm_hw_params_get_buffer_size_min (const snd_pcm_hw_params_t * params,
+				       snd_pcm_uframes_t * val)
+{
+  *val = 65536;
+
+  return 0;
+}
+
+int
+snd_pcm_hw_params_get_buffer_size_max (const snd_pcm_hw_params_t * params,
+				       snd_pcm_uframes_t * val)
+{
+  *val = 65536;
+
+  return 0;
+}
+
 /**
  * \brief Extract access type from a configuration space
  * \param params Configuration space
@@ -1544,7 +1572,29 @@ __snd_pcm_hw_params_get_period_size (const snd_pcm_hw_params_t * params,
   dbg_printf ("snd_pcm_hw_params_get_period_size(params=%x)=%d\n",
 	      params, params->pcm->period_size);
   *val = params->pcm->period_size;
-  *dir = 0;
+  if (dir) *dir = 0;
+  return 0;
+}
+
+int
+snd_pcm_hw_params_get_period_size_min (const snd_pcm_hw_params_t * params,
+				       snd_pcm_uframes_t * val, int *dir)
+{
+  dbg_printf ("snd_pcm_hw_params_get_period_size_min(params=%x)=%d\n",
+	      params, params->pcm->period_size);
+  *val = params->pcm->period_size;
+  if (dir) *dir = 0;
+  return 0;
+}
+
+int
+snd_pcm_hw_params_get_period_size_max (const snd_pcm_hw_params_t * params,
+				       snd_pcm_uframes_t * val, int *dir)
+{
+  dbg_printf ("snd_pcm_hw_params_get_period_size_min(params=%x)=%d\n",
+	      params, params->pcm->period_size);
+  *val = params->pcm->period_size;
+  if (dir) *dir = 0;
   return 0;
 }
 
@@ -1584,7 +1634,7 @@ __snd_pcm_hw_params_set_period_size_near (snd_pcm_t * pcm,
 {
   dbg_printf
     ("snd_pcm_hw_params_set_period_size_near(pcm=%x, params=%x, val=%d, dir=%d)\n",
-     pcm, params, *val, *dir);
+     pcm, params, *val, dir?*dir:-1);
   pcm->period_size = *val;
   return 0;
 }
@@ -2635,6 +2685,20 @@ snd_pcm_info_get_subdevice_name (const snd_pcm_info_t * obj)
   dbg_printf ("snd_pcm_info_get_subdevice_name()\n");
 
   return "OSS subname";
+}
+
+int
+snd_device_name_hint (int card, const char * iface, void *** hints)
+{
+  dbg_printf ("snd_device_name_hint()\n");
+
+  return -1;
+}
+
+int
+snd_pcm_hw_params_is_monotonic (const snd_pcm_hw_params_t * params)
+{
+  return 0;
 }
 
 /**

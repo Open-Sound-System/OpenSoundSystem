@@ -1070,9 +1070,7 @@ show_level (int dev, char *cname)
 }
 
 #ifdef CONFIG_OSS_MIDI
-int state = 0, ch = 0;
-int route[16];
-int nch = 0;
+static int ch = 0, nch = 0, route[16], state = 0;
 
 static void
 midi_set (int dev, int ctrl, int v)
