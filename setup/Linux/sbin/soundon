@@ -318,6 +318,17 @@ then
   $OSSLIBDIR/soundon.user >> $LOG 2>&1
 fi
 
+if test "`ossinfo -g|grep TRIAL` " != " "
+then
+	echo
+	echo "************************************************************"
+	echo "* NOTE! You are using trial version of Open Sound System   *"
+	echo "************************************************************"
+	echo
+
+	sleep 10
+fi
+
 if test "$NOTIFY " = "1 "
 then
   echo
