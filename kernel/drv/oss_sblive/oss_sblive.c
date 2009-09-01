@@ -2493,6 +2493,7 @@ init_emu10k1 (sblive_devc * devc)
   extern int sblive_digital_din;
   extern int audigy_digital_din;
   oss_native_word phaddr;
+  unsigned int memlimit = MEMLIMIT_31BITS;
 
   OUTL (devc->osdev, 0x00000000, devc->base + 0x0c);	/* Intr disable */
   OUTL (devc->osdev,
@@ -2514,6 +2515,7 @@ init_emu10k1 (sblive_devc * devc)
 
   if (devc->feature_mask & SB_AUDIGY)
     {
+      memlimit=MEMLIMIT_32BITS;
       sblive_write_reg (devc, 0x5e, 0, 0xf00);	/* ?? */
       sblive_write_reg (devc, 0x5f, 0, 0x3);	/* ?? */
     }
@@ -2540,7 +2542,7 @@ init_emu10k1 (sblive_devc * devc)
   if (devc->max_pages < 1024)
     devc->max_pages = 1024;
   devc->page_map =
-    (int *) CONTIG_MALLOC (devc->osdev, devc->max_pages * 4, MEMLIMIT_32BITS,
+    (int *) CONTIG_MALLOC (devc->osdev, devc->max_pages * 4, memlimit,
 			   &phaddr, devc->page_map_dma_handle);
   devc->vpage_map =
     KERNEL_MALLOC (devc->max_pages * sizeof (unsigned char *));
@@ -2584,7 +2586,7 @@ init_emu10k1 (sblive_devc * devc)
   devc->synth_memptr = devc->synth_membase;
 
   devc->silent_page =
-    (int *) CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->silent_page_dma_handle);
+    (int *) CONTIG_MALLOC (devc->osdev, 4096, memlimit, &phaddr, devc->silent_page_dma_handle);
   if (devc->silent_page == NULL)
     {
       cmn_err (CE_WARN, "Can't allocate a silent page\n");
