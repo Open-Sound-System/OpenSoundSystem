@@ -405,6 +405,13 @@ oss_open (dev_t * dev_p, int open_flags, int otyp, cred_t * cred_p)
   cdev = oss_cdevs[dev];	/* Switch to the cdev that was actually opened */
 
   cdev->open_count++;
+  if (open_flags & FREAD && open_flags & FWRITE)
+    cdev->file.mode = OPEN_READWRITE;
+  else if (open_flags & FREAD)
+    cdev->file.mode = OPEN_READ;
+  else if (open_flags & FWRITE)
+    cdev->file.mode = OPEN_WRITE;
+
   oss_reserve_device (cdev->osdev);
 //cmn_err(CE_CONT, "Increment open_devices=%d, refcount=%d\n", open_devices, cdev->osdev->refcount);
   MUTEX_EXIT_IRQRESTORE (osscore_mutex, flags);
