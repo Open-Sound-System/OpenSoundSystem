@@ -146,4 +146,15 @@ then
 	sleep 10
 fi
 
+if test "`ossinfo -g|grep EXPIRED` " != " "
+then
+	echo
+	echo "****************************************************************"
+	echo "* NOTE! Your Open Sound System evaluation license has expired  *"
+	echo "****************************************************************"
+	echo
+
+	sleep 15
+fi
+
 exit 0

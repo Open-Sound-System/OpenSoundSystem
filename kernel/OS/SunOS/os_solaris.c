@@ -758,19 +758,6 @@ oss_attach (dev_info_t * dip, ddi_attach_cmd_t cmd)
 {
   oss_device_t *osdev;
 
-#ifdef LICENSED_VERSION
-  timestruc_t ts;
-
-  gethrestime (&ts);
-  if (!oss_license_handle_time (ts.tv_sec))
-    {
-      cmn_err (CE_WARN, "This version of Open Sound System has expired\n");
-      cmn_err (CE_CONT,
-	       "Please download the latest version from www.opensound.com\n");
-      oss_expired = 1;
-    }
-#endif
-
   if (cmd != DDI_ATTACH)
     {
       cmn_err (CE_WARN, "oss_attach: Command %x\n", cmd);
@@ -1400,6 +1387,24 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   oss_device_t *osdev = NULL;
   int i;
   ddi_iblock_cookie_t iblk;
+  static int license_checked=0;
+
+#ifdef LICENSED_VERSION
+  if (!license_checked)
+     {
+	timestruc_t ts;
+	
+	license_checked = 1;
+	gethrestime (&ts);
+	if (!oss_license_handle_time (ts.tv_sec))
+	  {
+	    cmn_err (CE_WARN, "This version of Open Sound System has expired\n");
+	    cmn_err (CE_CONT,
+	      "Please download the latest version from www.opensound.com\n");
+	    oss_expired = 1;
+	  }
+     }
+#endif
 
   if (handle == NULL)
     handle = nick;
