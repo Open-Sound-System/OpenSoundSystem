@@ -62,6 +62,32 @@ fi
 ${PKG_INSTALL_ROOT}/usr/sbin/devlinks
 ${PKG_INSTALL_ROOT}/usr/sbin/ossdevlinks
 
+if test "`ossinfo -g|grep TRIAL` " != " "
+then
+	echo
+	echo
+	echo
+	echo "************************************************************"
+	echo "* NOTE! You are using trial version of Open Sound System   *"
+	echo "************************************************************"
+	echo
+
+	sleep 10
+fi
+
+if test "`ossinfo -g|grep EXPIRED` " != " "
+then
+	echo
+	echo
+	echo
+	echo "****************************************************************"
+	echo "* NOTE! Your Open Sound System evaluation license has expired  *"
+	echo "****************************************************************"
+	echo
+
+	sleep 15
+fi
+
 echo ""
 echo ""
 echo ""
