@@ -1170,9 +1170,16 @@ printf("Symlink %s -> %s\n", source, target);
       fprintf (f, "%s.so:\t$(LIBDIR)/%s.so\n\n", name, name);
 
       fprintf (f, "$(LIBDIR)/%s.so:\t$(OBJECTS)\n", name);
+#if defined(linux)
+      /* gcc -shared works much better than ld on Linux */
+      fprintf (f,
+	       "\t$(CC) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
+	       shlib_cflags, name);
+#else
       fprintf (f,
 	       "\t$(LD) $(LDFLAGS) %s -o $(LIBDIR)/%s.so $(OBJECTS)\n",
 	       shlib_ldflags, name);
+#endif
       fprintf (f, "\n\n");
     }
 
