@@ -13,13 +13,21 @@
 #include <oss_config.h>
 
 #ifndef NO_GLOBAL_OPTIONS
-/*
+/***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
  * Core settings
  *
  * Remember to update kernel/drv/osscore/.params when adding, removing or
  * changing the following options. The .params file is used when generating the
  * driver.conf files. Also don't forget to update osscore.man.
- */
+ *
+ * For Linux it's also necessary to add a module_param() line to Linux/osscore.c
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************/
 
 int max_intrate = 100;		/* 10 msec minimum interrupt interval */
 int src_quality = 3;		/* Sample rate conversion quality (0-5) */

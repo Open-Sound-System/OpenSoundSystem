@@ -232,6 +232,7 @@ module_param (ac97_recselect, int, S_IRUGO);
 module_param (cooked_enable, int, S_IRUGO);
 module_param (dma_buffsize, int, S_IRUGO);
 module_param (excl_policy, int, S_IRUGO);
+module_param (mixer_muted, int, S_IRUGO);
 
 static struct proc_dir_entry *oss_proc_root = NULL;
 static struct proc_dir_entry *oss_proc_devfiles = NULL;
