@@ -1824,6 +1824,10 @@ oss_hdaudio_attach (oss_device_t * osdev)
       devc->chip_name = "nVidia HD Audio";
       pci_read_config_byte (osdev, 0x4e, &btmp);
       pci_write_config_byte (osdev, 0x4e, (btmp & 0xf0) | 0x0f);
+      pci_read_config_byte (osdev, 0x4d, &btmp);
+      pci_write_config_byte (osdev, 0x4d, (btmp & 0xfe) | 0x01);
+      pci_read_config_byte (osdev, 0x4c, &btmp);
+      pci_write_config_byte (osdev, 0x4c, (btmp & 0xfe) | 0x01);
       break;
 
     case ATI_DEVICE_SB450:
