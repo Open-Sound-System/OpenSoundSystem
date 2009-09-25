@@ -218,6 +218,7 @@ extern int ac97_recselect;
 extern int cooked_enable;
 extern int dma_buffsize;
 extern int excl_policy;
+extern int mixer_muted;
 
 module_param (oss_hz, int, S_IRUGO);
 module_param (max_intrate, int, S_IRUGO);
