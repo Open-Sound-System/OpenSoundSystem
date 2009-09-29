@@ -893,6 +893,7 @@ static const codec_desc_t codecs[] = {
   /* Conexant */
   {0x14f15045, "CX20548", VF_NONE, NULL, 0x76543201},
   {0x14f15047, "CX20551", VF_NONE, NULL, 0x76543201},
+  {0x14f15051, "CX20561", VF_NONE, NULL, 0x76543210},
   {0x14f12c06, "Conexant2c06", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Vaio) */
   {0x14f12bfa, "Conexant2bfa", VF_NONE, (char **) &conexant_modem_remap, 0, NULL_mixer_init}, /* Modem codec (Acer Ferrari 5k) */
 
