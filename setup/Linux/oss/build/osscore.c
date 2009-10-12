@@ -29,6 +29,7 @@ typedef int *ioctl_arg;
 #include <linux/spinlock.h>
 #include <linux/pci.h>
 #include <linux/irq.h>
+#include <linux/sched.h>
 #include <linux/interrupt.h>
 #undef strlen
 #undef strcpy
