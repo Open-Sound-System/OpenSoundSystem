@@ -731,7 +731,11 @@ main (int argc, char *argv[])
       add_drv ("OSS User space device driver", "oss_userdev", "-m '* 0666 root sys'");
     }
 
+#ifdef sparc
+  if (stat("/kernel/drv/sparcv9/oss_sadasupport", &st) != -1)
+#else
   if (stat("/kernel/drv/oss_sadasupport", &st) != -1)
+#endif
   if (stat("/kernel/misc/audiosup", &st) != -1)
      {
   	check_conf ("oss_sadasupport", 1, "");
