@@ -50,8 +50,11 @@ static card_spec models[] = {
    MF_AP | MF_SPDIF | MF_MIDI1 | MF_MEEPROM, &ap2496_auxdrv},
   {0xd6381412, "M Audio Delta 410", 8, 2, MF_D410 | MF_SPDIF | MF_MEEPROM,
    &d410_auxdrv},
-  {0xd63014ff, "M Audio Delta 1010T", 8, 8,
+
+  /* Delta 1010 rev E is based on 1010LT instead of the original 1010 design */
+  {0xd63014ff, "M Audio Delta 1010 rev E", 8, 8,
    MF_MIDI1 | MF_SPDIF | MF_MEEPROM | MF_WCLOCK, &d1010lt_auxdrv},
+  
   {0xd63b1412, "M Audio Delta 1010LT", 8, 8,
    MF_MIDI1 | MF_SPDIF | MF_MEEPROM | MF_WCLOCK, &d1010lt_auxdrv},
   {0xd6351412, "M Audio Delta TDIF", 8, 8, MF_SPDIF | MF_MEEPROM | MF_WCLOCK,
@@ -155,7 +158,7 @@ eeprom_read (envy24_devc * devc, int pos)
 }
 
 static int
-load_eeprom (envy24_devc * devc)
+load_eeprom (envy24_devc * devc, int subid)
 {
   int status, i, check;
 
@@ -181,10 +184,10 @@ load_eeprom (envy24_devc * devc)
       check |= devc->eeprom[i];
     }
 
-  if (check != devc->model_data->svid)
+  if (check != subid)
     cmn_err (CE_CONT,
 	     "Envy24 WARNING: Possible EEPROM read error %08x != %08x\n",
-	     check, devc->model_data->svid);
+	     check, subid);
 
   return 1;
 }
@@ -3869,30 +3872,6 @@ oss_envy24_attach (oss_device_t * osdev)
   devc->playbuffsize = 0;
   devc->recbuffsize = 0;
   devc->playbuf = devc->recbuf = NULL;
-  i = 0;
-
-  while (models[i].svid != 0)
-    {
-      if (models[i].svid == subvendor)
-	{
-	  name = models[i].product;
-	  devc->model_data = &models[i];
-	  if (devc->model_data->auxdrv == NULL)
-	    devc->model_data->auxdrv = &default_auxdrv;
-	  DDB (cmn_err (CE_CONT, "Card id '%s'\n", name));
-
-	  break;
-	}
-
-      i++;
-    }
-
-  if (models[i].svid == 0)
-    {
-      cmn_err (CE_NOTE, "Unknown device ID (%08x).\n", subvendor);
-      cmn_err (CE_NOTE, "This card is not supported (yet).\n");
-      return 0;
-    }
 
   status = INB (devc->osdev, devc->ccs_base + 0x13);
   if (status & 0x80)		/* EEPROM present */
@@ -3900,7 +3879,7 @@ oss_envy24_attach (oss_device_t * osdev)
       static char resol_tab[] = { 16, 18, 20, 24 };
       unsigned char tmpbyte;
 
-      load_eeprom (devc);
+      load_eeprom (devc, subvendor);
 
       /* Fix bit 0x80 of EEPROM location 0x07. */
       pci_read_config_byte (osdev, 0x61, &tmpbyte);
@@ -3960,6 +3939,11 @@ oss_envy24_attach (oss_device_t * osdev)
 
 #endif
 
+      if (subvendor == 0xd6301412)	/* Delta 1010 */
+      if (devc->eeprom[0xc] == 0x7b)	/* Looks like Delta 101 rev E */
+	 subvendor = 0xd63014ff;	/* Delta 1010E */
+
+
 #if 1
       if (!(devc->eeprom[0x07] & 0x80))
 	{
@@ -3967,6 +3951,30 @@ oss_envy24_attach (oss_device_t * osdev)
 	  return 0;
 	}
 #endif
+    }
+
+  i = 0;
+  while (models[i].svid != 0)
+    {
+      if (models[i].svid == subvendor)
+	{
+	  name = models[i].product;
+	  devc->model_data = &models[i];
+	  if (devc->model_data->auxdrv == NULL)
+	    devc->model_data->auxdrv = &default_auxdrv;
+	  DDB (cmn_err (CE_CONT, "Card id '%s'\n", name));
+
+	  break;
+	}
+
+      i++;
+    }
+
+  if (models[i].svid == 0)
+    {
+      cmn_err (CE_NOTE, "Unknown device ID (%08x).\n", subvendor);
+      cmn_err (CE_NOTE, "This card is not supported (yet).\n");
+      return 0;
     }
 
   MUTEX_INIT (osdev, devc->mutex, MH_DRV);
