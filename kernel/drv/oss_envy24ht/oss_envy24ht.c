@@ -699,7 +699,7 @@ create_rout_mixer (int dev, envy24ht_devc * devc, int root)
 
   if (devc->model_data == NULL)
     {
-      cmn_err (CE_CONT, "Envy24ht Internal retor: No model data\n");
+      cmn_err (CE_CONT, "Internal error: No model data\n");
       return 0;
     }
 
