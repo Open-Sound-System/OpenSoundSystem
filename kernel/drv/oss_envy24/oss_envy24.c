@@ -3896,9 +3896,6 @@ oss_envy24_attach (oss_device_t * osdev)
       pci_write_config_byte (osdev, 0x62, devc->eeprom[0x08]);
       pci_write_config_byte (osdev, 0x63, devc->eeprom[0x09]);
 
-      if (devc->model_data->flags & MF_AC97)
-	devc->consumer_ac97_present = 1;
-
 #if 1
       if (devc->eeprom[0x06] & 0x20)
 	DDB (cmn_err (CE_CONT, "Two MPU401 UARTs present.\n"));
@@ -3969,6 +3966,9 @@ oss_envy24_attach (oss_device_t * osdev)
 
       i++;
     }
+
+  if (devc->model_data->flags & MF_AC97)
+    devc->consumer_ac97_present = 1;
 
   if (models[i].svid == 0)
     {
