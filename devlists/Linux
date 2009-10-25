@@ -88,6 +88,7 @@ oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio
 oss_hdaudio	pci1039,7502	SiS High Definition Audio
 oss_hdaudio	pci10b9,5461	ULI High Definition Audio
+oss_hdaudio	pci1102,7006	Creative Labs SB XFi Xtreme
 oss_hdsp	pci10ee,3fc5	RME Hammerfall (not supported yet)
 oss_ich	pci1022,7445	AMD 786
 oss_ich	pci1022,746d	AMD 8111 

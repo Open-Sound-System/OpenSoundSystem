@@ -195,6 +195,9 @@ extern int osscore_pci_write_config_word (dev_info_t * dip,
 extern int osscore_pci_write_config_dword (dev_info_t * dip,
 					   unsigned int where,
 					   unsigned int val);
+
+extern int osscore_pci_enable_msi (dev_info_t * dip);
+
 extern void *oss_map_pci_mem (oss_device_t * osdev, int size,
 			      unsigned long offset);
 

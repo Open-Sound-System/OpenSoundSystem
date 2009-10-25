@@ -86,6 +86,12 @@ oss_pci_write_config_dword (oss_device_t * osdev, offset_t where,
 }
 
 int
+oss_pci_enable_msi (oss_device_t * osdev)
+{
+  return osscore_pci_enable_msi (osdev->dip);
+}
+
+int
 oss_find_minor (int dev_class, int instance)
 {
   int i;

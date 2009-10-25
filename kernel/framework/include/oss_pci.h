@@ -53,4 +53,5 @@ extern int pci_write_config_word (oss_device_t * osdev, offset_t where,
 				  unsigned short val);
 extern int pci_write_config_dword (oss_device_t * osdev, offset_t where,
 				   unsigned int val);
+extern int pci_enable_msi (oss_device_t * osdev);
 #endif

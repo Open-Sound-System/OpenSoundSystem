@@ -243,7 +243,7 @@ static ssize_t
 oss_read_devfiles (struct file *file, char __user * buf, size_t count,
 		   loff_t * ppos)
 {
-  static char tmp[4096];
+  static char tmp[8192];
   char *s;
   static int eof = 0;
   int i;
@@ -1580,6 +1580,13 @@ osscore_pci_write_config_dword (dev_info_t * dip, unsigned int where,
   return pci_write_config_dword (dip->pcidev, where, val);
 }
 
+int
+osscore_pci_enable_msi (dev_info_t * dip)
+{
+  pci_enable_msi (dip->pcidev);
+  return (dip->pcidev->irq);
+}
+
 /* These definitions must match with oss_config.h */
 typedef int (*oss_tophalf_handler_t) (struct _oss_device_t * osdev);
 typedef void (*oss_bottomhalf_handler_t) (struct _oss_device_t * osdev);
@@ -2005,6 +2012,7 @@ EXPORT_FUNC (oss_pci_read_config_dword);
 EXPORT_FUNC (oss_pci_write_config_byte);
 EXPORT_FUNC (oss_pci_write_config_word);
 EXPORT_FUNC (oss_pci_write_config_dword);
+EXPORT_FUNC (oss_pci_enable_msi);
 EXPORT_SYMBOL (oss_pci_read_config_irq);
 EXPORT_SYMBOL (oss_pci_read_devpath);
 EXPORT_SYMBOL (oss_get_jiffies);

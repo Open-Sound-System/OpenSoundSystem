@@ -907,6 +907,9 @@ static const codec_desc_t codecs[] = {
   {0x10573057, "Motorola3057", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
   {0x10573155, "Motorola3155", VF_SI3055_HACK, NULL, 0, NULL_mixer_init },
 
+  /* Creative Labs */
+  {0x1102000a, "Createive XFi XTreme", VF_NONE, NULL, 0x76543210},
+
   /* Unknown */
   {0, "Unknown"}
 };

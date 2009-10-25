@@ -21,3 +21,4 @@ oss_hdaudio	pci1002,4383	ATI High Definition Audio (SB600)
 oss_hdaudio	pci1106,3288	VIA High Definition Audio
 oss_hdaudio	pci1039,7502	SiS High Definition Audio
 oss_hdaudio	pci10b9,5461	ULI High Definition Audio
+oss_hdaudio	pci1102,9	Creative Labs SB XFi Xtreme

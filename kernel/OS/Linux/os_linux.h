@@ -257,6 +257,7 @@ extern int detect_trace;
 #define pci_write_config_byte oss_pci_write_config_byte
 #define pci_write_config_word oss_pci_write_config_word
 #define pci_write_config_dword oss_pci_write_config_dword
+#define pci_enable_msi oss_pci_enable_msi
 
 #define VM_READ         0x1
 #define VM_WRITE        0x2

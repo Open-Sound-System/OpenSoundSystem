@@ -47,6 +47,9 @@
 #define ULI_VENDOR_ID           0x10b9
 #define ULI_DEVICE_HDA          0x5461
 
+#define CREATIVE_ID		0x1102
+#define CREATIVE_XFI_HDA	0x0009
+
 #define BDL_SIZE	32
 #define HDA_MAX_ENGINES	8
 #define MAX_OUTPUTS 	8
@@ -1776,7 +1779,6 @@ oss_hdaudio_attach (oss_device_t * osdev)
   pci_read_config_byte (osdev, PCI_REVISION_ID, &pci_revision);
   pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
   pci_read_config_irq (osdev, PCI_INTERRUPT_LINE, &pci_irq_line);
-
   pci_read_config_word (osdev, PCI_SUBSYSTEM_VENDOR_ID, &subvendor);
   pci_read_config_word (osdev, PCI_SUBSYSTEM_ID, &subdevice);
 
@@ -1851,6 +1853,10 @@ oss_hdaudio_attach (oss_device_t * osdev)
       pci_write_config_word (osdev, 0x40, wtmp | 0x10);
       pci_write_config_dword (osdev, PCI_MEM_BASE_ADDRESS_1, 0);
       break;
+
+    case CREATIVE_XFI_HDA:
+      devc->chip_name = "Creative Labs XFi XTreme Audio";
+      break;
     }
 
   pci_read_config_dword (osdev, PCI_MEM_BASE_ADDRESS_0, &devc->membar_addr);
@@ -1870,6 +1876,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
       cmn_err (CE_WARN, "IRQ not assigned by BIOS.\n");
       return 0;
     }
+
   devc->irq = pci_irq_line;
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
