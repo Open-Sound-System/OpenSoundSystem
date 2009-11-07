@@ -285,9 +285,14 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
   if (fmt == AFMT_AC3)
     {
       /*
-       * AC3 cannot tolerate any format conversions.
+       * AC3 cannot tolerate any format/rate conversions so disable them.
        */
       adev->cooked_enable = 0;
+
+      /*
+       * Report EIO error if the application tries to do something stupid. 
+       * Otherwise buggy applications may produce loud helicopter sound.
+       */
 
       if (adev->flags & ADEV_VMIX)
 	{
@@ -306,6 +311,7 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
 	   * open the audio device with O_EXCL to make sure that virtual
 	   * mixing is properly bypassed.
 	   */
+	   return OSS_EIO;
 	}
 
       if (adev->flags & ADEV_HWMIX)
@@ -322,6 +328,7 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
 	   * This error may be caused by user who selected a wrong audio
 	   * device. 
 	   */
+	   return OSS_EIO;
 	}
 
       if (adev->dmask & DMASK_OUT)
@@ -342,6 +349,7 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
 	     * Applications using AC3 should call SNDCTL_DSP_COOKEDMODE to
 	     * disable format conversions.
 	     */
+	   return OSS_EIO;
 	  }
     }
 
@@ -350,23 +358,10 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
   adev->user_parms.fmt = ret;
   adev->hw_parms.fmt = ret;
 
-  if ((fmt_info = oss_find_format (fmt)) != NULL)
-    {
-      if (fmt_info->no_convert)	/* Cannot convert this format */
-      {
-	if (fmt == AFMT_AC3)
-	   return OSS_EIO;
-
-	return ret;
-      }
-    }
-
   if ((fmt_info = oss_find_format (ret)) == NULL)
     neutral_byte = 0;
   else
     {
-      if (fmt_info->no_convert)	/* Cannot convert this format */
-	return ret;
       neutral_byte = fmt_info->neutral_byte;
     }
 
@@ -384,21 +379,23 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
 #ifdef NO_COOKED_MODE
   return ret;
 #else
-  if (!adev->cooked_enable)
-    return ret;
 
   if (ret == fmt)
     return ret;
+
+  if (!adev->cooked_enable)
+    return ret;
+
+/*
+ * We need to perform format conversions because the device
+ * doesn't support the requested format.
+ */
 
   /* Convertable format? */
   if (!(fmt & CONVERTABLE_FORMATS))
     {
       return ret;
     }
-
-/*
- * Needs to perform format conversions
- */
 
   adev->user_parms.fmt = fmt;
   if (adev->dmask & DMASK_OUT)
