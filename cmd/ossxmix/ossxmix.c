@@ -904,15 +904,10 @@ load_devinfo (int dev)
   if ((mi.caps & MIXER_CAP_NARROW) && (width_adjust >= 0))
     width_adjust = -1;
 
-  n = dev;
-  if (ioctl (get_fd(dev), SNDCTL_MIX_NREXT, &n) == -1)
+  n = mi.nrext;
+  if (n < 1)
     {
-      perror ("SNDCTL_MIX_NREXT");
-      if (errno == EINVAL)
-	{
-  	  fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
-	  exit (EXIT_FAILURE);
-	}
+      fprintf (stderr, "Error: illogical number of extension info records\n");
       return NULL;
     }
   extrec[dev] = g_new0 (oss_mixext, n+1);
@@ -1781,28 +1776,22 @@ poll_all (gpointer data)
 	    }
 	  break;
 	case WHAT_VMIX:
-	  { int i = dev;
 /*
  * The aforementioned mixer controls can be create dynamically, so ossxmix
  * needs to poll for this. Handling for this is here
  */
-	  if (ioctl (get_fd(dev), SNDCTL_MIX_NREXT, &i) == -1)
+	  if (inf.nrext != srec->parm)
 	    {
-	      perror ("SNDCTL_MIX_NREXT");
-	      exit (-1);
-	    }
-	    if (i != srec->parm)
-	      {
-		srec->parm = i;
+	      srec->parm = inf.nrext;
 /*
  * Since we know the added controls are vmix controls, we should be able to do
  * something more graceful here, like reloading only the current device, or
  * even adding the controls directly. This will do for now.
  */
-		reload_gui ();
-		return TRUE;
-	      }
-	  } break;
+	      reload_gui ();
+	      return TRUE;
+	    }
+	  break;
 	case WHAT_UPDATE:
 	  if (status_changed)
 	    do_update (srec);

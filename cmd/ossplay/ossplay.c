@@ -908,7 +908,9 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
     }
 
   if ((signal (SIGSEGV, ossplay_getint) == SIG_ERR) ||
+#ifdef SIGPIPE
       (signal (SIGPIPE, ossplay_getint) == SIG_ERR) ||
+#endif
       (signal (SIGTERM, ossplay_getint) == SIG_ERR) ||
 #ifdef SIGQUIT
       (signal (SIGQUIT, ossplay_getint) == SIG_ERR) ||

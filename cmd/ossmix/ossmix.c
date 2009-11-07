@@ -68,7 +68,7 @@ usage (void)
 static void
 load_devinfo (int dev)
 {
-  int i, n;
+  int i;
   oss_mixext *thisrec;
   oss_mixerinfo mi;
 
@@ -83,45 +83,22 @@ load_devinfo (int dev)
 			exit (EXIT_FAILURE);
 		}
      }
+  nrext = mi.nrext;
 
-  n = dev;
-
-  if (ioctl (mixerfd, SNDCTL_MIX_NREXT, &n) == -1)
-    {
-      switch (errno)
-	{
-	case EINVAL:
-	  fprintf (stderr, "Error: OSS version 3.9 or later is required\n");
-	  break;
-
-	case ENODEV:
-	  fprintf (stderr, "Open Sound System is not loaded\n");
-	  break;
-
-	case ENXIO:
-	  fprintf (stderr, "Mixer device %d doesn't exist.\n", dev);
-	  break;
-
-	default:
-	  perror ("SNDCTL_MIX_NREXT");
-	}
-      exit (-1);
-    }
-
-  if (n < 1)
+  if (nrext < 1)
     {
       fprintf (stderr, "Mixer device %d has no functionality\n", dev);
       exit (-1);
     }
 
-  if ((extrec = (oss_mixext *)malloc ((n + 1) * sizeof (oss_mixext))) == NULL)
+  if ((extrec =
+      (oss_mixext *)malloc ((nrext + 1) * sizeof (oss_mixext))) == NULL)
     {
-      fprintf (stderr, "malloc of %d entries failed\n", n);
+      fprintf (stderr, "malloc of %d entries failed\n", nrext+1);
       exit (-1);
     }
 
-  nrext = n;
-  for (i = 0; i < n; i++)
+  for (i = 0; i < nrext; i++)
     {
       thisrec = &extrec[i];
       thisrec->dev = dev;
