@@ -24,6 +24,7 @@
  * driver.conf files. Also don't forget to update osscore.man.
  *
  * For Linux it's also necessary to add a module_param() line to Linux/osscore.c
+ * For FreeBSD it's also necessary to add a TUNABLE_INT() line to FreeBSD/osscore.c
  ***********************************************************************************
  ***********************************************************************************
  ***********************************************************************************

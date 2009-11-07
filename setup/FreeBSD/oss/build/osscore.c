@@ -540,6 +540,7 @@ extern int ac97_recselect;
 extern int cooked_enable;
 extern int dma_buffsize;
 extern int excl_policy;
+extern int mixer_muted;
 TUNABLE_INT("osscore.max_intrate", &max_intrate);
 TUNABLE_INT("osscore.detect_trace", &detect_trace);
 TUNABLE_INT("osscore.src_quality", &src_quality);
@@ -552,6 +553,7 @@ TUNABLE_INT("osscore.ac97_recselect", &ac97_recselect);
 TUNABLE_INT("osscore.cooked_enable", &cooked_enable);
 TUNABLE_INT("osscore.dma_buffsize", &dma_buffsize);
 TUNABLE_INT("osscore.excl_policy", &excl_policy);
+TUNABLE_INT("osscore.mixer_muted", &mixer_muted);
 
 DECLARE_MODULE (osscore, osscore_mod, SI_SUB_KLD, SI_ORDER_ANY);
 MODULE_VERSION (osscore, 4);
