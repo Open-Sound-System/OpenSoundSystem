@@ -2366,6 +2366,7 @@ ossusb_device_attach (udi_usb_devc * usbdev, oss_device_t * osdev)
 	    cmn_err (CE_CONT, "%s audio streaming device %s/%d - %s\n",
 		     old ? "Reinsert of an" : "New",
 		     devc->devpath, inum, devc->dev_name);
+	  devc->osdev->first_mixer = devc->main_osdev->first_mixer;
 	  return ossusb_init_audiostream (devc, usbdev, inum, old);
 	  break;
 

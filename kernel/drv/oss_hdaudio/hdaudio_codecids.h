@@ -1067,10 +1067,11 @@ static const codec_desc_t subdevices[] = {
   /****/
 
   /*
-   * Sony VAIO SZ2, SZ3, and FE
+   * Sony VAIO SZ2, SZ3, FE and FE31B
    */
   {0x104d0700, "Vaio/CXD9872RD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847661, 0x104d81e6},
   {0x104d1000, "Vaio/CXD9872RD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847661, 0x104d81ef},
+  {0x104d0c00, "Vaio/CXD9872RD", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847661, 0x104d81ef},
 
   /*
    * Sony VAIO AR
