@@ -103,6 +103,12 @@
 #define XONAR_DX_OUTPUT		0x01
 #define XONAR_DX_MCLOCK_256	0x10
 
+/* Xonar D2 spi specific */
+#define XONAR_D2_FRONTDAC	0x98
+#define XONAR_D2_SURRDAC	0x9a
+#define XONAR_D2_LFEDAC 	0x9c
+#define XONAR_D2_REARDAC	0x9e
+
 /* defs for AKM 4396 DAC */
 #define AK4396_CTL1        0x00
 #define AK4396_CTL2        0x01
@@ -199,11 +205,6 @@
 /* Volume registers */
 #define CS4362A_VOL_MUTE	0x80
 
-/* Alias only for now. */
-#define CS4398_WRITE(devc, codec, reg, val) \
-	two_wire_write(devc, codec, reg, val)
-#define CS4362A_WRITE(devc, codec, reg, val) \
-	two_wire_write(devc, codec, reg, val)
 
 /* 0-100. Start at -96dB. */
 #define CS4398_VOL(x) \
@@ -425,6 +426,19 @@ two_wire_write (void *devc_, unsigned char codec_num, unsigned char reg,
 
 }
 
+static void
+pcm1796_write(cmi8788_devc *devc, int codec_id, unsigned char reg, unsigned char val)
+{
+static const char codec_map[4] = {
+                0, 1, 2, 4
+        };
+unsigned char data[2];
+
+      data[0] = val;
+      data[1] = reg;
+      spi_write (devc, codec_map[codec_id], data);
+}
+
 static int
 cs4398_init (void *devc_, int codec_)
 {
@@ -434,22 +448,22 @@ cs4398_init (void *devc_, int codec_)
   OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
 
   // Power down, enable control mode.
-  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL, 
+  two_wire_write(devc_, codec_, CS4398_MISC_CTRL, 
     CS4398_CPEN | CS4398_POWER_DOWN);
   // Left justified PCM (DAC and 8788 support I2S, but doesn't work.
   // Setting it introduces clipping like hell).
-  CS4398_WRITE(devc_, codec_, CS4398_MODE_CTRL, 0);
+  two_wire_write(devc_, codec_, CS4398_MODE_CTRL, 0);
   // That's the DAC default, set anyway. 
-  CS4398_WRITE(devc_, codec_, 3, 0x09);
+  two_wire_write(devc_, codec_, 3, 0x09);
   // PCM auto-mute.
-  CS4398_WRITE(devc_, codec_, 4, 0x82);
+  two_wire_write(devc_, codec_, 4, 0x82);
   // Vol A+B to -64dB.
-  CS4398_WRITE(devc_, codec_, 5, 0x80);
-  CS4398_WRITE(devc_, codec_, 6, 0x80);
+  two_wire_write(devc_, codec_, 5, 0x80);
+  two_wire_write(devc_, codec_, 6, 0x80);
   // Soft-ramping.
-  CS4398_WRITE(devc_, codec_, 7, 0xF0);
+  two_wire_write(devc_, codec_, 7, 0xF0);
   // Remove power down flag.
-  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL, CS4398_CPEN);
+  two_wire_write(devc_, codec_, CS4398_MISC_CTRL, CS4398_CPEN);
 
   return 1;
 }
@@ -463,45 +477,44 @@ cs4362a_init(void * devc_, int codec_)
   OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
 
   /* Power down and enable control port. */ 
-  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN | CS4362A_POWER_DOWN);
+  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN | CS4362A_POWER_DOWN);
   /* Left-justified PCM */
-  CS4362A_WRITE(devc_, codec_, CS4362A_MODE2_CTRL, CS4362A_DIF_LJUST);
+  two_wire_write(devc_, codec_, CS4362A_MODE2_CTRL, CS4362A_DIF_LJUST);
   /* Ramp & Automute, re-set DAC defaults. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_MODE3_CTRL, 0x84); 
+  two_wire_write(devc_, codec_, CS4362A_MODE3_CTRL, 0x84); 
   /* Filter control, DAC defs. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_FILTER_CTRL, 0);
+  two_wire_write(devc_, codec_, CS4362A_FILTER_CTRL, 0);
   /* Invert control, DAC defs. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_INVERT_CTRL, 0);
+  two_wire_write(devc_, codec_, CS4362A_INVERT_CTRL, 0);
   /* Mixing control, DAC defs. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_MIX1_CTRL, 0x24);
-  CS4362A_WRITE(devc_, codec_, CS4362A_MIX2_CTRL, 0x24);
-  CS4362A_WRITE(devc_, codec_, CS4362A_MIX3_CTRL, 0x24);
+  two_wire_write(devc_, codec_, CS4362A_MIX1_CTRL, 0x24);
+  two_wire_write(devc_, codec_, CS4362A_MIX2_CTRL, 0x24);
+  two_wire_write(devc_, codec_, CS4362A_MIX3_CTRL, 0x24);
   /* Volume to -64dB. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_1, 0x40);
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_1, 0x40);
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_2, 0x40);
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_2, 0x40);
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLA_3, 0x40);
-  CS4362A_WRITE(devc_, codec_, CS4362A_VOLB_3, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLA_1, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLB_1, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLA_2, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLB_2, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLA_3, 0x40);
+  two_wire_write(devc_, codec_, CS4362A_VOLB_3, 0x40);
   /* Power up. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN);
+  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN);
 
   return 1;
 }
 
-#if 0
 static unsigned int
 mix_scale (int vol, int bits)
 {
   vol = mix_cvt[vol];
   return (vol * ((1 << bits) - 1) / 100);
 }
-
+#if 0
 static int
 cs4398_cleanup(void * devc_, int codec_)
 {
   /* Simply power down. Keep control port mode up. */
-  CS4398_WRITE(devc_, codec_, CS4398_MISC_CTRL,
+  two_wire_write(devc_, codec_, CS4398_MISC_CTRL,
     CS4398_POWER_DOWN | CS4398_CPEN);
 
   return 1;
@@ -510,7 +523,7 @@ cs4398_cleanup(void * devc_, int codec_)
 static int cs4362a_cleanup(void *devc_, int codec_)
 {
   /* Simply power down. Keep control port mode up. */
-  CS4362A_WRITE(devc_, codec_, CS4362A_MODE1_CTRL,
+  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL,
     CS4362A_CPEN | CS4362A_POWER_DOWN);
 
   return 1;
@@ -528,28 +541,29 @@ xonar_dx_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
   switch(codec_id)
   {
     case 0:
-      CS4398_WRITE(devc, XONAR_DX_FRONTDAC, CS4398_VOLA, CS4398_VOL(left));
-      CS4398_WRITE(devc, XONAR_DX_FRONTDAC, CS4398_VOLB, CS4398_VOL(right));
+      two_wire_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLA, CS4398_VOL(left));
+      two_wire_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLB, CS4398_VOL(right));
       break;
     case 1:
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_1, CS4362A_VOL(left));
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_1, CS4362A_VOL(right));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_1, CS4362A_VOL(left));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_1, CS4362A_VOL(right));
       break;
     case 2:
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_2, CS4362A_VOL(left));
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_2, CS4362A_VOL(right));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_2, CS4362A_VOL(left));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_2, CS4362A_VOL(right));
       break;
     case 3:
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_3, CS4362A_VOL(left));
-      CS4362A_WRITE(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_3, CS4362A_VOL(right));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_3, CS4362A_VOL(left));
+      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_3, CS4362A_VOL(right));
       break;
   }
 }
 
+
 static int
 cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
 {
-  int left, right;
+  unsigned char left, right;
   unsigned char data[2];
 
   left = value & 0xff;
@@ -562,6 +576,11 @@ cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
     case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
       xonar_dx_set_play_volume(devc, codec_id, value);
+      break;
+    case SUBID_XONAR_D2:
+    case SUBID_XONAR_D2X:
+      pcm1796_write (devc, codec_id, 16, mix_scale(left,8));
+      pcm1796_write (devc, codec_id, 17, mix_scale(right,8));
       break;
     default:
       /* Assume default AKM DACs */
@@ -2196,6 +2215,7 @@ init_cmi8788 (cmi8788_devc * devc)
   bVal = INB (devc->osdev, FUNCTION);
   bVal |= 0x02; /* Reset codec*/
 
+
   switch(devc->model)
   {
     case SUBID_XONAR_D1:
@@ -2204,8 +2224,7 @@ init_cmi8788 (cmi8788_devc * devc)
       bVal |= 0x40;
       break;
     default:
-      /* SPI default for anything else, including the */
-      /* Xonar D2 and D2X. */
+      /* SPI default for anything else, including the D2/D2X */
       bVal &= ~0x40;
       /* Enable SPI outputs 4 and 5 */
       bVal |= 0x80;
@@ -2213,6 +2232,18 @@ init_cmi8788 (cmi8788_devc * devc)
   }
 
   OUTB (devc->osdev, bVal, FUNCTION);
+  
+  if (devc->model == SUBID_XONAR_D2 || devc->model == SUBID_XONAR_D2X)
+  {
+        int i;
+
+        /* unmute, set to 24Bit SPI */
+        for (i = 0; i < 4; ++i) {
+             pcm1796_write(devc, i, 16, mix_scale(75,8)); /* left default vol */
+             pcm1796_write(devc, i, 17, mix_scale(75,8)); /* right default vol */
+             pcm1796_write(devc, i, 18, 0x30 | 0x80); /* unmute/24LSB/ATLD */
+        }
+  }
 
   /* I2S to 16bit, see below. */
   sDac = 0x010A; 
@@ -2455,6 +2486,11 @@ init_cmi8788 (cmi8788_devc * devc)
     case SUBID_XONAR_DX:
       OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_CONTROL);
       OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_DATA);
+      break;
+    case SUBID_XONAR_D2:
+    case SUBID_XONAR_D2X:
+      OUTW(devc->osdev, 0x100, GPIO_CONTROL);
+      OUTW(devc->osdev, 0x100, GPIO_DATA);
       break;
   }
 
