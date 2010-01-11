@@ -650,7 +650,7 @@ create_output_device (madi_devc_t * devc, char *name, int chn)
   adev_t *adev;
   int n;
 
-  if ((portc = PMALLOC (devc->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (devc->osdev, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return OSS_ENOMEM;
@@ -705,7 +705,7 @@ create_input_device (madi_devc_t * devc, char *name, int chn)
   adev_t *adev;
   int n;
 
-  if ((portc = PMALLOC (devc->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (devc->osdev, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return OSS_ENOMEM;

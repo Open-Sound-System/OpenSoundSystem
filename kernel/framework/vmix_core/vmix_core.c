@@ -1639,7 +1639,7 @@ create_vmix_engine (vmix_mixer_t * mixer)
   if (mixer->instance_num > 0)
     opts |= ADEV_SPECIAL;
 
-  if ((portc = PMALLOC (mixer->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (mixer->osdev, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return OSS_ENOMEM;
@@ -1740,7 +1740,7 @@ create_loopdev (vmix_mixer_t * mixer)
   if (mixer->masterdev == -1)
     return;
 
-  if ((portc = PMALLOC (mixer->osedv, sizeof (*portc))) == NULL)
+  if ((portc = PMALLOC (mixer->osdev, sizeof (*portc))) == NULL)
     {
       cmn_err (CE_WARN, "Cannot allocate portc structure\n");
       return;

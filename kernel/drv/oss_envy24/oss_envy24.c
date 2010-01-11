@@ -3937,7 +3937,7 @@ oss_envy24_attach (oss_device_t * osdev)
 #endif
 
       if (subvendor == 0xd6301412)	/* Delta 1010 */
-      if (devc->eeprom[0xc] == 0x7b)	/* Looks like Delta 101 rev E */
+      if (devc->eeprom[0xc] == 0x7b)	/* Looks like Delta 1010 rev E */
 	 subvendor = 0xd63014ff;	/* Delta 1010E */
 
 
