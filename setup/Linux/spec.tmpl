@@ -7,7 +7,12 @@ Distribution: Open Sound System
 Vendor: 4Front Technologies
 Packager: 4Front Technologies
 BuildRoot: /tmp/prototype
-Requires: gcc, kernel-devel
+Requires: gcc, make
+%if 0%{?suse_version}
+Requires: kernel-default-devel
+%else
+Requires: kernel-devel
+%endif
 
 %description
 Open Sound System for Linux (OSS/Linux) is a commercial quality sound driver

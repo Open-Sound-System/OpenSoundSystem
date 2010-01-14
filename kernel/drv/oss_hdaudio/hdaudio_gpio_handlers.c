@@ -102,3 +102,17 @@ hdaudio_asus_a7k_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_g
 
         return hdaudio_generic_mixer_init(dev, mixer, cad, top_group);
 }
+
+int
+hdaudio_travelmate4060_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group)
+{
+	DDB(cmn_err(CE_CONT, "hdaudio_travelmate4060_GPIO_init got called.\n"));
+
+	/* Acer TravelMate 4060 and similar Aspire series, with ALC260 codec, need
+	 * that we init GPIO to get internal speaker and headphone jack working. */
+	corb_write(mixer, cad, 0x01, 0, SET_GPIO_ENABLE, 1);
+	corb_write(mixer, cad, 0x01, 0, SET_GPIO_DIR, 1);
+	corb_write(mixer, cad, 0x01, 0, SET_GPIO_DATA, 1);
+  
+	return hdaudio_generic_mixer_init(dev, mixer, cad, top_group);
+}

@@ -46,7 +46,7 @@ describe_error (void)
 	       "is malfunctioning or it's not supported by OSS.\n"
 	       "\n"
 
-	       "NOTE! It may be necessary to reboot the system after installing OSS\n
+	       "NOTE! It may be necessary to reboot the system after installing OSS\n"
 #ifdef LICENSED_VERSION
 	       "\n"
 		"If you are a licensed customer then please fill the problem report at\n"
