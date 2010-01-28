@@ -538,6 +538,15 @@ set_d1010lt_speed (envy24_devc * devc)
       WriteGPIObit (devc, WCLOCK_ENABLE, 1);
       write_d1010lt_spdif_reg (devc, 4,
 			       read_d1010lt_spdif_reg (devc, 4) & (~BIT0));
+      if (devc->model_data->svid == 0xd63014ff)
+        {
+	  /*
+	   * 1010 rev E only
+	   * don't aks me why, but it seems to work
+	   */
+	  WriteGPIObit (devc, 6, 0);
+	  WriteGPIObit (devc, WCLOCK_ENABLE, 1);
+        }
       break;
     }
 }
