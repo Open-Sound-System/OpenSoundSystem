@@ -96,14 +96,17 @@ open_one_device (char *dspname)
       exit (-1);
     }
 
-/*
- * Turn on the full duplex mode.
- */
+#if 0
+  /*
+   * There is no point in calling SNDCTL_DSP_SETDUPLEX any more. This call has not had any
+   * effect since SB16.
+   */
   if (ioctl (fd, SNDCTL_DSP_SETDUPLEX, NULL) == -1)
     {
       perror ("SNDCTL_DSP_SETDUPLEX");
       exit (-1);
     }
+#endif
 
 /*
  * Try to set the fragment size to suitable level.

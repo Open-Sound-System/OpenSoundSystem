@@ -3234,6 +3234,11 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
       break;
 
     case SNDCTL_DSP_SETDUPLEX:
+      /*
+       * Note! SNDCTL_DSP_SETDUPLEX has not been implemented by any driver for years.
+       *       The call is still implemented in audio core but it may get removed in the
+       *       future.
+       */
       if (adev->open_mode != OPEN_READWRITE)
 	{
 	  oss_audio_set_error (adev->engine_num, E_PLAY,
