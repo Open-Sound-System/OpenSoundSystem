@@ -1664,7 +1664,7 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 	info->numaudioengines = num_audio_engines;
 	for (i = 0; i < 8; i++)
 	  info->openedaudio[i] = 0;
-	for (i = 0; i < num_audio_devfiles; i++)
+	for (i = 0; i < num_audio_engines; i++)
 	  if (audio_engines[i] != NULL)
 	    {
 	      if (audio_engines[i]->flags & ADEV_OPENED)
