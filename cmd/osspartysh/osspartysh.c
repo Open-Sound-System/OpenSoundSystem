@@ -36,8 +36,8 @@
 #include <libutil.h>
 #else
 #include <pty.h>
-#endif
 #include <utmp.h>
+#endif
 #include <errno.h>
 
 #define PARTYSH_MAGIC		"ParTySH"
