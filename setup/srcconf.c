@@ -1311,7 +1311,7 @@ produce_local_config_h (conf_t * conf)
 	      grc_max = q;
 	}
 
-	if (grc_max > grc_min)
+	if (grc_max < grc_min)
 	   grc_max = grc_min = 3;
 
 	fprintf (f, "#define CONFIG_OSS_GRC_MIN_QUALITY %d\n", grc_min);

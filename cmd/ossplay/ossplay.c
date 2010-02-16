@@ -629,7 +629,7 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
 	         tmp, speed);
     }
 
-  dsp->speed = speed;
+  dsp->speed = tmp;
   dsp->channels = channels;
   dsp->format = format;
 
