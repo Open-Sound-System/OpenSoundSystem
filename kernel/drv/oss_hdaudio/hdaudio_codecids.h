@@ -817,6 +817,8 @@ static const char *conexant_modem_remap[] =
 	NULL
 };
 
+extern int hdaudio_GPIO_init_1 (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+
 static const codec_desc_t codecs[] = {
   /* Realtek HDA codecs */
   {0x10ec0260, "ALC260", VF_NONE, (char **) &alc260remap},
@@ -835,6 +837,17 @@ static const codec_desc_t codecs[] = {
   /* CMedia HDA codecs */
   {0x13f69880, "CMI9880", VF_NONE, (char **) &cmi9880remap},
   {0x434d4980, "CMI9880", VF_NONE, (char **) &cmi9880remap},
+
+  {0x111d7603, "92HD75B3X5", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d7608, "92HD75B2X5", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b0, "92HD71B8X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b1, "92HD71B8X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b2, "92HD71B7X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b3, "92HD71B7X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b4, "92HD71B6X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b5, "92HD71B6X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b6, "92HD71B5X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
+  {0x111d76b7, "92HD71B5X", VF_NONE, NULL, 0, hdaudio_GPIO_init_1},
 
   /* Analog Devices HDA codecs */
   {0x11d41981, "AD1981", VF_NONE, (char **) &ad1981remap, 0x76543021},
@@ -910,6 +923,8 @@ static const codec_desc_t codecs[] = {
 
   /* Creative Labs */
   {0x1102000a, "Createive XFi XTreme", VF_NONE, NULL, 0x76543210},
+
+  {0x11c11040, "Agere HDA Modem", VF_NONE, NULL, 0, NULL_mixer_init}, 	
 
   /* Unknown */
   {0, "Unknown"}
@@ -1032,7 +1047,6 @@ extern int hdaudio_Asus_P4B_E_mixer_init (int dev, hdaudio_mixer_t * mixer, int 
 extern int hdaudio_scaleoP_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_abit_AA8_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_ferrari5k_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
-extern int hdaudio_travelmate4060_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_thinkpad_r61_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_mac_sigmatel_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
@@ -1056,7 +1070,7 @@ static const codec_desc_t subdevices[] = {
 
   {0x10250000, "Ferrari5k/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010a},
   {0x10250000, "Acer_aspire5052/ALC883", VF_ALC88X_HACK, (char **) &alc883remap, 0, hdaudio_ferrari5k_mixer_init, 0x10ec0883, 0x1025010f},
-  {0x1025160d, "Acer_travelmate4060/ALC260", VF_NONE, (char **) &alc260remap, 0, hdaudio_travelmate4060_GPIO_init, 0x10ec0260, 0x1025008f},
+  {0x1025160d, "Acer_travelmate4060/ALC260", VF_NONE, (char **) &alc260remap, 0, hdaudio_GPIO_init_1, 0x10ec0260, 0x1025008f},
   {0x10431153, "Asus M9", VF_NONE, (char **) &ad1986remap, 0x76540321, hdaudio_asus_m9_mixer_init},
 
   /*
