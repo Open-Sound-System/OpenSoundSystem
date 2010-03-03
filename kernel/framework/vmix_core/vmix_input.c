@@ -359,7 +359,7 @@ finalize_record_engine (vmix_mixer_t * mixer, int fmt, adev_t * adev,
     if (mixer->record_engine.chbufs[i] == NULL)	/* Not allocated yet */
       {
 	mixer->record_engine.chbufs[i] =
-	  PMALLOC (mixer->master_portc,
+	  PMALLOC (mixer->master_osdev,
 		   CHBUF_SAMPLES * sizeof (vmix_sample_t));
 	if (mixer->record_engine.chbufs[i] == NULL)
 	  {
