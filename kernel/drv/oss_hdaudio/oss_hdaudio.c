@@ -1081,7 +1081,7 @@ reset_controller (hda_devc_t * devc)
 
   if (!devc->codecmask)
     {
-      devc->codecmask = PCI_READL (devc->osdev, devc->azbar + HDA_STATESTS);
+      devc->codecmask = PCI_READW (devc->osdev, devc->azbar + HDA_STATESTS);
       DDB (cmn_err (CE_CONT, "Codec mask %x\n", devc->codecmask));
     }
 
