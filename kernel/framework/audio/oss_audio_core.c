@@ -403,7 +403,7 @@ oss_audio_set_format (int dev, int fmt, int format_mask)
       adev->dmap_out->flags |= DMAP_COOKED;
     }
 
-  if (adev->dmask & DMASK_OUT)
+  if (adev->dmask & DMASK_IN)
     {
       adev->dmap_in->flags |= DMAP_COOKED;
     }
@@ -485,7 +485,7 @@ oss_audio_set_channels (int dev, int ch)
 	  if (adev->dmask & DMASK_OUT)
 	      adev->dmap_out->flags |= DMAP_COOKED;
 	
-	  if (adev->dmask & DMASK_OUT)
+	  if (adev->dmask & DMASK_IN)
 	      adev->dmap_in->flags |= DMAP_COOKED;
   }
      
@@ -515,7 +515,7 @@ oss_audio_set_channels (int dev, int ch)
       adev->dmap_out->flags |= DMAP_COOKED;
     }
 
-  if (adev->dmask & DMASK_OUT)
+  if (adev->dmask & DMASK_IN)
     {
       adev->dmap_in->flags |= DMAP_COOKED;
     }
@@ -575,7 +575,7 @@ oss_audio_set_rate (int dev, int rate)
       adev->dmap_out->flags |= DMAP_COOKED;
     }
 
-  if (adev->dmask & DMASK_OUT)
+  if (adev->dmask & DMASK_IN)
     {
       adev->dmap_in->flags |= DMAP_COOKED;
     }
