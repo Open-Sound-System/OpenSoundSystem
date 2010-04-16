@@ -956,7 +956,7 @@ oss_ali5455_detach (oss_device_t * osdev)
 
   if (devc->bdlBuffer)
     {
-      CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32, devc->bld_dma_handle);
+      CONTIG_FREE (devc->osdev, devc->bdlBuffer, 4 * 32 * 32, devc->bdl_dma_handle);
       devc->bdlBuffer = NULL;
     }
 
