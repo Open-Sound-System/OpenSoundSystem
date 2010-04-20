@@ -1070,6 +1070,16 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
     {
     case DRV_PCI:
       /* NOP */
+#ifdef __HAIKU__
+      if (gPCI->reserve_device(osdev->dip->pciinfo.bus,
+      				   osdev->dip->pciinfo.device,
+				   osdev->dip->pciinfo.function,
+				   "oss", osdev) != B_OK) {
+      	cmn_err (CE_WARN, "Could not reserve PCI device\n");
+      	/* XXX: CLEANUP! */
+        return NULL;
+      }
+#endif
       break;
 
     case DRV_VIRTUAL:
@@ -1152,6 +1162,12 @@ osdev_delete (oss_device_t * osdev)
       /* NOP */
       //pci_config_teardown (&osdev->pci_config_handle);
       //osdev->pci_config_handle = NULL;
+#ifdef __HAIKU__
+      gPCI->unreserve_device(osdev->dip->pciinfo.bus,
+      				 osdev->dip->pciinfo.device,
+				 osdev->dip->pciinfo.function,
+				 "oss", osdev);
+#endif
       break;
     }
 
