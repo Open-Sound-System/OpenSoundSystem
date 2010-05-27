@@ -27,7 +27,7 @@
 unsigned int amplification = 100;
 int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0,
     quiet = 0;
-flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, overwrite = 0,
+flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, 
      raw_file = 0, raw_mode = 0;
 double seek_time = 0;
 long seek_byte = 0;
@@ -354,7 +354,6 @@ ossrecord_usage (const char * prog)
              " single recording.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
-  print_msg (HELPM, "            -O             Allow overwrite.\n");
   exit (E_USAGE);
 }
 
@@ -881,10 +880,6 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
         case 'v':
           verbose = 1;
           break;
-
-	case 'O':
-	  overwrite = 1;
-	  break;
 
         case 'h':
         default:

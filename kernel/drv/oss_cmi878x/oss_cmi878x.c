@@ -234,10 +234,14 @@ typedef struct cmi8788_portc
   int trigger_bits;
   int audio_enabled;
   int audiodev;
-  int port_type;
+  int dac_type;
 #define ADEV_MULTICH	0
 #define ADEV_FRONTPANEL	2
 #define ADEV_SPDIF	3
+  int adc_type;
+#define ADEV_I2SADC1	0
+#define ADEV_I2SADC2	1
+#define ADEV_I2SADC3	2
   int play_dma_start, rec_dma_start;
   int play_irq_mask, rec_irq_mask;
   int play_chan_reset, rec_chan_reset;
@@ -268,7 +272,7 @@ typedef struct cmi8788_devc
 
   /* Mixer */
   ac97_devc ac97devc, fp_ac97devc;
-  int ac97_mixer_dev, fp_mixer_dev, spi_mixer_dev;
+  int ac97_mixer_dev, fp_mixer_dev, cmi_mixer_dev;
   int playvol[4];
   /* uart401 */
   oss_midi_inputbyte_t midi_input_intr;
@@ -292,11 +296,11 @@ ac97_read (void *devc_, int reg)
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   val = 0L;
-  val |= 0 << 24;		/*codec 0 */
-  val |= 1 << 23;		/*ac97 read the reg address */
   val |= reg << 16;
+  val |= 1 << 23;		/*ac97 read the reg address */
+  val |= 0 << 24;		/*codec 0 */
   OUTL (devc->osdev, val, AC97_CMD_DATA);
-  oss_udelay (100);
+  oss_udelay (200);
   data = INL (devc->osdev, AC97_CMD_DATA) & 0xFFFF;
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return data;
@@ -312,12 +316,12 @@ ac97_write (void *devc_, int reg, int data)
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
   val = 0L;
-  val |= 0 << 24;		/*on board codec */
-  val |= 0 << 23;		/*ac97 write operation */
-  val |= reg << 16;
   val |= data & 0xFFFF;
+  val |= reg << 16;
+  val |= 0 << 23;		/*ac97 write operation */
+  val |= 0 << 24;		/*on board codec */
   OUTL (devc->osdev, val, AC97_CMD_DATA);
-  oss_udelay (100);
+  oss_udelay (200);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return 1;
 }
@@ -330,11 +334,11 @@ fp_ac97_read (void *devc_, int reg)
   int data, val;
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   val = 0L;
-  val |= 1 << 24;		/*fp codec1 */
-  val |= 1 << 23;		/*ac97 read the reg address */
   val |= reg << 16;
+  val |= 1 << 23;		/*ac97 read the reg address */
+  val |= 1 << 24;		/*fp codec1 */
   OUTL (devc->osdev, val, AC97_CMD_DATA);
-  oss_udelay (100);
+  oss_udelay (200);
   data = INL (devc->osdev, AC97_CMD_DATA) & 0xFFFF;
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return data;
@@ -350,12 +354,12 @@ fp_ac97_write (void *devc_, int reg, int data)
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
   val = 0L;
-  val |= 1 << 24;		/*fp codec1 */
-  val |= 0 << 23;		/*ac97 write operation */
-  val |= reg << 16;
   val |= data & 0xFFFF;
+  val |= reg << 16;
+  val |= 0 << 23;		/*ac97 write operation */
+  val |= 1 << 24;		/*fp codec1 */
   OUTL (devc->osdev, val, AC97_CMD_DATA);
-  oss_udelay (100);
+  oss_udelay (200);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return 1;
 }
@@ -992,10 +996,9 @@ cmi8788_audio_prepare_for_input (int dev, int bsize, int bcount)
   int channels, bits, i2s_bits, i2s_rate;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
-
-  switch (portc->port_type)
+  switch (portc->adc_type)
     {
-    case ADEV_MULTICH:
+    case ADEV_I2SADC1:
       {
 	portc->rec_dma_start = 0x1;
 	portc->rec_irq_mask = 0x1;
@@ -1058,7 +1061,7 @@ cmi8788_audio_prepare_for_input (int dev, int bsize, int bcount)
 	break;
       }
 
-    case ADEV_FRONTPANEL:
+    case ADEV_I2SADC2:
       {
 	portc->rec_dma_start = 0x2;
 	portc->rec_irq_mask = 0x2;
@@ -1068,12 +1071,41 @@ cmi8788_audio_prepare_for_input (int dev, int bsize, int bcount)
 	OUTL (devc->osdev, dmap->dmabuf_phys, RECB_ADDR);
 	OUTW (devc->osdev, dmap->bytes_in_use / 4 - 1, RECB_SIZE);
 	OUTW (devc->osdev, dmap->fragment_size / 4 - 1, RECB_FRAG);
-	ac97_recrate (&devc->fp_ac97devc, portc->speed);
+
+        switch (portc->bits)
+          {
+#if 0
+          case AFMT_S24_LE:
+            bits = 0x04;
+            break;
+#endif
+          case AFMT_S32_LE:
+            bits = 0x08;
+            break;
+          default:              /*  AFMT_S16_LE */
+            bits = 0x0;
+            break;
+          }
+
+        OUTB (devc->osdev, (INB (devc->osdev, REC_FORMAT) & ~0x0C) | bits,
+              REC_FORMAT);
+
+        /* setup i2s bits */
+        i2s_bits = i2s_calc_bits (portc->bits);
+        OUTB (devc->osdev,
+              (INB (devc->osdev, I2S_ADC2_FORMAT) & ~0xC0) | i2s_bits,
+              I2S_ADC2_FORMAT);
+
+        /* setup speed */
+        i2s_rate = i2s_calc_rate (portc->speed);
+        OUTB (devc->osdev,
+              (INB (devc->osdev, I2S_ADC2_FORMAT) & ~0x7) | i2s_rate,
+              I2S_ADC2_FORMAT);
 
 	break;
       }
 
-    case ADEV_SPDIF:
+    case ADEV_I2SADC3:
       {
 	portc->rec_dma_start = 0x4;
 	portc->rec_irq_mask = 0x4;
@@ -1135,7 +1167,7 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
-  switch (portc->port_type)
+  switch (portc->dac_type)
     {
     case ADEV_MULTICH:
       {
@@ -1344,15 +1376,15 @@ cmi8788_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
   if (direction == PCM_ENABLE_INPUT)
     {
-      switch (portc->port_type)
+      switch (portc->adc_type)
 	{
-	case ADEV_MULTICH:
+	case ADEV_I2SADC1:
 	  ptr = INL (devc->osdev, RECA_ADDR);
 	  break;
-	case ADEV_FRONTPANEL:
+	case ADEV_I2SADC2:
 	  ptr = INL (devc->osdev, RECB_ADDR);
 	  break;
-	case ADEV_SPDIF:
+	case ADEV_I2SADC3:
 	  ptr = INL (devc->osdev, RECC_ADDR);
 	  break;
 	}
@@ -1360,7 +1392,7 @@ cmi8788_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
 
   if (direction == PCM_ENABLE_OUTPUT)
     {
-      switch (portc->port_type)
+      switch (portc->dac_type)
 	{
 	case ADEV_MULTICH:
 	  ptr = INL (devc->osdev, MULTICH_ADDR);
@@ -1377,7 +1409,6 @@ cmi8788_get_buffer_pointer (int dev, dmap_t * dmap, int direction)
   ptr -= dmap->dmabuf_phys;
   ptr %= dmap->bytes_in_use;
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  // cmn_err (CE_CONT, "ptr=%x\n", ptr);
   return ptr;
 }
 
@@ -1714,7 +1745,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  default:
 	    val = *arg;
-	    return *arg = cmi8788_set_play_volume (devc, 0, val);
+	    return *arg = 0;
 	    break;
 	  }
       else
@@ -1757,7 +1788,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    break;
 
 	  default:
-	    return *arg = devc->playvol[0];
+	    return *arg = 0;
 	    break;
 	  }
     }
@@ -1788,21 +1819,24 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	case 0:		/* Record Monitor */
 	  value = (INB (devc->osdev, REC_MONITOR) & 0x1) ? 1 : 0;
 	  break;
-	case 1:		/* Front Panel Monitor */
-	  value = (INB (devc->osdev, REC_MONITOR) & 0x4) ? 1 : 0;
-	  break;
-	case 2:		/* SPDIFIN Monitor */
+	case 1:		/* SPDIFIN Monitor */
 	  value = (INB (devc->osdev, REC_MONITOR) & 0x10) ? 1 : 0;
 	  break;
-	case 3:		/* Speaker Spread - just check bit15 to see if it's set */
+	case 2:		/* Record source select */
+	  value = (ac97_read (devc, 0x72) & 0x1) ? 1 : 0;
+	  break;
+	case 3:		/* Speaker Spread - check bit15 to see if it's set */
 	  value = (INW (devc->osdev, PLAY_ROUTING) & 0x8000) ? 0 : 1;
 	  break;
 	case 4:		/* SPDIF IN->OUT Loopback */
 	  value = (INW (devc->osdev, SPDIF_FUNC) & 0x4) ? 1 : 0;
 	  break;
-
+	case 5:
+	  value = (INW (devc->osdev, GPIO_DATA) & 0x80) ? 1 : 0;
+	  break;
 	default:
 	  return OSS_EINVAL;
+	  break;
 	}
 
       return value;
@@ -1815,29 +1849,35 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	{
 	case 0:		/* Record Monitor */
 	  if (value)
-	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) | 0x1,
+	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) | 0xF,
 		  REC_MONITOR);
 	  else
-	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) & ~0x1,
+	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) & ~0xF,
 		  REC_MONITOR);
 	  break;
 
-	case 1:		/* Front Panel Record Monitor */
-	  if (value)
-	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) | 0x4,
-		  REC_MONITOR);
-	  else
-	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) & ~0x4,
-		  REC_MONITOR);
-	  break;
-
-	case 2:		/* SPDIFIN Monitor */
+	case 1:		/* SPDIFIN Monitor */
 	  if (value)
 	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) | 0x10,
 		  REC_MONITOR);
 	  else
 	    OUTB (devc->osdev, INB (devc->osdev, REC_MONITOR) & ~0x10,
 		  REC_MONITOR);
+	  break;
+
+	case 2:
+	  if (value)
+          {
+             if (devc->model == SUBID_XONAR_D1 || devc->model == SUBID_XONAR_DX)
+		OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x100, GPIO_DATA);
+	     ac97_write(devc, 0x72, ac97_read(devc, 0x72) | 0x1);
+	  }
+	  else
+	  {
+             if (devc->model == SUBID_XONAR_D1 || devc->model == SUBID_XONAR_DX)
+		OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) & ~0x100, GPIO_DATA);
+	     ac97_write(devc, 0x72, ac97_read(devc, 0x72) & ~0x1);
+	  }
 	  break;
 
 	case 3:		/* Speaker Spread (clone front to all channels) */
@@ -1859,8 +1899,16 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 		  SPDIF_FUNC);
 	  break;
 
+	case 5:
+          if (value)
+		OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x80, GPIO_DATA) ;
+	  else
+		OUTW(devc->osdev, (INW(devc->osdev, GPIO_DATA) & ~0x80), GPIO_DATA);
+          break;
+
 	default:
 	  return OSS_EINVAL;
+	  break;
 	}
       return (value);
     }
@@ -2081,6 +2129,7 @@ static int
 cmi8788_mix_init (int dev)
 {
   int group, parent, ctl;
+  cmi8788_devc *devc = mixer_devs[dev]->hw_devc;
 
   if ((parent = mixer_ext_create_group (dev, 0, "EXT")) < 0)
     return parent;
@@ -2091,21 +2140,22 @@ cmi8788_mix_init (int dev)
 
   if ((ctl =
        mixer_ext_create_control (dev, group, 0, cmi8788_ext,
-				 MIXT_ONOFF, "MULTICHANNEL", 1,
+				 MIXT_ONOFF, "ANALOG", 1,
 				 MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
 
   if ((ctl =
        mixer_ext_create_control (dev, group, 1, cmi8788_ext,
-				 MIXT_ONOFF, "FRONTPANEL", 1,
-				 MIXF_READABLE | MIXF_WRITEABLE)) < 0)
-    return ctl;
-
-  if ((ctl =
-       mixer_ext_create_control (dev, group, 2, cmi8788_ext,
 				 MIXT_ONOFF, "SPDIF", 1,
 				 MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
+
+ if ((ctl =
+	mixer_ext_create_control (dev, group, 2, cmi8788_ext, MIXT_ENUM,
+				  "inputsrc", 2,
+				  MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+	return ctl;
+    mixer_ext_set_strings (dev, ctl, "Line Mic", 0);
 
 /* Create PLAYBACK ROUTING */
   if ((group = mixer_ext_create_group (dev, parent, "OUTPUT_ROUTING")) < 0)
@@ -2122,6 +2172,13 @@ cmi8788_mix_init (int dev)
 				 MIXT_ONOFF, "SPDIF-LOOPBACK", 1,
 				 MIXF_READABLE | MIXF_WRITEABLE)) < 0)
     return ctl;
+
+  if (devc->model == SUBID_XONAR_D2 || devc->model == SUBID_XONAR_D2X)
+    if ((ctl = mixer_ext_create_control (dev, group, 5, cmi8788_ext,
+				 MIXT_ONOFF, "PCM-LOOPBACK", 1,
+				 MIXF_READABLE | MIXF_WRITEABLE)) < 0)
+		        return ctl;
+
 
 /* Create SPDIF OUTPUT */
   if ((group = mixer_ext_create_group (dev, 0, "SPDIF-OUT")) < 0)
@@ -2193,6 +2250,46 @@ cmi8788_mix_init (int dev)
 }
 
 
+void ac97_hwinit(cmi8788_devc *devc)
+{
+
+    /* Gpio #0 programmed as output, set CMI9780 Reg0x70 */
+    ac97_write(devc, 0x70, 0x100);
+
+    /* LI2LI,MIC2MIC; let them always on, FOE on, ROE/BKOE/CBOE off */
+    ac97_write(devc, 0x62, 0x180F);
+
+    /* change PCBeep path, set Mix2FR on, option for quality issue */
+    ac97_write(devc, 0x64, 0x8043);
+#if 0
+   /* unmute Master Volume */
+    ac97_write(devc, 0x02, 0x0);
+
+
+    /* mute PCBeep, option for quality issues */
+    ac97_write(devc, 0x0A, 0x8000);
+
+    /* Record Select Control Register (Index 1Ah) */
+    ac97_write(devc, 0x1A, 0x0000);
+
+    /* set Mic Volume Register 0x0Eh umute and enable micboost */
+    ac97_write(devc, 0x0E, 0x0848);
+
+    /* set Line in Volume Register 0x10h mute */
+    ac97_write(devc, 0x10, 0x8808);
+
+    /* set CD Volume Register 0x12h mute */
+    ac97_write(devc, 0x12, 0x8808);
+
+    /* set AUX Volume Register 0x16h max */
+    ac97_write(devc, 0x16, 0x0808);
+
+    /* set record gain Register 0x1Ch to max */
+    ac97_write(devc, 0x1C, 0x0F0F);
+#endif
+    ac97_write(devc, 0x71, 0x0001);
+}
+
 static int
 init_cmi8788 (cmi8788_devc * devc)
 {
@@ -2214,36 +2311,8 @@ init_cmi8788 (cmi8788_devc * devc)
 
   bVal = INB (devc->osdev, FUNCTION);
   bVal |= 0x02; /* Reset codec*/
+  OUTB(devc->osdev, bVal, FUNCTION);
 
-
-  switch(devc->model)
-  {
-    case SUBID_XONAR_D1:
-    case SUBID_XONAR_DX:
-      /* Two-Wire communication for Xonar DX DACs. */
-      bVal |= 0x40;
-      break;
-    default:
-      /* SPI default for anything else, including the D2/D2X */
-      bVal &= ~0x40;
-      /* Enable SPI outputs 4 and 5 */
-      bVal |= 0x80;
-      break;
-  }
-
-  OUTB (devc->osdev, bVal, FUNCTION);
-  
-  if (devc->model == SUBID_XONAR_D2 || devc->model == SUBID_XONAR_D2X)
-  {
-        int i;
-
-        /* unmute, set to 24Bit SPI */
-        for (i = 0; i < 4; ++i) {
-             pcm1796_write(devc, i, 16, mix_scale(75,8)); /* left default vol */
-             pcm1796_write(devc, i, 17, mix_scale(75,8)); /* right default vol */
-             pcm1796_write(devc, i, 18, 0x30 | 0x80); /* unmute/24LSB/ATLD */
-        }
-  }
 
   /* I2S to 16bit, see below. */
   sDac = 0x010A; 
@@ -2253,10 +2322,8 @@ init_cmi8788 (cmi8788_devc * devc)
   {
     case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
-      /* Front DAC. */
-      cs4398_init(devc, XONAR_DX_FRONTDAC); 
-      /* Surround DAC. */
-      cs4362a_init(devc, XONAR_DX_SURRDAC);
+    case SUBID_XONAR_D2:
+    case SUBID_XONAR_D2X:
       /* Must set master clock. */
       sDac |= XONAR_DX_MCLOCK_256;
       break;
@@ -2264,9 +2331,9 @@ init_cmi8788 (cmi8788_devc * devc)
 
   /* Setup I2S to use 16bit instead of 24Bit */
   OUTW (devc->osdev, sDac, I2S_MULTICH_FORMAT);
-  OUTW (devc->osdev, 0x010A, I2S_ADC1_FORMAT);
-  OUTW (devc->osdev, 0x010A, I2S_ADC2_FORMAT);
-  OUTW (devc->osdev, 0x010A, I2S_ADC3_FORMAT);
+  OUTW (devc->osdev, sDac, I2S_ADC1_FORMAT);
+  OUTW (devc->osdev, sDac, I2S_ADC2_FORMAT);
+  OUTW (devc->osdev, sDac, I2S_ADC3_FORMAT);
 
   /* setup Routing regs (default vals) */
   OUTW (devc->osdev, 0xE400, PLAY_ROUTING);
@@ -2274,8 +2341,9 @@ init_cmi8788 (cmi8788_devc * devc)
   OUTB (devc->osdev, 0x00, REC_MONITOR);
   OUTB (devc->osdev, 0xE4, MONITOR_ROUTING);
 
+
   /* install the CMI8788 mixer */
-  if ((devc->spi_mixer_dev = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
+  if ((devc->cmi_mixer_dev = oss_install_mixer (OSS_MIXER_DRIVER_VERSION,
 						devc->osdev,
 						devc->osdev,
 						"CMedia CMI8788",
@@ -2286,9 +2354,9 @@ init_cmi8788 (cmi8788_devc * devc)
       return 0;
     }
 
-  mixer_devs[devc->spi_mixer_dev]->hw_devc = devc;
-  mixer_devs[devc->spi_mixer_dev]->priority = 10;	/* Possible default mixer candidate */
-  mixer_ext_set_init_fn (devc->spi_mixer_dev, cmi8788_mix_init, 25);
+  mixer_devs[devc->cmi_mixer_dev]->hw_devc = devc;
+  mixer_devs[devc->cmi_mixer_dev]->priority = 10;	/* Possible default mixer candidate */
+  mixer_ext_set_init_fn (devc->cmi_mixer_dev, cmi8788_mix_init, 25);
 
   /* Cold reset onboard AC97 */
   OUTW (devc->osdev, 0x1, AC97_CTRL);
@@ -2311,32 +2379,16 @@ init_cmi8788 (cmi8788_devc * devc)
   if (sVal & 0x10)
     {
       /* disable CODEC0 OUTPUT */
-      OUTW (devc->osdev, INW (devc->osdev, AC97_OUT_CHAN_CONFIG) & ~0xFF00,
+      OUTW (devc->osdev, 0, /* INW (devc->osdev, AC97_OUT_CHAN_CONFIG) & ~0xFF00,*/
 	    AC97_OUT_CHAN_CONFIG);
 
       /* enable CODEC0 INPUT */
-      OUTW (devc->osdev, INW (devc->osdev, AC97_IN_CHAN_CONFIG) | 0x0300,
+      OUTW (devc->osdev, 0, /* INW (devc->osdev, AC97_IN_CHAN_CONFIG) | 0x0300,*/
 	    AC97_IN_CHAN_CONFIG);
-
-      /* set Playback routing to I2S mode */
-      OUTW (devc->osdev, INW (devc->osdev, PLAY_ROUTING) & ~0x10,
-	    PLAY_ROUTING);
-
-      /* setup record channel A (MULTICH) and B (Front Panel) in AC97 mode */
-      OUTB (devc->osdev, INB (devc->osdev, REC_ROUTING) | 0x18, REC_ROUTING);
 
       devc->ac97_mixer_dev =
 	ac97_install (&devc->ac97devc, "AC97 Input Mixer", ac97_read,
 		      ac97_write, devc, devc->osdev);
-
-      if (devc->ac97_mixer_dev >= 0)
-	{
-	  /* setup the Codec0 as the input mux */
-	  ac97_write (devc, 0x70, 0x0300);
-	  ac97_write (devc, 0x64, 0x8041);
-	  ac97_write (devc, 0x62, 0x180F);
-	  ac97_remove_control (&devc->ac97devc, UNUSED_CMI9780_CONTROLS, 0);
-	}
     }
 
   /* check if there's an front panel AC97 codec (CODEC1) and install the mixer */
@@ -2363,6 +2415,58 @@ init_cmi8788 (cmi8788_devc * devc)
     }
 
 
+
+    switch(devc->model) {
+            case SUBID_XONAR_D1:
+            case SUBID_XONAR_DX:
+                    /*GPIO8 = 0x100 controls mic/line-in */
+                    /*GPIO0 = 0x001controls output */
+                    /*GPIO2/3 = 0x00C codec output control*/
+
+                    /* setup for 2wire communication mode */
+                    OUTB(devc->osdev, INB (devc, FUNCTION) | 0x40, FUNCTION);
+                    /* setup GPIO direction */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x010D, GPIO_CONTROL);
+                    /* setup GPIO pins */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x0101, GPIO_DATA);
+
+                    /* init the front and rear dacs */
+                    cs4398_init(devc, XONAR_DX_FRONTDAC);
+                    cs4362a_init(devc, XONAR_DX_SURRDAC);
+  		    /* initialize the codec 0 */
+  		    ac97_hwinit(devc);
+                    break;
+
+
+            case SUBID_XONAR_D2:
+            case SUBID_XONAR_D2X:
+                    /*GPIO7 = 0x0080 controls mic/line-in */
+                    /*GPIO8 = 0x0100 controls output */
+                    /*GPIO2/3 = 0x000C codec output control*/
+
+                    /* setup for spi communication mode */
+                    OUTB(devc->osdev, (INB (devc->osdev, FUNCTION) & ~0x40) | 0x80, FUNCTION);
+                    /* setup the GPIO direction */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x018C, GPIO_CONTROL);
+	            /* setup GPIO Pins */
+	            OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x0100, GPIO_DATA);
+
+                    /* for all 4 codecs: unmute, set to 24Bit SPI */
+		    for (i = 0; i < 4; ++i) {
+			pcm1796_write(devc, i, 16, mix_scale(75,8)); /* left vol*/
+			pcm1796_write(devc, i, 17, mix_scale(75,8)); /* right vol */
+			pcm1796_write(devc, i, 18, 0x30 | 0x80); /* unmute/24LSB/ATLD */
+		    }
+  		    /* initialize the codec 0 */
+  		    ac97_hwinit(devc);
+		    break;
+
+	   default:
+		   /* SPI default for anything else, including the */
+		   OUTB(devc->osdev, (INB (devc->osdev, FUNCTION) & ~0x40) | 0x80, FUNCTION);
+		   break;
+  }
+
   /* check if MPU401 is enabled in MISC register */
   if (INB (devc->osdev, MISC_REG) & 0x40)
     attach_mpu (devc);
@@ -2380,7 +2484,21 @@ init_cmi8788 (cmi8788_devc * devc)
 	  sprintf (tmp_name, "%s (MultiChannel)", devc->chip_name);
 	  caps |= ADEV_DUPLEX;
 	  fmt |= AFMT_S32_LE;
-	  portc->port_type = ADEV_MULTICH;
+	  portc->dac_type = ADEV_MULTICH;
+	  switch(devc->model)
+  	  {
+		case SUBID_XONAR_D1:
+		case SUBID_XONAR_DX:
+		case SUBID_XONAR_D2:
+		case SUBID_XONAR_D2X:
+			portc->adc_type = ADEV_I2SADC2;
+      			break;
+		default: 
+			portc->adc_type = ADEV_I2SADC1;
+      			OUTB (devc->osdev, INB (devc->osdev, REC_ROUTING) | 0x18, REC_ROUTING);
+			break;
+  	  }
+
 	  portc->min_rate = 32000;
 	  portc->max_rate = 192000;
 	  portc->min_chan = 2;
@@ -2391,7 +2509,21 @@ init_cmi8788 (cmi8788_devc * devc)
 	  sprintf (tmp_name, "%s (Multichannel)", devc->chip_name);
 	  caps |= ADEV_DUPLEX | ADEV_SHADOW;
 	  fmt |= AFMT_S32_LE;
-	  portc->port_type = ADEV_MULTICH;
+	  portc->dac_type = ADEV_MULTICH;
+          switch(devc->model)
+          {
+                case SUBID_XONAR_D1:
+                case SUBID_XONAR_DX:
+                case SUBID_XONAR_D2:
+                case SUBID_XONAR_D2X:
+                        portc->adc_type = ADEV_I2SADC2;
+                        break;
+                default:
+                        portc->adc_type = ADEV_I2SADC1;
+      			OUTB (devc->osdev, INB (devc->osdev, REC_ROUTING) | 0x18, REC_ROUTING);
+                        break;
+          }
+
 	  portc->min_rate = 32000;
 	  portc->max_rate = 192000;
 	  portc->min_chan = 2;
@@ -2407,7 +2539,9 @@ init_cmi8788 (cmi8788_devc * devc)
 	  caps |=
 	    ADEV_DUPLEX | ADEV_16BITONLY | ADEV_STEREOONLY | ADEV_SPECIAL;
 	  fmt |= AFMT_AC3;
-	  portc->port_type = ADEV_FRONTPANEL;
+	  portc->dac_type = ADEV_FRONTPANEL;
+	  portc->adc_type = ADEV_I2SADC2;
+      	  OUTB (devc->osdev, INB (devc->osdev, REC_ROUTING) | 0x18, REC_ROUTING);
 	  portc->min_rate = 8000;
 	  portc->max_rate = 48000;
 	  portc->min_chan = 2;
@@ -2418,7 +2552,8 @@ init_cmi8788 (cmi8788_devc * devc)
 	  sprintf (tmp_name, "%s (SPDIF)", devc->chip_name);
 	  caps |= ADEV_DUPLEX | ADEV_STEREOONLY | ADEV_SPECIAL;
 	  fmt |= AFMT_AC3 | AFMT_S32_LE;
-	  portc->port_type = ADEV_SPDIF;
+	  portc->dac_type = ADEV_SPDIF;
+	  portc->adc_type = ADEV_I2SADC3;
 	  portc->min_rate = 32000;
 	  portc->max_rate = 192000;
 	  portc->min_chan = 2;
@@ -2467,32 +2602,17 @@ init_cmi8788 (cmi8788_devc * devc)
    */
   default_vol = 0x4b4b;
   devc->playvol[0] =
-    cmi8788_mixer_ioctl (devc->spi_mixer_dev, first_dev,
+    cmi8788_mixer_ioctl (devc->cmi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_PCM), &default_vol);
   devc->playvol[1] =
-    cmi8788_mixer_ioctl (devc->spi_mixer_dev, first_dev,
+    cmi8788_mixer_ioctl (devc->cmi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_REARVOL), &default_vol);
   devc->playvol[2] =
-    cmi8788_mixer_ioctl (devc->spi_mixer_dev, first_dev,
+    cmi8788_mixer_ioctl (devc->cmi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_CENTERVOL), &default_vol);
   devc->playvol[3] =
-    cmi8788_mixer_ioctl (devc->spi_mixer_dev, first_dev,
+    cmi8788_mixer_ioctl (devc->cmi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_SIDEVOL), &default_vol);
-
-  /* Enable Xonar output */
-  switch(devc->model)
-  {
-    case SUBID_XONAR_D1:
-    case SUBID_XONAR_DX:
-      OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_CONTROL);
-      OUTW(devc->osdev, XONAR_DX_OUTPUT, GPIO_DATA);
-      break;
-    case SUBID_XONAR_D2:
-    case SUBID_XONAR_D2X:
-      OUTW(devc->osdev, 0x100, GPIO_CONTROL);
-      OUTW(devc->osdev, 0x100, GPIO_DATA);
-      break;
-  }
 
   return 1;
 }

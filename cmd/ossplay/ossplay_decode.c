@@ -32,7 +32,7 @@ typedef struct ima_values {
 ima_values_t;
 
 extern int amplification, force_speed, force_fmt, force_channels;
-extern flag int_conv, overwrite, verbose;
+extern flag int_conv, verbose;
 extern char audio_devname[32];
 extern off_t (*ossplay_lseek) (int, off_t, int);
 extern double seek_time;
@@ -420,7 +420,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
     wave_fp = fdopen (1, "wb");
   else
     {
-      fd = open (fname, O_WRONLY | O_CREAT | (overwrite?0:O_EXCL), 0644);
+      fd = open (fname, O_WRONLY | O_CREAT, 0644);
       if (fd == -1)
         {
           perror (fname);
