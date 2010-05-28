@@ -2424,7 +2424,7 @@ init_cmi8788 (cmi8788_devc * devc)
                     /*GPIO2/3 = 0x00C codec output control*/
 
                     /* setup for 2wire communication mode */
-                    OUTB(devc->osdev, INB (devc, FUNCTION) | 0x40, FUNCTION);
+                    OUTB(devc->osdev, INB (devc->osdev, FUNCTION) | 0x40, FUNCTION);
                     /* setup GPIO direction */
                     OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x010D, GPIO_CONTROL);
                     /* setup GPIO pins */
