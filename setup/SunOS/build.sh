@@ -286,4 +286,6 @@ fi
 
 sh $SRCDIR/setup/build_common.sh $SRCDIR $OSSLIBDIR
 
+rm -f $OSSLIBDIR/oss/
+
 exit 0
