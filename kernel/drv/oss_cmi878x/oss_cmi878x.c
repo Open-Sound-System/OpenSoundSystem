@@ -112,9 +112,6 @@
 
 /* defs for Xonar STX */
 #define XONAR_STX_FRONTDAC	0x98
-#define XONAR_STX_SURRDAC	0x9a
-#define	XONAR_STX_LFEDAC	0x9c
-#define XONAR_STX_REARDAC	0x9e
 
 /* defs for AKM 4396 DAC */
 #define AK4396_CTL1        0x00
@@ -591,24 +588,10 @@ xonar_stx_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
   left = (value & 0x00FF);
   right = (value & 0xFF00) >> 8;
 
-  switch(codec_id)
+  if (codec_id == 0)
   {
-    case 0:
       two_wire_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(left,8));
       two_wire_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(right,8));
-      break;
-    case 1:
-      two_wire_write(devc, XONAR_STX_SURRDAC, 16, mix_scale(left,8));
-      two_wire_write(devc, XONAR_STX_SURRDAC, 17, mix_scale(right,8));
-      break;
-    case 2:
-      two_wire_write(devc, XONAR_STX_LFEDAC, 16, mix_scale(left,8));
-      two_wire_write(devc, XONAR_STX_LFEDAC, 17, mix_scale(right,8));
-      break;
-    case 3:
-      two_wire_write(devc, XONAR_STX_REARDAC, 16, mix_scale(left,8));
-      two_wire_write(devc, XONAR_STX_REARDAC, 17, mix_scale(right,8));
-      break;
   }
 }
 
@@ -1775,7 +1758,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    return *arg = 0;
 	    break;
 
-	  case SOUND_MIXER_PCM:
+	  case SOUND_MIXER_VOLUME:
 	    val = *arg;
 	    return *arg = cmi8788_set_play_volume (devc, 0, val);
 	    break;
@@ -1808,22 +1791,28 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    break;
 
 	  case SOUND_MIXER_DEVMASK:
-	    return *arg =
-	      SOUND_MASK_PCM | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
+		if (devc->model == SUBID_XONAR_STX)
+		   return *arg = SOUND_MASK_VOLUME;
+		else
+		   return *arg =
+	      SOUND_MASK_VOLUME | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
 	      SOUND_MASK_SIDEVOL;
 	    break;
 
 	  case SOUND_MIXER_STEREODEVS:
-	    return *arg =
-	      SOUND_MASK_PCM | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
-	      SOUND_MASK_SIDEVOL;
+                if (devc->model == SUBID_XONAR_STX)
+                   return *arg = SOUND_MASK_VOLUME;
+                else
+                   return *arg =
+              SOUND_MASK_VOLUME | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
+              SOUND_MASK_SIDEVOL;
 	    break;
 
 	  case SOUND_MIXER_CAPS:
 	    return *arg = SOUND_CAP_EXCL_INPUT;
 	    break;
 
-	  case SOUND_MIXER_PCM:
+	  case SOUND_MIXER_VOLUME:
 	    return *arg = devc->playvol[0];
 	    break;
 
@@ -2301,15 +2290,6 @@ cmi8788_mix_init (int dev)
   return 0;
 }
 
-void stx_dac_init (cmi8788_devc *devc, int reg, int value)
-{
-
-	two_wire_write(devc, XONAR_STX_FRONTDAC, reg, value);
-        two_wire_write(devc, XONAR_STX_SURRDAC, reg, value);
-        two_wire_write(devc, XONAR_STX_LFEDAC, reg, value);
-        two_wire_write(devc, XONAR_STX_REARDAC, reg, value);
-}
-
 void ac97_hwinit(cmi8788_devc *devc)
 {
 
@@ -2535,16 +2515,17 @@ init_cmi8788 (cmi8788_devc * devc)
 	    /* setup the GPIO direction control register */
             OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x018F, GPIO_CONTROL);
             /* setup GPIO pins mic/output */
-            OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x0180, GPIO_DATA);
+            OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x111, GPIO_DATA);
 
-            OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
+            OUTW(devc->osdev, INW(devc, TWO_WIRE_CTRL)|0x0100, TWO_WIRE_CTRL);
 
-	    stx_dac_init(devc, 16, mix_scale(75,8));
-	    stx_dac_init(devc, 17, mix_scale(75,8));
-	    stx_dac_init(devc, 18, 0x00 | 0x30 | 80); /* unmute/24LSB/ATLD */
-	    stx_dac_init(devc, 19, 0);	/* ATS1/FLT_SHARP */
-	    stx_dac_init(devc, 20, 0);	/* OS_64 */
-	    stx_dac_init(devc, 21, 0);
+	    /* initialize the PCM1796 DAC */
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(75,8));
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(75,8));
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 18, 0x00|0x30|0x80); /*unmute, 24LSB, ATLD */
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 19, 0); /*ATS1/FLT_SHARP*/
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 20, 0); /*OS_64*/
+            two_wire_write(devc, XONAR_STX_FRONTDAC, 21, 0); 
 
             /* initialize the codec 0 */
             ac97_hwinit(devc);
