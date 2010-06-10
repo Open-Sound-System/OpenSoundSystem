@@ -592,6 +592,16 @@ get_feature_name (int n)
       return "boost";
     case 9:
       return "loud";
+    case 10:
+      return "igain";
+    case 11:
+      return "igainpad";
+    case 12:
+      return "phaseinv";
+    case 13:
+      return "underflow";
+    case 14:
+      return "overflow";
     default:
       return "misc";
     }
@@ -629,30 +639,46 @@ get_feature_type (int n)
 
 struct chmasks
 {
-  int mask;
+  unsigned int mask;
   char *name;
   char type;
   char channels;
 };
 
 static const struct chmasks chmasks[] = {
-  {0x0003, "front", MIXT_STEREOSLIDER, 2},
-  {0x0001, "L", MIXT_MONOSLIDER, 1},
-  {0x0002, "R", MIXT_MONOSLIDER, 1},
-  {0x0030, "surr", MIXT_STEREOSLIDER, 2},
-  {0x0010, "LS", MIXT_MONOSLIDER, 1},
-  {0x0020, "RS", MIXT_MONOSLIDER, 1},
-  {0x000c, "C/L", MIXT_STEREOSLIDER, 2},
-  {0x0004, "C", MIXT_MONOSLIDER, 1},
-  {0x0008, "LFE", MIXT_MONOSLIDER, 1},
-  {0x00c0, "center", MIXT_STEREOSLIDER, 2},
-  {0x0040, "LC", MIXT_MONOSLIDER, 1},
-  {0x0080, "RC", MIXT_MONOSLIDER, 1},
-  {0x0100, "surr", MIXT_STEREOSLIDER, 2},
-  {0x0600, "side", MIXT_STEREOSLIDER, 2},
-  {0x0200, "SL", MIXT_MONOSLIDER, 1},
-  {0x0400, "SR", MIXT_MONOSLIDER, 1},
-  {0x0800, "top", MIXT_MONOSLIDER, 1},
+  {0x00000003, "front", MIXT_STEREOSLIDER, 2},
+  {0x00000001, "L", MIXT_MONOSLIDER, 1},
+  {0x00000002, "R", MIXT_MONOSLIDER, 1},
+  {0x00000030, "surr", MIXT_STEREOSLIDER, 2},
+  {0x00000010, "LS", MIXT_MONOSLIDER, 1},
+  {0x00000020, "RS", MIXT_MONOSLIDER, 1},
+  {0x0000000c, "C/L", MIXT_STEREOSLIDER, 2},
+  {0x00000004, "C", MIXT_MONOSLIDER, 1},
+  {0x00000008, "LFE", MIXT_MONOSLIDER, 1},
+  {0x000000c0, "center", MIXT_STEREOSLIDER, 2},
+  {0x00000040, "LC", MIXT_MONOSLIDER, 1},
+  {0x00000080, "RC", MIXT_MONOSLIDER, 1},
+  {0x00000100, "surr", MIXT_STEREOSLIDER, 2},
+  {0x00000600, "side", MIXT_STEREOSLIDER, 2},
+  {0x00000200, "SL", MIXT_MONOSLIDER, 1},
+  {0x00000400, "SR", MIXT_MONOSLIDER, 1},
+  {0x00000800, "TC", MIXT_MONOSLIDER, 1},
+  {0x00001000, "TFL", MIXT_MONOSLIDER, 1},
+  {0x00002000, "TFC", MIXT_MONOSLIDER, 1},
+  {0x00004000, "TFR", MIXT_MONOSLIDER, 1},
+  {0x00008000, "TBL", MIXT_MONOSLIDER, 1},
+  {0x00010000, "TBC", MIXT_MONOSLIDER, 1},
+  {0x00020000, "TBR", MIXT_MONOSLIDER, 1},
+  {0x00040000, "TFLC", MIXT_MONOSLIDER, 1},
+  {0x00080000, "TFRC", MIXT_MONOSLIDER, 1},
+  {0x00100000, "LLFE", MIXT_MONOSLIDER, 1},
+  {0x00200000, "RLFE", MIXT_MONOSLIDER, 1},
+  {0x00400000, "TSL", MIXT_MONOSLIDER, 1},
+  {0x00800000, "TSR", MIXT_MONOSLIDER, 1},
+  {0x01000000, "BC", MIXT_MONOSLIDER, 1},
+  {0x02000000, "BLC", MIXT_MONOSLIDER, 1},
+  {0x04000000, "BRC", MIXT_MONOSLIDER, 1},
+  {0x80000000, "RD", MIXT_MONOSLIDER, 1},
   {0, NULL}
 };
 
@@ -873,7 +899,7 @@ add_controls_for_selector (ossusb_devc * devc, usb_audio_unit_t * un,
 /*ARGSUSED*/
 static void
 add_multich_volumes (ossusb_devc * devc, usb_audio_unit_t * un, int group,
-		     int fea, int mask, unsigned short *feature_mask)
+		     int fea, int mask, unsigned int *feature_mask)
 {
   int i;
 
@@ -886,7 +912,7 @@ add_multich_volumes (ossusb_devc * devc, usb_audio_unit_t * un, int group,
       if (!(mask & m))
 	continue;
 
-      ctl = new_ctl (devc, un, fea, chmasks[i].type, m);
+      ctl = new_ctl (devc, un, fea, chmasks[i].type, chmasks[i].mask);
       c = &devc->controls[ctl];
 
       UDB (cmn_err
@@ -906,19 +932,56 @@ add_multich_volumes (ossusb_devc * devc, usb_audio_unit_t * un, int group,
 }
 
 static void
-translate_feature_mask (usb_audio_unit_t * un, unsigned short *feature_mask)
+translate_feature_mask_usb2 (ossusb_devc *devc, usb_audio_unit_t * un, unsigned int *feature_mask)
 {
   int i, n, c;
   unsigned char *d = un->desc;
 
+  n = 4;
+  d = d + 5 + n;		// Skip the global mask
+
+/*
+ * USB 2.0 uses 2 bits for each control
+ * 	01b means that the control is read only and 11b means it's RW
+ */
+  for (c = 0; c < un->channels; c++)
+    {
+      unsigned int mask;
+      unsigned char *p = d + c * n;
+
+      mask = p[3] |
+	     (p[2] << 8) |
+	     (p[1] << 16) |
+	     (p[0] << 24);
+
+      for (i = 0; i < n * 4; i++)
+	if ((mask & (3 << 2*i)) && (un->ctl_avail & (1 << i)))
+	  {
+	    feature_mask[i] |= 1 << c;
+	  }
+    }
+}
+
+static void
+translate_feature_mask (ossusb_devc *devc, usb_audio_unit_t * un, unsigned int *feature_mask)
+{
+  int i, n, c;
+  unsigned char *d = un->desc;
+
+  if (devc->usb_version > 1)
+  {
+	translate_feature_mask_usb2(devc, un, feature_mask);
+	return;
+  }
+
   n = d[5];
   if (n < 1 || n > 2)
     {
-      cmn_err (CE_CONT, "Bad feature mask size %d\n", n);
-      return;
+      	cmn_err (CE_CONT, "Bad feature mask size %d\n", n);
+       	return;
     }
 
-  d = d + 6 + n;		// Skip the global mask
+    d = d + 6 + n;		// Skip the global mask
 
   for (c = 0; c < un->channels; c++)
     {
@@ -932,7 +995,6 @@ translate_feature_mask (usb_audio_unit_t * un, unsigned short *feature_mask)
 	    feature_mask[i] |= 1 << c;
 	  }
     }
-
 }
 
 static void
@@ -940,7 +1002,7 @@ add_controls_for_feature (ossusb_devc * devc, usb_audio_unit_t * un,
 			  int group)
 {
   int i;
-  unsigned short feature_mask[16], global_mask;
+  unsigned int feature_mask[16], global_mask;
 
   if (!un->ctl_avail)
     return;
@@ -988,7 +1050,7 @@ add_controls_for_feature (ossusb_devc * devc, usb_audio_unit_t * un,
   // Translate the channel/feature availability matrix
 
   memset (feature_mask, 0, sizeof (feature_mask));
-  translate_feature_mask (un, feature_mask);
+  translate_feature_mask (devc, un, feature_mask);
 
   for (i = 0; i < 16; i++)
     if (feature_mask[i])
@@ -2268,7 +2330,7 @@ ossusb_device_attach (udi_usb_devc * usbdev, oss_device_t * osdev)
   int old = 1;
   int i;
   int class, subclass;
-  int vendor, product;
+  int vendor, product, version;
 
   devpath = udi_usbdev_get_devpath (usbdev);
   inum = udi_usbdev_get_inum (usbdev);
@@ -2276,6 +2338,7 @@ ossusb_device_attach (udi_usb_devc * usbdev, oss_device_t * osdev)
   subclass = udi_usbdev_get_subclass (usbdev);
   vendor = udi_usbdev_get_vendor (usbdev);
   product = udi_usbdev_get_product (usbdev);
+  version = udi_usbdev_get_usb_version (usbdev);
 
   if ((devc = find_devc (devpath, vendor, product)) == NULL)
     {
@@ -2302,6 +2365,7 @@ ossusb_device_attach (udi_usb_devc * usbdev, oss_device_t * osdev)
 
       devc->vendor = vendor;
       devc->product = product;
+      devc->usb_version = version;
       devc->dev_name = udi_usbdev_get_name (usbdev);
 
       strcpy (devc->devpath, udi_usbdev_get_devpath (usbdev));

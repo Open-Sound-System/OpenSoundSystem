@@ -37,6 +37,7 @@ struct udi_usb_devc
   udi_usb_driver *drv;
   void *client_devc;
   int num_altsettings;
+  int usb_version;
   struct usb_host_interface *altsetting;
 
 };
@@ -148,6 +149,7 @@ udi_attach_usbdev (struct usb_device *dev,
 
   devc->vendor = dev->descriptor.idVendor;
   devc->product = dev->descriptor.idProduct;
+  devc->usb_version = dev->descriptor.bcdUSB >> 8;
   devc->class = iface->altsetting[0].desc.bInterfaceClass;
   devc->subclass = iface->altsetting[0].desc.bInterfaceSubClass;
   devc->iface_number = iface->altsetting[0].desc.bInterfaceNumber;
@@ -401,6 +403,14 @@ udi_usbdev_get_num_altsettings (udi_usb_devc * usbdev)
   udi_usb_devc *devc = (udi_usb_devc *) usbdev;
 
   return devc->num_altsettings;
+}
+
+int
+udi_usbdev_get_usb_version (udi_usb_devc * usbdev)
+{
+  udi_usb_devc *devc = (udi_usb_devc *) usbdev;
+
+  return devc->usb_version;
 }
 
 unsigned char *

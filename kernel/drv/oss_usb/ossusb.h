@@ -169,6 +169,7 @@ struct ossusb_devc
   char *dev_name, devpath[32];
   int nports;
   int disabled;
+  int usb_version; // 1 or 2
 
   /*
    * Units

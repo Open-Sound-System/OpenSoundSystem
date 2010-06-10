@@ -53,6 +53,7 @@ extern char *udi_usbdev_get_altsetting_labels (udi_usb_devc * usbdev, int if_num
 extern char *udi_usbdev_get_string (udi_usb_devc * usbdev, int ix);
 extern char *udi_usbdev_get_devpath (udi_usb_devc * usbdev);
 extern int udi_usbdev_get_num_altsettings (udi_usb_devc * usbdev);
+extern int udi_usbdev_get_usb_version (udi_usb_devc * usbdev);
 extern unsigned char *udi_usbdev_get_altsetting (udi_usb_devc * usbdev, int n,
 						 int *size);
 extern int udi_usbdev_set_interface (udi_usb_devc * usbdev, int inum,
