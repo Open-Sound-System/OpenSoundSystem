@@ -849,6 +849,14 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		break;
 	  }
 
+	  if (mixer->copied_outendpoints >= HDA_MAX_OUTSTREAMS)
+	     {
+	          cmn_err (CE_WARN,
+			   "Too many output endpoints (%d)\n",
+			   mixer->copied_outendpoints);
+		  continue;
+	     }
+
 	  memcpy(&mixer->outendpoints[mixer->copied_outendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
 	}
@@ -885,6 +893,14 @@ copy_endpoints(hdaudio_mixer_t * mixer, codec_t *codec, int pass)
 		   continue;
 		break;
 	  }
+
+	  if (mixer->copied_inendpoints >= HDA_MAX_INSTREAMS)
+	     {
+	          cmn_err (CE_WARN,
+			   "Too many output endpoints (%d)\n",
+			   mixer->copied_inendpoints);
+		  continue;
+	     }
 
 	  memcpy(&mixer->inendpoints[mixer->copied_inendpoints++], ep, sizeof(*ep));
 	  ep->already_used=1;
