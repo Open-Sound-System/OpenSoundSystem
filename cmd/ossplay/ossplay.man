@@ -36,7 +36,7 @@ OPTIONS
 -h		Display usage information.
 
 INTERRUPT
-Sending a SIGQUIT (Ctrl-\\ in most terminals) will make ossplay stop playing
+Sending a SIGQUIT (Ctrl-\e in most terminals) will make ossplay stop playing
 the currently played file and skip to the next file.
 
 NOTES

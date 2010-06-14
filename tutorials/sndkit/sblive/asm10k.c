@@ -91,7 +91,7 @@ static int pc;
 static int ngpr = 0;
 
 static char *
-getline (char *buf, int len)
+agetline (char *buf, int len)
 {
   char *s;
 
@@ -1122,7 +1122,7 @@ main (int argc, char *argv[])
 
   init_compiler ();
 
-  while (getline (iline, sizeof (iline) - 1) != NULL)
+  while (agetline (iline, sizeof (iline) - 1) != NULL)
     {
       if (*iline == '#')
 	{

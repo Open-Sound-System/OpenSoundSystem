@@ -842,7 +842,7 @@ change_level (int dev, const char * cname, const char * arg)
         }
       if (relative & RELLEFT) lefti += left;
       if (relative & RELRIGHT) righti += right;
-      if (relative & RELTOGGLE) lefti = !left;
+      if (relative & RELTOGGLE) lefti = (left?0:extrec.maxvalue);
     }
 
   if (lefti < 0) lefti = 0;

@@ -779,8 +779,8 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           dsp->reclevel = atoi (optarg);
           if (dsp->reclevel < 1 || dsp->reclevel > 100)
             {
-              print_msg (ERRORM, "%s: Bad recording level '%s'\n", argv[0],
-                         optarg);
+              print_msg (ERRORM, "%s: Bad recording level '%s'\n",
+                         argv[0]?argv[0]:"", optarg);
               exit (-1);
             }
           break;
@@ -875,6 +875,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 'w':
+        case 'O':
           break;
 
         case 'v':

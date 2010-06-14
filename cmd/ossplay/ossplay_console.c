@@ -20,7 +20,7 @@ static int dots = -11, direction = 0;
 void
 perror_msg (const char * s)
 {
-  perror (s);
+  if (quiet < 2) perror (s);
 }
 
 void

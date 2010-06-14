@@ -305,7 +305,7 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
         dec->decoder = decode_nul;
         dec->metadata = metadata;
         obsize = bsize;
-        if (metadata == NULL) return E_DECODE;
+        if (metadata == NULL) goto exit;
         else
           {
             ogg_data_t * val = (ogg_data_t *)metadata;
@@ -359,6 +359,7 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
             print_msg (WARNM, "Converting to format %s\n",
                        sample_format_name (tmp));
             ret = setup_device (dsp, tmp, channels, speed);
+            if (ret == E_FORMAT_UNSUPPORTED) goto exit;
             decoders = setup_normalize (&format, &obsize, decoders);
             goto dcont;
           }
@@ -539,11 +540,11 @@ setup_fib (int fd, int format)
   unsigned char buf;
   fib_values_t * val;
 
+  if (read (fd, &buf, 1) <= 0) return NULL;
   val = (fib_values_t *)ossplay_malloc (sizeof (fib_values_t));
   if (format == AFMT_EXP_DELTA) val->table = CodeToExpDelta;
   else val->table = CodeToDelta;
 
-  if (read (fd, &buf, 1) <= 0) return NULL;
   val->pred = buf;
 
   return val;
@@ -576,6 +577,7 @@ setup_cr (int fd, int format)
   cradpcm_values_t * val;
   int i;
 
+  if (read (fd, &buf, 1) <= 0) return NULL;
   val = (cradpcm_values_t *)ossplay_malloc (sizeof (cradpcm_values_t));
   val->table = t_row;
 
@@ -601,7 +603,6 @@ setup_cr (int fd, int format)
       for (i=0; i < 2; i++) t_row[i] = T4[i];
     }
 
-  if (read (fd, &buf, 1) <= 0) return NULL;
   val->pred = buf;
 
   return val;

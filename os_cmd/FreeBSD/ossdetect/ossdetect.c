@@ -65,7 +65,7 @@ get_mapname (void)
   if ((f = fopen ("/etc/oss.conf", "r")) == NULL)
     {
       perror ("/etc/oss.conf");
-      goto oexit;
+      goto oexit2;
     }
 
   while (fgets (tmp, sizeof (tmp), f) != NULL)
@@ -97,6 +97,7 @@ get_mapname (void)
 		   "/usr/lib/oss\n");
 oexit:
   fclose (f);
+oexit2:
   snprintf (name, sizeof (name), "/usr/lib/oss");
   return name;
 }
