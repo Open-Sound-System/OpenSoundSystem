@@ -18,6 +18,7 @@ Normally ossdevlinks is used without command line arguments. However
 there are a few command line options.
 
 -f<name>	Write legacydev file to <fname>. 
+-N		Do not actually modify device files
 -r		Reset the legacy device numbering (do not use).
 -v		Verbose output
 

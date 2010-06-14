@@ -15,6 +15,7 @@
  * -v      Produce verbose output.
  * -r      Remove all pre-existing legacy devices and reset the device
  *         numbering (not recommended).
+ * -N      Don't modify links
  */
 #define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2006. All rights reserved.
 
@@ -39,7 +40,8 @@ static oss_sysinfo si;
 #else
   static char * legacydev_file = NULL;
 #endif
-static int err = 0, mixerfd = -1, recreate_all = 0, verbose = 0;
+static int err = 0, mixerfd = -1, recreate_all = 0, verbose = 0,
+           no_links = 0;
 
 static void create_dsplinks (void);
 static void create_mixerlinks (void);
@@ -1065,7 +1067,7 @@ main (int argc, char *argv[])
 	}
     }
 
-  while ((c = getopt (argc, argv, "f:rv")) != EOF)
+  while ((c = getopt (argc, argv, "Nf:rv")) != EOF)
   switch (c)
     {
     case 'f':
@@ -1079,13 +1081,19 @@ main (int argc, char *argv[])
     case 'v':
       verbose++;
       break;
+
+    case 'N':
+      no_links = 1;
+      break;
     }
 
-  create_dsplinks ();
-  create_mixerlinks ();
+  if (!no_links) {
+    create_dsplinks ();
+    create_mixerlinks ();
 #ifdef CONFIG_OSS_MIDI
-  create_midilinks ();
+    create_midilinks ();
 #endif
+  }
 
   close (mixerfd);
 
