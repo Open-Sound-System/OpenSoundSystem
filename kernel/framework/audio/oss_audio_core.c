@@ -3092,6 +3092,11 @@ oss_audio_ioctl (int dev, struct fileinfo *bogus,
  * Handle mixer ioctl calls on audio fd.
  */
 
+  if (cmd == SOUND_MIXER_WRITE_PCM) cmd = SNDCTL_DSP_SETPLAYVOL;
+  if (cmd == SOUND_MIXER_WRITE_RECLEV) cmd = SNDCTL_DSP_SETRECVOL;
+  if (cmd == SOUND_MIXER_READ_PCM) cmd = SNDCTL_DSP_GETPLAYVOL;
+  if (cmd == SOUND_MIXER_READ_RECLEV) cmd = SNDCTL_DSP_GETRECVOL;
+
   if ((mixdev = adev->mixer_dev) != -1)
     {
       if (((cmd >> 8) & 0xff) == 'M' && num_mixers > 0)	/* Mixer ioctl */
