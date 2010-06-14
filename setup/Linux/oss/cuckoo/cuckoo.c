@@ -174,8 +174,12 @@ init_module (void)
 		  return -EIO;
 		}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31)
+#define snd_card_create snd_card_new
+#endif
+
 	      if ((card =
-		   snd_card_new (index[ncards], id[ncards], THIS_MODULE,
+		   snd_card_create (index[ncards], id[ncards], THIS_MODULE,
 				 0)) == NULL)
 		{
 		  printk ("cuckoo: Can't create a card instance\n");
