@@ -337,7 +337,7 @@ writectl (spdif_devc * devc, oss_digital_control * c)
 }
 
 int
-oss_spdif_ioctl (spdif_devc * devc, int open_mode, signed int cmd,
+oss_spdif_ioctl (spdif_devc * devc, int open_mode, unsigned int cmd,
 		 ioctl_arg arg)
 {
   if (!devc->is_ok)

@@ -82,7 +82,7 @@ copy_file (char *sname, char *tname, char *pname, int native_make)
   close(out_fd);
 }
 
-static int
+static void
 copy_tree (char *fromdir, char *tgtdir, int native_make)
 {
   DIR *dir;

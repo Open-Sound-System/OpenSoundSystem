@@ -396,8 +396,8 @@ ap192_set_rate (envy24ht_devc * devc)
 }
 
 static int
-ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
-		   int *arg)
+ap192_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, unsigned int cmd,
+		   ioctl_arg arg)
 {
   int left, right, value;
 

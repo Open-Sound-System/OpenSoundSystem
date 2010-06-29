@@ -555,8 +555,8 @@ revo51_set_rate (envy24ht_devc * devc)
 }
 
 static int
-revo51_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
-		    int *arg)
+revo51_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, unsigned int cmd,
+		    ioctl_arg arg)
 {
   int value;
 

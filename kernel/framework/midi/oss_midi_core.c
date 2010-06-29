@@ -409,8 +409,10 @@ oss_midi_output_intr_handler (int dev, int callback_flag)
 	  }
 
       MDB (cmn_err (CE_CONT, "Bytes in buffer=%d\n", len));
+#if 0
       if (buf != NULL)
 	MDB (cmn_err (CE_CONT, "First=%02x\n", buf[0]));
+#endif
 
       if (hdr == NULL)
 	{

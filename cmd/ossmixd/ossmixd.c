@@ -405,7 +405,6 @@ main (int argc, char *argv[])
   int port = 7777;
   int c;
   int err;
-  extern int optind;
 
   if ((err = ossmix_init ()) < 0)
     {

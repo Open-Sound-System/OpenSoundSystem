@@ -74,7 +74,7 @@ extern int oss_spdif_open (spdif_devc * devc, int open_mode);
 extern void oss_spdif_close (spdif_devc * devc, int open_mode);
 extern void oss_spdif_setrate (spdif_devc * devc, int rate);
 extern int oss_spdif_mix_init (spdif_devc * devc);
-extern int oss_spdif_ioctl (spdif_devc * devc, int open_mode, signed int cmd,
+extern int oss_spdif_ioctl (spdif_devc * devc, int open_mode, unsigned int cmd,
 			    ioctl_arg arg);
 
 /*

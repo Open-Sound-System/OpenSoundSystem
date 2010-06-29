@@ -206,8 +206,8 @@ struct envy24ht_auxdrv
   int (*get_locked_status) (envy24ht_devc * devc);
   int (*spdif_mixer_init) (envy24ht_devc * devc, int dev, int group);
   int (*private1) (envy24ht_devc * devc, int value);
-  int (*audio_ioctl) (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
-		      int *arg);
+  int (*audio_ioctl) (envy24ht_devc * devc, envy24ht_portc * portc, unsigned int cmd,
+		      ioctl_arg arg);
   void (*card_uninit) (envy24ht_devc * devc);
 };
 

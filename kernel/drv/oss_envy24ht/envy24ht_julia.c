@@ -259,7 +259,7 @@ julia_sync_ak4114 (void *arg)
   for (i = 0; rate_sel[i].rate; i++)
     if (rate_sel[i].spdifin == spdifin)
      {
-      if (devc->speed != rate_sel[i].rate);
+      if (devc->speed != rate_sel[i].rate)
        {
         devc->speed = rate_sel[i].rate;
         mixer_devs[devc->mixer_dev]->modify_counter++;
@@ -298,8 +298,8 @@ julia_set_syncsource (envy24ht_devc * devc, int value)
 }
 
 static int
-julia_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, int cmd,
-		   int *arg)
+julia_audio_ioctl (envy24ht_devc * devc, envy24ht_portc * portc, unsigned int cmd,
+		   ioctl_arg arg)
 {
   int left, right, value;
 
