@@ -459,7 +459,7 @@ start_device (imux_devc * devc)
   devc->device_started = 1;
   devc->hw_channels = 2;
 
-  devc->hw_channels = devc->hw_channels =
+  devc->hw_channels =
     oss_audio_set_channels (devc->hw_dev, devc->hw_channels);
 
 /*

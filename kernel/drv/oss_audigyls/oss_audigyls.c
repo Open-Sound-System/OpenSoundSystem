@@ -1594,11 +1594,11 @@ audigyls_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  case SOUND_MIXER_CENTERVOL:
 	    val = *arg;
-	    return *arg = audigyls_set_volume (devc, 2, val);
+	    return *arg = audigyls_set_volume (devc, 1, val);
 
 	  case SOUND_MIXER_REARVOL:
 	    val = *arg;
-	    return *arg = audigyls_set_volume (devc, 3, val);
+	    return *arg = audigyls_set_volume (devc, 2, val);
 	  }
       else
 	switch (cmd & 0xff)	/* Return Parameter */
