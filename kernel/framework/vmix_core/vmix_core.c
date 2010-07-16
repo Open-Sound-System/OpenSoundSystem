@@ -2189,7 +2189,7 @@ vmix_set_master_rate(int masterdev, int rate)
 	mixer = audio_engines[masterdev]->vmix_mixer;
 
 	if (mixer==NULL)
-	   return OSS_EPERM;
+	   return OSS_ENXIO;
 
 	mixer->rate = rate;
 
