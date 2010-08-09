@@ -97,6 +97,7 @@ copy_tree (char *fromdir, char *tgtdir, int native_make)
   if ((dir = opendir (fromdir)) == NULL)
     {
       fprintf (stderr, "Bad source directory %s\n", fromdir);
+      return;
     }
 
   while ((de = readdir (dir)) != NULL)
@@ -189,6 +190,8 @@ main (int argc, char *argv[])
 	}
     }
 
+  f = fopen (".nocopy", "w");
+  fclose (f);
   copy_tree (srcdir, NULL, 0);
 
 #if 0

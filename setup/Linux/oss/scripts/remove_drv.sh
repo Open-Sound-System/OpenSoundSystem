@@ -66,12 +66,12 @@ then
 echo killing
   rm -f /dev/mixer.old
   mv /dev/mixer /dev/mixer.old 2>/dev/null
-  if test -d /dev/snd
-  then
-	(cd /;tar cfj $OSSLIBDIR/save/alsadevs.tar.bz2 dev/snd)
-  fi
+  #if test -d /dev/snd
+  #then
+	#(cd /;tar cfj $OSSLIBDIR/save/alsadevs.tar.bz2 dev/snd)
+  #fi
 
-  mv /dev/snd /dev/snd.osssave
+  #mv /dev/snd /dev/snd.osssave
   #fuser -k -s /dev/mixer.old /dev/snd.osssave/*
 fi
 

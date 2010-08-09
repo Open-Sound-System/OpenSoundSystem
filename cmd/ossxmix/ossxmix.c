@@ -164,6 +164,7 @@ static void manage_label (GtkWidget *, oss_mixext *);
 #ifndef GTK1_ONLY
 static gint manage_timeouts (GtkWidget *, GdkEventWindowState *, gpointer);
 #endif /* !GTK1_ONLY */
+static void parse_dimarg (const char *, GtkRequisition *);
 static gint poll_all (gpointer);
 static gint poll_peaks (gpointer);
 static gint poll_values (gpointer);
@@ -1942,10 +1943,34 @@ find_default_mixer (void)
   return best;
 }
 
+static void
+parse_dimarg (const char * dimarg, GtkRequisition * Dimensions)
+{
+  long height = 0, width = 0;
+  char * p;
+
+  errno = 0;
+  width = strtol (dimarg, &p, 10);
+  if (errno || (width <= 0)) return;
+  if (width > Dimensions->width) width = Dimensions->width;
+  height = width;
+  if (*p != '\0')
+    {
+      errno = 0;
+      height = strtol (p+1, NULL, 10);
+      if (errno || (height <= 0)) height = width;
+    }
+
+  Dimensions->width = width;
+  if (height < Dimensions->height) Dimensions->height = height;
+  return;
+}
+
 int
 main (int argc, char **argv)
 {
   extern char * optarg;
+  char * dimarg = NULL;
   int i, v, c;
   GtkRequisition Dimensions;
 #ifndef GTK1_ONLY
@@ -1970,7 +1995,7 @@ main (int argc, char **argv)
   /* Get Gtk to process the startup arguments */
   gtk_init (&argc, &argv);
 
-  while ((c = getopt (argc, argv, "Sbd:w:n:xh")) != EOF)
+  while ((c = getopt (argc, argv, "Sbd:g:hn:w:x")) != EOF)
       switch (c)
 	{
 	case 'd':
@@ -1979,6 +2004,7 @@ main (int argc, char **argv)
 	  break;
 
 	case 'w':
+	  v = 0;
 	  v = atoi (optarg);
 	  if (v <= 0)
 	    v = 1;
@@ -1986,6 +2012,7 @@ main (int argc, char **argv)
 	  break;
 
 	case 'n':
+	  v = 0;
 	  v = atoi (optarg);
 	  if (v <= 0)
 	    v = 1;
@@ -2004,6 +2031,10 @@ main (int argc, char **argv)
 	  show_status_icon = 0;
 	  break;
 
+	case 'g':
+	  dimarg = optarg;
+	  break;
+
 	case 'h':
 	  printf ("Usage: %s [options...]\n", argv[0]);
 	  printf ("       -h          Prints help (this screen)\n");
@@ -2012,6 +2043,7 @@ main (int argc, char **argv)
 	  printf ("       -w[val]     Make mixer bit wider on screen\n");
 	  printf ("       -n[val]     Make mixer bit narrower on screen\n");
 	  printf ("       -b          Start mixer in background\n");
+	  printf ("       -g[w:h]     Start mixer window with w:h size\n");
 #ifdef STATUSICON
 	  printf ("       -S          Don't place an icon in system tray\n");
 #endif /* STATUSICON */
@@ -2044,6 +2076,7 @@ main (int argc, char **argv)
   /* Create the app's main window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   Dimensions = create_widgets ();
+  if (dimarg != NULL) parse_dimarg (dimarg, &Dimensions);
   gtk_window_set_default_size (GTK_WINDOW (window),
                                Dimensions.width, Dimensions.height);
 

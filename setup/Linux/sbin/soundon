@@ -134,7 +134,7 @@ then
    /usr/sbin/ossdetect -l >> $LOG
 fi
 
-if grep -q '^ *14 ' < /proc/devices
+if test -d /proc/asound || grep -q '^ *14 ' < /proc/devices
 then
 	if ! sh $OSSLIBDIR/scripts/remove_drv.sh>> $LOG
 	then

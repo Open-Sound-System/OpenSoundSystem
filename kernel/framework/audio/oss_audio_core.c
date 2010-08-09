@@ -5664,13 +5664,14 @@ do_outputintr (int dev, int intr_flags)
   adev = audio_engines[dev];
   dmap = adev->dmap_out;
 
+  MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
+
   if (dmap->dmabuf == NULL)
     {
+      MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
       cmn_err (CE_WARN, "Output interrupt when no buffer is allocated\n");
       return;
     }
-
-  MUTEX_ENTER_IRQDISABLE (dmap->mutex, flags);
 
   if (!(intr_flags & AINTR_NO_POINTER_UPDATES))
     {

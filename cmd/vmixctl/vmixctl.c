@@ -28,22 +28,22 @@ main(int argc, char *argv[])
 static void
 usage(void)
 {
-	fprintf (stderr, "Usage:\n");
-	fprintf (stderr, "%s attach [attach_options...] devname\n", cmdname);
-	fprintf (stderr, "%s attach [attach_options...] devname inputdev\n", cmdname);
-	fprintf (stderr, "%s detach devname\n", cmdname);
-	fprintf (stderr, "%s rate devname samplerate\n", cmdname);
-	fprintf (stderr, "\n");
-	fprintf (stderr, "Use ossinfo -a to find out the devname and inputdev parameters\n");
-	fprintf (stderr, "Use ossinfo -a -v2 to find out a suitable sample rate.\n");
-	fprintf (stderr, "\n");
-	fprintf (stderr, "attach_options:\n");
-	fprintf (stderr, "\n");
-	fprintf (stderr, "\t-r\tDisable recording\n");
-	fprintf (stderr, "\t-p\tDo not preallocate client engines\n");
-	fprintf (stderr, "\t-M\tUse more fragments\n");
-	fprintf (stderr, "\t-V\tMake clients visible by creating device files for them.\n");
-	fprintf (stderr, "\t-c<N>\tPrecreate <N> client engines (see -p).\n");
+	fprintf (stdout, "Usage:\n");
+	fprintf (stdout, "%s attach [attach_options...] devname\n", cmdname);
+	fprintf (stdout, "%s attach [attach_options...] devname inputdev\n", cmdname);
+	fprintf (stdout, "%s detach devname\n", cmdname);
+	fprintf (stdout, "%s rate devname samplerate\n", cmdname);
+	fprintf (stdout, "\n");
+	fprintf (stdout, "Use ossinfo -a to find out the devname and inputdev parameters\n");
+	fprintf (stdout, "Use ossinfo -a -v2 to find out a suitable sample rate.\n");
+	fprintf (stdout, "\n");
+	fprintf (stdout, "attach_options:\n");
+	fprintf (stdout, "\n");
+	fprintf (stdout, "\t-r\tDisable recording\n");
+	fprintf (stdout, "\t-p\tDo not preallocate client engines\n");
+	fprintf (stdout, "\t-M\tUse more fragments\n");
+	fprintf (stdout, "\t-V\tMake clients visible by creating device files for them.\n");
+	fprintf (stdout, "\t-c<N>\tPrecreate <N> client engines (see -p).\n");
 
 	exit(-1);
 }
@@ -141,7 +141,7 @@ vmix_attach(int argc, char **argv)
 		exit(-1);
 	}
 
-	fprintf (stderr, "Virtual mixer attached to device.\n");
+	fprintf (stdout, "Virtual mixer attached to device.\n");
 
 	if (relink_devices)
 	{
@@ -171,7 +171,7 @@ vmix_detach(int argc, char **argv)
 		exit(-1);
 	}
 
-	fprintf (stderr, "Virtual mixer detached from device.\n");
+	fprintf (stdout, "Virtual mixer detached from device.\n");
 
 	return 0;
 }
@@ -200,7 +200,7 @@ vmix_rate(int argc, char **argv)
 		exit(-1);
 	}
 
-	fprintf (stderr, "Virtual mixer rate change requested.\n");
+	fprintf (stdout, "Virtual mixer rate change requested.\n");
 
 	return 0;
 }

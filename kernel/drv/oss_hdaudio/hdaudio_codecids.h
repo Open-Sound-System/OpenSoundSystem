@@ -1100,6 +1100,8 @@ static const codec_desc_t subdevices[] = {
    * Assume the audio codec is identical with Vaio AGN (above).
    */
   {0x104d1e00, "Vaio/STAC9872AK", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d9008},
+  /* Vaio VGC-LA1 */
+  {0x104d1200, "Vaio/STAC9872AK", VF_VAIO_HACK, (char**) &vaio_remap, 0x76540213, hdaudio_vaio_vgn_mixer_init, 0x83847662, 0x104d8205},
 
 /*
  * Thinkpad R61

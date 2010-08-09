@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -77,10 +78,7 @@ extern void describe_error (void);	/* From ../dsp/help.c */
 #define TF_QUICK	0x00000008	/* Shortened test */
 #define TF_LOOP		0x00000010	/* Loop until interrupted */
 
-static int mixerfd;
-static int cardno = -1;
-static int num_devices_tested = 0;
-int play_gain = 100;
+int cardno = -1, mixerfd, num_devices_tested = 0, play_gain = 100, skip = 0;
 
 static short *sample_buf;
 
@@ -323,6 +321,8 @@ testdsp (char *devnode, int n, int flags)
   else
     test_data = sample_buf;
 
+  if (skip) goto tend;
+
   printf ("\n");
 
   /* TF_SNDCONF is used when longer messages should be printed. */
@@ -354,6 +354,8 @@ testdsp (char *devnode, int n, int flags)
   else
     printf ("OK ");
 
+  if (skip) goto tend;
+
   if (flags & TF_SNDCONF)
     printf ("   Performing right channel test on %s\n", devnode);
   else
@@ -370,6 +372,8 @@ testdsp (char *devnode, int n, int flags)
     printf ("    Test completed OK\n");
   else
     printf ("OK ");
+
+  if (skip) goto tend;
 
   if (flags & TF_SNDCONF)
     printf ("   Performing stereo test on %s\n", devnode);
@@ -411,6 +415,8 @@ testdsp (char *devnode, int n, int flags)
   else
     printf ("OK <measured srate %8.2f Hz (%4.2f%%)> ",
 	    (float) sample_rate * ratio / 100.0, ratio - 100.0);
+tend:
+  skip = 0;
   printf ("\n");
   num_devices_tested++;
 
@@ -539,6 +545,12 @@ test_device (int t, int flags)
   return code == 1;
 }
 
+static void
+skip_handler (int c)
+{
+  skip = 1;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -625,6 +637,10 @@ main (int argc, char *argv[])
 	      "        to rebot the system before trying to use the device(s).\n");
       exit (-1);
     }
+
+#ifdef SIGQUIT
+  signal (SIGQUIT, skip_handler);
+#endif
 
   do {
     if (dev > -1)

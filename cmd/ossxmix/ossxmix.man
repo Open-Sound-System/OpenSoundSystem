@@ -24,6 +24,7 @@ OPTIONS
 -n[value]   Make the mixer slightly narrower than normally. This may be
             necessary if the mixer is wider than the screen. The value can be
             1 (default) or 2.
+-g[w:h]     Start ossxmix window with dimnesions w:h.
 -b          Start in background.
 -S          Do not try to place an icon in the system tray.
 

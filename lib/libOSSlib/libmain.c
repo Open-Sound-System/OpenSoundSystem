@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 
 #define OSSLIB
 #include "../../include/soundcard.h"

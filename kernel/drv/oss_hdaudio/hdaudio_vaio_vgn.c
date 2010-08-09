@@ -19,7 +19,7 @@ hdaudio_vaio_vgn_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
 
   HDA_OUTAMP_F (0x05, top_group, "speaker", 90, MIXF_MAINVOL);
   /* We sync the volume of the headphone DAC to the speaker DAC */
-#if 0
+#if 1
   HDA_OUTAMP_F (0x02, top_group, "headphone", 90, MIXF_MAINVOL);
 #endif
 
