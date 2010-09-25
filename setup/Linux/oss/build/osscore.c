@@ -933,7 +933,9 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   read_t tmp_read = (read_t) op->read;
   write_t tmp_write = (write_t) op->write;
   /* readdir_t tmp_readdir = (readdir_t)op->readdir; */
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,35)
   ioctl_t tmp_ioctl = (ioctl_t) op->ioctl;
+#endif
   mmap_t tmp_mmap = (mmap_t) op->mmap;
   open_t tmp_open = (open_t) op->open;
   release_t tmp_release = (release_t) op->release;
@@ -953,7 +955,9 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   fop->write = tmp_write;
   fop->readdir = NULL;		/* tmp_readdir; */
   fop->poll = tmp_poll;
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,35)
   fop->ioctl = tmp_ioctl;
+#endif
   fop->mmap = tmp_mmap;
   fop->open = tmp_open;
   fop->release = tmp_release;
