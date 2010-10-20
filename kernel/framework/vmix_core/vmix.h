@@ -33,6 +33,7 @@
 typedef struct _vmix_mixer_t vmix_mixer_t;
 typedef struct _vmix_portc_t vmix_portc_t;
 typedef struct _vmix_engine_t vmix_engine_t;
+typedef unsigned char vmix_channel_map_t[MAX_PLAY_CHANNELS];
 
 struct _vmix_portc_t		/* Audio device specific data */
 {
@@ -69,6 +70,7 @@ struct _vmix_portc_t		/* Audio device specific data */
   void (*play_mixing_func) (vmix_portc_t * portc, int nsamples);
   void (*rec_mixing_func) (vmix_portc_t * portc, int nsamples);
   int do_src;
+  vmix_channel_map_t channel_order;
 };
 
 #ifdef CONFIG_OSS_VMIX_FLOAT
@@ -98,6 +100,7 @@ struct _vmix_engine_t
   int outvol;
   int vu[2];
   int num_active_outputs;
+  vmix_channel_map_t channel_order;
 };
 
 struct _vmix_mixer_t		/* Instance specific data */

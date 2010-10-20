@@ -43,6 +43,7 @@ extern int vmix_detach_audiodev(int masterdev);
 extern int vmix_create_client(void *vmix_mixer);
 extern void vmix_change_devnames(void *vmix_mixer, const char *name);
 extern int vmix_set_master_rate(int masterdev, int rate);
+extern int vmix_set_channel_map(int masterdev, void *map);
 
 /*
  * oss_audio_core.c

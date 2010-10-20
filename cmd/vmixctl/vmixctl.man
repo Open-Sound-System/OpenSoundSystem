@@ -5,6 +5,7 @@ SYNOPSIS
 o	vmixctl attach [attach_options...] audiodev [inputdev]
 o	vmixctl detach [attach_options...] audiodev
 o	vmixctl rate audiodev samplerate
+o	vmixctl remap audiodev channels
 
 DESCRIPTION
 The vmixctl program can be used to attach or detach the virtual mixer subsystem
@@ -37,7 +38,7 @@ To find out the right device file names (audiodev and inputdev) you can use
 the "ossinfo -a" command.
 
  ATTACH OPTIONS
-o	-r	Disable recording functionality. By default vmix will suppor
+o	-r	Disable recording functionality. By default vmix will support
 		recording if the master device(s) support it.
 o	-p	Do not preallocate client engines. By default vmix will
 		preallocate first 4 (out of 8) client engines when attaching
@@ -69,7 +70,19 @@ rate or some fixed rate (defined in ossmix/ossxmis). In such case the rate is
 not changeable by vmixctl.
 
  EXAMPLE
-o	vmixctl rate /dev/oss/oss_envy240/pcm0
+o	vmixctl rate /dev/oss/oss_envy240/pcm0 44100
+
+CHANGING THE VMIX CHANNEL MAP
+The vmix subsystem can remap channels, so that all output sent to a channel via
+vmix will end up being played on a different channel. The syntax uses a list of
+channels, where typically 0=default, 1=left, 2=right, 3=center, 4=lfe,
+5=left surround, 6=right surround, 7=left rear and 8=right rear.
+Note that vmix-channels should be set first to Multich if vmix is to recognize
+the extra channels.
+
+ EXAMPLES
+o	vmixctl remap /dev/dsp 2 1 #switch left and right
+o	vmixctl remap /dev/dsp 0 0 0 0 6 5 #switch left and right surround
 
 DETACHING VMIX FROM AN AUDIO DEVICE
 It is possible to detach vmix from an audio device if it causes problems

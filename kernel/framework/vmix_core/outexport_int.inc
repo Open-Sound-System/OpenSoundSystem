@@ -3,7 +3,7 @@
  */
 #define COPYING4 Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
-int i, ch;
+int i, ch, och;
 int vol;
 
 #define RANGE_MAX	((1<<24)-1)
@@ -16,12 +16,13 @@ for (ch = 0; ch < channels; ch++)
     int vu;
     int *chbuf;
 
+    och = eng->channel_order[ch];
     op = (SAMPLE_TYPE *) outbuf;
-    op += ch;
+    op += och;
 
     chbuf = chbufs[ch];
 
-    vu = eng->vu[ch % 2];
+    vu = eng->vu[och % 2];
     vu = vu * 65536;
 
     for (i = 0; i < samples; i++)
@@ -59,9 +60,9 @@ for (ch = 0; ch < channels; ch++)
 	  vu = tmp;
       }
 
-    if (ch < 2)
+    if (och < 2)
       {
 	vu = vu / 65536;
-	eng->vu[ch] = vu;
+	eng->vu[och] = vu;
       }
   }

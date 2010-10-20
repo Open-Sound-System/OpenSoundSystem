@@ -117,9 +117,17 @@ typedef struct
 	int rate;
 } vmixctl_rate_t;
 
+typedef int oss_chninfo[128];
+typedef struct
+{
+	int masterdev;
+	oss_chninfo map;
+} vmixctl_map_t;
+
 #define VMIXCTL_ATTACH		__SIOW ('X', 220, vmixctl_attach_t)
 #define VMIXCTL_DETACH		__SIOW ('X', 221, vmixctl_attach_t)
 #define VMIXCTL_RATE		__SIOW ('X', 222, vmixctl_rate_t)
+#define VMIXCTL_REMAP		__SIOW ('X', 223, vmixctl_map_t)
 
 /*
  * FreeBSD compatibility ioctl

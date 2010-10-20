@@ -547,6 +547,20 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
       return;
     }
 
+  if (mixer->play_engine.channels > 2)
+    {
+      DDB (cmn_err
+	   (CE_CONT, "Enabling multi channel play mode, %d hw channels\n",
+	    mixer->play_engine.channels));
+    }
+  else if (mixer->play_engine.channels != 2)
+    {
+      cmn_err (CE_WARN,
+	       "Master device doesn't support suitable channel configuration\n");
+
+      return;
+    }
+
   mixer->play_engine.rate =
     oss_audio_set_rate (mixer->masterdev, mixer->rate);
   mixer->rate = mixer->play_engine.rate;
@@ -583,20 +597,6 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
 
   mixer->play_engine.fragsize = dmap->fragment_size;
 
-  if (mixer->play_engine.channels > 2)
-    {
-      DDB (cmn_err
-	   (CE_CONT, "Enabling multi channel play mode, %d hw channels\n",
-	    mixer->play_engine.channels));
-    }
-  else if (mixer->play_engine.channels != 2)
-    {
-      cmn_err (CE_WARN,
-	       "Master device doesn't support suitable channel configuration\n");
-
-      return;
-    }
-
 /* 
  * Determine how many fragments we need to keep filled. 
  */
@@ -630,17 +630,22 @@ vmix_setup_play_engine (vmix_mixer_t * mixer, adev_t * adev, dmap_t * dmap)
     }
 
   for (i = 0; i < mixer->play_engine.channels; i++)
-    if (mixer->play_engine.chbufs[i] == NULL)	/* Not allocated yet */
-      {
-	mixer->play_engine.chbufs[i] =
-	  PMALLOC (mixer->master_portc,
-		   CHBUF_SAMPLES * sizeof (vmix_sample_t));
-	if (mixer->play_engine.chbufs[i] == NULL)
-	  {
-	    cmn_err (CE_WARN, "Out of memory\n");
-	    return;
-	  }
-      }
+    {
+      if (mixer->play_engine.chbufs[i] == NULL)	/* Not allocated yet */
+	{
+	  mixer->play_engine.chbufs[i] =
+	    PMALLOC (mixer->master_portc,
+		     CHBUF_SAMPLES * sizeof (vmix_sample_t));
+	  if (mixer->play_engine.chbufs[i] == NULL)
+	    {
+	      cmn_err (CE_WARN, "Out of memory\n");
+	      return;
+	    }
+	}
+
+      if (mixer->play_engine.channel_order[i] >= mixer->play_engine.channels)
+	mixer->play_engine.channel_order[i] = i;
+    }
 
   dmap->audio_callback = vmix_play_callback;	/* Enable conversions */
   dmap->callback_parm = mixer->instance_num;

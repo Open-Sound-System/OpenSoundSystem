@@ -4,7 +4,7 @@
  */
 #define COPYING4 Copyright (C) Hannu Savolainen and Dev Mazumdar 2006-2007. All rights reserved.
 
-int i, ch;
+int i, ch, och;
 double vol;
 
 vol = vmix_db_table[eng->outvol / 5];
@@ -14,12 +14,13 @@ for (ch = 0; ch < channels; ch++)
     double vu;
     float *chbuf;
 
+    och = eng->channel_order[ch];
     op = (SAMPLE_TYPE *) outbuf;
-    op += ch;
+    op += och;
 
     chbuf = chbufs[ch];
 
-    vu = eng->vu[ch % 2];
+    vu = eng->vu[och % 2];
     vu = vu / 255.0;
 
     for (i = 0; i < samples; i++)
@@ -61,10 +62,10 @@ for (ch = 0; ch < channels; ch++)
 	  vu = tmp;
       }
 
-    if (ch < 2)
+    if (och < 2)
       {
 	vu = vu * 255.0;
-	eng->vu[ch] = (int)vu;
+	eng->vu[och] = (int)vu;
       }
   }
 #else

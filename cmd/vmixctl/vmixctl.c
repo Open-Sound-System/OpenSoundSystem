@@ -33,6 +33,7 @@ usage(void)
 	fprintf (stdout, "%s attach [attach_options...] devname inputdev\n", cmdname);
 	fprintf (stdout, "%s detach devname\n", cmdname);
 	fprintf (stdout, "%s rate devname samplerate\n", cmdname);
+	fprintf (stdout, "%s remap devname channels\n", cmdname);
 	fprintf (stdout, "\n");
 	fprintf (stdout, "Use ossinfo -a to find out the devname and inputdev parameters\n");
 	fprintf (stdout, "Use ossinfo -a -v2 to find out a suitable sample rate.\n");
@@ -205,6 +206,42 @@ vmix_rate(int argc, char **argv)
 	return 0;
 }
 
+static int
+vmix_remap(int argc, char **argv)
+{
+	int i;
+	int masterfd;
+	int masterdev;
+
+	vmixctl_map_t map;
+
+	if (argc<4)
+	{
+		usage ();
+	}
+
+	masterdev=find_audiodev(argv[2], O_WRONLY, &masterfd);
+	memset (&map, 0, sizeof (map));
+
+	map.masterdev=masterdev;
+	map.map[0]=atoi(argv[3]);
+
+        for (i=4; i<argc; i++)
+	{
+		map.map[i-3] = atoi(argv[i]);
+	}
+
+	if (ioctl(masterfd, VMIXCTL_REMAP, &map)==-1)
+	{
+		perror("VMIXCTL_REMAP");
+		exit(-1);
+	}
+
+	fprintf (stdout, "Virtual mixer map change requested.\n");
+
+	return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -223,6 +260,9 @@ main(int argc, char **argv)
 
 	if (strcmp(argv[1], "rate")==0)
 	   exit(vmix_rate(argc, argv));
+
+	if (strcmp(argv[1], "remap")==0)
+	   exit(vmix_remap(argc, argv));
 
 	usage();
 	exit(0);

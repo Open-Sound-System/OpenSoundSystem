@@ -1625,6 +1625,20 @@ vmixctl_rate(vmixctl_rate_t *rate)
 
 	return 0;
 }
+
+static int
+vmixctl_map_channels(vmixctl_map_t *map)
+{
+	int err;
+
+	if (map->masterdev < 0 || map->masterdev >= num_audio_engines)
+	   return OSS_ENXIO;
+
+	if ((err = vmix_set_channel_map (map->masterdev, &map->map)) < 0)
+	  return err;
+
+	return 0;
+}
 #endif
 
 int
@@ -2091,6 +2105,15 @@ oss_mixer_ext (int orig_dev, int class, unsigned int cmd, ioctl_arg arg)
 #endif
       return vmixctl_rate((vmixctl_rate_t*)arg);
       break;
+
+    case VMIXCTL_REMAP:
+#ifdef GET_PROCESS_UID
+	if (GET_PROCESS_UID () != 0)	/* Not root */
+	  return OSS_EINVAL;
+#endif
+      return vmixctl_map_channels((vmixctl_map_t *)arg);
+      break;
+
 #endif
 
 #if 0

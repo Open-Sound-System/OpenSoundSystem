@@ -459,6 +459,28 @@ create_duplex_controls (int mixer_dev)
 	return create_input_controls (mixer_dev);
 }
 
+static int
+vmix_process_chninfo (vmix_channel_map_t * output, oss_chninfo * input,
+                      int maxchan)
+{
+  int i, val;
+
+  for (i=0; i < sizeof (vmix_channel_map_t); i++)
+    {
+      val = (*input)[i];
+      if ((val <= 0) || (val > maxchan) || (val == i+1))
+       {
+         (*input)[i] = 0;
+         (*output)[i] = i;
+       }
+      else
+       {
+         (*output)[i] = val-1;
+       }
+    }
+  return 0;
+}
+
 /*
  * Audio virtual device routines
  */
@@ -2028,6 +2050,7 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   vmix_mixer_t *mixer=NULL;
   int reattach=0;
   int err;
+  int i;
 
   if (vmix_disabled) /* Vmix not available in the system */
      return OSS_EIO;
@@ -2092,6 +2115,8 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
 #ifndef CONFIG_OSS_VMIX_FLOAT
   mixer->play_engine.outvol -= 3;	/* For overflow protection */
 #endif
+  for (i = 0; i < sizeof (vmix_channel_map_t); i++)
+    mixer->play_engine.channel_order[i] = i;
 
   mixer->masterdev = masterdev;
   mixer->inputdev = inputdev;
@@ -2194,6 +2219,23 @@ vmix_set_master_rate(int masterdev, int rate)
 	mixer->rate = rate;
 
 	return 0;
+}
+
+int
+vmix_set_channel_map (int masterdev, void * map)
+{
+  vmix_mixer_t *mixer;
+
+  if (masterdev < 0 || masterdev >= num_audio_engines)
+    return OSS_ENXIO;
+
+  mixer = audio_engines[masterdev]->vmix_mixer;
+
+  if (mixer == NULL)
+    return OSS_EPERM;
+
+  return vmix_process_chninfo (&mixer->play_engine.channel_order, map,
+                               mixer->play_engine.channels);
 }
 
 int
