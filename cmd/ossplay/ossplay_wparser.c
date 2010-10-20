@@ -70,14 +70,35 @@ typedef struct {
 }
 AiffHeader;
 
+typedef struct {
+  char magic[4];
+  uint16 version;
+  uint16 flags;
+
+  char desc_chunk[4];
+  uint32 desc_length_hi, desc_length_lo;
+  unsigned char speed[8];
+  char format[4];
+  uint32 format_flags;
+  uint32 bytes_per_packet;
+  uint32 frames_per_packet;
+  uint32 channels;
+  uint32 bits;
+
+  char data_chunk[4];
+  uint32 length_hi, length_lo;
+  uint32 edit_count;
+}
+CafHeader;
+
 #pragma pack()
 
 extern FILE *wave_fp;
 
-static int
-bswap (int x)
+static uint32
+bswap (uint32 x)
 {
-  int y = 0;
+  uint32 y = 0;
   unsigned char *a = ((unsigned char *) &x) + 3;
   unsigned char *b = (unsigned char *) &y;
 
@@ -89,10 +110,10 @@ bswap (int x)
   return y;
 }
 
-static short
-bswaps (short x)
+static uint16
+bswaps (uint16 x)
 {
-  short y = 0;
+  uint16 y = 0;
   unsigned char *a = ((unsigned char *) &x) + 1;
   unsigned char *b = (unsigned char *) &y;
 
@@ -122,32 +143,32 @@ write_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
           print_msg (WARNM, "Data size exceeds file format limit!\n");
         if ((datalimit == 0) || (datalimit > U32_MAX - sizeof (WaveHeader)))
           dl = U32_MAX - (U32_MAX % 2) - sizeof (WaveHeader);
+        switch (format) {
+          case AFMT_U8:
+          case AFMT_S16_LE:
+          case AFMT_S24_PACKED:
+          case AFMT_S32_LE:
+            wh.format = LE_SH (1);
+            break;
+          case AFMT_A_LAW:
+            wh.format = LE_SH (6);
+            break;
+          case AFMT_MU_LAW:
+            wh.format = LE_SH (7);
+            break;
+          default:
+            print_msg (ERRORM,
+                       "%s sample format not supported by WAV writer!\n",
+                       sample_format_name (format));
+            return E_FORMAT_UNSUPPORTED;
+        }
+
         memcpy ((char *) &wh.main_chunk, "RIFF", 4);
         wh.length = LE_INT (dl + sizeof (WaveHeader) - 8);
         if (dl % 2) dl--;
         memcpy ((char *) &wh.chunk_type, "WAVE", 4);
         memcpy ((char *) &wh.sub_chunk, "fmt ", 4);
         wh.sc_len = LE_INT (16);
-        switch (format)
-          {
-            case AFMT_A_LAW:
-              wh.format = LE_SH (6);
-              break;
-            case AFMT_MU_LAW:
-              wh.format = LE_SH (7);
-              break;
-            case AFMT_U8:
-            case AFMT_S16_LE:
-            case AFMT_S24_PACKED:
-            case AFMT_S32_LE:
-              wh.format = LE_SH (1);
-              break;
-            default:
-              print_msg (ERRORM,
-                         "%s sample format not supported by WAV writer!\n",
-                         sample_format_name (format));
-              return E_FORMAT_UNSUPPORTED;
-          }
         wh.modus = LE_SH (channels);
         wh.sample_fq = LE_INT (speed);
         wh.block_align = LE_SH (channels * bits / 8);
@@ -183,6 +204,70 @@ write_head (FILE * wave_fp, fctypes_t type, big_t datalimit,
         memcpy ((char *) &ah.comment, "Made by OSSRecord", 18);
         if (fwrite (&ah, sizeof (AuHeader), 1, wave_fp) == 0) return -1;
         } break;
+      case CAF_FILE: {
+        CafHeader cfh;
+        int bits = format2bits (format);
+        uint32 i;
+
+        memcpy ((char *)&cfh.magic, "caff", 4);
+        cfh.version = BE_SH(1);
+        cfh.flags = 0;
+
+        memcpy ((char *)&cfh.desc_chunk, "desc", 4);
+        cfh.desc_length_hi = 0;
+        cfh.desc_length_lo = BE_INT (32);
+        cfh.format_flags = 0;
+        switch (format) {
+          case AFMT_S16_LE:
+          case AFMT_S24_PACKED_LE:
+          case AFMT_S32_LE: cfh.format_flags = BE_INT (2);
+          case AFMT_S8:
+          case AFMT_S16_BE:
+          case AFMT_S24_PACKED_BE:
+          case AFMT_S32_BE:
+            memcpy ((char *)&cfh.format, "lpcm", 4);
+            break;
+          case AFMT_MU_LAW:
+            memcpy ((char *)&cfh.format, "ulaw", 4);
+            break;
+          case AFMT_A_LAW:
+            memcpy ((char *)&cfh.format, "alaw", 4);
+            break;
+          default:
+            print_msg (ERRORM,
+                       "%s sample format not supported by CAF writer!\n",
+                       sample_format_name (format));
+            return E_FORMAT_UNSUPPORTED;
+        }
+        cfh.frames_per_packet = BE_INT (1);
+        cfh.bytes_per_packet = BE_INT (bits / 8 * channels);
+        cfh.channels = BE_INT (channels);
+        cfh.bits = BE_INT (bits);
+
+        /* The method used here is good enough for sane values */
+        memset (cfh.speed, 0, sizeof (cfh.speed));
+        i = 0;
+        while ((1L << (i + 1)) <= speed) i++;
+        cfh.speed[0] = 64; cfh.speed[1] = (i-1) << 4;
+        i = (speed - (1 << i)) << (32-i);
+        cfh.speed[5] = i & 240;
+        cfh.speed[4] = (i >> 4) & 255;
+        cfh.speed[3] = (i >> 12) & 255;
+        cfh.speed[2] = (i >> 20) & 255;
+        cfh.speed[1] |= (i >> 28) & 15;
+
+        memcpy ((char *)&cfh.data_chunk, "data", 4);
+        if ((datalimit == 0) || (datalimit > U32_MAX)) {
+          cfh.length_lo = 0xffffffff;
+          cfh.length_hi = 0xffffffff;
+        } else {
+          cfh.length_lo = BE_INT (datalimit);
+          cfh.length_hi = 0;
+        }
+        cfh.edit_count = 0;
+        if (fwrite (&cfh, sizeof (CafHeader), 1, wave_fp) == 0)
+          return E_ENCODE;
+      } break;
       case AIFF_FILE: {
         AiffHeader afh;
         int bits = format2bits (format);

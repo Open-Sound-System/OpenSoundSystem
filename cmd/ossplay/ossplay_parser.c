@@ -15,24 +15,71 @@
 #define DEC_MAGIC	0x2e736400	/* Really '\0ds.' (for DEC) */
 #define DEC_INV_MAGIC	0x0064732e	/* '\0ds.' upside-down */
 
-/* Magic numbers for file formats based on IFF */
-#define FORM_MAGIC	0x464f524d	/* 'FORM' */
-#define AIFF_MAGIC	0x41494646	/* 'AIFF' */
-#define AIFC_MAGIC	0x41494643	/* 'AIFC' */
-#define _8SVX_MAGIC	0x38535658	/* '8SVX' */
-#define _16SV_MAGIC	0x31365356	/* '16SV' */
-#define MAUD_MAGIC	0x4D415544	/* 'MAUD' */
+/* Magic numbers for .w64 */
+#define riff_GUID	0x2E91CF11
+#define riff_GUID2	0xA5D628DB
+#define riff_GUID3	0x04C10000
 
-/* Magic numbers for .wav files */
-#define RIFF_MAGIC	0x52494646	/* 'RIFF' */
-#define RIFX_MAGIC	0x52494658	/* 'RIFX' */
-#define WAVE_MAGIC	0x57415645	/* 'WAVE' */
+enum {
+  COMM_BIT,
+  SSND_BIT,
+  FVER_BIT
+};
 
-/* Beginning of magic for Creative .voc files */
-#define Crea_MAGIC	0x43726561	/* 'Crea' */
+#define COMM_FOUND (1 << COMM_BIT)
+#define SSND_FOUND (1 << SSND_BIT)
+#define FVER_FOUND (1 << FVER_BIT)
 
-/* Ogg */
-#define OggS_MAGIC      0x4F676753      /* 'OggS' */
+#define H(A, B, C, D) ((A << 24) | (B << 16) | (C << 8) | D)
+
+typedef struct {
+  msadpcm_values_t msadpcm_val;
+  int channels, fd, format, found, speed;
+  fctypes_t type;
+  uint32 chunk_id;
+  big_t cpos, chunk_size, cur_size, fut_size, sound_loc, sound_size, total_size;
+  const char * filename;
+  big_t (* ne_int) (const unsigned char *, int);
+}
+file_t;
+
+typedef int (chunk_parser_t) (uint32, unsigned char *, big_t, file_t *);
+
+enum {
+  CP_STOP_READING = -2,
+  CP_PLAY_NOW,
+  CP_OK
+};
+
+typedef ssize_t (file_read_t) (file_t *, unsigned char *, size_t);
+typedef int (file_init_t) (file_t *, unsigned char *);
+typedef int (file_iterator_t) (file_t *, unsigned char *, int);
+typedef ssize_t (file_seek_t) (file_t *, off_t, int);
+
+typedef enum {
+  R_ZERO_FLAG,
+  READ_NONE,
+  READ_ALL,
+  READ_PART
+}
+read_flag_t;
+
+typedef struct chunk_functions {
+  uint32 id;
+  uint32 d_chunk_size;
+  read_flag_t read_chunk_f;
+  chunk_parser_t * f;
+}
+chunk_functions_t;
+
+typedef struct parser {
+  file_init_t * init;
+  file_read_t * read;
+  file_iterator_t * iterator;
+  chunk_functions_t * perfile;
+  chunk_functions_t * common;
+}
+parser_t;
 
 extern int quiet, verbose, force_fmt;
 extern long seek_byte;
@@ -40,9 +87,87 @@ extern flag from_stdin, raw_file;
 extern off_t (*ossplay_lseek) (int, off_t, int);
 
 static errors_t play_au (dspdev_t *, const char *, int, unsigned char *, int);
-static errors_t play_iff (dspdev_t *, const char *, int, unsigned char *, int);
+static errors_t play_iff (dspdev_t *, const char *, int, unsigned char *, int, parser_t *);
 static errors_t play_voc (dspdev_t *, const char *, int, unsigned char *, int);
 static void print_verbose_fileinfo (const char *, int, int, int, int);
+
+static file_init_t caf_init;
+static file_iterator_t caf_iterator;
+static file_init_t iff_init;
+static file_read_t iff_read;
+static file_iterator_t iff_iterator;
+static chunk_parser_t iff_comment_parse;
+static file_init_t w64_init;
+static file_iterator_t w64_iterator;
+
+static chunk_parser_t _16sv_vhdr_parse;
+static chunk_parser_t _8svx_vhdr_parse;
+static chunk_parser_t aifc_comm_parse;
+static chunk_parser_t aifc_fver_parse;
+static chunk_parser_t aiff_comm_parse;
+static chunk_parser_t aiff_ssnd_parse;
+static chunk_parser_t caf_data_parse;
+static chunk_parser_t caf_desc_parse;
+static chunk_parser_t maud_chan_parse;
+static chunk_parser_t maud_mhdr_parse;
+static chunk_parser_t wave_data_parse;
+static chunk_parser_t wave_disp_parse;
+static chunk_parser_t wave_fmt_parse;
+static chunk_parser_t wave_list_parse;
+
+static chunk_functions_t IFF_common[] = {
+  { H('A', 'N', 'N', 'O'), 0, READ_ALL, &iff_comment_parse },
+  { H('N', 'A', 'M', 'E'), 0, READ_ALL, &iff_comment_parse },
+  { H('(', 'c', ')', ' '), 0, READ_ALL, &iff_comment_parse },
+  { H('A', 'U', 'T', 'H'), 0, READ_ALL, &iff_comment_parse },
+  { 0, 0, READ_NONE, NULL }
+};
+
+static chunk_functions_t AIFF_funcs[] = {
+  { H('C', 'O', 'M', 'M'), 18, READ_ALL, &aiff_comm_parse },
+  { H('S', 'S', 'N', 'D'), 8, READ_PART, &aiff_ssnd_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t AIFC_funcs[] = {
+  { H('C', 'O', 'M', 'M'), 22, READ_ALL, &aifc_comm_parse },
+  { H('S', 'S', 'N', 'D'), 8, READ_PART, &aiff_ssnd_parse },
+  { H('F', 'V', 'E', 'R'), 4, READ_ALL, &aifc_fver_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t WAVE_funcs[] = {
+  { H('f', 'm', 't', ' '), 14, READ_ALL, &wave_fmt_parse },
+  { H('d', 'a', 't', 'a'), 0, READ_NONE, &wave_data_parse },
+  { H('D', 'I', 'S', 'P'), 5, READ_ALL, &wave_disp_parse },
+  { H('L', 'I', 'S', 'T'), 12, READ_ALL, &wave_list_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t _8SVX_funcs[] = {
+  { H('B', 'O', 'D', 'Y'), 0, READ_NONE, &wave_data_parse },
+  { H('V', 'H', 'D', 'R'), 16, READ_ALL, &_8svx_vhdr_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t _16SV_funcs[] = {
+  { H('V', 'H', 'D', 'R'), 14, READ_ALL, &_16sv_vhdr_parse },
+  { H('B', 'O', 'D', 'Y'), 0, READ_NONE, &wave_data_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t MAUD_funcs[] = {
+  { H('M', 'D', 'A', 'T'), 0, READ_NONE, &wave_data_parse },
+  { H('C', 'H', 'A', 'N'), 4, READ_ALL, &maud_chan_parse },
+  { H('M', 'H', 'D', 'R'), 20, READ_ALL, &maud_mhdr_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
+
+static chunk_functions_t CAF_funcs[] = {
+  { H('d', 'e', 's', 'c'), 32, READ_ALL, &caf_desc_parse },
+  { H('d', 'a', 't', 'a'), 4, READ_NONE, &caf_data_parse },
+  { 0, 0, R_ZERO_FLAG, NULL }
+};
 
 #ifdef OGG_SUPPORT
 static errors_t play_ogg (dspdev_t *, const char *, int, unsigned char *, int,
@@ -161,25 +286,37 @@ play_ogg (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
 errors_t
 play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 {
-  int fd;
+  int fd, id;
   ssize_t l, i;
-  unsigned char buf[PLAYBUF_SIZE];
-  const char * suffix;
+  unsigned char buf[P_READBUF_SIZE];
+  const char * bname, * suffix;
   struct stat st;
   errors_t ret = E_OK;
 
-  if (from_stdin)
-    {
-      FILE *fp;
+  parser_t piff = {
+    &iff_init,
+    &iff_read,
+    &iff_iterator,
+    NULL,
+    NULL
+  };
 
-      fp = fdopen(0, "rb");
-      fd = fileno(fp);
-      /*
-       * Use emulation if stdin is not seekable (e.g. on Linux).
-       */
-      if (lseek (fd, 0, SEEK_CUR) == -1) ossplay_lseek = ossplay_lseek_stdin;
-    }
-  else fd = open (filename, O_RDONLY, 0);
+  if (from_stdin) {
+    FILE *fp;
+
+    fp = fdopen(0, "rb");
+    fd = fileno(fp);
+    /*
+     * Use emulation if stdin is not seekable (e.g. on Linux).
+     */
+    if (lseek (fd, 0, SEEK_CUR) == -1) ossplay_lseek = ossplay_lseek_stdin;
+    errno = 0;
+    bname = "-";
+  } else {
+    fd = open (filename, O_RDONLY, 0);
+    bname = filepart (filename);
+  }
+
   if (fd == -1)
     {
       perror_msg (filename);
@@ -193,14 +330,17 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 
   if (raw_file)
     {
-      if (fstat (fd, &st) == -1)
-        {
-          perror_msg (filename);
-          return E_DECODE;
-        }
-      print_msg (NORMALM, "%s: Playing RAW file.\n", filepart (filename));
+      big_t len;
 
-      ret = decode_sound (dsp, fd, st.st_size, DEFAULT_FORMAT,
+      if (fstat (fd, &st) == -1) {
+        perror_msg (filename);
+        len = BIG_SPECIAL;
+      } else {
+        len = st.st_size;
+      }
+      print_msg (NORMALM, "%s: Playing RAW file.\n", bname);
+
+      ret = decode_sound (dsp, fd, len, DEFAULT_FORMAT,
                           DEFAULT_CHANNELS, DEFAULT_SPEED, NULL);
       goto done;
     }
@@ -213,79 +353,98 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 
   if (l == 0)
     {
-      print_msg (ERRORM, "%s is empty file.\n", filepart (filename));
+      print_msg (ERRORM, "%s is empty file.\n", bname);
       goto seekerror;
     }
 
 /*
  * Try to detect the file type
  */
-  switch (be_int (buf, 4))
-    {
-      case SUN_MAGIC:
-      case DEC_MAGIC:
-      case SUN_INV_MAGIC:
-      case DEC_INV_MAGIC:
-        if ((i = read (fd, buf + 12, 12)) == -1)
-          {
-            perror_msg (filename);
-            goto seekerror;
-          }
-        l += i;
-        if (l < 24) break;
-        ret = play_au (dsp, filepart (filename), fd, buf, l);
-        goto done;
-      case Crea_MAGIC:
-        if ((i = read (fd, buf + 12, 7)) == -1)
-          {
-            perror_msg (filename);
-            goto seekerror;
-          }
-        l += i;
-        if ((l < 19) || (memcmp (buf, "Creative Voice File", 19))) break;
-        ret = play_voc (dsp, filepart (filename), fd, buf, l);
-        goto done;
-      case RIFF_MAGIC:
-        if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MS_IMA_ADPCM;
-        ret = play_iff (dsp, filepart (filename), fd, buf, WAVE_FILE);
-        goto done;
-      case RIFX_MAGIC:
-        if ((l < 12) || be_int (buf + 8, 4) != WAVE_MAGIC) break;
-        if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MS_IMA_ADPCM;
-        ret = play_iff (dsp, filepart (filename), fd, buf, WAVE_FILE_BE);
-        goto done;
-      case FORM_MAGIC:
-        if (l < 12) break;
-        switch (be_int (buf + 8, 4))
-          {
-            case AIFF_MAGIC:
-              if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
-              ret = play_iff (dsp, filepart (filename), fd, buf, AIFF_FILE);
-              goto done;
-            case AIFC_MAGIC:
-              if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
-              ret = play_iff (dsp, filepart (filename), fd, buf, AIFC_FILE);
-              goto done;
-            case _8SVX_MAGIC:
-              ret = play_iff (dsp, filepart (filename), fd, buf, _8SVX_FILE);
-              goto done;
-            case _16SV_MAGIC:
-              ret = play_iff (dsp, filepart (filename), fd, buf, _16SV_FILE);
-              goto done;
-            case MAUD_MAGIC:
-              ret = play_iff (dsp, filepart (filename), fd, buf, MAUD_FILE);
-              goto done;
-            default: break;
-          }
-      case OggS_MAGIC:
+  id = be_int (buf, 4);
+  switch (id) {
+    case SUN_MAGIC:
+    case DEC_MAGIC:
+    case SUN_INV_MAGIC:
+    case DEC_INV_MAGIC:
+      if ((i = read (fd, buf + 12, 12)) == -1) {
+        perror_msg (filename);
+        goto seekerror;
+      }
+      l += i;
+      if (l < 24) break;
+      ret = play_au (dsp, bname, fd, buf, l);
+      goto done;
+    case H('C', 'r', 'e', 'a'):
+      if ((i = read (fd, buf + 12, 7)) == -1) {
+        perror_msg (filename);
+        goto seekerror;
+      }
+      l += i;
+      if ((l < 19) || (memcmp (buf, "Creative Voice File", 19))) break;
+      ret = play_voc (dsp, bname, fd, buf, l);
+      goto done;
+    case H('R', 'I', 'F', 'F'):
+    case H('R', 'I', 'F', 'X'):
+      if ((l < 12) || be_int (buf + 8, 4) != H('W', 'A', 'V', 'E')) break;
+      if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MS_IMA_ADPCM;
+      piff.perfile = WAVE_funcs;
+      ret = play_iff (dsp, bname, fd, buf, (id == H('R', 'I', 'F', 'X'))?
+                      WAVE_FILE_BE:WAVE_FILE, &piff);
+      goto done;
+    case H('r', 'i', 'f', 'f'):
+      if ((l < 12) || (read (fd, buf + 12, 4) < 4)) break;
+      if (be_int (buf + 4, 4) != riff_GUID) break;
+      if (be_int (buf + 8, 4) != riff_GUID2) break;
+      if (be_int (buf + 12, 4) != riff_GUID3) break;
+      piff.perfile = WAVE_funcs;
+      piff.iterator = w64_iterator;
+      piff.init = w64_init;
+      ret = play_iff (dsp, bname, fd, buf, W64_FILE, &piff);
+      goto done;
+    case H('F', 'O', 'R', 'M'):
+      if (l < 12) break;
+      piff.common = IFF_common;
+      switch (be_int (buf + 8, 4)) {
+        case H('A', 'I', 'F', 'F'):
+          if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
+          piff.perfile = AIFF_funcs;
+          ret = play_iff (dsp, bname, fd, buf, AIFF_FILE, &piff);
+          goto done;
+        case H('A', 'I', 'F', 'C'):
+          if (force_fmt == AFMT_IMA_ADPCM) force_fmt = AFMT_MAC_IMA_ADPCM;
+          piff.perfile = AIFC_funcs;
+          ret = play_iff (dsp, bname, fd, buf, AIFC_FILE, &piff);
+          goto done;
+        case H('8', 'S', 'V', 'X'):
+          piff.perfile = _8SVX_funcs;
+          ret = play_iff (dsp, bname, fd, buf, _8SVX_FILE, &piff);
+          goto done;
+        case H('1', '6', 'S', 'V'):
+          piff.perfile = _16SV_funcs;
+          ret = play_iff (dsp, bname, fd, buf, _16SV_FILE, &piff);
+          goto done;
+        case H('M', 'A', 'U', 'D'):
+          piff.perfile = MAUD_funcs;
+          ret = play_iff (dsp, bname, fd, buf, MAUD_FILE, &piff);
+          goto done;
+        default: break;
+      }
+      piff.common = NULL;
+      break;
+    case H('c', 'a', 'f', 'f'):
+      piff.init = caf_init;
+      piff.iterator = caf_iterator;
+      piff.perfile = CAF_funcs;
+      ret = play_iff (dsp, bname, fd, buf, CAF_FILE, &piff);
+      goto done;
+    case H('O', 'g', 'g', 'S'):
 #ifdef OGG_SUPPORT
-        ret = play_ogg (dsp, filepart (filename), fd, buf, l, dlt);
-        fd = -1;
-        goto done;
+      ret = play_ogg (dsp, bname, fd, buf, l, dlt);
+      fd = -1;
+      goto done;
 #endif
-      default: break;
-    }
+    default: break;
+  }
 
   ossplay_lseek (fd, 0, SEEK_SET);	/* Start from the beginning */
 
@@ -305,8 +464,7 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 
   if (strcmp (suffix, ".au") == 0 || strcmp (suffix, ".AU") == 0)
     {				/* Raw mu-Law data */
-      print_msg (VERBOSEM, "Playing raw mu-Law file %s\n",
-                 filepart (filename));
+      print_msg (VERBOSEM, "Playing raw mu-Law file %s\n", bname);
 
       ret = decode_sound (dsp, fd, st.st_size, AFMT_MU_LAW, 1, 8000, NULL);
       goto done;
@@ -316,8 +474,7 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
     {
       print_msg (VERBOSEM,
                  "%s: Unknown format. Assuming RAW audio (%d/%d/%d).\n",
-                 filepart (filename), DEFAULT_SPEED, DEFAULT_FORMAT,
-                 DEFAULT_CHANNELS);
+                 bname, DEFAULT_SPEED, DEFAULT_FORMAT, DEFAULT_CHANNELS);
 
       ret = decode_sound (dsp, fd, st.st_size, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                           DEFAULT_SPEED, NULL);
@@ -326,8 +483,7 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 
   if (strcmp (suffix, ".cdr") == 0 || strcmp (suffix, ".CDR") == 0)
     {
-      print_msg (VERBOSEM, "%s: Playing CD-R (cdwrite) file.\n",
-                 filepart (filename));
+      print_msg (VERBOSEM, "%s: Playing CD-R (cdwrite) file.\n", bname);
 
       ret = decode_sound (dsp, fd, st.st_size, AFMT_S16_BE, 2, 44100, NULL);
       goto done;
@@ -336,7 +492,7 @@ play_file (dspdev_t * dsp, const char * filename, dlopen_funcs_t ** dlt)
 
   if (strcmp (suffix, ".raw") == 0 || strcmp (suffix, ".RAW") == 0)
     {
-      print_msg (VERBOSEM, "%s: Playing RAW file.\n", filename);
+      print_msg (VERBOSEM, "%s: Playing RAW file.\n", bname);
 
       ret = decode_sound (dsp, fd, st.st_size, DEFAULT_FORMAT, DEFAULT_CHANNELS,
                           DEFAULT_SPEED, NULL);
@@ -348,7 +504,7 @@ done:
   if (fd != -1) close (fd);
 
 #if 0
-  ioctl (audiofd, SNDCTL_DSP_SYNC, NULL);
+  ioctl (fd, SNDCTL_DSP_SYNC, NULL);
 #endif
   return ret;
 seekerror:
@@ -356,146 +512,19 @@ seekerror:
   return E_DECODE;
 }
 
-/*ARGSUSED*/
+/*
+ * Generalized parser for chunked files, especially IFF based ones - handles
+ * WAV, AIFF, AIFC, CAF, W64, RF64, 8SVX, 16SV and MAUD.
+ */
 static errors_t
 play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
-          int type)
+          int type, parser_t * p)
 {
-/*
- * Generalized IFF parser - handles WAV, AIFF, AIFC, 8SVX, 16SV and MAUD.
- */
-  enum
-  {
-    COMM_BIT,
-    SSND_BIT,
-    FVER_BIT
-  };
-#define COMM_FOUND (1 << COMM_BIT)
-#define SSND_FOUND (1 << SSND_BIT)
-#define FVER_FOUND (1 << FVER_BIT)
+  int ret;
 
-#define LIST_HUNK 0x4C495354
-
-#define FVER_HUNK 0x46564552
-#define COMM_HUNK 0x434F4D4D
-#define SSND_HUNK 0x53534E44
-#define ANNO_HUNK 0x414E4E4F
-#define NAME_HUNK 0x4E414D45
-#define AUTH_HUNK 0x41555448
-#define COPY_HUNK 0x28632920 /* "(c) " */ 
-
-#define VHDR_HUNK 0x56484452
-#define BODY_HUNK 0x424f4459
-#define CHAN_HUNK 0x4348414e
-
-#define MDAT_HUNK 0x4D444154
-#define MHDR_HUNK 0x4D484452
-
-#define alaw_FMT 0x616C6177
-#define ALAW_FMT 0x414C4157
-#define ulaw_FMT 0x756C6177
-#define ULAW_FMT 0x554C4157
-#define sowt_FMT 0x736F7774
-#define twos_FMT 0x74776F73
-#define fl32_FMT 0x666C3332
-#define FL32_FMT 0x464C3332
-#define fl64_FMT 0x666C3634
-#define FL64_FMT 0x464C3634
-#define ima4_FMT 0x696D6134
-#define NONE_FMT 0x4E4F4E45
-#define raw_FMT  0x72617720
-#define in16_FMT 0x696E3136
-#define in24_FMT 0x696E3234
-#define ni24_FMT 0x6E693234
-#define in32_FMT 0x696E3332
-#define ni32_FMT 0x6E693332
-#define _23ni_FMT 0x32336E69
-
-#define fmt_HUNK 0x666D7420
-#define data_HUNK 0x64617461
-#define INFO_HUNK 0x494E464F
-#define DISP_HUNK 0x44495350
-
-#define IARL_HUNK 0x4941524C
-#define IART_HUNK 0x49415254
-#define ICMS_HUNK 0x49434D53
-#define ICMT_HUNK 0x49434D54
-#define ICOP_HUNK 0x49434F50
-#define ICRD_HUNK 0x49435244
-#define IENG_HUNK 0x49454E47
-#define IGNR_HUNK 0x49474E52
-#define IKEY_HUNK 0x494B4559
-#define INAM_HUNK 0x494E414D
-#define IPRD_HUNK 0x49505244
-#define ISBJ_HUNK 0x4953424A
-#define ISFT_HUNK 0x49534654
-#define ISRC_HUNK 0x49535243
-#define ITCH_HUNK 0x49544348
-
-#define READ_MACRO(fd, buf, len) \
-  do { \
-    if (read(fd, buf, len) < len) \
-      { \
-        print_msg (ERRORM, \
-                   "%s: error: cannot read data in chunk (chunk id: " \
-                   "0x%04X).\n", filename, chunk_id); \
-        if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return E_DECODE; \
-      } \
-    chunk_pos += len; \
-   } while(0)
-
-#define ASEEK(fd, offset) \
-  do { \
-    if ((offset != 0) && (ossplay_lseek (fd, offset, SEEK_CUR) == -1)) \
-      { \
-        print_msg (ERRORM, \
-                   "%s: error: cannot seek to end of chunk (chunk id: " \
-                   "0x%04X).\n", filename, chunk_id); \
-        if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return E_DECODE; \
-      } \
-    chunk_pos += offset; \
-  } while (0)
-
-#define AREAD(fd, buf, len) \
-  do { \
-    if (chunk_size < len + chunk_pos) \
-      { \
-        print_msg (ERRORM, \
-                   "%s: error: chunk size is too small (chunk id: 0x%04X).\n", \
-                   filename, chunk_id); \
-        if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta; \
-        else return E_DECODE; \
-      } \
-    READ_MACRO (fd, buf, len); \
-  } while (0)
-
-#define ONLYF(f) \
-  if (!(type & (f))) \
-    { \
-      break; \
-    } \
-
-#define BITS2SFORMAT(endian) \
-  do { \
-    if (force_fmt == 0) switch (bits) \
-      { \
-         case 8: format = AFMT_S8; break; \
-         case 16: format = AFMT_S16_##endian; break; \
-         case 24: format = AFMT_S24_PACKED_##endian; break; \
-         case 32: format = AFMT_S32_##endian; break; \
-         default: format = AFMT_S16_##endian; break; \
-     } break; \
-  } while (0)
-
-  int channels = 1, bits = 8, format, speed = 11025;
-  big_t csize = 12;
-  uint32 chunk_id, chunk_size = 18, chunk_pos, found = 0, offset = 0,
-         sound_loc = 0, sound_size = 0, timestamp, total_size;
-  int (*ne_int) (const unsigned char *p, int l) = be_int;
-
-  msadpcm_values_t msadpcm_val = {
+  big_t rbytes;
+  chunk_functions_t * i, * oi;
+  file_t f = { {
     256, 496, 7, 4, {
       {256, 0},
       {512, -256},
@@ -505,548 +534,92 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
       {460, -208},
       {392, -232} },
     DEFAULT_CHANNELS
-  };
+  } };
 
-  if (type == _8SVX_FILE) format = AFMT_S8;
-  else format = AFMT_S16_BE;
-  if (force_fmt != 0) format = force_fmt;
-  if (type == WAVE_FILE) ne_int = le_int;
+  if (force_fmt != 0) f.format = force_fmt;
+  else f.format = AFMT_S16_LE;
+  f.channels = DEFAULT_CHANNELS;
+  f.speed = DEFAULT_SPEED;
+  f.fd = fd;
+  f.filename = filename;
+  f.cur_size = 12;
+  f.fut_size = 12;
+  f.type = type;
 
-  total_size = ne_int (buf + 4, 4);
+  rbytes = p->init (&f, buf);
+  if (rbytes < 0) return E_DECODE;
   if (verbose > 1)
-    print_msg (NORMALM, "Filelen = %u\n", total_size);
-  do
-    {
-      chunk_pos = 0;
-      if (read (fd, buf, 8) < 8)
-        {
-          print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
-                     filename, csize);
-          if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta;
-          return E_DECODE;
-        }
-      chunk_id = be_int (buf, 4);
-      chunk_size = ne_int (buf + 4, 4);
-      if (verbose > 3)
-        print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size %d\n",
-                   filename, buf[0], buf[1], buf[2], buf[3], chunk_size);
-      if (chunk_size == 0)
-        {
-          print_msg (ERRORM, "%s: Chunk size equals 0 (pos: %u)!\n",
-                     filename, csize);
-          if ((found & SSND_FOUND) && (found & COMM_FOUND)) goto nexta;
-          csize += 8;
-          continue;
-        }
+    print_msg (VERBOSEM, "FORM len = %u\n", f.total_size);
 
-      switch (chunk_id)
-        {
-          /* AIFF / AIFC chunks */
-          case COMM_HUNK:
-            ONLYF (AIFF_FILE | AIFC_FILE);
-            if (found & COMM_FOUND)
-              {
-                print_msg (ERRORM, "%s: error: COMM hunk not singular!\n",
-                           filename);
-                return E_DECODE;
-              }
-            if (type == AIFC_FILE) AREAD (fd, buf, 22);
-            else AREAD (fd, buf, 18);
-            found |= COMM_FOUND;
+  if (p->perfile) oi = p->perfile;
+  else if (p->common) oi = p->common;
+  else return E_DECODE;
+  while (!p->iterator (&f, buf, rbytes)) {
+    for (i = oi; i->id != 0;) {
+      if (i->id != f.chunk_id) {
+        i++;
+        if ((i->id == 0) && (p->common) && (!i->read_chunk_f)) i = p->common;
+        continue;
+      }
+      if (f.chunk_size < i->d_chunk_size) {
+        print_msg (ERRORM, "%c%c%c%c chunk's size (" _PRIbig_t ") is smaller "
+                   "than the expected size (%d)!\n", buf[0], buf[1], buf[2],
+                   buf[3], f.chunk_size, i->d_chunk_size);
+        break;
+      }
+      if (i->read_chunk_f != READ_NONE) {
+        int rlen = (f.chunk_size > P_READBUF_SIZE)?P_READBUF_SIZE:f.chunk_size;
 
-            channels = be_int (buf, 2);
-#if 0
-            num_frames = be_int (buf + 2, 4); /* ossplay doesn't use this */
-#endif
-            bits = be_int (buf + 6, 2);
-            bits += bits % 8;
-            BITS2SFORMAT (BE);
-            {
-              /*
-               * Conversion from IEEE-754 extended 80-bit to long double.
-               * We take some shortcuts which don't affect this application.
-               */
-              int exp;
-              ldouble_t COMM_rate = 0;
+        if ((i->read_chunk_f == READ_PART) && (f.chunk_size >= i->d_chunk_size))
+          rlen = i->d_chunk_size;
+        if ((rlen = p->read (&f, buf, rlen)) < 0) goto nexta;
+        rbytes = rlen;
+      } else {
+        rbytes = f.chunk_size;
+      }
+      if (i->f == NULL) break;
+      ret = i->f (f.chunk_id, buf, rbytes, &f);
+      if (ret == CP_PLAY_NOW) {
+        if ((i->read_chunk_f == READ_NONE) && (i->d_chunk_size))
+          ossplay_lseek (f.fd, i->d_chunk_size, SEEK_CUR);
+        goto stdinext;
+      }
+      if (ret == CP_STOP_READING) goto nexta;
+      if (ret) return ret;
+      break;
+    }
 
-              exp = ((buf[8] & 127) << 8) + buf[9] - 16383;
-#if 0
-              /*
-               * This part of the mantissa will always be resolved to
-               * sub-Hz rates which we don't support anyway.
-               */
-              COMM_rate = (buf[14] << 24) + (buf[15] << 16) +
-                          (buf[16] << 8) + buf[17];
-              COMM_rate /= 1L << 32;
-#endif
-              COMM_rate += ((buf[10] & 127) << 24) + (buf[11] << 16) +
-                           (buf[12] << 8) + buf[13];
-              COMM_rate = ossplay_ldexpl (COMM_rate, exp-31);
-              if (buf[10] & 128)
-                COMM_rate += ossplay_ldexpl (1, exp); /* Normalize bit */
-              if (buf[8] & 128) COMM_rate = -COMM_rate; /* Sign bit */
-              if ((exp == 16384) || (COMM_rate <= 0))
-                {
-                  print_msg (ERRORM, "Invalid sample rate!\n");
-                  return E_DECODE;
-                }
-              speed = COMM_rate;
-            }
-
-            if (type != AIFC_FILE) break;
-            if (force_fmt != 0) break;
-            switch (be_int (buf + 18, 4))
-              {
-                case NONE_FMT: break;
-                case in16_FMT: format = AFMT_S16_BE; break;
-                case in24_FMT: format = AFMT_S24_BE; break;
-                case in32_FMT: format = AFMT_S32_BE; break;
-                case ni24_FMT: format = AFMT_S24_LE; break;
-                case _23ni_FMT:
-                case ni32_FMT: format = AFMT_S32_LE; break;
-                /*
-                 * sowt/tows were intended as 16 bits only, but some recording
-                 * programs misinterpret this. We can try to handle that,
-                 * since complaint programs set the bits field to 16 anyway.
-                 * (See QT doc chap.4 section 3).
-                 */
-                case sowt_FMT: BITS2SFORMAT (LE); break;
-                case twos_FMT: BITS2SFORMAT (BE); break;
-                case raw_FMT: format = AFMT_U8; break;
-                case alaw_FMT:
-                case ALAW_FMT: format = AFMT_A_LAW; break;
-                case ulaw_FMT:
-                case ULAW_FMT: format = AFMT_MU_LAW; break;
-                case ima4_FMT: format = AFMT_MAC_IMA_ADPCM; break;
-                case fl32_FMT:
-                case FL32_FMT: format = AFMT_FLOAT32_BE; break;
-                case fl64_FMT:
-                case FL64_FMT: format = AFMT_DOUBLE64_BE; break;
-                default:
-                  print_msg (ERRORM,
-                           "%s: error: %c%c%c%c compression is not supported\n",
-                           filename, *(buf + 18), *(buf + 19),
-                           *(buf + 20), *(buf + 21));
-                  return E_FORMAT_UNSUPPORTED;
-              }
-            break;
-          case SSND_HUNK:
-            ONLYF (AIFF_FILE | AIFC_FILE);
-            if (found & SSND_FOUND)
-              {
-                print_msg (ERRORM,
-                           "%s: error: SSND hunk not singular!\n", filename);
-                return E_DECODE;
-              }
-            AREAD (fd, buf, 8);
-            found |= SSND_FOUND;
-
-            offset = be_int (buf, 4);
-#if 0
-            block_size = be_int (buf + 4, 4); /* ossplay doesn't use this */
-#endif
-            sound_loc = csize + 16 + offset;
-            sound_size = chunk_size - 8;
-
-            if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
-              goto stdinext;
-            break;
-          case FVER_HUNK:
-            ONLYF (AIFC_FILE);
-            AREAD (fd, buf, 4);
-            timestamp = be_int (buf, 4);
-            /* timestamp = 0xA2805140 for typical AIFF files */
-            found |= FVER_FOUND;
-            break;
-
-          /* 8SVX / 16SV chunks */
-          case VHDR_HUNK:
-            ONLYF (_8SVX_FILE | _16SV_FILE);
-            AREAD (fd, buf, 16);
-            speed = be_int (buf + 12, 2);
-            found |= COMM_FOUND;
-            if ((force_fmt != 0) || (type != _8SVX_FILE)) break;
-            switch (buf[15])
-              {
-                case 0: format = AFMT_S8; break;
-                case 1: format = AFMT_FIBO_DELTA; break;
-                case 2: format = AFMT_EXP_DELTA; break;
-                default:
-                  print_msg (ERRORM, "%s: Unsupported compression %d\n",
-                             filename, buf[15]);
-                  return E_FORMAT_UNSUPPORTED;
-              }
-            break;
-          case data_HUNK: /* WAVE chunk */
-            ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if (verbose > 2)
-              print_msg (NORMALM,  "DATA chunk. Offs = %u, "
-                         "len = %u\n", csize+8, chunk_size);
-            sound_loc = csize + 8;
-          case MDAT_HUNK: /* MAUD chunk */
-          case BODY_HUNK: /* 8SVX/16SV */
-            sound_size = chunk_size;
-            if (chunk_id != data_HUNK) sound_loc = csize + 4;
-            found |= SSND_FOUND;
-            if ((from_stdin) && (ossplay_lseek == ossplay_lseek_stdin))
-              goto stdinext;
-            break;
-          case CHAN_HUNK:
-            /* Used in 8SVX too: http://amigan.1emu.net/reg/8SVX.CHAN.PAN.txt */
-            ONLYF (MAUD_FILE);
-            AREAD (fd, buf, 4);
-            channels = be_int (buf, 4);
-            if (channels > 2)
-              {
-                print_msg (ERRORM, "ossplay doesn't support MAUD format's "
-                           "%d channel configuration\n", channels);
-                return E_CHANNELS_UNSUPPORTED;
-              }
-            break;
-
-          /* MAUD chunks */
-          case MHDR_HUNK:
-            ONLYF (MAUD_FILE);
-            AREAD (fd, buf, 20);
-            bits = be_int (buf + 4, 2);
-            BITS2SFORMAT (BE);
-            if (be_int (buf + 12, 2) == 0)
-              {
-                print_msg (ERRORM, "Invalid rate!\n");
-                return E_DECODE;
-              }
-            speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
-            channels = be_int (buf + 16, 2);
-            found |= COMM_FOUND;
-            if (force_fmt != 0) break;
-            switch (be_int (buf + 18, 2))
-              {
-                case 0: /* NONE */ break;
-                case 2: format = AFMT_A_LAW; break;
-                case 3: format = AFMT_MU_LAW; break;
-                case 6: format = AFMT_IMA_ADPCM; break;
-                default:
-                  print_msg (ERRORM, "%s: format not supported", filename);
-                  return E_FORMAT_UNSUPPORTED;
-              }
-            break;
-
-          /* WAVE chunks */
-          case fmt_HUNK: { unsigned int len, i, x; int wtype = 0x1;
-            ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if (found & COMM_FOUND)
-              {
-                print_msg (ERRORM, "%s: error: fmt hunk not singular!\n",
-                           filename);
-                return E_DECODE;
-              }
-            if (chunk_size > 1024) len = 1024;
-            else len = chunk_size;
-            AREAD (fd, buf, len);
-
-            if (force_fmt == 0) wtype = format = ne_int (buf, 2);
-            if (verbose > 2)
-              print_msg (NORMALM,  "FMT chunk: len = %u, fmt = %#x\n",
-                         chunk_size, format);
-
-            msadpcm_val.channels = channels = ne_int (buf + 2, 2);
-            speed = ne_int (buf + 4, 4);
-#if 0
-            bytes_per_sec = be_int (buf + 8, 4); /* ossplay doesn't use this */
-#endif
-            msadpcm_val.nBlockAlign = ne_int (buf + 12, 2);
-            if (msadpcm_val.nBlockAlign == 0)
-              print_msg (WARNM, "%s: nBlockAlign is 0!\n", filename);
-            msadpcm_val.bits = bits = ne_int (buf + 14, 2);
-
-            if (wtype == 0xFFFE) /* WAVE_FORMAT_EXTINSIBLE */
-              {
-                if (chunk_size < 40)
-                  {
-                    print_msg (ERRORM, "%s: invalid fmt chunk\n", filename);
-                    return E_DECODE;
-                  }
-                /* TODO: parse the rest of WAVE_FORMAT_EXTENSIBLE */
-                format = ne_int (buf + 24, 2);
-              }
-            if (force_fmt == 0) switch (format)
-              {
-                case 0x1: /* WAVE_FORMAT_PCM */
-                  bits += bits % 8;
-                  if (type == WAVE_FILE) BITS2SFORMAT (LE);
-                  else BITS2SFORMAT (BE);
-                  if (bits == 8) format = AFMT_U8;
-                  break;
-                case 0x2: /* WAVE_FORMAT_MS_ADPCM */
-                  format = AFMT_MS_ADPCM;
-                  break;
-                case 0x3: /* WAVE_FORMAT_IEEE_FLOAT */
-                  if (bits == 32) format = AFMT_FLOAT32_LE;
-                  else if (bits == 64) format = AFMT_DOUBLE64_LE;
-                  else
-                    {
-                      print_msg (ERRORM, "%s: Odd number of bits (%d) for "
-                                 "WAVE_FORMAT_IEEE_FLOAT!\n", filename, bits);
-                      return E_FORMAT_UNSUPPORTED;
-                    }
-                   break;
-                case 0x102: /* IBM_FORMAT_ALAW */
-                case 0x6: /* WAVE_FORMAT_ALAW */
-                  format = AFMT_A_LAW;
-                  break;
-                case 0x101: /* IBM_FORMAT_MULAW */
-                case 0x7: /* WAVE_FORMAT_MULAW */
-                  format = AFMT_MU_LAW;
-                  break;
-                case 0x11: /* WAVE_FORMAT_IMA_ADPCM */
-                  if (bits == 4) format = AFMT_MS_IMA_ADPCM;
-                  else if (bits == 3) format = AFMT_MS_IMA_ADPCM_3BITS;
-                  else
-                    {
-                      print_msg (ERRORM, "%s: Invalid number of bits (%d) for "
-                                 "WAVE_FORMAT_IMA_ADPCM!\n", filename, bits);
-                      return E_FORMAT_UNSUPPORTED;
-                    }
-                  break;
-#if 0
-                case 0x50: /* MPEG */
-                case 0x55: /* MPEG 3 */
-#endif
-                default:
-                  print_msg (ERRORM, "%s: Unsupported wave format %#x\n",
-                             filename, format);
-                  return E_FORMAT_UNSUPPORTED;
-              }
-            found |= COMM_FOUND;
-
-            if ((chunk_size < 20) ||
-                ((format != AFMT_MS_ADPCM) &&
-                 (format != AFMT_MS_IMA_ADPCM) &&
-                 (format != AFMT_MS_IMA_ADPCM_3BITS)
-                )
-               ) break;
-            msadpcm_val.wSamplesPerBlock = ne_int (buf + 18, 2);
-            if ((format != AFMT_MS_ADPCM) || (chunk_size < 22)) break;
-            msadpcm_val.wNumCoeff = ne_int (buf + 20, 2);
-            if (msadpcm_val.wNumCoeff > 32) msadpcm_val.wNumCoeff = 32;
-
-            x = 22;
-
-            for (i = 0; (i < msadpcm_val.wNumCoeff) && (x < chunk_size-3); i++)
-              {
-                msadpcm_val.coeff[i].coeff1 = (int16) ne_int (buf + x, 2);
-                x += 2;
-                msadpcm_val.coeff[i].coeff2 = (int16) ne_int (buf + x, 2);
-                x += 2;
-              }
-            msadpcm_val.wNumCoeff = i;
-            } break;
-
-          case LIST_HUNK: {
-            unsigned char * tag;
-            uint32 i, cssize = 4, len, subchunk_id, subchunk_size;
-
-            ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if ((!verbose) || (chunk_size < 12)) break;
-            READ_MACRO (fd, buf, 4);
-            chunk_id = be_int (buf, 4);
-            if (chunk_id != INFO_HUNK) break;
-            do
-              {
-                cssize += 8;
-                if (cssize > chunk_size) break;
-                READ_MACRO (fd, buf, 8);
-                subchunk_id = be_int (buf, 4);
-                subchunk_size = ne_int (buf + 4, 4);
-                if (verbose > 3)
-                  print_msg (VERBOSEM, "%s: Reading subchunk %c%c%c%c, size %d\n",
-                             filename, buf[0], buf[1], buf[2], buf[3],
-                             subchunk_size);
-                if (subchunk_size == 0) break;
-                cssize += subchunk_size;
-                if (cssize > chunk_size) break;
-                switch (subchunk_id)
-                  {
-                    case IARL_HUNK:
-                      print_msg (STARTM, "%s: Archival Location: ", filename);
-                      break;
-                    case IART_HUNK:
-                      print_msg (STARTM, "%s: Artist Name: ", filename);
-                      break;
-                    case ICMS_HUNK:
-                      print_msg (STARTM, "%s: Commissioned: ", filename);
-                      break;
-                    case ICMT_HUNK:
-                      print_msg (STARTM, "%s: Comment: ", filename);
-                      break;
-                    case ICOP_HUNK:
-                      print_msg (STARTM, "%s: Copyright: ", filename);
-                      break;
-                    case ICRD_HUNK:
-                      print_msg (STARTM, "%s: Creation date: ", filename);
-                      break;
-                    case IENG_HUNK:
-                      print_msg (STARTM, "%s: Engineer: ", filename);
-                      break;
-                    case IGNR_HUNK:
-                      print_msg (STARTM, "%s: Genre: ", filename);
-                      break;
-                    case IKEY_HUNK:
-                      print_msg (STARTM, "%s: Keywords: ", filename);
-                      break;
-                    case INAM_HUNK:
-                      print_msg (STARTM, "%s: Name: ", filename);
-                      break;
-                    case IPRD_HUNK:
-                      print_msg (STARTM, "%s: Product: ", filename);
-                      break;
-                    case ISBJ_HUNK:
-                      print_msg (STARTM, "%s: Subject: ", filename);
-                      break;
-                    case ISFT_HUNK:
-                      print_msg (STARTM, "%s: Software: ", filename);
-                      break;
-                    case ISRC_HUNK:
-                      print_msg (STARTM, "%s: Source: ", filename);
-                      break;
-                    case ITCH_HUNK:
-                      print_msg (STARTM, "%s: Technician: ", filename);
-                      break;
-                    default:
-                      ASEEK (fd, subchunk_size + (subchunk_size & 1));
-                      continue;
-                  }
-
-                if (subchunk_size > 1024)
-                  {
-                    READ_MACRO (fd, buf, 1024);
-                    ASEEK (fd, subchunk_size + (subchunk_size & 1) - 1024);
-                    len = 1024;
-                  }
-                else
-                  {
-                    len = subchunk_size + (subchunk_size & 1);
-                    READ_MACRO (fd, buf, len);
-                  }
-
-                tag = buf + len;
-                /*
-                 * According to the spec, all of the above hunks contain ZSTRs,
-                 * so we can safely ignore the last char.
-                 */
-                for (i = 0; i < len-1; i++)
-                  {
-                    if (!isprint (buf[i])) buf[i] = ' ';
-                    else tag = buf + i + 1;
-                  }
-                /* Remove trailing nonprintables */
-                *tag = '\0';
-                print_msg (ENDM, "%s\n", buf);
-               } while (cssize < chunk_size);
-            } break;
-
-          /* Cool Edit can create this chunk. Also some Windows files use it */
-          case DISP_HUNK: {
-            unsigned char * tag;
-            uint32 i, len;
-
-            ONLYF (WAVE_FILE | WAVE_FILE_BE);
-            if ((verbose < 2) || (chunk_size < 4)) break;
-            READ_MACRO (fd, buf, 4);
-            if (ne_int (buf, 4) != 1) break;
-            if (chunk_size > 1028) len = 1024;
-            else len = chunk_size - 4;
-            AREAD (fd, buf, len);
-
-            tag = buf + len;
-            for (i = 0; i < len-1; i++)
-              {
-                if (!isprint (buf[i])) buf[i] = ' ';
-                else tag = buf + i + 1;
-              }
-            *tag = '\0';
-            print_msg (VERBOSEM, "%s: %s\n", filename, buf);
-            } break;
-
-          case NAME_HUNK:
-          case AUTH_HUNK:
-          case ANNO_HUNK:
-          case COPY_HUNK:
-            ONLYF (AIFF_FILE | AIFC_FILE | _8SVX_FILE | _16SV_FILE | MAUD_FILE);
-            if (verbose)
-              {
-                unsigned char * tag;
-                uint32 i, len;
-
-                print_msg (STARTM,  "%s: ", filename);
-                switch (chunk_id)
-                  {
-                    case NAME_HUNK:
-                      print_msg (CONTM, "Name: ");
-                      break;
-                    case AUTH_HUNK:
-                      print_msg (CONTM, "Author: ");
-                      break;
-                    case COPY_HUNK:
-                      print_msg (CONTM, "Copyright: ");
-                      break;
-                    case ANNO_HUNK:
-                      print_msg (CONTM, "Annonations: ");
-                      break;
-                  }
-                if (chunk_size > 1023) len = 1023;
-                else len = chunk_size;
-                AREAD (fd, buf, len);
-
-                tag = buf + len + 1;
-                for (i = 0; i < len; i++)
-                  {
-                    if (!isprint (buf[i])) buf[i] = ' ';
-                    else tag = buf + i + 1;
-                  }
-                *tag = '\0';
-                print_msg (ENDM, "%s\n", buf);
-                break;
-              }
-
-          default:
-            break;
-       }
-
-      csize += chunk_size + (chunk_size & 1) + 8;
-      ASEEK (fd, chunk_size + (chunk_size & 1) - chunk_pos);
-
-    } while (csize < total_size);
+    if ((f.chunk_size >= rbytes) && (f.fut_size < f.total_size))
+      if (ossplay_lseek (f.fd, f.fut_size - f.cur_size - f.cpos, SEEK_CUR) < 0)
+        break;
+    rbytes = 0;
+  }
 
 nexta:
-    if ((found & COMM_FOUND) == 0)
-      {
-        print_msg (ERRORM, "%s: Couldn't find format chunk!\n", filename);
-        return E_DECODE;
-      }
+  if ((f.found & COMM_FOUND) == 0) {
+    print_msg (ERRORM, "%s: Couldn't find format chunk!\n", filename);
+    return E_DECODE;
+  }
 
-    if ((found & SSND_FOUND) == 0)
-      {
-        print_msg (ERRORM, "%s: Couldn't find sound chunk!\n", filename);
-        return E_DECODE;
-      }
+  if ((f.found & SSND_FOUND) == 0) {
+    print_msg (ERRORM, "%s: Couldn't find sound chunk!\n", filename);
+    return E_DECODE;
+  }
 
-    if ((type == AIFC_FILE) && ((found & FVER_FOUND) == 0))
-      print_msg (WARNM, "%s: Couldn't find AIFC FVER chunk.\n", filename);
+  if ((type == AIFC_FILE) && ((f.found & FVER_FOUND) == 0))
+    print_msg (WARNM, "%s: Couldn't find AIFC FVER chunk.\n", filename);
 
-    if (ossplay_lseek (fd, sound_loc, SEEK_SET) == -1)
-      {
-        perror_msg (filename);
-        print_msg (ERRORM, "Can't seek in file\n");
-        return E_DECODE;
-      }
+  if (ossplay_lseek (f.fd, f.sound_loc, SEEK_SET) == -1) {
+    perror_msg (filename);
+    return E_DECODE;
+  }
 
 stdinext:
   if (verbose)
-    print_verbose_fileinfo (filename, type, format, channels, speed);
+    print_verbose_fileinfo (filename, type, f.format, f.channels, f.speed);
 
-  return decode_sound (dsp, fd, sound_size, format, channels, speed,
-                       (void *)&msadpcm_val);
+  return decode_sound (dsp, fd, f.sound_size, f.format, f.channels, f.speed,
+                       (void *)&(f.msadpcm_val));
 }
 
 /*ARGSUSED*/
@@ -1059,22 +632,22 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
   uint32 fmt = 0, i, p = 24, an_len = 0;
 
   p = be_int (hdr + 4, 4);
-  if (memcmp (hdr + 8, "\xFF\xFF\xFF\xFF", 4))
-    filelen = be_int (hdr + 8, 4);
-  else
-    filelen = BIG_SPECIAL;
   fmt = be_int (hdr + 12, 4);
   speed = be_int (hdr + 16, 4);
   channels = be_int (hdr + 20, 4);
+  if (memcmp (hdr + 8, "\xFF\xFF\xFF\xFF", 4)) {
+    filelen = be_int (hdr + 8, 4);
+    if (verbose > 1)
+      print_msg (VERBOSEM, "%s: Filelen: " _PRIbig_t "\n", filename, filelen);
+  } else {
+    struct stat st;
 
-  if (verbose > 1)
-    {
-      if (filelen == BIG_SPECIAL)
-        print_msg (NORMALM, "%s: Filelen: unspecified\n", filename);
-      else
-        print_msg (NORMALM, "%s: Filelen: %u\n", filename, filelen);
-    }
-  if (verbose > 2) print_msg (NORMALM, "%s: Offset: %u\n", filename, p);
+    if (from_stdin || (fstat (fd, &st) == -1)) filelen = BIG_SPECIAL;
+    else filelen = st.st_size - 24 - p;
+    if (verbose > 1)
+      print_msg (VERBOSEM, "%s: Filelen: unspecified\n", filename);
+  }
+  if (verbose > 2) print_msg (VERBOSEM, "%s: Offset: %u\n", filename, p);
 
   if (force_fmt == 0) switch (fmt)
     {
@@ -1147,7 +720,7 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
               else tag = hdr + i + 1;
             }
           *tag = '\0';
-          print_msg (NORMALM, "%s: Annotations: %s\n", filename, hdr);
+          print_msg (VERBOSEM, "%s: Annotations: %s\n", filename, hdr);
         }
     }
 
@@ -1235,7 +808,7 @@ play_voc (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
       blklen = len = le_int (buf, 3);
 
       if (verbose > 2)
-	print_msg (NORMALM, "%s: %0x: Block type %d, len %d\n",
+	print_msg (VERBOSEM, "%s: %0x: Block type %d, len %d\n",
 		   filename, data_offs, block_type, len);
       switch (block_type)
 	{
@@ -1388,6 +961,8 @@ print_verbose_fileinfo (const char * filename, int type, int format,
         print_msg (VERBOSEM, "Playing AIFC file %s, ", filename); break;
       case AIFF_FILE:
         print_msg (VERBOSEM, "Playing AIFF file %s, ", filename); break;
+      case CAF_FILE:
+        print_msg (VERBOSEM, "Playing CAF file %s, ", filename); break;
       case AU_FILE:
         print_msg (VERBOSEM, "Playing AU file %s, ", filename); break;
       case _8SVX_FILE:
@@ -1396,6 +971,8 @@ print_verbose_fileinfo (const char * filename, int type, int format,
         print_msg (VERBOSEM, "Playing 16SV file %s, ", filename); break;
       case MAUD_FILE:
         print_msg (VERBOSEM, "Playing MAUD file %s, ", filename); break;
+      case W64_FILE:
+        print_msg (VERBOSEM, "Playing W64 file %s, ", filename); break;
       case OGG_FILE:
         print_msg (VERBOSEM, "Playing OGG file %s, ", filename); break;
     }
@@ -1441,4 +1018,803 @@ print_verbose_fileinfo (const char * filename, int type, int format,
        case AFMT_EXP_DELTA: fmt = "exponential delta"; break;
     }
   print_msg (VERBOSEM, "%s/%s/%d Hz\n", fmt, chn, speed);
+}
+
+static int
+iff_init (file_t * f, unsigned char * buf)
+{
+  struct stat st;
+
+  if (f->type != WAVE_FILE) f->ne_int = be_int;
+  else f->ne_int = le_int;
+  if (f->type == _8SVX_FILE) f->format = AFMT_S8;
+  else if (f->type == WAVE_FILE) f->format = AFMT_S16_LE;
+  else f->format = AFMT_S16_BE;
+  f->total_size = f->ne_int (buf + 4, 4) + 8;
+
+  if (from_stdin) return 0;
+  fstat (f->fd, &st);
+  if (st.st_size < f->total_size) {
+    f->total_size = st.st_size;
+    print_msg (NOTIFYM, "%s: File size is smaller than the form size!\n",
+               f->filename);
+  }
+  return 0;
+}
+
+static ssize_t
+iff_read (file_t * f, unsigned char * buf, size_t l)
+{
+  ssize_t ret;
+
+  if (l > P_READBUF_SIZE) l = P_READBUF_SIZE;
+  if ((ret = read (f->fd, buf, l)) < l) return CP_STOP_READING;
+  f->cpos += ret;
+  return ret;
+}
+
+#if 0
+static ssize_t
+iff_seek (file_t * f, off_t off, int flags)
+{
+  off_t l;
+
+  /* We only do SEEK_CUR since we want to be able to stream from stdin */
+  if (flags != SEEK_CUR) return -1;
+  if (off <= 0) return 0;
+
+  l = ossplay_lseek (f->fd, off, flags);
+  return l;
+}
+#endif
+
+static int
+iff_iterator (file_t * f, unsigned char * buf, int l)
+{
+  f->cur_size = f->fut_size + 8;
+  if (f->cur_size >= f->total_size) return 1;
+
+  if (read (f->fd, buf, 8) < 8) {
+    print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return E_DECODE;
+  }
+  f->chunk_id = be_int (buf, 4);
+  f->chunk_size = f->ne_int (buf + 4, 4);
+  f->cpos = 0;
+  f->fut_size += f->chunk_size + (f->chunk_size & 1) + 8;
+
+  if (verbose > 3)
+    print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size %d, pos %d, next %d\n",
+               f->filename, buf[0], buf[1], buf[2], buf[3], f->chunk_size,
+               f->cur_size - 8, f->fut_size);
+
+  if (f->chunk_size == 0) {
+    print_msg (NOTIFYM, "%s: Chunk size equals 0 (pos: %u)!\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return iff_iterator (f, buf, l);
+  }
+
+  return 0;
+}
+
+static int
+iff_comment_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  unsigned char * tag;
+  uint32 i;
+
+  if (!verbose) return 0;
+
+  print_msg (STARTM,  "%s: ", f->filename);
+  switch (id) {
+    case H('N', 'A', 'M', 'E'):
+      print_msg (CONTM, "Name: ");
+      break;
+    case H('A', 'U', 'T', 'H'):
+      print_msg (CONTM, "Author: ");
+      break;
+    case H('(', 'c', ')', ' '):
+      print_msg (CONTM, "Copyright: ");
+      break;
+    case H('A', 'N', 'N', 'O'):
+      print_msg (CONTM, "Annonations: ");
+      break;
+    /* Should never be reached */
+    default: return 0;
+  }
+
+  tag = buf + len + 1;
+  for (i = 0; i < len; i++) {
+    if (!isprint (buf[i])) buf[i] = ' ';
+    else tag = buf + i + 1;
+  }
+  *tag = '\0';
+  print_msg (ENDM, "%s\n", buf);
+  return 0;
+}
+
+#define BITS2SFORMAT(endian) \
+  do { \
+    if (force_fmt == 0) switch (bits) \
+      { \
+         case 8: f->format = AFMT_S8; break; \
+         case 16: f->format = AFMT_S16_##endian; break; \
+         case 24: f->format = AFMT_S24_PACKED_##endian; break; \
+         case 32: f->format = AFMT_S32_##endian; break; \
+         default: f->format = AFMT_S16_##endian; break; \
+     } break; \
+  } while (0)
+
+static int
+aiff_comm_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  int bits;
+
+  f->channels = be_int (buf, 2);
+#if 0
+  num_frames = be_int (buf + 2, 4); /* ossplay doesn't use this */
+#endif
+  bits = be_int (buf + 6, 2);
+  bits += bits % 8;
+  f->msadpcm_val.bits = bits;
+  BITS2SFORMAT (BE);
+  {
+    /*
+     * Conversion from SANE's IEEE-754 extended 80-bit to long double.
+     * We take some shortcuts which don't affect this application.
+     * See http://www.mactech.com/articles/mactech/Vol.06/06.01/SANENormalized/
+     * for format into.
+     */
+    int exp;
+    ldouble_t COMM_rate = 0;
+
+    exp = ((buf[8] & 127) << 8) + buf[9] - 16383;
+#if 1
+    /*
+     * This part of the mantissa will typically be resolved to
+     * sub-Hz rates which we don't support anyway.
+     */
+    COMM_rate = (buf[14] << 24) + (buf[15] << 16) +
+                (buf[16] << 8) + buf[17];
+    COMM_rate /= 1L << 32;
+#endif
+    COMM_rate += ((buf[10] & 127) << 24) + (buf[11] << 16) +
+                 (buf[12] << 8) + buf[13];
+    COMM_rate = ossplay_ldexpl (COMM_rate, exp-31);
+    if (buf[10] & 128)
+      COMM_rate += ossplay_ldexpl (1, exp); /* Normalize bit */
+    if (buf[8] & 128) COMM_rate = -COMM_rate; /* Sign bit */
+    if ((exp == 16384) || (COMM_rate <= 0)) {
+      print_msg (ERRORM, "Invalid sample rate!\n");
+      return E_DECODE;
+    }
+    f->speed = COMM_rate;
+  }
+  f->found |= COMM_FOUND;
+  return 0;
+}
+
+static int
+aifc_comm_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  int ret, bits;
+
+  if ((ret = aiff_comm_parse (id, buf, len, f))) return ret;
+
+  bits = f->msadpcm_val.bits;
+  f->msadpcm_val.bits = 0;
+
+  if ((force_fmt != 0) || (len < 22)) return 0;
+  switch (be_int (buf + 18, 4)) {
+    case H('N', 'O', 'N', 'E'): break;
+    case H('i', 'n', '1', '6'): f->format = AFMT_S16_BE; break;
+    case H('i', 'n', '2', '4'): f->format = AFMT_S24_BE; break;
+    case H('i', 'n', '3', '2'): f->format = AFMT_S32_BE; break;
+    case H('n', 'i', '2', '4'): f->format = AFMT_S24_LE; break;
+    case H('2', '3', 'n', 'i'):
+    case H('n', 'i', '3', '2'): f->format = AFMT_S32_LE; break;
+    /*
+     * sowt/tows were intended as 16 bits only, but some recording
+     * programs misinterpret this. We can try to handle that,
+     * since complaint programs set the bits field to 16 anyway.
+     * (See QT doc chap.4 section 3).
+     */
+    case H('s', 'o', 'w', 't'): BITS2SFORMAT (LE); break;
+    case H('t', 'w', 'o', 's'): BITS2SFORMAT (BE); break;
+    case H('r', 'a', 'w', ' '): f->format = AFMT_U8; break;
+    case H('a', 'l', 'a', 'w'):
+    case H('A', 'L', 'A', 'W'): f->format = AFMT_A_LAW; break;
+    case H('u', 'l', 'a', 'w'):
+    case H('U', 'L', 'A', 'W'): f->format = AFMT_MU_LAW; break;
+    case H('i', 'm', 'a', '4'): f->format = AFMT_MAC_IMA_ADPCM; break;
+    case H('f', 'l', '3', '2'):
+    case H('F', 'L', '3', '2'): f->format = AFMT_FLOAT32_BE; break;
+    case H('f', 'l', '6', '4'):
+    case H('F', 'L', '6', '4'): f->format = AFMT_DOUBLE64_BE; break;
+    default:
+      print_msg (ERRORM,
+               "%s: error: %c%c%c%c compression is not supported\n",
+               f->filename, *(buf + 18), *(buf + 19),
+               *(buf + 20), *(buf + 21));
+      return E_FORMAT_UNSUPPORTED;
+  }
+  return 0;
+}
+
+static int
+aiff_ssnd_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  uint32 offset;
+
+  if (f->found & SSND_FOUND) {
+    print_msg (ERRORM, "%s: error: SSND hunk not singular!\n", f->filename);
+    return E_DECODE;
+  }
+  f->found |= SSND_FOUND;
+
+  offset = be_int (buf, 4);
+#if 0
+  block_size = be_int (buf + 4, 4); /* ossplay doesn't use this */
+#endif
+  f->sound_loc = f->cur_size + 8 + offset;
+  f->sound_size = f->chunk_size - 8;
+  if (verbose > 2)
+    print_msg (VERBOSEM,  "DATA chunk. Offs = " _PRIbig_t ", len = " _PRIbig_t
+               "\n", f->sound_loc, f->sound_size);
+
+  if (from_stdin) return CP_PLAY_NOW;
+  return 0;
+}
+
+static int
+aifc_fver_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  uint32 timestamp = be_int (buf, 4);
+  if (timestamp != 0xA2805140)
+    print_msg (WARNM, "%s: Timestamp doesn't match AIFC v1 timestamps!\n",
+               f->filename);
+  f->found |= FVER_FOUND;
+  return 0;
+}
+
+static int
+_8svx_vhdr_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  f->speed = be_int (buf + 12, 2);
+  f->found |= COMM_FOUND;
+  if (force_fmt != 0) return 0;
+  switch (buf[15]) {
+    case 0: f->format = AFMT_S8; break;
+    case 1: f->format = AFMT_FIBO_DELTA; break;
+    case 2: f->format = AFMT_EXP_DELTA; break;
+    default:
+      print_msg (ERRORM, "%s: Unsupported compression %d\n",
+                 f->filename, buf[15]);
+      return E_FORMAT_UNSUPPORTED;
+  }
+  return 0;
+}
+
+static int
+_16sv_vhdr_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  f->speed = be_int (buf + 12, 2);
+  f->found |= COMM_FOUND;
+  if (force_fmt != 0) f->format = AFMT_S16_BE;
+  return 0;
+}
+
+static int
+maud_chan_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  f->channels = be_int (buf, 4);
+  if (f->channels > 2) {
+    print_msg (ERRORM, "ossplay doesn't support MAUD format's "
+               "%d channel configuration\n", f->channels);
+    return E_CHANNELS_UNSUPPORTED;
+  }
+  return 0;
+}
+
+static int
+maud_mhdr_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  int bits = be_int (buf + 4, 2);
+
+  BITS2SFORMAT (BE);
+
+  if (be_int (buf + 12, 2) == 0) {
+    print_msg (ERRORM, "Invalid rate!\n");
+    return E_DECODE;
+  }
+  f->speed = be_int (buf + 8, 4) / be_int (buf + 12, 2);
+  f->channels = be_int (buf + 16, 2);
+  f->found |= COMM_FOUND;
+
+  if (force_fmt != 0) return 0;
+  switch (be_int (buf + 18, 2)) {
+    case 0: /* NONE */ break;
+    case 2: f->format = AFMT_A_LAW; break;
+    case 3: f->format = AFMT_MU_LAW; break;
+    case 6: f->format = AFMT_IMA_ADPCM; break;
+    default:
+      print_msg (ERRORM, "%s: format not supported", f->filename);
+      return E_FORMAT_UNSUPPORTED;
+  }
+
+  return 0;
+}
+
+static int
+wave_data_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  if (f->found & SSND_FOUND) {
+    print_msg (ERRORM, "%s: error: SSND hunk not singular!\n", f->filename);
+    return E_DECODE;
+  }
+
+  f->sound_loc = f->cur_size;
+  f->sound_size = f->chunk_size;
+  f->found |= SSND_FOUND;
+  if (verbose > 2)
+    print_msg (VERBOSEM,  "DATA chunk. Offs = " _PRIbig_t ", len = " _PRIbig_t
+               "\n", f->sound_loc, f->sound_size);
+
+  if (from_stdin) return CP_PLAY_NOW;
+  return 0;
+}
+
+/* Cool Edit can create this chunk. Also some Windows files use it */
+static int
+wave_disp_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  unsigned char * tag;
+  int i;
+
+  if (verbose < 2) return 0;
+  if (f->ne_int (buf, 4) != 1) return 0;
+
+  buf += 4;
+  tag = buf + len;
+  for (i = 0; i < len-1; i++)
+    {
+      if (!isprint (buf[i])) buf[i] = ' ';
+      else tag = buf + i + 1;
+    }
+  *tag = '\0';
+  print_msg (VERBOSEM, "%s: %s\n", f->filename, buf);
+  return 0;
+}
+
+static int
+wave_list_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  unsigned char * sbuf = buf + 4, * tag;
+  int cssize = 4, i, slen = 4, subchunk_size;
+  uint32 chunk_id, subchunk_id;
+
+  if (!verbose) return 0;
+  chunk_id = be_int (buf, 4);
+  if (chunk_id != H('I', 'N', 'F', 'O')) return 0;
+  do {
+    subchunk_id = be_int (sbuf, 4);
+    subchunk_size = f->ne_int (sbuf + 4, 4);
+    if (verbose > 3)
+      print_msg (VERBOSEM, "%s: Reading subchunk %c%c%c%c, size %d\n",
+                 f->filename, sbuf[0], sbuf[1], sbuf[2], sbuf[3],
+                 subchunk_size);
+    if (subchunk_size == 0) return 0;
+    cssize += subchunk_size;
+    if (cssize > len) return 0;
+    sbuf += 8;
+    slen = subchunk_size + (subchunk_size & 1);
+    switch (subchunk_id) {
+      case H('I', 'A', 'R', 'L'):
+        print_msg (STARTM, "%s: Archival Location: ", f->filename);
+        break;
+      case H('I', 'A', 'R', 'T'):
+        print_msg (STARTM, "%s: Artist Name: ", f->filename);
+        break;
+      case H('I', 'C', 'M', 'S'):
+        print_msg (STARTM, "%s: Commissioned: ", f->filename);
+        break;
+      case H('I', 'C', 'M', 'T'):
+        print_msg (STARTM, "%s: Comment: ", f->filename);
+        break;
+      case H('I', 'C', 'O', 'P'):
+        print_msg (STARTM, "%s: Copyright: ", f->filename);
+        break;
+      case H('I', 'C', 'R', 'D'):
+        print_msg (STARTM, "%s: Creation date: ", f->filename);
+        break;
+      case H('I', 'E', 'N', 'G'):
+        print_msg (STARTM, "%s: Engineer: ", f->filename);
+        break;
+      case H('I', 'G', 'N', 'R'):
+        print_msg (STARTM, "%s: Genre: ", f->filename);
+        break;
+      case H('I', 'K', 'E', 'Y'):
+        print_msg (STARTM, "%s: Keywords: ", f->filename);
+        break;
+      case H('I', 'N', 'A', 'M'):
+        print_msg (STARTM, "%s: Name: ", f->filename);
+        break;
+      case H('I', 'P', 'R', 'D'):
+        print_msg (STARTM, "%s: Product: ", f->filename);
+        break;
+      case H('I', 'S', 'B', 'J'):
+        print_msg (STARTM, "%s: Subject: ", f->filename);
+        break;
+      case H('I', 'S', 'F', 'T'):
+        print_msg (STARTM, "%s: Software: ", f->filename);
+        break;
+      case H('I', 'S', 'R', 'C'):
+        print_msg (STARTM, "%s: Source: ", f->filename);
+        break;
+      case H('I', 'T', 'C', 'H'):
+        print_msg (STARTM, "%s: Technician: ", f->filename);
+        break;
+      default:
+        sbuf += slen;
+        continue;
+    }
+
+    tag = buf + slen;
+    /*
+     * According to the spec, all of the above hunks contain ZSTRs,
+     * so we can safely ignore the last char.
+     */
+    for (i = 0; i < slen-1; i++) {
+      if (!isprint (sbuf[i])) sbuf[i] = ' ';
+      else tag = sbuf + i + 1;
+    }
+    /* Remove trailing nonprintables */
+    *tag = '\0';
+    print_msg (ENDM, "%s\n", sbuf);
+    sbuf += slen;
+    cssize += 8;
+  } while (cssize < len);
+
+  return 0;
+}
+
+static int
+wave_fmt_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  unsigned int bits, i, x;
+  int wtype = 0x1;
+
+  if (f->found & COMM_FOUND) {
+    print_msg (ERRORM, "%s: error: fmt hunk not singular!\n",
+               f->filename);
+    return E_DECODE;
+  }
+
+  if (force_fmt == 0) wtype = f->format = f->ne_int (buf, 2);
+  if (verbose > 2)
+    print_msg (VERBOSEM,  "FMT chunk: len = %u, fmt = %#x\n",
+               len, f->format);
+
+  f->msadpcm_val.channels = f->channels = f->ne_int (buf + 2, 2);
+  f->speed = f->ne_int (buf + 4, 4);
+#if 0
+  bytes_per_sec = be_int (buf + 8, 4); /* ossplay doesn't use this */
+#endif
+  f->msadpcm_val.nBlockAlign = f->ne_int (buf + 12, 2);
+  if (f->msadpcm_val.nBlockAlign == 0)
+    print_msg (WARNM, "%s: nBlockAlign is 0!\n", f->filename);
+  f->msadpcm_val.bits = bits = f->ne_int (buf + 14, 2);
+
+  if (wtype == 0xFFFE) { /* WAVE_FORMAT_EXTINSIBLE */
+    if (len < 40) {
+      print_msg (ERRORM, "%s: invalid fmt chunk\n", f->filename);
+      return E_DECODE;
+    }
+      /* TODO: parse the rest of WAVE_FORMAT_EXTENSIBLE */
+    f->format = f->ne_int (buf + 24, 2);
+  }
+  if (force_fmt == 0) switch (f->format) {
+    case 0x1: /* WAVE_FORMAT_PCM */
+      bits += bits % 8;
+      if (f->type == WAVE_FILE_BE) BITS2SFORMAT (BE);
+      else BITS2SFORMAT (LE);
+      if (bits == 8) f->format = AFMT_U8;
+      break;
+    case 0x2: /* WAVE_FORMAT_MS_ADPCM */
+      f->format = AFMT_MS_ADPCM;
+      break;
+    case 0x3: /* WAVE_FORMAT_IEEE_FLOAT */
+      if (bits == 32) f->format = AFMT_FLOAT32_LE;
+      else if (bits == 64) f->format = AFMT_DOUBLE64_LE;
+      else {
+        print_msg (ERRORM, "%s: Odd number of bits (%d) for "
+                   "WAVE_FORMAT_IEEE_FLOAT!\n", f->filename, bits);
+        return E_FORMAT_UNSUPPORTED;
+      }
+      break;
+    case 0x102: /* IBM_FORMAT_ALAW */
+    case 0x6: /* WAVE_FORMAT_ALAW */
+      f->format = AFMT_A_LAW;
+      break;
+    case 0x101: /* IBM_FORMAT_MULAW */
+    case 0x7: /* WAVE_FORMAT_MULAW */
+      f->format = AFMT_MU_LAW;
+      break;
+    case 0x11: /* WAVE_FORMAT_IMA_ADPCM */
+      if (bits == 4) f->format = AFMT_MS_IMA_ADPCM;
+      else if (bits == 3) f->format = AFMT_MS_IMA_ADPCM_3BITS;
+      else {
+        print_msg (ERRORM, "%s: Invalid number of bits (%d) for "
+                   "WAVE_FORMAT_IMA_ADPCM!\n", f->filename, bits);
+        return E_FORMAT_UNSUPPORTED;
+      }
+      break;
+#if 0
+    case 0x31: /* GSM 06.10 */
+    case 0x50: /* MPEG */
+    case 0x55: /* MPEG 3 */
+#endif
+    default:
+      print_msg (ERRORM, "%s: Unsupported wave format %#x\n",
+                 f->filename, f->format);
+      return E_FORMAT_UNSUPPORTED;
+  }
+  f->found |= COMM_FOUND;
+
+  if ((len < 20) ||
+      ((f->format != AFMT_MS_ADPCM) &&
+       (f->format != AFMT_MS_IMA_ADPCM) &&
+       (f->format != AFMT_MS_IMA_ADPCM_3BITS)
+      )
+     ) return 0;
+  f->msadpcm_val.wSamplesPerBlock = f->ne_int (buf + 18, 2);
+  if ((f->format != AFMT_MS_ADPCM) || (len < 22)) return 0;
+  f->msadpcm_val.wNumCoeff = f->ne_int (buf + 20, 2);
+  if (f->msadpcm_val.wNumCoeff > 32) f->msadpcm_val.wNumCoeff = 32;
+
+  x = 22;
+
+  for (i = 0; (i < f->msadpcm_val.wNumCoeff) && (x < len-3); i++) {
+    f->msadpcm_val.coeff[i].coeff1 = (int16) f->ne_int (buf + x, 2);
+    x += 2;
+    f->msadpcm_val.coeff[i].coeff2 = (int16) f->ne_int (buf + x, 2);
+    x += 2;
+  }
+  f->msadpcm_val.wNumCoeff = i;
+  return 0;
+}
+
+static int
+caf_init (file_t * f, unsigned char * buf)
+{
+  struct stat st;
+
+  memcpy (buf, buf+8, 4);
+  if (from_stdin) {
+    f->total_size = BIG_SPECIAL;
+    return 4;
+  }
+
+  fstat (f->fd, &st);
+  f->total_size = st.st_size;
+  return 4;
+}
+
+static int
+caf_iterator (file_t * f, unsigned char * buf, int l)
+{
+  f->cur_size = f->fut_size + 12 - l;
+  if (f->cur_size >= f->total_size) return 1;
+
+  if (read (f->fd, buf + l, 12 - l) < 12 - l) {
+    print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return E_DECODE;
+  }
+  f->chunk_id = be_int (buf, 4);
+  f->chunk_size = be_int (buf + 4, 8);
+  f->cpos = 0;
+  f->fut_size += f->chunk_size + (f->chunk_size & 1) + 12 - l;
+
+  if (verbose > 3)
+    print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size %d, pos %d\n",
+               f->filename, buf[0], buf[1], buf[2], buf[3], f->chunk_size,
+               f->cur_size - 12);
+
+  if (f->chunk_size == 0) {
+    print_msg (NOTIFYM, "%s: Chunk size equals 0 (pos: %u)!\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return caf_iterator (f, buf, l);
+  }
+
+  return 0;
+}
+
+static int
+caf_data_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  if (f->found & SSND_FOUND) {
+    print_msg (ERRORM, "%s: error: SSND hunk not singular!\n", f->filename);
+    return E_DECODE;
+  }
+
+#if 0
+  uint32 editcount = be_int (buf, 4);
+#endif
+  f->sound_loc = f->cur_size + 4;
+  f->sound_size = f->chunk_size - 4;
+  f->found |= SSND_FOUND;
+
+  if (verbose > 2)
+    print_msg (VERBOSEM,  "DATA chunk. Offs = " _PRIbig_t ", len = " _PRIbig_t
+               "\n", f->sound_loc, f->sound_size);
+  if (!memcmp (buf + 4, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 8)) {
+    if (from_stdin) f->sound_size = BIG_SPECIAL;
+  /*
+   * CAF spec requires data chunks with -1 size to be last in file,
+   * so we're allowed to do the calculation below.
+   */
+    else f->sound_size = f->total_size - f->sound_loc;
+    return CP_PLAY_NOW;
+  }
+
+  if (from_stdin) return CP_PLAY_NOW;
+  return 0;
+}
+
+static int
+caf_desc_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
+{
+  int format;
+  uint32 bits, bytes_per_packet, flags, frames_per_packet;
+
+  {
+    /*
+     * Conversion from IEEE-754 extended 64-bit to double.
+     * We take some shortcuts which don't affect this application.
+     */
+    int exp;
+    double rate = 0;
+
+    exp = ((buf[0] & 127) << 4) + ((buf[1] & 240) >> 4) - 1023;
+#if 1
+   /*
+    * This part of the mantissa will typically be resolved to
+    * sub-Hz rates which we don't support anyway. We can also
+    * shave a few bits from buf[3] (buf[3] & 224 will do) and
+    * still get the same effect.
+    */
+    rate = (buf[4] << 24) + (buf[5] << 16) + (buf[6] << 8) +
+            buf[7];
+    rate /= 1L << 32;
+#endif
+    rate += ((buf[1] & 15) << 16) + (buf[2] << 8) + buf[3];
+    rate = ossplay_ldexpl (rate, exp-20);
+    if (exp != -1023)
+      rate += ossplay_ldexpl (1, exp); /* Normalize */
+    if (buf[0] & 128) rate = -rate; /* Sign bit */
+    if ((exp == 1024) || (rate <= 0)) {
+      print_msg (ERRORM, "%s: Invalid sample rate!\n", f->filename);
+      return E_DECODE;
+    }
+    f->speed = rate;
+  }
+
+  format = be_int (buf + 8, 4);
+  flags = be_int (buf + 12, 4);
+  bytes_per_packet = be_int (buf + 16, 4);
+  frames_per_packet = be_int (buf + 20, 4);
+  f->channels = be_int (buf + 24, 4);
+  bits = be_int (buf + 28, 4);
+  f->found |= COMM_FOUND;
+  if (force_fmt != 0) return 0;
+
+#define FLCHECK(fmt) do { \
+  f->format = (flags & 2)?AFMT_##fmt##_LE:AFMT_##fmt##_BE; \
+} while(0)
+
+  f->format = 0;
+  switch (format) {
+    case H('l', 'p', 'c', 'm'):
+      if ((flags & 1) && (bits != 32) && (bits != 64)) break;
+      switch (bits) {
+        case 8:
+          if (bytes_per_packet == f->channels) f->format = AFMT_S8;
+          break;
+        case 16:
+          if (bytes_per_packet == 2*f->channels) FLCHECK (S16);
+          break;
+        case 24:
+          if (bytes_per_packet == 3*f->channels) FLCHECK (S24_PACKED);
+        case 32:
+          if (bytes_per_packet == 4*f->channels) {
+            if (flags & 1) FLCHECK(FLOAT32);
+            else FLCHECK (S32);
+          }
+          break;
+        case 64:
+          if (flags & 1) FLCHECK (DOUBLE64);
+        default: break;
+      }
+      break;
+    case H('a', 'l', 'a', 'w'): f->format = AFMT_A_LAW; break;
+    case H('u', 'l', 'a', 'w'): f->format = AFMT_MU_LAW; break;
+    case H('i', 'm', 'a', '4'): f->format = AFMT_MAC_IMA_ADPCM; break;
+    default: break;
+  }
+  if (f->format == 0) {
+    print_msg (ERRORM, "%s: \"%c%c%c%c\" format (bits %d, bytes per "
+               "%d, flags 0x%X) is not supported\n", f->filename, buf[8],
+               buf[9], buf[10], buf[11], bits, bytes_per_packet, flags);
+    return E_FORMAT_UNSUPPORTED;
+  }
+  return 0;
+}
+
+static int
+w64_init (file_t * f, unsigned char * buf)
+{
+  struct stat st;
+
+  f->ne_int = le_int;
+  f->format = AFMT_S16_LE;
+  if (read (f->fd, buf, 8) < 8) return -1;
+  f->total_size = le_int (buf, 8);
+  f->fut_size = 40;
+  ossplay_lseek (f->fd, 16, SEEK_CUR);
+
+  if (from_stdin) return 0;
+  fstat (f->fd, &st);
+  if (st.st_size < f->total_size) {
+    f->total_size = st.st_size;
+    print_msg (NOTIFYM, "%s: File size is smaller than the form size!\n",
+               f->filename);
+  }
+  return 0;
+}
+
+static int
+w64_iterator (file_t * f, unsigned char * buf, int l)
+{
+  f->cur_size = f->fut_size + 24;
+  if (f->cur_size >= f->total_size) return 1;
+
+  if (read (f->fd, buf, 24) < 24) {
+    print_msg (ERRORM, "%s: Cannot read chunk header at pos %u\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return E_DECODE;
+  }
+
+  /* Only WAVE chunks are supported, so we can ignore the rest of the GUID */
+  f->chunk_id = be_int (buf, 4);
+  f->chunk_size = f->ne_int (buf + 16, 8);
+  f->cpos = 0;
+  f->fut_size += f->chunk_size;
+  f->chunk_size -= 24;
+
+  if (verbose > 3)
+    print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size " _PRIbig_t
+               ", pos %d\n", f->filename, buf[0], buf[1], buf[2], buf[3],
+               f->chunk_size - 24, f->cur_size);
+
+  if (f->chunk_size == 0) {
+    print_msg (NOTIFYM, "%s: Chunk size equals 0 (pos: %u)!\n",
+               f->filename, f->cur_size);
+    if ((f->found & SSND_FOUND) && (f->found & COMM_FOUND))
+      return CP_STOP_READING;
+    return w64_iterator (f, buf, l);
+  }
+
+  return 0;
 }

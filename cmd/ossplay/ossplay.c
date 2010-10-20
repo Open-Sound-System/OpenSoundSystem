@@ -25,8 +25,8 @@
 #include <unistd.h>
 
 unsigned int amplification = 100;
-int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0, verbose = 0,
-    quiet = 0;
+int eflag = 0, force_speed = 0, force_fmt = 0, force_channels = 0,
+    overwrite = 1, verbose = 0, quiet = 0;
 flag from_stdin = 0, int_conv = 0, level_meters = 0, loop = 0, 
      raw_file = 0, raw_mode = 0;
 double seek_time = 0;
@@ -74,6 +74,7 @@ static const container_t container_a[] = {
   {"WAV",		WAVE_FILE,	AFMT_S16_LE,	2,	48000},
   {"AU",		AU_FILE,	AFMT_MU_LAW,	1,	8000},
   {"AIFF",		AIFF_FILE,	AFMT_S16_BE,	2,	48000},
+  {"CAF",		CAF_FILE,	AFMT_S16_NE,	2,	48000},
   {NULL,		RAW_FILE,	0,		0,	0}
 }; /* Order should match fctypes_t enum so that container_a[type] works */
 
@@ -87,10 +88,11 @@ static void ossplay_getint (int);
 static void print_play_verbose_info (const unsigned char *, ssize_t, void *);
 static void print_record_verbose_info (const unsigned char *, ssize_t, void *);
 
-int
+big_t
 be_int (const unsigned char * p, int l)
 {
-  int i, val;
+  int i;
+  big_t val;
 
   val = 0;
 
@@ -102,10 +104,11 @@ be_int (const unsigned char * p, int l)
   return val;
 }
 
-int
+big_t
 le_int (const unsigned char * p, int l)
 {
-  int i, val;
+  int i;
+  big_t val;
 
   val = 0;
 
@@ -230,8 +233,8 @@ format2bits (int format)
     {
       case AFMT_CR_ADPCM_2: return 2;
       case AFMT_CR_ADPCM_3: return 2.6666F;
-      case AFMT_CR_ADPCM_4:
       case AFMT_MS_IMA_ADPCM_3BITS: return 3;
+      case AFMT_CR_ADPCM_4:
       case AFMT_MAC_IMA_ADPCM:
       case AFMT_MS_IMA_ADPCM:
       case AFMT_IMA_ADPCM:
@@ -321,7 +324,7 @@ ossplay_usage (const char * prog)
   print_msg (HELPM, "            -c<channels>   Change number of channels.\n");
   print_msg (HELPM, "            -o<playtgt>|?  Select/Query output target.\n");
   print_msg (HELPM, "            -l             Loop playback indefinitely.\n");
-  print_msg (HELPM, "            -F             Treat all input as raw PCM.\n");
+  print_msg (HELPM, "            -W             Treat all input as raw PCM.\n");
   print_msg (HELPM, "            -S<secs>       Start playing from offset.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
@@ -354,6 +357,7 @@ ossrecord_usage (const char * prog)
              " single recording.\n");
   print_msg (HELPM,
              "            -R             Open sound device in raw mode.\n");
+  print_msg (HELPM, "            -O             Do not allow overwrite.\n");
   exit (E_USAGE);
 }
 
@@ -579,10 +583,6 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
 
   tmp = format;
 
-  if (verbose > 1)
-    print_msg (VERBOSEM, "Setup device %s/%d/%d\n", sample_format_name (format),
-               channels, speed);
-
   if (ioctl (dsp->fd, SNDCTL_DSP_SETFMT, &tmp) == -1)
     {
       perror_msg (dsp->dname);
@@ -608,8 +608,12 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
 
   if (tmp != channels)
     {
-      print_msg (ERRORM, "%s doesn't support %d channels (%d).\n",
-	         dsp->dname, channels, tmp);
+#ifdef SRC_SUPPORT
+      /* We'll convert mono to stereo, so it's no use warning */
+      if ((channels != 1) || (tmp != 2))
+#endif
+        print_msg (ERRORM, "%s doesn't support %d channels (%d).\n",
+	           dsp->dname, channels, tmp);
       return E_CHANNELS_UNSUPPORTED;
     }
 
@@ -622,15 +626,21 @@ setup_device (dspdev_t * dsp, int format, int channels, int speed)
       return E_SETUP_ERROR;
     }
 
+#ifndef SRC_SUPPORT
   if (tmp != speed)
     {
       print_msg (WARNM, "Warning: Playback using %d Hz (file %d Hz)\n",
 	         tmp, speed);
     }
+#endif
 
   dsp->speed = tmp;
   dsp->channels = channels;
   dsp->format = format;
+
+  if (verbose > 1)
+    print_msg (VERBOSEM, "Setup device %s/%d/%d\n",
+               sample_format_name (dsp->format), dsp->channels, dsp->speed);
 
   if (dsp->reclevel != 0)
     {
@@ -664,7 +674,7 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
   char * p;
   int c;
 
-  while ((c = getopt (argc, argv, "FRS:c:d:f:g:hlo:qs:v")) != EOF)
+  while ((c = getopt (argc, argv, "FRS:Wc:d:f:g:hlo:qs:v")) != EOF)
     {
       switch (c)
 	{
@@ -724,6 +734,7 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
 	case 'F':
+	case 'W':
 	  raw_file = 1;
 	  break;
 
@@ -874,8 +885,11 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           sscanf (optarg, _PRIbig_t, &datalimit);
           break;
 
-        case 'w':
         case 'O':
+          overwrite = 0;
+          break;
+
+        case 'w':
           break;
 
         case 'v':
@@ -896,6 +910,7 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
   if (force_speed == 0) force_speed = container_a[type].dspeed;
   switch (force_fmt)
     {
+      case AFMT_S8:
       case AFMT_U8:
       case AFMT_S16_NE:
       case AFMT_S24_NE:
@@ -1027,6 +1042,7 @@ play (dspdev_t * dsp, int fd, big_t * datamark, big_t bsize, double total_time,
     ossplay_free (verbose_meta); \
     clear_update (); \
     ioctl (dsp->fd, SNDCTL_DSP_HALT_OUTPUT, NULL); \
+    errno = 0; \
     return (code); \
   } while (0)
 

@@ -2,7 +2,7 @@ NAME
 ossrecord - Open Sound System recording program.
 
 SYNOPSIS
-ossrecord [-Rhlv] [-F cntname | ? ] [ -c channels ] [ -d devname ]
+ossrecord [-ORhlv] [-F cntname | ? ] [ -c channels ] [ -d devname ]
           [ -f fmtname | ? ] [ -g gain ] [ -i recsource | ? ] [ -m nfiles ]
           [ -r command ] [ -s rate ] [ -t maxsecs ] filename | - ...
 
@@ -58,6 +58,7 @@ OPTIONS
 -t<maxsecs>	Do not record more than <maxsecs> seconds in a single recording
 		operation.
 -L<level>	Set the recording level to <level>.
+-O             Do not allow ossrecord to overwrite the output file.
 -h		Display usage instructions.
 
 COMMAND SCRIPT

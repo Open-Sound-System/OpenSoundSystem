@@ -157,20 +157,17 @@ ossplay_malloc (size_t sz)
 {
   void *ptr;
 
-  if (sz == 0) return NULL;
-  if (sz > OSSPLAY_MAX_MALLOC)
-    {
-      fprintf (stderr, "Unreasonable allocation size" _PRIbig_t ", aborting",
-               (big_t)sz);
-      exit (E_SETUP_ERROR);
-    }
+  if ((sz == 0) || (sz > OSSPLAY_MAX_MALLOC)) {
+    fprintf (stderr, "Unreasonable allocation size" _PRIbig_t ", aborting",
+             (big_t)sz);
+    exit (E_SETUP_ERROR);
+  }
   ptr = malloc (sz);
-  if (ptr == NULL)
-    {
-      /* Not all libcs support using %z for size_t */
-      fprintf (stderr, "Can't allocate %lu bytes\n", (unsigned long)sz);
-      exit (-1);
-    }
+  if (ptr == NULL) {
+    /* Not all libcs support using %z for size_t */
+    fprintf (stderr, "Can't allocate " _PRIbig_t " bytes\n", (big_t)sz);
+    exit (-1);
+  }
   return ptr;
 }
 
@@ -192,13 +189,12 @@ ossplay_lseek_stdin (int fd, off_t off, int w)
   if (off < 0) return -1;
   if (off == 0) return 0;
   i = off;
-  while (i > 0)
-    {
-      bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
-      if (bytes_read == -1) return -1;
-      else if (bytes_read == 0) return off;
-      i -= bytes_read;
-    }
+  while (i > 0) {
+    bytes_read = read(fd, buf, (i > BUFSIZ)?BUFSIZ:i);
+    if (bytes_read == -1) return -1;
+    else if (bytes_read == 0) return off - i;
+    i -= bytes_read;
+  }
   return off;
 }
 
@@ -286,16 +282,17 @@ ossplay_main (int argc, char ** argv)
 
   do {
     loop_flag = 0;
-    for (i = 1; i < argc; i++)
-      {
-        strncpy (dsp.current_songname, filepart (argv[i]),
-                 sizeof (dsp.current_songname));
-        dsp.current_songname[sizeof (dsp.current_songname) - 1] = '\0';
-        from_stdin = !strcmp (argv[i], "-");
-        ret = play_file (&dsp, argv[i], &vft);
-        if (ret == 0) loop_flag = 1;
-        eflag = 0;
-      }
+    for (i = 1; i < argc; i++) {
+      if (argv[i][0] == '\0') continue;
+      strncpy (dsp.current_songname, filepart (argv[i]),
+               sizeof (dsp.current_songname));
+      dsp.current_songname[sizeof (dsp.current_songname) - 1] = '\0';
+      from_stdin = !strcmp (argv[i], "-");
+      ret = play_file (&dsp, argv[i], &vft);
+      if (ret || from_stdin) argv[i] = "";
+      if ((ret == 0) && (!from_stdin)) loop_flag = 1;
+      eflag = 0;
+    }
   } while (loop && loop_flag);
 
 #ifdef OGG_SUPPORT

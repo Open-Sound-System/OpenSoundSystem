@@ -16,6 +16,8 @@
 
 #define PLAYBUF_SIZE		1024
 #define RECBUF_SIZE		512
+/* Parser's buf length */
+#define P_READBUF_SIZE		1024
 #define DEFAULT_CHANNELS	1
 #define DEFAULT_FORMAT		AFMT_U8
 #define DEFAULT_SPEED		11025
@@ -35,19 +37,7 @@
 /* Sanity check - no allocation by ossplay should pass this. */
 #define OSSPLAY_MAX_MALLOC		32*1024*1024
 
-#ifdef OSS_NO_LONG_LONG
-typedef long sbig_t;
-typedef unsigned long big_t;
-#define _PRIbig_t "%lu"
-#define BIG_SPECIAL ULONG_MAX
-#else
-typedef long long sbig_t;
-typedef unsigned long long big_t;
-#define _PRIbig_t "%llu"
-#define BIG_SPECIAL ULONG_MAX
-#endif
-
-#ifndef OSS_NO_INTTYPES_H
+#if !defined(OSS_NO_INTTYPES_H) && !defined(OSS_NO_LONG_LONG)
 #define  __STDC_LIMIT_MACROS
 #include <inttypes.h>
 
@@ -63,8 +53,24 @@ typedef intptr_t intptr;
 #define S32_MAX INT32_MAX
 #define S32_MIN INT32_MIN
 #define U32_MAX UINT32_MAX
+typedef uintmax_t big_t;
+typedef intmax_t sbig_t;
+#define _PRIbig_t "%ju"
+#define BIG_SPECIAL UINTMAX_MAX
 
 #else
+#ifdef OSS_NO_LONG_LONG
+typedef long sbig_t;
+typedef unsigned long big_t;
+#define _PRIbig_t "%lu"
+#define BIG_SPECIAL ULONG_MAX
+#else
+typedef long long sbig_t;
+typedef unsigned long long big_t;
+#define _PRIbig_t "%llu"
+#define BIG_SPECIAL ULLONG_MAX
+#endif
+
 typedef long double ldouble_t;
 typedef signed char int8;
 typedef unsigned char uint8;
@@ -174,11 +180,13 @@ typedef enum fctypes_t {
   WAVE_FILE,
   AU_FILE,
   AIFF_FILE,
+  CAF_FILE,
   AIFC_FILE,
   WAVE_FILE_BE,
   _8SVX_FILE,
   _16SV_FILE,
   MAUD_FILE,
+  W64_FILE,
   OGG_FILE
 }
 fctypes_t;
@@ -252,10 +260,10 @@ typedef struct decoders_queue {
 }
 decoders_queue_t;
 
-int be_int (const unsigned char *, int);
+big_t be_int (const unsigned char *, int);
 const char * filepart (const char *);
 float format2bits (int);
-int le_int (const unsigned char *, int);
+big_t le_int (const unsigned char *, int);
 ldouble_t ossplay_ldexpl (ldouble_t, int);
 int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);

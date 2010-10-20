@@ -31,8 +31,28 @@ typedef struct ima_values {
 }
 ima_values_t;
 
-extern int amplification, force_speed, force_fmt, force_channels;
-extern flag int_conv, verbose;
+#ifdef SRC_SUPPORT
+/*
+ * For actual use, we can rely on vmix.
+ * This is useful for testing though.
+ */
+#include "../../kernel/framework/audio/oss_grc3.c"
+
+typedef struct grc_values {
+  int bits;
+  int channels;
+  int speed;
+  int ospeed;
+  int obsize;
+  grc3state_t grc[];
+} grc_data_t;
+static decfunc_t decode_src;
+static decfunc_t decode_mono_to_stereo;
+static grc_data_t * setup_grc3 (int, int, int, int, int);
+#endif
+
+extern int amplification, eflag, force_speed, force_fmt, force_channels;
+extern flag int_conv, overwrite, verbose;
 extern char audio_devname[32];
 extern off_t (*ossplay_lseek) (int, off_t, int);
 extern double seek_time;
@@ -53,7 +73,6 @@ static decfunc_t decode_fib;
 static decfunc_t decode_float32_be;
 static decfunc_t decode_float32_le;
 static decfunc_t decode_mac_ima;
-static decfunc_t decode_mono_to_stereo;
 static decfunc_t decode_ms_ima;
 static decfunc_t decode_ms_adpcm;
 static decfunc_t decode_nul;
@@ -314,12 +333,12 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
                 seekf = seek_ogg;
                 total_time = val->f->ov_time_total (&val->vf, -1);
               }
-           else
-             {
-               seekf = NULL;
-               total_time = 0;
-             }
-         }
+            else
+              {
+                seekf = NULL;
+                total_time = 0;
+              }
+          }
 
         format = AFMT_S16_NE;
         break;
@@ -367,22 +386,40 @@ decode_sound (dspdev_t * dsp, int fd, big_t filesize, int format,
     }
 
 dcont:
-  if ((ret == E_CHANNELS_UNSUPPORTED) && (channels == 1))
-    {
-      channels = 2;
-      if ((ret = setup_device (dsp, format, channels, speed))) goto exit;
-      decoders->next =
-        (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
-      decoders = decoders->next;
-      decoders->metadata = (void *)(intptr)format;
-      decoders->decoder = decode_mono_to_stereo;
-      decoders->next = NULL;
-      obsize *= 2;
-      decoders->outbuf = (unsigned char *)ossplay_malloc (obsize);
-      decoders->flag = FREE_OBUF;
-    }
+#ifdef SRC_SUPPORT
+  if ((ret == E_CHANNELS_UNSUPPORTED) && (channels == 1)) {
+    channels = 2;
+    if ((ret = setup_device (dsp, format, channels, speed))) goto exit;
+    decoders->next =
+      (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
+    decoders = decoders->next;
+    decoders->metadata = (void *)(intptr)format;
+    decoders->decoder = decode_mono_to_stereo;
+    decoders->next = NULL;
+    obsize *= 2;
+    decoders->outbuf = (unsigned char *)ossplay_malloc (obsize);
+    decoders->flag = FREE_OBUF;
+  }
+#endif
 
   if (ret) goto exit;
+#ifdef SRC_SUPPORT
+  if (dsp->speed != speed) {
+    if ((format == AFMT_MU_LAW) || (format == AFMT_A_LAW))
+      decoders = setup_normalize (&format, &obsize, decoders);
+    decoders->next =
+      (decoders_queue_t *)ossplay_malloc (sizeof (decoders_queue_t));
+    decoders = decoders->next;
+    decoders->decoder = decode_src;
+    decoders->next = NULL;
+    obsize *= (dsp->speed / speed + 1) * channels * sizeof (int);
+    decoders->metadata =
+      (void *)setup_grc3 (format, channels, dsp->speed, speed, obsize);
+    decoders->outbuf = (unsigned char *)ossplay_malloc (obsize);
+    decoders->flag = FREE_OBUF | FREE_META;
+    speed = dsp->speed;
+  }
+#endif
 
   ret = play (dsp, fd, &filesize, bsize, total_time, constant, readf,
               dec, seekf);
@@ -417,18 +454,16 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
 
   if (datalimit != 0) datalimit *= constant;
 
-  if (strcmp (fname, "-") == 0)
+  if (strcmp (fname, "-") == 0) {
     wave_fp = fdopen (1, "wb");
-  else
-    {
-      fd = open (fname, O_WRONLY | O_CREAT, 0644);
-      if (fd == -1)
-        {
-          perror (fname);
-          return E_ENCODE;
-        }
-      wave_fp = fdopen (fd, "wb");
+  } else {
+    fd = open (fname, O_WRONLY | O_CREAT | (overwrite?O_TRUNC:O_EXCL), 0644);
+    if (fd == -1) {
+      perror (fname);
+      return E_ENCODE;
     }
+    wave_fp = fdopen (fd, "wb");
+  }
 
   if (wave_fp == NULL)
     {
@@ -478,7 +513,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   /*
    * EINVAL and EROFS are returned for "special files which don't support
    * syncronization". The user should already know he's writing to a special
-   * file (e.g. "ossrecord -O /dev/null"), so no need to warn.
+   * file (e.g. "ossrecord /dev/null"), so no need to warn.
    */
   if ((fsync (fileno (wave_fp)) == -1) && (errno != EINVAL) && (errno != EROFS))
     {
@@ -1183,56 +1218,6 @@ decode_raw_ima (unsigned char ** obuf, unsigned char * buf,
 }
 
 static ssize_t
-decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
-                       ssize_t l, void * metadata)
-{
-  ssize_t i;
-  int format = (int)(intptr)metadata;
-
-  switch (format)
-    {
-       case AFMT_U8:
-       case AFMT_S8:
-        {
-          uint8 *r = (uint8 *)buf, *s = (uint8 *)*obuf;
-          for (i=0; i < l; i++)
-            {
-              *s++ = *r;
-              *s++ = *r++;
-            }
-         }
-         break;
-      case AFMT_S16_LE:
-      case AFMT_S16_BE:
-        {
-          int16 *r = (int16 *)buf, *s = (int16 *)*obuf;
-
-          for (i = 0; i < l/2 ; i++)
-            {
-              *s++ = *r;
-              *s++ = *r++;
-            }
-        }
-        break;
-      case AFMT_S32_LE:
-      case AFMT_S32_BE:
-      case AFMT_S24_LE:
-      case AFMT_S24_BE:
-        {
-          int32 *r = (int32 *)buf, *s = (int32 *)*obuf;
-
-          for (i = 0; i < l/4; i++)
-            {
-              *s++ = *r;
-              *s++ = *r++;
-            }
-        }
-        break;
-    }
-  return 2*l;
-}
-
-static ssize_t
 decode_float32_be (unsigned char ** obuf, unsigned char * buf, ssize_t l,
                    void * metadata)
 {
@@ -1439,18 +1424,32 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
     {
       case AFMT_U8:
         {
+          uint8 * p;
+
+          p = (uint8 *)buf;
+
+          for (i = 0; i < l; i++) {
+            v = (*p++);
+            if (v > level) level = v;
+          }
+        }
+      case AFMT_S8:
+        {
           int8 * p;
 
           p = (int8 *)buf;
 
-          for (i = 0; i < l; i++)
-            {
-              v = ((*p++) - 128);
-              if (v < 0) v = -v;
-              if (v > level) level = v;
+          for (i = 0; i < l; i++) {
+            v = *p++;
+            if (v < 0) {
+              /* This can be false on a two's-complement machine */
+              if (v != -v) v = -v;
+              else v = -(v+1);
             }
+            if (v > level) level = v;
+          }
         }
-      break;
+       break;
 
       case AFMT_S16_NE:
         {
@@ -1458,12 +1457,14 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
 
           p = (int16 *)buf;
 
-          for (i = 0; i < l / 2; i++)
-            {
-              v = *p++;
-              if (v < 0) v = -v;
-              if (v > level) level = v;
+          for (i = 0; i < l / 2; i++) {
+            v = *p++;
+            if (v < 0) {
+              if (v != -v) v = -v;
+              else v = -(v+1);
             }
+            if (v > level) level = v;
+          }
         }
         level >>= 8;
         break;
@@ -1471,16 +1472,18 @@ get_db_level (const unsigned char * buf, ssize_t l, int format)
       case AFMT_S24_NE:
       case AFMT_S32_NE:
         {
-         int32 * p;
+          int32 * p;
 
-         p = (int32 *)buf;
+          p = (int32 *)buf;
 
-         for (i = 0; i < l / 4; i++)
-           {
-             v = *p++;
-             if (v < 0) v = -v;
-             if (v > level) level = v;
-           }
+          for (i = 0; i < l / 4; i++) {
+            v = *p++;
+            if (v < 0) {
+              if (v != -v) v = -v;
+              else v = -(v+1);
+            }
+            if (v > level) level = v;
+          }
         }
         level >>= 24;
         break;
@@ -1683,3 +1686,88 @@ read_ogg (int fd, void * buf, size_t len, void * metadata)
   return ret;
 }
 #endif
+
+#ifdef SRC_SUPPORT
+#define GRC3_HIGH_QUALITY 4
+static ssize_t
+decode_mono_to_stereo (unsigned char ** obuf, unsigned char * buf,
+                       ssize_t l, void * metadata)
+{
+  ssize_t i;
+  int format = (int)(intptr)metadata;
+
+  switch (format) {
+    case AFMT_U8:
+    case AFMT_S8: {
+         uint8 *r = (uint8 *)buf, *s = (uint8 *)*obuf;
+         for (i=0; i < l; i++) {
+           *s++ = *r;
+           *s++ = *r++;
+        }
+      }
+      break;
+    case AFMT_S16_LE:
+    case AFMT_S16_BE: {
+        int16 *r = (int16 *)buf, *s = (int16 *)*obuf;
+
+        for (i = 0; i < l/2 ; i++) {
+          *s++ = *r;
+          *s++ = *r++;
+        }
+      }
+      break;
+    case AFMT_S32_LE:
+    case AFMT_S32_BE:
+    case AFMT_S24_LE:
+    case AFMT_S24_BE: {
+        int32 *r = (int32 *)buf, *s = (int32 *)*obuf;
+
+        for (i = 0; i < l/4; i++) {
+          *s++ = *r;
+          *s++ = *r++;
+        }
+      }
+      break;
+  }
+  return 2*l;
+}
+
+static ssize_t 
+decode_src (unsigned char ** obuf, unsigned char * buf, ssize_t l, void * metadata)
+{
+  grc_data_t * val = (grc_data_t *)metadata;
+  ssize_t outc = 0;
+  int i;
+
+  for (i=0; i<val->channels; i++) {
+    outc += grc3_convert (&val->grc[i], val->bits, GRC3_HIGH_QUALITY, buf,
+                          *obuf, 8 * l / val->channels / val->bits,
+                          val->obsize / val->channels / sizeof (int),
+                          val->channels, i);
+  }
+
+  return outc * val->bits / 8;
+}
+
+static grc_data_t *
+setup_grc3 (int format, int channels, int speed, int ospeed, int obsize)
+{
+  int i;
+  grc_data_t * val = (grc_data_t *)ossplay_malloc (sizeof (grc_data_t) +
+                                     sizeof (grc3state_t) * channels);
+
+  val->bits = format2bits (format);
+  val->channels = channels;
+  val->speed = speed;
+  val->ospeed = ospeed;
+  val->obsize = obsize;
+
+  for (i=0; i<channels; i++) {
+    grc3_reset (&val->grc[i]);
+    grc3_setup (&val->grc[i], ospeed, speed);
+  }
+
+  return val;
+}
+#endif
+

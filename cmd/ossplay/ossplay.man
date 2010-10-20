@@ -2,7 +2,7 @@ NAME
 ossplay - Open Sound System playback program.
 
 SYNOPSIS
-ossplay [-FRhlvq] [-S secs ] [ -c channels ] [ -d devname ]
+ossplay [-RWhlvq] [-S secs ] [ -c channels ] [ -d devname ]
         [ -f fmtname | ? ] [ -g gain ] [ -o playtarget | ? ]
         [ -s rate ] filename | - ...
 
@@ -27,7 +27,7 @@ OPTIONS
 -o? 		Prints the list of available play targets.
 -g<gain>	Amplify all played samples by percentage given as argument. 
 		100 (default) means normal signal level, 200 means double level.
--F		Treat all input as raw PCM data.
+-W		Treat all input as raw PCM data.
 -R		Disable redirection to virtual mixer engines and sample
 		rate/format conversions. Should not be used unless absolutely
 		necessary.
