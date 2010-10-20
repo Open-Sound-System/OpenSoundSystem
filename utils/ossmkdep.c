@@ -110,7 +110,7 @@ parse_f (FILE * f, char *pathname)
 {
   char line[1024], *p, *s;
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       if (*line != '#')
 	continue;

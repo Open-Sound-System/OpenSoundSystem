@@ -48,11 +48,10 @@ reorder_dspdevs (void)
   n = 0;
   while (n < 3 && (fgets (line, sizeof (line), f) != NULL))
     {
-      for (i = 0; i < strlen (line); i++)
-	if (line[i] == '\n')
-	  line[i] = '\0';
-      m = 0;
+      s = strchr (line, '\n');
+      if (s != NULL) *s = '\0';
 
+      m = 0;
       s = line;
       while (*s)
 	{

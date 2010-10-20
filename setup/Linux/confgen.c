@@ -104,7 +104,7 @@ scan_dir (const char *srcdir, const char *modnam)
   sprintf (tmp, "%s/.config", srcdir);
   if ((f = fopen (tmp, "r")) != NULL)
     {
-      while (fgets (line, sizeof (line) - 1, f) != NULL)
+      while (fgets (line, sizeof (line), f) != NULL)
 	{
 	  char *s;
 	  for (i = 0; i < strlen (line); i++)

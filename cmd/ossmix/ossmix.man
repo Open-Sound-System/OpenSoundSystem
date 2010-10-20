@@ -10,7 +10,7 @@ settings of physical and virtual audio devices. OSS version 4 has an extended
 mixer API which supports some device specific features that may not available
 using other mixer applications. 
 
-OPTIOMS
+OPTIONS
 -D		Display device information.
 -a		Dump mixer settings for all mixers (normal format).
 -c		Dump mixer settings for all mixers (command format).

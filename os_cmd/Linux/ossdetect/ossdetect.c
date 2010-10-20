@@ -149,12 +149,12 @@ load_devlist (const char *fname, int is_3rdparty)
       while (*p)
 	{
 	  if (*p == '#' || *p == '\n')
-	    *p = 0;
+	    *p = '\0';
 	  p++;
 	}
 
       /* Drivers with upper case names are unsupported ones */
-      if (*line >= 'A' && *line <= 'Z')
+      if ((*line >= 'A' && *line <= 'Z') || (*line == '\0'))
 	continue;
 
       driver = line;
@@ -491,6 +491,7 @@ create_devlinks (mode_t node_m)
   FILE *f;
   char line[256], tmp[300], *p, *s;
   mode_t perm;
+  int minor, major;
 
   if ((f = fopen ("/proc/opensound/devfiles", "r")) == NULL)
     {
@@ -507,9 +508,9 @@ create_devlinks (mode_t node_m)
   while (fgets (line, sizeof (line), f) != NULL)
     {
       char dev[64] = "/dev/";
-      int minor, major;
-      s = line + strlen (line) - 1;
-      *s = 0;
+
+      s = strchr (line, '\n');
+      if (s) *s = '\0';
 
       if (sscanf (line, "%s %d %d", dev + 5, &major, &minor) != 3)
 	{

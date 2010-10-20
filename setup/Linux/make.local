@@ -2,6 +2,7 @@ build: 	kernel/framework/include/buildid.h all
 	sh build.sh
 
 copy:	build
+	rm -f ${OSSLIBDIR}/modules/*.o
 	cp -R prototype/* /
 
 package:	build

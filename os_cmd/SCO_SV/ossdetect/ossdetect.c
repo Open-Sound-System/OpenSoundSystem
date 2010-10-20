@@ -146,7 +146,7 @@ load_devlist (const char *fname, int is_3rdparty)
 	}
 
       /* Drivers with upper case names are unsupported ones */
-      if (*line >= 'A' && *line <= 'Z')
+      if ((*line >= 'A' && *line <= 'Z') || (*line == '\0'))
 	continue;
 
       driver = line;
@@ -279,14 +279,15 @@ create_devlinks (mode_t node_m)
 
   while (fgets (drvname, sizeof (drvname), drvf) != NULL)
     {
-      s = drvname + strlen (drvname) - 1;
-      *s = 0;			/* Remove the LF character */
+      s = strchr (drvname, '\n');
+      if (s) *s = '\0';			/* Remove the LF character */
 
       /* Remove the device full name (comment) field from the line */
       s = drvname;
       while (*s && *s != ' ' && *s != '#')
 	s++;
-      *s = 0;
+      *s = '\0';
+      if (*drvname == '\0') continue;
 
       sprintf (name, "/dev/%s0", drvname);
 

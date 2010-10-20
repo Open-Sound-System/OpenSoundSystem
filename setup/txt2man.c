@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <time.h>
+#include <string.h>
 
 int section = 0;
 char *volume = "Unknown volume";
@@ -12,14 +14,20 @@ char *title = "unknown";
 int
 main (int argc, char *argv[])
 {
-  char line[1024], *s;
-  int upper;
+  char line[1024], *s, upper;
+  const char * date;
+  int c;
   FILE *f;
-  char date[32] = "August 31, 2006";
-
+  time_t tt;
   extern char *optarg;
   extern int optind;
-  int c;
+
+  if (time (&tt) == (time_t)-1) date = "August 31, 2006";
+  else {
+    date = ctime (&tt);
+    s = strchr (date, '\n');
+    if (s) *s = '\0';
+  }
 
   while ((c = getopt (argc, argv, "v:s:t:")) != EOF)
     switch (c)
@@ -48,9 +56,9 @@ main (int argc, char *argv[])
     }
 
   printf (".\" Automatically generated text\n");
-  printf (".TH %d \"%s\" \"OSS\" \"%s\"\n", section, date, volume);
+  printf (".TH %s %d \"%s\" \"4Front Technologies\" \"%s\"\n", title, section, date, volume);
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       s = line;
       upper = 1;
@@ -65,21 +73,30 @@ main (int argc, char *argv[])
       if (line[0] == 0)
 	upper = 0;
 
-      if (upper)
+      if (upper) {
 	printf (".SH %s\n", line);
-      else
-	{
+      } else {
 	  s = line;
 
-	  if (*s == 'o' && s[1] == ' ')
+	  while (isspace(*s)) s++;
+	  if (*s == '\0') {
+	    printf (".PP\n");
+	    continue;
+	  }
+	  if (*s == 'o' && isspace(s[1]))
 	    {
 	      printf (".IP \\(bu 3\n");
 	      s += 2;
 	      printf ("%s\n", s);
 	      continue;
 	    }
-	  if (*s == ' ')
-	    s++;
+	  if (*s == '-' && !isspace(s[1])) {
+            printf (".TP\n");
+            printf ("\\fB");
+            while (!isspace (*s)) printf ("%c", *s++);
+            printf ("\\fP\n");
+            while (isspace(*s)) s++;
+          }
 	  printf ("%s\n", s);
 	}
     }

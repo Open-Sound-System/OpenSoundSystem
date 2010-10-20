@@ -365,7 +365,7 @@ load_devlist (const char *fname, int is_3rdparty)
 	}
 
       /* Drivers with upper case names are unsupported ones */
-      if (*line >= 'A' && *line <= 'Z')
+      if ((*line >= 'A' && *line <= 'Z') || (*line == '\0'))
 	continue;
 
       driver = line;
@@ -459,13 +459,15 @@ load_name_to_major (void)
   if ((f = fopen ("/etc/name_to_major", "r")) == NULL)
     return;
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
       p = line;
 
       while (*p && *p != ' ')
 	p++;
-      *p = 0;
+      *p = '\0';
+
+      if (*line == '\0') continue;
 
       if (nmods < MAX_MODS)
 	{
@@ -530,10 +532,10 @@ forceload_drivers (char *fname)
   if ((f = fopen (fname, "r")) == NULL)
     return;
 
-  while (fgets (line, sizeof (line) - 1, f) != NULL)
+  while (fgets (line, sizeof (line), f) != NULL)
     {
-      p = line + strlen (line) - 1;
-      *p = 0;
+      p = strchr (line, '\n');
+      if (p) *p = '\0';
       find_and_install_driver (line);
     }
 }

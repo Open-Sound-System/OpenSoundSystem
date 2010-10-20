@@ -73,6 +73,7 @@ devices.
 o Only stereo devices will be tested. Future versions of osstest will be
 able to test mono and multi channel devices too. Also osstest requires that
 the device supports the 16 bit signed format and 48kHz sampling rate.
+o Send a SIGQUIT (Ctrl-\e on most terminals) to make osstest skip a device.
 
 FILES
 /usr/bin/osstest
