@@ -1174,7 +1174,7 @@ aiff_comm_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
     ldouble_t COMM_rate = 0;
 
     exp = ((buf[8] & 127) << 8) + buf[9] - 16383;
-#if 1
+#if 0
     /*
      * This part of the mantissa will typically be resolved to
      * sub-Hz rates which we don't support anyway.
@@ -1686,7 +1686,7 @@ caf_desc_parse (uint32 id, unsigned char * buf, big_t len, file_t * f)
     double rate = 0;
 
     exp = ((buf[0] & 127) << 4) + ((buf[1] & 240) >> 4) - 1023;
-#if 1
+#if 0
    /*
     * This part of the mantissa will typically be resolved to
     * sub-Hz rates which we don't support anyway. We can also
