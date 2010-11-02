@@ -148,7 +148,7 @@ load_devlist (const char *fname, int is_3rdparty)
 	}
 
       /* Drivers with upper case names are unsupported ones */
-      if ((*line >= 'A' && *line <= 'Z') || (*line == '\0))
+      if ((*line >= 'A' && *line <= 'Z') || (*line == '\0'))
 	continue;
 
       driver = line;
