@@ -65,9 +65,9 @@ typedef enum {
 read_flag_t;
 
 typedef struct chunk_functions {
-  uint32 id;
-  uint32 d_chunk_size;
-  read_flag_t read_chunk_f;
+  const uint32 id;
+  const uint32 d_chunk_size;
+  const read_flag_t read_chunk_f;
   chunk_parser_t * f;
 }
 chunk_functions_t;
@@ -76,12 +76,12 @@ typedef struct parser {
   file_init_t * init;
   file_read_t * read;
   file_iterator_t * iterator;
-  chunk_functions_t * perfile;
-  chunk_functions_t * common;
+  const chunk_functions_t * perfile;
+  const chunk_functions_t * common;
 }
 parser_t;
 
-extern int quiet, verbose, force_fmt;
+extern int quiet, verbose, force_fmt, force_speed;
 extern long seek_byte;
 extern flag from_stdin, raw_file;
 extern off_t (*ossplay_lseek) (int, off_t, int);
@@ -115,7 +115,7 @@ static chunk_parser_t wave_disp_parse;
 static chunk_parser_t wave_fmt_parse;
 static chunk_parser_t wave_list_parse;
 
-static chunk_functions_t IFF_common[] = {
+static const chunk_functions_t IFF_common[] = {
   { H('A', 'N', 'N', 'O'), 0, READ_ALL, &iff_comment_parse },
   { H('N', 'A', 'M', 'E'), 0, READ_ALL, &iff_comment_parse },
   { H('(', 'c', ')', ' '), 0, READ_ALL, &iff_comment_parse },
@@ -123,20 +123,20 @@ static chunk_functions_t IFF_common[] = {
   { 0, 0, READ_NONE, NULL }
 };
 
-static chunk_functions_t AIFF_funcs[] = {
+static const chunk_functions_t AIFF_funcs[] = {
   { H('C', 'O', 'M', 'M'), 18, READ_ALL, &aiff_comm_parse },
   { H('S', 'S', 'N', 'D'), 8, READ_PART, &aiff_ssnd_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t AIFC_funcs[] = {
+static const chunk_functions_t AIFC_funcs[] = {
   { H('C', 'O', 'M', 'M'), 22, READ_ALL, &aifc_comm_parse },
   { H('S', 'S', 'N', 'D'), 8, READ_PART, &aiff_ssnd_parse },
   { H('F', 'V', 'E', 'R'), 4, READ_ALL, &aifc_fver_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t WAVE_funcs[] = {
+static const chunk_functions_t WAVE_funcs[] = {
   { H('f', 'm', 't', ' '), 14, READ_ALL, &wave_fmt_parse },
   { H('d', 'a', 't', 'a'), 0, READ_NONE, &wave_data_parse },
   { H('D', 'I', 'S', 'P'), 5, READ_ALL, &wave_disp_parse },
@@ -144,26 +144,26 @@ static chunk_functions_t WAVE_funcs[] = {
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t _8SVX_funcs[] = {
+static const chunk_functions_t _8SVX_funcs[] = {
   { H('B', 'O', 'D', 'Y'), 0, READ_NONE, &wave_data_parse },
   { H('V', 'H', 'D', 'R'), 16, READ_ALL, &_8svx_vhdr_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t _16SV_funcs[] = {
+static const chunk_functions_t _16SV_funcs[] = {
   { H('V', 'H', 'D', 'R'), 14, READ_ALL, &_16sv_vhdr_parse },
   { H('B', 'O', 'D', 'Y'), 0, READ_NONE, &wave_data_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t MAUD_funcs[] = {
+static const chunk_functions_t MAUD_funcs[] = {
   { H('M', 'D', 'A', 'T'), 0, READ_NONE, &wave_data_parse },
   { H('C', 'H', 'A', 'N'), 4, READ_ALL, &maud_chan_parse },
   { H('M', 'H', 'D', 'R'), 20, READ_ALL, &maud_mhdr_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
 };
 
-static chunk_functions_t CAF_funcs[] = {
+static const chunk_functions_t CAF_funcs[] = {
   { H('d', 'e', 's', 'c'), 32, READ_ALL, &caf_desc_parse },
   { H('d', 'a', 't', 'a'), 4, READ_NONE, &caf_data_parse },
   { 0, 0, R_ZERO_FLAG, NULL }
@@ -522,8 +522,8 @@ play_iff (dspdev_t * dsp, const char * filename, int fd, unsigned char * buf,
 {
   int ret;
 
-  big_t rbytes;
-  chunk_functions_t * i, * oi;
+  sbig_t rbytes;
+  const chunk_functions_t * i, * oi;
   file_t f = { {
     256, 496, 7, 4, {
       {256, 0},
@@ -952,6 +952,7 @@ print_verbose_fileinfo (const char * filename, int type, int format,
   char chn[32];
   const char * fmt = "";
 
+  if (force_speed) speed = force_speed;
   switch (type)
     {
       case WAVE_FILE:
@@ -1033,7 +1034,7 @@ iff_init (file_t * f, unsigned char * buf)
   f->total_size = f->ne_int (buf + 4, 4) + 8;
 
   if (from_stdin) return 0;
-  fstat (f->fd, &st);
+  if (fstat (f->fd, &st) == -1) return 0;
   if (st.st_size < f->total_size) {
     f->total_size = st.st_size;
     print_msg (NOTIFYM, "%s: File size is smaller than the form size!\n",
@@ -1595,12 +1596,11 @@ caf_init (file_t * f, unsigned char * buf)
   struct stat st;
 
   memcpy (buf, buf+8, 4);
-  if (from_stdin) {
+  if (from_stdin || (fstat (f->fd, &st) == -1)) {
     f->total_size = BIG_SPECIAL;
     return 4;
   }
 
-  fstat (f->fd, &st);
   f->total_size = st.st_size;
   return 4;
 }
@@ -1621,7 +1621,7 @@ caf_iterator (file_t * f, unsigned char * buf, int l)
   f->chunk_id = be_int (buf, 4);
   f->chunk_size = be_int (buf + 4, 8);
   f->cpos = 0;
-  f->fut_size += f->chunk_size + (f->chunk_size & 1) + 12 - l;
+  f->fut_size += f->chunk_size + 12 - l;
 
   if (verbose > 3)
     print_msg (VERBOSEM, "%s: Reading chunk %c%c%c%c, size %d, pos %d\n",
@@ -1773,7 +1773,7 @@ w64_init (file_t * f, unsigned char * buf)
   ossplay_lseek (f->fd, 16, SEEK_CUR);
 
   if (from_stdin) return 0;
-  fstat (f->fd, &st);
+  if (fstat (f->fd, &st) == -1) return 0;
   if (st.st_size < f->total_size) {
     f->total_size = st.st_size;
     print_msg (NOTIFYM, "%s: File size is smaller than the form size!\n",

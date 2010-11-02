@@ -158,7 +158,7 @@ ossplay_malloc (size_t sz)
   void *ptr;
 
   if ((sz == 0) || (sz > OSSPLAY_MAX_MALLOC)) {
-    fprintf (stderr, "Unreasonable allocation size" _PRIbig_t ", aborting",
+    fprintf (stderr, "Unreasonable allocation size " _PRIbig_t ", aborting",
              (big_t)sz);
     exit (E_SETUP_ERROR);
   }
