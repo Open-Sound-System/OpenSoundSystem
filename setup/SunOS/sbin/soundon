@@ -57,6 +57,7 @@ then
    do
 	/usr/sbin/modload $DRVPATH/$n >> $LOG 2>&1
 	/usr/sbin/modinfo|grep " $n " >> $LOG
+	/usr/sbin/devfsadm -i $n
    done
 else
 	echo /etc/oss/installed_drivers not found. >> $LOG

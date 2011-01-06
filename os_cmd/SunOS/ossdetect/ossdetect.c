@@ -735,10 +735,11 @@ main (int argc, char *argv[])
 
 #ifdef sparc
   if (stat("/kernel/drv/sparcv9/oss_sadasupport", &st) != -1)
+    if (stat("/kernel/misc/sparcv9/audiosup", &st) != -1)
 #else
   if (stat("/kernel/drv/oss_sadasupport", &st) != -1)
+    if (stat("/kernel/misc/audiosup", &st) != -1)
 #endif
-  if (stat("/kernel/misc/audiosup", &st) != -1)
      {
   	check_conf ("oss_sadasupport", 1, "");
   	add_drv ("SADA emulation layer", "oss_sadasupport", "-m '* 0666 root sys'");

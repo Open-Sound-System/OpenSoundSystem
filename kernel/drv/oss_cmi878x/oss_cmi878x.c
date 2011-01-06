@@ -95,23 +95,17 @@
 #define SUBID_XONAR_D1		0x834f
 #define SUBID_XONAR_DX		0x8275
 #define SUBID_XONAR_STX 	0x835c
+#define SUBID_XONAR_DS		0x838e
 
 #define SUBID_GENERIC		0x0000
 
 /* Xonar specific */
 #define XONAR_DX_FRONTDAC	0x9e
 #define XONAR_DX_SURRDAC	0x30
-#define XONAR_DX_OUTPUT		0x01
-#define XONAR_DX_MCLOCK_256	0x10
-
-/* Xonar D2 spi specific */
-#define XONAR_D2_FRONTDAC	0x98
-#define XONAR_D2_SURRDAC	0x9a
-#define XONAR_D2_LFEDAC 	0x9c
-#define XONAR_D2_REARDAC	0x9e
-
-/* defs for Xonar STX */
 #define XONAR_STX_FRONTDAC	0x98
+#define XONAR_DS_FRONTDAC	0x1
+#define XONAR_DS_SURRDAC	0x0
+#define XONAR_MCLOCK_256	0x10
 
 /* defs for AKM 4396 DAC */
 #define AK4396_CTL1        0x00
@@ -278,6 +272,7 @@ typedef struct cmi8788_devc
   ac97_devc ac97devc, fp_ac97devc;
   int ac97_mixer_dev, fp_mixer_dev, cmi_mixer_dev;
   int playvol[4];
+  int recvol;
   /* uart401 */
   oss_midi_inputbyte_t midi_input_intr;
   int midi_opened, midi_disabled;
@@ -286,6 +281,10 @@ typedef struct cmi8788_devc
   int mpu_attached;
 }
 cmi8788_devc;
+
+static const char xd2_codec_map[4] = {
+                0, 1, 2, 4
+        };
 
 static void cmi8788uartintr (cmi8788_devc * devc);
 static int reset_cmi8788uart (cmi8788_devc * devc);
@@ -369,37 +368,54 @@ fp_ac97_write (void *devc_, int reg, int data)
 }
 
 static int
-spi_write (void *devc_, int codec_num, unsigned char *data)
+spi_write (cmi8788_devc *devc, int codec_num, unsigned char reg, int val)
 {
-  cmi8788_devc *devc = devc_;
   oss_native_word flags;
-  unsigned char val;
+  unsigned int tmp;
+  int latch, shift, count;
 
   MUTEX_ENTER_IRQDISABLE (devc->low_mutex, flags);
 
+  /* check if SPI is busy */
+   count = 10;
+   while ((INB(devc, SPI_CONTROL) & 0x1) && count-- > 0) {
+    	oss_udelay(10);
+  }
+
+  if (devc->model == SUBID_XONAR_DS) {
+	shift = 9;
+	latch = 0;
+  }
+  else {
+	shift = 8;
+	latch = 0x80;
+  }
+
+  /* 2 byte data/reg info to be written */
+  tmp = val;
+  tmp |= (reg << shift);
+
   /* write 2-byte data values */
-  OUTB (devc->osdev, data[0], SPI_DATA + 0);
-  OUTB (devc->osdev, data[1], SPI_DATA + 1);
+  OUTB (devc->osdev, tmp & 0xff, SPI_DATA + 0);
+  OUTB (devc->osdev, (tmp >> 8) & 0xff, SPI_DATA + 1);
 
   /* Latch high, clock=160, Len=2byte, mode=write */
-  val = (INB (devc->osdev, SPI_CONTROL) & ~0x7E) | 0x81;
+  tmp = (INB (devc->osdev, SPI_CONTROL) & ~0x7E) | latch | 0x1;
 
   /* now address which codec you want to send the data to */
-  val |= (codec_num << 4) & 0x70;
+  tmp |= (codec_num << 4);
 
   /* send the command to write the data */
-  OUTB (devc->osdev, val, SPI_CONTROL);
+  OUTB (devc->osdev, tmp, SPI_CONTROL);
 
-  oss_udelay (100);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
   return 1;
 }
 
 static int
-two_wire_write (void *devc_, unsigned char codec_num, unsigned char reg,
+i2c_write (cmi8788_devc *devc, unsigned char codec_num, unsigned char reg,
 		unsigned char data)
 {
-  cmi8788_devc *devc = devc_;
   oss_native_word flags;
   int count = 50;
 
@@ -428,23 +444,10 @@ two_wire_write (void *devc_, unsigned char codec_num, unsigned char reg,
   /* select the codec number to address */
   OUTB (devc->osdev, codec_num, TWO_WIRE_ADDR);
   MUTEX_EXIT_IRQRESTORE (devc->low_mutex, flags);
-  oss_udelay(100);
+  oss_udelay(100); 
 
   return 1;
 
-}
-
-static void
-pcm1796_write(cmi8788_devc *devc, int codec_id, unsigned char reg, unsigned char val)
-{
-static const char codec_map[4] = {
-                0, 1, 2, 4
-        };
-unsigned char data[2];
-
-      data[0] = val;
-      data[1] = reg;
-      spi_write (devc, codec_map[codec_id], data);
 }
 
 static int
@@ -456,22 +459,22 @@ cs4398_init (void *devc_, int codec_)
   OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
 
   // Power down, enable control mode.
-  two_wire_write(devc_, codec_, CS4398_MISC_CTRL,
+  i2c_write(devc_, codec_, CS4398_MISC_CTRL, 
     CS4398_CPEN | CS4398_POWER_DOWN);
   // Left justified PCM (DAC and 8788 support I2S, but doesn't work.
   // Setting it introduces clipping like hell).
-  two_wire_write(devc_, codec_, CS4398_MODE_CTRL, 0);
-  // That's the DAC default, set anyway.
-  two_wire_write(devc_, codec_, 3, 0x09);
+  i2c_write(devc_, codec_, CS4398_MODE_CTRL, 0);
+  // That's the DAC default, set anyway. 
+  i2c_write(devc_, codec_, 3, 0x09);
   // PCM auto-mute.
-  two_wire_write(devc_, codec_, 4, 0x82);
+  i2c_write(devc_, codec_, 4, 0x82);
   // Vol A+B to -64dB.
-  two_wire_write(devc_, codec_, 5, 0x80);
-  two_wire_write(devc_, codec_, 6, 0x80);
+  i2c_write(devc_, codec_, 5, 0x80);
+  i2c_write(devc_, codec_, 6, 0x80);
   // Soft-ramping.
-  two_wire_write(devc_, codec_, 7, 0xF0);
+  i2c_write(devc_, codec_, 7, 0xF0);
   // Remove power down flag.
-  two_wire_write(devc_, codec_, CS4398_MISC_CTRL, CS4398_CPEN);
+  i2c_write(devc_, codec_, CS4398_MISC_CTRL, CS4398_CPEN);
 
   return 1;
 }
@@ -480,33 +483,33 @@ static int
 cs4362a_init(void * devc_, int codec_)
 {
   cmi8788_devc *devc = devc_;
-
+  
   // Fast Two-Wire. Reduces the wire ready time.
   OUTW(devc->osdev, 0x0100, TWO_WIRE_CTRL);
 
-  /* Power down and enable control port. */
-  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN | CS4362A_POWER_DOWN);
+  /* Power down and enable control port. */ 
+  i2c_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN | CS4362A_POWER_DOWN);
   /* Left-justified PCM */
-  two_wire_write(devc_, codec_, CS4362A_MODE2_CTRL, CS4362A_DIF_LJUST);
+  i2c_write(devc_, codec_, CS4362A_MODE2_CTRL, CS4362A_DIF_LJUST);
   /* Ramp & Automute, re-set DAC defaults. */
-  two_wire_write(devc_, codec_, CS4362A_MODE3_CTRL, 0x84);
+  i2c_write(devc_, codec_, CS4362A_MODE3_CTRL, 0x84); 
   /* Filter control, DAC defs. */
-  two_wire_write(devc_, codec_, CS4362A_FILTER_CTRL, 0);
+  i2c_write(devc_, codec_, CS4362A_FILTER_CTRL, 0);
   /* Invert control, DAC defs. */
-  two_wire_write(devc_, codec_, CS4362A_INVERT_CTRL, 0);
+  i2c_write(devc_, codec_, CS4362A_INVERT_CTRL, 0);
   /* Mixing control, DAC defs. */
-  two_wire_write(devc_, codec_, CS4362A_MIX1_CTRL, 0x24);
-  two_wire_write(devc_, codec_, CS4362A_MIX2_CTRL, 0x24);
-  two_wire_write(devc_, codec_, CS4362A_MIX3_CTRL, 0x24);
+  i2c_write(devc_, codec_, CS4362A_MIX1_CTRL, 0x24);
+  i2c_write(devc_, codec_, CS4362A_MIX2_CTRL, 0x24);
+  i2c_write(devc_, codec_, CS4362A_MIX3_CTRL, 0x24);
   /* Volume to -64dB. */
-  two_wire_write(devc_, codec_, CS4362A_VOLA_1, 0x40);
-  two_wire_write(devc_, codec_, CS4362A_VOLB_1, 0x40);
-  two_wire_write(devc_, codec_, CS4362A_VOLA_2, 0x40);
-  two_wire_write(devc_, codec_, CS4362A_VOLB_2, 0x40);
-  two_wire_write(devc_, codec_, CS4362A_VOLA_3, 0x40);
-  two_wire_write(devc_, codec_, CS4362A_VOLB_3, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLA_1, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLB_1, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLA_2, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLB_2, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLA_3, 0x40);
+  i2c_write(devc_, codec_, CS4362A_VOLB_3, 0x40);
   /* Power up. */
-  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN);
+  i2c_write(devc_, codec_, CS4362A_MODE1_CTRL, CS4362A_CPEN);
 
   return 1;
 }
@@ -517,121 +520,142 @@ mix_scale (int vol, int bits)
   vol = mix_cvt[vol];
   return (vol * ((1 << bits) - 1) / 100);
 }
-#if 0
-static int
-cs4398_cleanup(void * devc_, int codec_)
-{
-  /* Simply power down. Keep control port mode up. */
-  two_wire_write(devc_, codec_, CS4398_MISC_CTRL,
-    CS4398_POWER_DOWN | CS4398_CPEN);
-
-  return 1;
-}
-
-static int cs4362a_cleanup(void *devc_, int codec_)
-{
-  /* Simply power down. Keep control port mode up. */
-  two_wire_write(devc_, codec_, CS4362A_MODE1_CTRL,
-    CS4362A_CPEN | CS4362A_POWER_DOWN);
-
-  return 1;
-}
-#endif
 
 
 static void
-xonar_dx_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
+cmi8788_generic_set_play_volume (cmi8788_devc *devc, int codec_id, int left, int right)
+
 {
-  int left, right;
+  spi_write (devc, codec_id, AK4396_LchATTCtl | 0x20, mix_scale(left, 8));
+  spi_write (devc, codec_id, AK4396_RchATTCtl | 0x20, mix_scale(right, 8));
+}
 
-  left = (value & 0x00FF);
-  right = (value & 0xFF00) >> 8;
-
+static void
+xonar_d1_set_play_volume(cmi8788_devc * devc, int codec_id, int left, int right)
+{
   switch(codec_id)
   {
     case 0:
-      two_wire_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLA, CS4398_VOL(left));
-      two_wire_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLB, CS4398_VOL(right));
+      i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLA, CS4398_VOL(left));
+      i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_VOLB, CS4398_VOL(right));
       break;
     case 1:
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_1, CS4362A_VOL(left));
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_1, CS4362A_VOL(right));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_1, CS4362A_VOL(left));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_1, CS4362A_VOL(right));
       break;
     case 2:
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_2, CS4362A_VOL(left));
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_2, CS4362A_VOL(right));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_2, CS4362A_VOL(left));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_2, CS4362A_VOL(right));
       break;
     case 3:
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_3, CS4362A_VOL(left));
-      two_wire_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_3, CS4362A_VOL(right));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLA_3, CS4362A_VOL(left));
+      i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_VOLB_3, CS4362A_VOL(right));
       break;
   }
 }
 
 static void
-xonar_d2_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
+xonar_d2_set_play_volume(cmi8788_devc *devc, int codec_id, int left, int right)
 {
-  int left, right;
-
-  left = (value & 0x00FF);
-  right = (value & 0xFF00) >> 8;
-
-  pcm1796_write (devc, codec_id, 16, mix_scale(left,8));
-  pcm1796_write (devc, codec_id, 17, mix_scale(right,8));
+  spi_write (devc, xd2_codec_map[codec_id], 16, mix_scale(left,8));
+  spi_write (devc, xd2_codec_map[codec_id], 17, mix_scale(right,8));
 }
 
 static void
-xonar_stx_set_play_volume(cmi8788_devc * devc, int codec_id, int value)
+xonar_stx_set_play_volume(cmi8788_devc * devc, int codec_id, int left, int right)
 {
-  int left, right;
-
-  left = (value & 0x00FF);
-  right = (value & 0xFF00) >> 8;
-
   if (codec_id == 0)
   {
-      two_wire_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(left,8));
-      two_wire_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(right,8));
+      i2c_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(left,8));
+      i2c_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(right,8));
   }
 }
+
+static void
+xonar_ds_set_play_volume(cmi8788_devc * devc, int codec_id, int left, int right)
+{
+  switch (codec_id)
+   {
+    	case 0:      /* front */
+		spi_write (devc, XONAR_DS_FRONTDAC, 0, mix_scale(left,7)|0x80);
+		spi_write (devc, XONAR_DS_FRONTDAC, 1, mix_scale(right,7)|0x180);
+		spi_write (devc, XONAR_DS_FRONTDAC, 3, mix_scale(left,7)|0x80);
+		spi_write (devc, XONAR_DS_FRONTDAC, 4, mix_scale(right,7)|0x180);
+                break;
+
+	case 1:      /* side */
+                spi_write (devc, XONAR_DS_SURRDAC, 0, mix_scale(left,7)|0x80);
+                spi_write (devc, XONAR_DS_SURRDAC, 1, mix_scale(right,7)|0x180);
+                break;
+	case 2:      /* rear */
+                spi_write (devc, XONAR_DS_SURRDAC, 4, mix_scale(left,7)|0x80);
+                spi_write (devc, XONAR_DS_SURRDAC, 5, mix_scale(right,7)|0x180);
+                break;
+	case 3:      /* center */
+                spi_write (devc, XONAR_DS_SURRDAC, 6, mix_scale(left,7)|0x80);
+                spi_write (devc, XONAR_DS_SURRDAC, 7, mix_scale(right,7)|0x180);
+                break;
+   }
+}
+
+static int
+cmi8788_set_rec_volume (cmi8788_devc * devc, int value)
+{
+  unsigned char left, right;
+
+  left = value & 0xff;
+  right = (value >> 8) & 0xff;
+
+  if (left > 100)
+	left = 100;
+  if (right > 100)
+	right = 100;
+
+  devc->recvol = left | (right << 8);
+
+  spi_write (devc, XONAR_DS_FRONTDAC, 0xe, mix_scale(left,8));
+  spi_write (devc, XONAR_DS_FRONTDAC, 0xf, mix_scale(right,8));
+
+  return devc->recvol;
+}
+
 
 
 static int
 cmi8788_set_play_volume (cmi8788_devc * devc, int codec_id, int value)
 {
-  unsigned char left, right;
-  unsigned char data[2];
+  int left, right;
 
-  left = value & 0xff;
-  right = (value >> 8) & 0xff;
+  left = (value & 0x00FF);
+  right = (value & 0xFF00) >> 8;
 
-  devc->playvol[codec_id] = left | (right << 8);
+  if (left > 100)
+	left = 100;
+  if (right > 100)
+        right = 100;
+
+  devc->playvol[codec_id] = left | (right<<8);
 
   switch(devc->model)
   {
     case SUBID_XONAR_D1:
     case SUBID_XONAR_DX:
-      xonar_dx_set_play_volume(devc, codec_id, value);
+      xonar_d1_set_play_volume(devc, codec_id, left, right);
       break;
     case SUBID_XONAR_D2:
     case SUBID_XONAR_D2X:
-      xonar_d2_set_play_volume(devc, codec_id, value);
+      xonar_d2_set_play_volume(devc, codec_id, left, right);
       break;
     case SUBID_XONAR_STX:
-      xonar_stx_set_play_volume(devc, codec_id, value);
+      xonar_stx_set_play_volume(devc, codec_id, left, right);
       break;
-
+    case SUBID_XONAR_DS:
+      xonar_ds_set_play_volume(devc, codec_id, left, right);
+      break;
     default:
-      /* Assume default AKM DACs */
-      data[0] = left;
-      data[1] = AK4396_LchATTCtl | 0x20;
-      spi_write (devc, codec_id, data);
-      data[0] = right;
-      data[1] = AK4396_RchATTCtl | 0x20;
-      spi_write (devc, codec_id, data);
+      cmi8788_generic_set_play_volume (devc, codec_id, left, right);
       break;
   }
-
   return devc->playvol[codec_id];
 }
 
@@ -1758,7 +1782,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    return *arg = 0;
 	    break;
 
-	  case SOUND_MIXER_VOLUME:
+	  case SOUND_MIXER_PCM:
 	    val = *arg;
 	    return *arg = cmi8788_set_play_volume (devc, 0, val);
 	    break;
@@ -1778,6 +1802,11 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    return *arg = cmi8788_set_play_volume (devc, 3, val);
 	    break;
 
+	  case SOUND_MIXER_RECLEV:
+	    val = *arg;
+	    return *arg = cmi8788_set_rec_volume (devc, val);
+	    break;
+
 	  default:
 	    val = *arg;
 	    return *arg = 0;
@@ -1791,28 +1820,36 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 	    break;
 
 	  case SOUND_MIXER_DEVMASK:
-		if (devc->model == SUBID_XONAR_STX)
-		   return *arg = SOUND_MASK_VOLUME;
-		else
-		   return *arg =
-	      SOUND_MASK_VOLUME | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
-	      SOUND_MASK_SIDEVOL;
+            if (devc->model == SUBID_XONAR_STX)
+                *arg = SOUND_MASK_VOLUME;
+            else
+	    	*arg = SOUND_MASK_PCM | SOUND_MASK_REARVOL | 
+			SOUND_MASK_CENTERVOL | SOUND_MASK_SIDEVOL;
+
+	    if (devc->model == SUBID_XONAR_DS)
+		*arg |= SOUND_MASK_RECLEV;
+
+	    return *arg;
 	    break;
 
 	  case SOUND_MIXER_STEREODEVS:
-                if (devc->model == SUBID_XONAR_STX)
-                   return *arg = SOUND_MASK_VOLUME;
-                else
-                   return *arg =
-              SOUND_MASK_VOLUME | SOUND_MASK_REARVOL | SOUND_MASK_CENTERVOL |
-              SOUND_MASK_SIDEVOL;
+            if (devc->model == SUBID_XONAR_STX)
+               *arg = SOUND_MASK_VOLUME;
+            else
+	       *arg = SOUND_MASK_PCM | SOUND_MASK_REARVOL | 
+			SOUND_MASK_CENTERVOL | SOUND_MASK_SIDEVOL;
+
+	    if (devc->model == SUBID_XONAR_DS)
+		*arg |= SOUND_MASK_RECLEV;
+
+	    return *arg;
 	    break;
 
 	  case SOUND_MIXER_CAPS:
 	    return *arg = SOUND_CAP_EXCL_INPUT;
 	    break;
 
-	  case SOUND_MIXER_VOLUME:
+	  case SOUND_MIXER_PCM:
 	    return *arg = devc->playvol[0];
 	    break;
 
@@ -1826,6 +1863,10 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  case SOUND_MIXER_SIDEVOL:
 	    return *arg = devc->playvol[3];
+	    break;
+	
+	  case SOUND_MIXER_RECLEV:
+	    return *arg = devc->recvol;
 	    break;
 
 	  default:
@@ -1864,7 +1905,15 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	  value = (INB (devc->osdev, REC_MONITOR) & 0x10) ? 1 : 0;
 	  break;
 	case 2:		/* Record source select */
-	  value = (ac97_read (devc, 0x72) & 0x1) ? 1 : 0;
+	  switch (devc->model)
+		{
+		  case SUBID_XONAR_DS:		
+	  		value = (INW (devc->osdev, GPIO_DATA) & 0x40) ? 1 : 0;
+			break;
+		  default: 
+	  		value = (ac97_read (devc, 0x72) & 0x1) ? 1 : 0;
+			break;
+	        }
 	  break;
 	case 3:		/* Speaker Spread - check bit15 to see if it's set */
 	  value = (INW (devc->osdev, PLAY_ROUTING) & 0x8000) ? 0 : 1;
@@ -1909,14 +1958,31 @@ cmi8788_ext (int dev, int ctrl, unsigned int cmd, int value)
 	case 2:
 	  if (value)
           {
-             if (devc->model == SUBID_XONAR_D1 || devc->model == SUBID_XONAR_DX)
-		OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x100, GPIO_DATA);
+	     switch (devc->model)
+		{
+		case SUBID_XONAR_DS:
+			OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x40, GPIO_DATA);
+			break;
+		case SUBID_XONAR_D1:
+		case SUBID_XONAR_DX:
+			OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x100, GPIO_DATA);
+			break;
+		}
 	     ac97_write(devc, 0x72, ac97_read(devc, 0x72) | 0x1);
 	  }
 	  else
 	  {
-             if (devc->model == SUBID_XONAR_D1 || devc->model == SUBID_XONAR_DX)
-		OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) & ~0x100, GPIO_DATA);
+             switch (devc->model)
+                {
+                case SUBID_XONAR_DS:
+                        OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) & ~0x40, GPIO_DATA);
+                        break;
+                case SUBID_XONAR_D1:
+                case SUBID_XONAR_DX:
+                        OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) & ~0x100, GPIO_DATA);
+                        break;
+                }
+
 	     ac97_write(devc, 0x72, ac97_read(devc, 0x72) & ~0x1);
 	  }
 	  break;
@@ -2290,6 +2356,7 @@ cmi8788_mix_init (int dev)
   return 0;
 }
 
+
 void ac97_hwinit(cmi8788_devc *devc)
 {
 
@@ -2355,8 +2422,8 @@ init_cmi8788 (cmi8788_devc * devc)
 
 
   /* I2S to 16bit, see below. */
-  sDac = 0x010A;
-
+  sDac = 0x010A; 
+ 
   /* Non-generic DAC initialization */
   switch(devc->model)
   {
@@ -2365,8 +2432,9 @@ init_cmi8788 (cmi8788_devc * devc)
     case SUBID_XONAR_D2:
     case SUBID_XONAR_D2X:
     case SUBID_XONAR_STX:
+    case SUBID_XONAR_DS:
       /* Must set master clock. */
-      sDac |= XONAR_DX_MCLOCK_256;
+      sDac |= XONAR_MCLOCK_256;
       break;
   }
 
@@ -2494,41 +2562,69 @@ init_cmi8788 (cmi8788_devc * devc)
 
                     /* for all 4 codecs: unmute, set to 24Bit SPI */
 		    for (i = 0; i < 4; ++i) {
-			pcm1796_write(devc, i, 16, mix_scale(75,8)); /* left vol*/
-			pcm1796_write(devc, i, 17, mix_scale(75,8)); /* right vol */
-			pcm1796_write(devc, i, 18, 0x30 | 0x80); /* unmute/24LSB/ATLD */
+			spi_write(devc, xd2_codec_map[i], 16, mix_scale(75,8)); /* left vol*/
+			spi_write(devc, xd2_codec_map[i], 17, mix_scale(75,8)); /* right vol */
+			spi_write(devc, xd2_codec_map[i], 18, 0x30 | 0x80); /* unmute/24LSB/ATLD */
 		    }
   		    /* initialize the codec 0 */
   		    ac97_hwinit(devc);
 		    break;
 
-       case SUBID_XONAR_STX:
-	    /*GPIO0 = Antipop control */
-	    /*GPIO1 = frontpanel h/p control*/
-            /*GPIO7 = 0x0080 controls analog out*/
-            /*GPIO8 = 0x0100 controls mic/line in*/
-            /*GPIO2/3 = 0x000C codec input control*/
+ 		case SUBID_XONAR_STX:
+            	    /*GPIO0 = Antipop control */
+                    /*GPIO1 = frontpanel h/p control*/
+                    /*GPIO7 = 0x0080 controls analog out*/
+                    /*GPIO8 = 0x0100 controls mic/line in*/
+                    /*GPIO2/3 = 0x000C codec input control*/
 
-            /* setup for 2wire communication mode */
-            OUTB(devc->osdev, INB (devc->osdev, FUNCTION) | 0x40, FUNCTION);
+                    /* setup for 2wire communication mode */
+                    OUTB(devc->osdev, INB (devc->osdev, FUNCTION) | 0x40, FUNCTION);
 
-	    /* setup the GPIO direction control register */
-            OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x018F, GPIO_CONTROL);
-            /* setup GPIO pins mic/output */
-            OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x111, GPIO_DATA);
+                    /* setup the GPIO direction control register */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x018F, GPIO_CONTROL);
+                    /* setup GPIO pins mic/output */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x111, GPIO_DATA);
 
-            OUTW(devc->osdev, INW(devc, TWO_WIRE_CTRL)|0x0100, TWO_WIRE_CTRL);
+                    OUTW(devc->osdev, INW(devc, TWO_WIRE_CTRL)|0x0100, TWO_WIRE_CTRL);
 
-	    /* initialize the PCM1796 DAC */
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(75,8));
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(75,8));
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 18, 0x00|0x30|0x80); /*unmute, 24LSB, ATLD */
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 19, 0); /*ATS1/FLT_SHARP*/
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 20, 0); /*OS_64*/
-            two_wire_write(devc, XONAR_STX_FRONTDAC, 21, 0); 
+                    /* initialize the PCM1796 DAC */
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(75,8));
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 17, mix_scale(75,8));
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 18, 0x00|0x30|0x80); /*unmute, 24LSB, ATLD */
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 19, 0); /*ATS1/FLT_SHARP*/
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 20, 0); /*OS_64*/
+                    i2c_write(devc, XONAR_STX_FRONTDAC, 21, 0);
 
-            /* initialize the codec 0 */
-            ac97_hwinit(devc);
+                    /* initialize the codec 0 */
+                    ac97_hwinit(devc);
+		    break;
+
+	   case SUBID_XONAR_DS:
+			/* GPIO 8 = 1 output enabled 0 mute */
+			/* GPIO 7 = 1 lineout enabled 0 mute */
+			/* GPIO 6 = 1 mic select 0 line-in select */
+			/* GPIO 4 = 1 FP Headphone plugged in */
+			/* GPIO 3 = 1 FP Mic plugged in */
+
+                    /* setup for spi communication mode */
+                    OUTB(devc->osdev, (INB (devc->osdev, FUNCTION) & ~0x40)|0x32, FUNCTION);
+                    /* setup the GPIO direction */
+                    OUTW(devc->osdev, INW(devc->osdev, GPIO_CONTROL) | 0x1D0, GPIO_CONTROL);
+	            /* setup GPIO Pins */
+	            OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x1D0, GPIO_DATA);
+#if 1
+		    spi_write(devc, XONAR_DS_FRONTDAC, 0x17, 0x1); /* reset */
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0x7, 0x90); /* dac control */
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0x8, 0); /* unmute */
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0xC, 0x22 ); /* powerdown hp */
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0xD, 0x8); /* powerdown hp */
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0xA, 0x1); /* LJust/16bit*/
+	 	    spi_write(devc, XONAR_DS_FRONTDAC, 0xB, 0x1); /* LJust/16bit*/
+
+	 	    spi_write(devc, XONAR_DS_SURRDAC, 0x1f, 1); /* reset */
+	 	    spi_write(devc, XONAR_DS_SURRDAC, 0x3, 0x1|0x20); /* LJust/24bit*/
+#endif
+		   break;
 
 	   default:
 		   /* SPI default for anything else, including the */
@@ -2563,7 +2659,10 @@ init_cmi8788 (cmi8788_devc * devc)
 		case SUBID_XONAR_STX:
 			portc->adc_type = ADEV_I2SADC2;
       			break;
-		default:
+		case SUBID_XONAR_DS:
+			portc->adc_type = ADEV_I2SADC1;
+			break;
+		default: 
 			portc->adc_type = ADEV_I2SADC1;
       			OUTB (devc->osdev, INB (devc->osdev, REC_ROUTING) | 0x18, REC_ROUTING);
 			break;
@@ -2588,6 +2687,9 @@ init_cmi8788 (cmi8788_devc * devc)
                 case SUBID_XONAR_D2X:
                 case SUBID_XONAR_STX:
                         portc->adc_type = ADEV_I2SADC2;
+                        break;
+                case SUBID_XONAR_DS:
+                        portc->adc_type = ADEV_I2SADC1;
                         break;
                 default:
                         portc->adc_type = ADEV_I2SADC1;
@@ -2669,9 +2771,10 @@ init_cmi8788 (cmi8788_devc * devc)
     }
 
   /*
-   * Setup the default volumes to 75%
+   * Setup the default volumes to 90%
    */
-  default_vol = 0x4b4b;
+  default_vol = mix_scale(90,8)<<8|mix_scale(90,8);
+
   devc->playvol[0] =
     cmi8788_mixer_ioctl (devc->cmi_mixer_dev, first_dev,
 			 MIXER_WRITE (SOUND_MIXER_PCM), &default_vol);
@@ -2768,6 +2871,9 @@ oss_cmi878x_attach (oss_device_t * osdev)
           case SUBID_XONAR_STX:
             devc->chip_name = "Asus Xonar Essence STX (AV100)";
             break;
+	  case SUBID_XONAR_DS:
+	    devc->chip_name = "Asus Xonar DS (AV66)";
+	    break;
           default:
             devc->chip_name = "Asus Xonar (unknown)";
             sub_id = SUBID_GENERIC;

@@ -49,7 +49,6 @@ typedef struct
   oss_device_t *osdev;
   int physaddr;
   void *linaddr;
-  unsigned char *f3bar;
   int irq;
   char *chip_name;
   oss_mutex_t mutex;
@@ -75,19 +74,27 @@ geodeintr_5530 (oss_device_t * osdev)
 
   geode_devc *devc = osdev->devc;
   geode_portc *portc;
-  int i, n;
+  int i, n, irqstat;
   int serviced = 0;
   unsigned int pos;
   int ptr;
+
+  irqstat = CS_READW (devc, 0x12);
+  if (irqstat & 3) /* either gpio or gpio wakeup */
+    {
+          CS_READL (devc, 0x00);
+          serviced = 1;
+    }
 
   for (i = 0; i < MAX_PORTC; i++)
     {
       portc = &devc->portc[i];
 
-      if (portc->trigger_bits & PCM_ENABLE_OUTPUT)
+      if ((portc->trigger_bits & PCM_ENABLE_OUTPUT) && (irqstat & 4))
 	{
 	  dmap_t *dmap;
 	  dmap = audio_engines[portc->audiodev]->dmap_out;
+	  CS_READB (devc, 0x21);	/* ack interrupt */
 	  pos = CS_READL (devc, 0x24);
 	  pos = (pos - devc->prdout_phys) / 8;
 	  ptr = pos;
@@ -104,7 +111,7 @@ geodeintr_5530 (oss_device_t * osdev)
 	}
 
 
-      if (portc->trigger_bits & PCM_ENABLE_INPUT)
+      if ((portc->trigger_bits & PCM_ENABLE_INPUT) && (irqstat & 8))
 	{
 	  dmap_t *dmap;
 
@@ -135,78 +142,37 @@ geodeintr_5536 (oss_device_t * osdev)
 
   geode_devc *devc = osdev->devc;
   geode_portc *portc;
-  int i, n;
+  int i;
   int serviced = 0;
-  unsigned int pos;
-  int ptr;
   int irqstat;
 
   irqstat = CS_READW (devc, 0x12);
+
+  if (irqstat & 3) /* either gpio or gpio wakeup */
+    {
+          CS_READL (devc, 0x00);
+          serviced = 1;
+    }
 
   for (i = 0; i < MAX_PORTC; i++)
     {
       portc = &devc->portc[i];
 
-      if (irqstat & 3) /* either gpio or gpio wakeup */
-	{
-	  CS_READB (devc, 0x00);
-	  serviced = 1;
-	}
-
-      /* always clear the bits, even if we're not gonna handle it, and mark
-	 it handled. otherwise, the kernel will find noone has handled the
-	 interrupt and therefore disable it */
-      if (irqstat & 4)
-	{
-	  CS_READB (devc, 0x21);
-	  serviced = 1;
-	}
-
-      if (irqstat & 8)
-	{
-	  CS_READB (devc, 0x29);
-	  serviced = 1;
-	}
-
       if ((portc->trigger_bits & PCM_ENABLE_OUTPUT) && (irqstat & 4))
-	{
-	  dmap_t *dmap;
-	  dmap = audio_engines[portc->audiodev]->dmap_out;
-
-	  pos = CS_READL (devc, 0x60);
-	  pos = pos - dmap->dmabuf_phys;
-	  ptr = pos;
-	  ptr--;
-
-	  if (ptr < 0)
-	    ptr = 0;
-	  ptr %= dmap->nfrags;
-
-	  n = 0;
-	  while (ptr != dmap_get_qhead (dmap) && n++ < dmap->nfrags)
-	    oss_audio_outputintr (portc->audiodev, 0);
-	}
+	  if (CS_READB (devc, 0x21) & 1)
+	    {
+		oss_audio_outputintr (portc->audiodev, 0);
+		serviced = 1;
+		
+	    }
 
 
       if ((portc->trigger_bits & PCM_ENABLE_INPUT) && (irqstat & 8))
-	{
-	  dmap_t *dmap;
-
-	  dmap = audio_engines[portc->audiodev]->dmap_in;
-
-	  pos = CS_READL (devc, 0x64);
-	  pos = pos - dmap->dmabuf_phys;
-	  ptr = pos;
-	  ptr--;
-
-	  if (ptr < 0)
-	    ptr = 0;
-	  ptr %= dmap->nfrags;
-
-	  n = 0;
-	  while (ptr != dmap_get_qtail (dmap) && n++ < dmap->nfrags)
-	    oss_audio_inputintr (portc->audiodev, 0);
-	}
+	  if (CS_READB (devc, 0x29) & 1)
+	    {
+	    	oss_audio_inputintr (portc->audiodev, 0);
+		serviced = 1;
+	    }
     }
   return serviced;
 }
@@ -464,7 +430,6 @@ geode_audio_trigger (int dev, int state)
 	      !(portc->trigger_bits & PCM_ENABLE_OUTPUT))
 	    {
 	      CS_WRITEB (devc, 0x20, 0x01);
-	      CS_WRITEB (devc, 0x21, 0x00);
 	      portc->trigger_bits |= PCM_ENABLE_OUTPUT;
 	    }
 	}
@@ -475,7 +440,7 @@ geode_audio_trigger (int dev, int state)
 	    {
 	      portc->audio_enabled &= ~PCM_ENABLE_OUTPUT;
 	      portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
-
+	      CS_WRITEB (devc, 0x20, 0x00);
 	      for (i = 0; i < 512; i++)
 		{
 		  devc->prdout[i].size = PRD_EOT;	/* Stop */
@@ -492,7 +457,6 @@ geode_audio_trigger (int dev, int state)
 	      !(portc->trigger_bits & PCM_ENABLE_INPUT))
 	    {
 	      CS_WRITEB (devc, 0x28, 0x09);
-	      CS_WRITEB (devc, 0x29, 0x00);
 	      portc->trigger_bits |= PCM_ENABLE_INPUT;
 	    }
 	}
@@ -504,6 +468,7 @@ geode_audio_trigger (int dev, int state)
 	      portc->audio_enabled &= ~PCM_ENABLE_INPUT;
 	      portc->trigger_bits &= ~PCM_ENABLE_INPUT;
 
+	      CS_WRITEB (devc, 0x28, 0x00);
 	      for (i = 0; i < 512; i++)
 		{
 		  devc->prdin[i].size = PRD_EOT;	/* Stop */
@@ -521,27 +486,15 @@ geode_audio_prepare_for_input (int dev, int bsize, int bcount)
   geode_devc *devc = audio_engines[dev]->devc;
   geode_portc *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_in;
-  int i, stat;
+  int i;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   ac97_recrate (&devc->ac97devc, portc->speed);
 
-#if 0
-  if (dmap->nfrags > 256)
-    {
-      dmap->nfrags = 256;
-      dmap->bytes_in_use = 256 * dmap->fragment_size;
-    }
-#endif
-
 
   /* clear out the prd table */
   memset (devc->prdin, 0, 512 * sizeof (PRD_rec));
-
-  /* Clear DMA Bus Master Status */
-  stat = CS_READB (devc, 0x29);
-  stat++;			/* To supress warnings by lint */
 
   /* Initialize PRD entries */
   for (i = 0; i < dmap->nfrags; i++)
@@ -569,18 +522,12 @@ geode_audio_prepare_for_output (int dev, int bsize, int bcount)
   geode_devc *devc = audio_engines[dev]->devc;
   geode_portc *portc = audio_engines[dev]->portc;
   dmap_t *dmap = audio_engines[dev]->dmap_out;
-  int i, stat;
+  int i;
   oss_native_word flags;
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   ac97_playrate (&devc->ac97devc, portc->speed);
-#if 0
-  if (dmap->nfrags > 256)
-    {
-      dmap->nfrags = 256;
-      dmap->bytes_in_use = 256 * dmap->fragment_size;
-    }
-#endif
+
   /* clear out the PRD table */
   memset (devc->prdout, 0, 512 * sizeof (PRD_rec));
 
@@ -598,9 +545,6 @@ geode_audio_prepare_for_output (int dev, int bsize, int bcount)
 
   CS_WRITEL (devc, 0x24, devc->prdout_phys);
 
-  /* Clear DMA Bus master status */
-  stat = CS_READB (devc, 0x21);
-  stat++;			/* To supress warnings by lint */
   portc->audio_enabled &= ~PCM_ENABLE_OUTPUT;
   portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
@@ -692,16 +636,18 @@ init_geode (geode_devc * devc)
 
   devc->prdout_phys = phaddr;
 
-  /* VSA2 IRQ config method */
-  OUTW (devc->osdev, 0xFC53, 0xAC1C);
-  OUTW (devc->osdev, 0x108, 0xAC1C);
-  OUTW (devc->osdev, devc->irq, 0xAC1E);
+  if (devc->chip != AMD_CS5536_ID)
+    {
+  	/* VSA2 IRQ config method */
+  	OUTW (devc->osdev, 0xFC53, 0xAC1C);
+  	OUTW (devc->osdev, 0x108, 0xAC1C);
+  	OUTW (devc->osdev, devc->irq, 0xAC1E);
 
-  /* VSA1 IRQ config method */
-  OUTL (devc->osdev, 0x800090D0, 0x0CF8);
-  OUTL (devc->osdev, (devc->irq << 16) | 0xA00A, 0x0CFC);
-  oss_udelay (10000);
-
+  	/* VSA1 IRQ config method */
+  	OUTL (devc->osdev, 0x800090D0, 0x0CF8);
+  	OUTL (devc->osdev, (devc->irq << 16) | 0xA00A, 0x0CFC);
+  	oss_udelay (10000);
+   }
   /* Now configure the OSS devices */
 
   devc->mixer_dev =
@@ -735,12 +681,20 @@ init_geode (geode_devc * devc)
 
       if (i == 0)
 	{
-	  strcpy (tmp_name, devc->chip_name);
+          if (devc->chip == AMD_CS5536_ID)
+                sprintf (tmp_name, "%s", "Geode CS5536");
+          else
+                sprintf (tmp_name, "%s", "Geode CS5530");
+
 	  caps = opts | ADEV_DUPLEX;
 	}
       else
 	{
-	  strcpy (tmp_name, devc->chip_name);
+          if (devc->chip == AMD_CS5536_ID)
+                sprintf (tmp_name, "%s", "Geode CS5536 (playback)");
+          else
+                sprintf (tmp_name, "%s", "Geode CS5530 (playback");
+
 	  caps = opts | ADEV_DUPLEX | ADEV_SHADOW;
 	}
 
@@ -805,7 +759,7 @@ oss_geode_attach (oss_device_t * osdev)
   pci_read_config_dword (osdev, PCI_MEM_BASE_ADDRESS_0, &pci_ioaddr);
   pci_read_config_irq (osdev, PCI_INTERRUPT_LINE, &pci_irq_line);
 
-  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
+  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_IO;
   pci_write_config_word (osdev, PCI_COMMAND, pci_command);
 
   if (pci_ioaddr == 0)
@@ -854,18 +808,6 @@ oss_geode_attach (oss_device_t * osdev)
 	}
     }
 
-  /* Now map the Memory space - BROKEN for unknown reason. all input is valid
-     and all output from it can be interpreted as valid output from codec, it
-     still does only give write timeouts.
-     as the CS_* stuff works, this is worth being fixed only for following
-     good style.
-     when it's fixed, change stuff from this:
-     CS_READL (devc, 0x09)
-     to
-     PCI_READL (devc->osdev, devc->f3bar + 0x09) */
-  /* devc->linaddr = MAP_PCI_MEM (devc->osdev, 0, devc->physaddr, 128);
-  devc->f3bar = (unsigned char *) devc->linaddr; */
-
   return init_geode (devc);	/* Detected */
 }
 
@@ -887,9 +829,6 @@ oss_geode_detach (oss_device_t * osdev)
 
   MUTEX_CLEANUP (devc->mutex);
   MUTEX_CLEANUP (devc->low_mutex);
-
-  /* - disabled - see end of oss_geode_attach for explanation
-  UNMAP_PCI_MEM (devc->osdev, 0, devc->physaddr, devc->linaddr, 128); */
 
   if (devc->prdin != NULL)
     CONTIG_FREE (devc->osdev, devc->prdin, 512 * sizeof (PRD_rec), devc->prdin_dma_handle);

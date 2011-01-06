@@ -15,8 +15,12 @@ oss_audigyls	pci1102,7	Sound Blaster Audigy LS / Live7.1
 oss_audioloop	AUDIOLOOP	OSS loopback audio driver
 oss_audiopci	pci1274,5000	Creative AudioPCI (ES1370)
 oss_cmi878x	pci13f6,8788	CMedia CMI8788
-oss_cmi878x	pci1043,834f	Asus Xonar D1 (AV100)
-oss_cmi878x	pci1043,8275    Asus Xonar DX (AV100)
+oss_cmi878x	pci1043,8269    Asus Xonar D2 
+oss_cmi878x	pci1043,834f	Asus Xonar D1 
+oss_cmi878x	pci1043,8275    Asus Xonar DX 
+oss_cmi878x	pci1043,82b7    Asus Xonar D2X 
+oss_cmi878x	pci1043,838e    Asus Xonar DS 
+oss_cmi878x	pci1043,835c    Asus Xonar Essence STX 
 oss_cmpci	pci13f6,100	C-Media CM8338A
 oss_cmpci	pci13f6,100	MIDIMan DiO 2448
 oss_cmpci	pci13f6,101	CMedia CM8338B
@@ -64,7 +68,7 @@ oss_fmedia	pci1319,801	ForteMedia FM 801
 oss_fmedia	pcs1489,7008	Genius Sound Maker Live
 oss_geode	pci100b,503	National Semiconductor Geode SC1200
 oss_geode	pci1078,103	National Semiconductor Geode CS5530
-oss_geode	pci1022,2093	AMD Geode CS5536 (BETA)
+oss_geode	pci1022,2093	AMD Geode CS5536 
 oss_hdaudio	pci8086,2668	Intel High Definition Audio (ICH6)
 oss_hdaudio	pci8086,27d8	Intel High Definition Audio (ICH7)
 oss_hdaudio	pci8086,269a	Intel High Definition Audio (ESB2)
