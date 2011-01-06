@@ -378,7 +378,7 @@ spi_write (cmi8788_devc *devc, int codec_num, unsigned char reg, int val)
 
   /* check if SPI is busy */
    count = 10;
-   while ((INB(devc, SPI_CONTROL) & 0x1) && count-- > 0) {
+   while ((INB(devc->osdev, SPI_CONTROL) & 0x1) && count-- > 0) {
     	oss_udelay(10);
   }
 
@@ -2585,7 +2585,7 @@ init_cmi8788 (cmi8788_devc * devc)
                     /* setup GPIO pins mic/output */
                     OUTW(devc->osdev, INW(devc->osdev, GPIO_DATA) | 0x111, GPIO_DATA);
 
-                    OUTW(devc->osdev, INW(devc, TWO_WIRE_CTRL)|0x0100, TWO_WIRE_CTRL);
+                    OUTW(devc->osdev, INW(devc->osdev, TWO_WIRE_CTRL)|0x0100, TWO_WIRE_CTRL);
 
                     /* initialize the PCM1796 DAC */
                     i2c_write(devc, XONAR_STX_FRONTDAC, 16, mix_scale(75,8));
