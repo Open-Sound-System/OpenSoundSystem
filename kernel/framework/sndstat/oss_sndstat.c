@@ -65,7 +65,7 @@ init_status (void)
 
   put_status ("OSS " OSS_VERSION_STRING);
   put_status (oss_license_string);
-  put_status (" (C) 4Front Technologies 1996-2009\n");
+  put_status (" (C) 4Front Technologies 1996-2011\n");
 
   if (riptide_notice)
     put_status ("RipTide Driver (C) 2000, Conexant Systems, Inc.\n");

@@ -178,9 +178,7 @@ no_manual:
   else
     fprintf (conf, "name=\"%s\" parent=\"pseudo\" instance=0 ", module);
 
-#ifdef SOL9
    fprintf (conf, "ddi-no-autodetach=1 ddi-forceattach=1 \n");
-#endif
 
   sprintf (tmp, "%s/.params", srcdir);
   if ((f = fopen (tmp, "r")) != NULL)

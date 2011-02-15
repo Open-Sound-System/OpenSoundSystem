@@ -1648,7 +1648,7 @@ static mixer_driver_t audigyls_mixer_driver = {
 int
 oss_audigyls_attach (oss_device_t * osdev)
 {
-  int tmp, err, i, tries;
+  int tmp, err, i;
   unsigned char pci_irq_line, pci_revision;
   unsigned short pci_command, vendor, device;
   unsigned int pci_ioaddr;
@@ -1796,15 +1796,9 @@ oss_audigyls_attach (oss_device_t * osdev)
       /* for SBLive 7.1 */
       OUTL (devc->osdev, 0x005f4301, devc->base + 0x18);
       audigyls_i2c_write (devc, 0x15, 0x4);
-      tries = 0;
-    again:
-      for (i = 0; i < sizeof (spi_dac); i++)
+      for (i = 0; i < (sizeof (spi_dac)/sizeof (spi_dac[0])); i++)
 	{
-	  if (!audigyls_spi_write (devc, spi_dac[i]) && tries < 100)
-	    {
-	      tries++;
-	      goto again;
-	    }
+	  audigyls_spi_write (devc, spi_dac[i]);
 	}
     }
 
