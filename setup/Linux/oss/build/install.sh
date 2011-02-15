@@ -49,7 +49,7 @@ then
 	echo
 	echo
 	echo Error: Older OSS version seems to be installed in your system.
-	echo Please remove previous /usr/lib/oss directory and the install OSS v4.1 again.
+	echo Please remove previous /usr/lib/oss directory and the install OSS v4.x again.
 	soundoff
 	exit 127
 fi
