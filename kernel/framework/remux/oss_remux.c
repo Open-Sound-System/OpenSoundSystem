@@ -363,6 +363,7 @@ remux_prepare_for_output (int dev, int bsize, int bcount)
       if (dmap->dmabuf == NULL)
 	{
 	  cmn_err (CE_WARN, "dmabuf==NULL\n");
+	  MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 	  return OSS_ENOMEM;
 	}
 
