@@ -69,6 +69,7 @@ oss_fmedia	pcs1489,7008	Genius Sound Maker Live
 oss_geode	pci100b,503	National Semiconductor Geode SC1200
 oss_geode	pci1078,103	National Semiconductor Geode CS5530
 oss_geode	pci1022,2093	AMD Geode CS5536 
+oss_hdaudio	pci8086,1c20	Intel High Definition Audio (CPT)
 oss_hdaudio	pci8086,2668	Intel High Definition Audio (ICH6)
 oss_hdaudio	pci8086,27d8	Intel High Definition Audio (ICH7)
 oss_hdaudio	pci8086,269a	Intel High Definition Audio (ESB2)
