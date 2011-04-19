@@ -329,7 +329,7 @@ int
 snd_pcm_close (snd_pcm_t * pcm)
 {
   if (pcm == NULL)
-    return;
+    return -1;
   close (pcm->fd);
   if (pcm->area != NULL)
     free (pcm->area);
