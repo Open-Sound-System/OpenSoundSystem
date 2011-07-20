@@ -207,6 +207,7 @@ main (int argc, char *argv[])
   int i;
 
   add_includedir ("/usr/include");
+  add_includedir ("/usr/local/include");
 
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')
