@@ -37,7 +37,7 @@ typedef struct apci_devc
 
   /* Mixer parameters */
   int *levels;
-  unsigned char ak_regs[0x19];	/* Current mixer register values */
+  unsigned char ak_regs[0x20];	/* Current mixer register values */
   int recdevs;
   int micbias, micboost;
   unsigned char outsw1, outsw2;
