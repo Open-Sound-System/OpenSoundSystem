@@ -4,20 +4,30 @@
  * This generic driver is used to create mixer/control panels for HDaudio
  * codec chips that don't have any dedicated driver available.
  *
- * This drivere will obtain the widget definitions from the codec and then
+ * This driver will obtain the widget definitions from the codec and then
  * try to guess a mixer layout that makes some sense. However this approach
  * works properly only with a small set of codecs.
  *
  * Most codecs are unbearably complex and provide loads of redundant
  * functionality. The generic driver approach will not properly work with them
  * because the mixer (GUI) layout will become too large to fit on any screen.
- * In addtion such automatically generated mixer controls will not make any
+ * In addition such automatically generated mixer controls will not make any
  * sense to the users. So in the future the only possible approach will be
  * creating dedicated mixer drivers for all possible codecs in the market.
  * Unfortunately in some cases the driver may even need to be motherboard
  * specific. Apparently this is going to be enormous task.
  */
-#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2005-2007. All rights reserved.
+/*
+ *
+ * This file is part of Open Sound System.
+ *
+ * Copyright (C) 4Front Technologies 1996-2008.
+ *
+ * This this source file is released under GPL v2 license (no other versions).
+ * See the COPYING file included in the main directory of this source
+ * distribution for the license terms and conditions.
+ *
+ */
 
 #include "oss_hdaudio_cfg.h"
 #include "hdaudio.h"
@@ -826,7 +836,7 @@ hdaudio_generic_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad,
     }
 
 /*
- * Finally handle all the widgets that heve not been attached yet
+ * Finally handle all the widgets that have not been attached yet
  */
 
   n = 0;

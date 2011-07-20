@@ -1,7 +1,17 @@
 /*
  * Purpose: The High Definition Audio (HDA/Azalia) driver.
  */
-#define COPYING Copyright (C) Hannu Savolainen and Dev Mazumdar 2005. All rights reserved.
+/*
+ *
+ * This file is part of Open Sound System.
+ *
+ * Copyright (C) 4Front Technologies 1996-2008.
+ *
+ * This this source file is released under GPL v2 license (no other versions).
+ * See the COPYING file included in the main directory of this source
+ * distribution for the license terms and conditions.
+ *
+ */
 
 #include "oss_hdaudio_cfg.h"
 #include "oss_pci.h"
@@ -18,11 +28,12 @@
 #define INTEL_DEVICE_ESB2       0x269a
 #define INTEL_DEVICE_ICH8       0x284b
 #define INTEL_DEVICE_ICH9       0x293f
-#define INTEL_DEVICE_ICH10	0x3a3e
+#define INTEL_DEVICE_ICH10		0x3a3e
 #define INTEL_DEVICE_ICH10_B	0x3a6e
-#define INTEL_DEVICE_PCH	0x3b56
+#define INTEL_DEVICE_PCH		0x3b56
+#define INTEL_DEVICE_PCH2		0x3b57
+#define INTEL_DEVICE_SCH		0x811b
 #define INTEL_DEVICE_P35        0x293e
-#define INTEL_DEVICE_CPT        0x1c20
 
 #define NVIDIA_VENDOR_ID        0x10de
 #define NVIDIA_DEVICE_MCP51     0x026c
@@ -1054,26 +1065,31 @@ reset_controller (hda_devc_t * devc)
 {
   unsigned int tmp, tmout;
 
+  /*reset the controller by writing a 0*/
   tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
   tmp &= ~CRST;
   PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
 
+  /*wait until the controller writes a 0 to indicate reset is done or until 50ms have passed*/
   tmout = 50;
   while ((PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
     oss_udelay (1000);
 
   oss_udelay (1000);
 
+  /*bring the controller out of reset  by writing a 1*/
   tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
   tmp |= CRST;
   PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
 
+  /*wait until the controller writes a 1 to indicate it is ready is or until 50ms have passed*/
   tmout = 50;
   while (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
     oss_udelay (1000);
 
   oss_udelay (1000);
 
+  /*if the controller is not ready now, abort*/
   if (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL)))
     {
       cmn_err (CE_WARN, "Controller not ready\n");
@@ -1714,6 +1730,7 @@ init_HDA (hda_devc_t * devc)
   devc->mixer_dev = hdaudio_mixer_get_mixdev (devc->mixer);
 
   gcap = PCI_READW (devc->osdev, devc->azbar + HDA_GCAP);
+  DDB (cmn_err (CE_CONT, " GCAP register content 0x%x\n", gcap));
 
   if (((gcap >> 3) & 0x0f) > 0)
     cmn_err (CE_WARN, "Bidirectional engines not supported\n");
@@ -1737,7 +1754,8 @@ oss_hdaudio_attach (oss_device_t * osdev)
   hda_devc_t *devc;
   static int already_attached = 0;
   int err;
-
+  unsigned short devctl;	
+	
   DDB (cmn_err (CE_CONT, "oss_hdaudio_attach entered\n"));
 
   if (already_attached)
@@ -1803,6 +1821,13 @@ oss_hdaudio_attach (oss_device_t * osdev)
 
   switch (device)
     {
+    case INTEL_DEVICE_SCH:
+  	  pci_read_config_word (osdev, 0x78, &devctl);
+ 	  DDB (cmn_err (CE_CONT, " DEVC register content  0x%04x\n", devctl);)
+  	  pci_write_config_word (osdev, 0x78, (devctl & (~0x0800)) );
+  	  DDB (pci_read_config_word (osdev, 0x78, &devctl);)
+ 	  DDB (cmn_err (CE_CONT, " DEVC register content (after clearing DEVC.NSNPEN)  0x%04x\n", devctl);)
+	  /* continue is intentional */
     case INTEL_DEVICE_ICH6:
     case INTEL_DEVICE_ICH7:
     case INTEL_DEVICE_ESB2:
@@ -1812,7 +1837,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case INTEL_DEVICE_ICH10:
     case INTEL_DEVICE_ICH10_B:
     case INTEL_DEVICE_PCH:
-    case INTEL_DEVICE_CPT:
+    case INTEL_DEVICE_PCH2:
       devc->chip_name = "Intel HD Audio";
       break;
 
@@ -1869,10 +1894,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
   devc->azbar =
     (void *) MAP_PCI_MEM (devc->osdev, 0, devc->membar_addr, 16 * 1024);
 
-  /* activate the device */
-  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-  pci_write_config_word (osdev, PCI_COMMAND, pci_command);
-
+  /*verify interrupt*/
   if (pci_irq_line == 0)
     {
       cmn_err (CE_WARN, "IRQ not assigned by BIOS.\n");
@@ -1880,6 +1902,11 @@ oss_hdaudio_attach (oss_device_t * osdev)
     }
 
   devc->irq = pci_irq_line;
+   
+  /* activate the device */
+  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
+  pci_write_config_word (osdev, PCI_COMMAND, pci_command);
+
 
   MUTEX_INIT (devc->osdev, devc->mutex, MH_DRV);
   MUTEX_INIT (devc->osdev, devc->low_mutex, MH_DRV + 1);
@@ -1899,7 +1926,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     {
       pci_read_config_byte (osdev, 0x44, &btmp);
       pci_write_config_byte (osdev, 0x44, btmp & 0xf8);
-    }
+     }
 
   err = init_HDA (devc);
   return err;
