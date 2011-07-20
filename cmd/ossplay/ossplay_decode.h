@@ -23,7 +23,7 @@ verbose_values_t;
 
 errors_t decode_sound (dspdev_t *, int, big_t, int, int, int, void *);
 errors_t encode_sound (dspdev_t *, fctypes_t, const char *, int, int, int,
-                       big_t);
+                       double);
 int get_db_level (const unsigned char *, ssize_t, int);
 verbose_values_t * setup_verbose (int, double, double);
 

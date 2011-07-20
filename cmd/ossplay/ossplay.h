@@ -269,7 +269,7 @@ int ossplay_parse_opts (int, char **, dspdev_t *);
 int ossrecord_parse_opts (int, char **, dspdev_t *);
 int play (dspdev_t *, int, big_t *, big_t, double, double,
           readfunc_t *, decoders_queue_t *, seekfunc_t *);
-int record (dspdev_t *, FILE *, const char *, double, big_t,
+int record (dspdev_t *, FILE *, const char *, double, double,
             big_t *, decoders_queue_t * dec);
 const char * sample_format_name (int);
 errors_t setup_device (dspdev_t *, int, int, int);

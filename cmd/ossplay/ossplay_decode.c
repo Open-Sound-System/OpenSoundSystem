@@ -440,9 +440,9 @@ exit:
 
 errors_t
 encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
-              int channels, int speed, big_t datalimit)
+              int channels, int speed, double data_time)
 {
-  big_t datasize = 0;
+  big_t data_size = 0;
   double constant;
   int fd = -1;
   decoders_queue_t * dec, * decoders = NULL;
@@ -452,7 +452,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   if ((ret = setup_device (dsp, format, channels, speed))) return ret;
   constant = format2bits (format) * speed * channels / 8.0;
 
-  if (datalimit != 0) datalimit *= constant;
+  if (data_time != 0) data_size = data_time * constant;
 
   if (strcmp (fname, "-") == 0) {
     wave_fp = fdopen (1, "wb");
@@ -485,7 +485,7 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
   /*
    * Write the initial header
    */
-  if (write_head (wave_fp, type, datalimit, format, channels, speed))
+  if (write_head (wave_fp, type, data_size, format, channels, speed))
     return E_ENCODE;
 
   decoders = dec =
@@ -506,9 +506,9 @@ encode_sound (dspdev_t * dsp, fctypes_t type, const char * fname, int format,
       decoders->flag = 0;
     }
 
-  ret = record (dsp, wave_fp, fname, constant, datalimit, &datasize, dec);
+  ret = record (dsp, wave_fp, fname, constant, data_time, &data_size, dec);
 
-  finalize_head (wave_fp, type, datasize, format, channels, speed);
+  finalize_head (wave_fp, type, data_size, format, channels, speed);
   fflush (wave_fp);
   /*
    * EINVAL and EROFS are returned for "special files which don't support

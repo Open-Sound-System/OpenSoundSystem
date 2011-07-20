@@ -35,7 +35,7 @@ off_t (*ossplay_lseek) (int, off_t, int) = lseek;
 
 char script[512] = "";
 unsigned int nfiles = 1;
-big_t datalimit = 0;
+double datalimit = 0;
 fctypes_t type = WAVE_FILE;
 
 const format_t format_a[] = {
@@ -660,7 +660,7 @@ ossplay_getint (int signum)
   if (eflag == signum + 128)
     {
       signal (signum, SIG_DFL);
-      kill (getpid(), signum);
+      raise (signum);
     }
 #endif
   eflag = signum + 128;
@@ -772,6 +772,7 @@ ossplay_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 int
 ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
 {
+  char * p;
   int c;
   extern char * optarg;
   extern int optind;
@@ -882,7 +883,9 @@ ossrecord_parse_opts (int argc, char ** argv, dspdev_t * dsp)
           break;
 
         case 't':
-          sscanf (optarg, _PRIbig_t, &datalimit);
+          errno = 0;
+          datalimit = strtod (optarg, &p);
+          if ((*p != '\0') || (errno) || (datalimit <= 0)) ossrecord_usage (argv[0]);
           break;
 
         case 'O':
@@ -1137,7 +1140,7 @@ play (dspdev_t * dsp, int fd, big_t * datamark, big_t bsize, double total_time,
 
 int
 record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
-        big_t datalimit, big_t * data_size, decoders_queue_t * dec)
+        double datatime, big_t * data_size, decoders_queue_t * dec)
 {
 #define EXITREC(code) \
   do { \
@@ -1150,14 +1153,15 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
     return (code); \
   } while(0)
 
-  ssize_t l, outl;
-  decoders_queue_t * d;
   unsigned char * buf, * obuf;
+  ssize_t l, outl;
+  big_t data_size_limit = *data_size;
+  decoders_queue_t * d;
   verbose_values_t * verbose_meta = NULL;
 
   if (verbose)
     {
-      verbose_meta = setup_verbose (dsp->format, constant, datalimit/constant);
+      verbose_meta = setup_verbose (dsp->format, constant, datatime);
       strncpy (verbose_meta->tstring, filename, 20)[19] = 0;
     }
 
@@ -1199,7 +1203,7 @@ record (dspdev_t * dsp, FILE * wave_fp, const char * filename, double constant,
       *data_size += outl;
       if (verbose) print_record_verbose_info (obuf, outl, verbose_meta);
 
-      if ((datalimit != 0) && (*data_size >= datalimit)) break;
+      if ((datalimit != 0) && (*data_size >= data_size_limit)) break;
     }
 
   ossplay_free (buf);

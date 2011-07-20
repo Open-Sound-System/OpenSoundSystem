@@ -316,7 +316,7 @@ ossrecord_main (int argc, char ** argv)
   errors_t err;
 
   extern int force_fmt, force_channels, force_speed, nfiles;
-  extern big_t datalimit;
+  extern double datalimit;
   extern fctypes_t type;
   extern char script[512];
 

@@ -683,7 +683,7 @@ play_au (dspdev_t * dsp, const char * filename, int fd, unsigned char * hdr,
     case 24:
     case 25:
     case 26:
-      print_msg (ERRORM, "%s: G.72x ADPCM encoded .au files are not supported",
+      print_msg (ERRORM, "%s: G.72x ADPCM encoded .au files are not supported\n",
                  filename);
       return E_FORMAT_UNSUPPORTED;
 
