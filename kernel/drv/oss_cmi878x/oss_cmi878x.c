@@ -1821,7 +1821,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  case SOUND_MIXER_DEVMASK:
             if (devc->model == SUBID_XONAR_STX)
-                *arg = SOUND_MASK_VOLUME;
+                *arg = SOUND_MASK_PCM;
             else
 	    	*arg = SOUND_MASK_PCM | SOUND_MASK_REARVOL | 
 			SOUND_MASK_CENTERVOL | SOUND_MASK_SIDEVOL;
@@ -1834,7 +1834,7 @@ cmi8788_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 
 	  case SOUND_MIXER_STEREODEVS:
             if (devc->model == SUBID_XONAR_STX)
-               *arg = SOUND_MASK_VOLUME;
+               *arg = SOUND_MASK_PCM;
             else
 	       *arg = SOUND_MASK_PCM | SOUND_MASK_REARVOL | 
 			SOUND_MASK_CENTERVOL | SOUND_MASK_SIDEVOL;
