@@ -43,6 +43,7 @@ o dma_buffsize	By default OSS will allocate audio DMA buffers with some
 		Default: 0 - system dependent buffsize.
 		This option mustn't be changed unless it's absolutely necessary.
 o max_intrate	Set the maximum number of interrupts per second.
+		A value of 0 means the number is unlimited.
 		Default: 100 interrupts per second which equals to about
 		10 msec minimum latencies.
 o vmix_disabled		The virtual mixer subsystem can be disabled by setting

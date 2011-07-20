@@ -13,7 +13,8 @@ int max_intrate=100;
  * may require lower latencies. In such cases a higher value such as 500 or 1000
  * may be needed. The minimum latency will be roughly 2/max_intrate
  * seconds. However the exactl latency depends on what the application has
- * requested using ioctl(SNDCTL_DSP_SETFRAGMENT).
+ * requested using ioctl(SNDCTL_DSP_SETFRAGMENT). A value of zero means
+ * OSS doesn't try to limit interrupt rate.
  *
  * Lower latencies require higher interrupt rates which in turn causes higher
  * system overhead. In addition using max_intrate values higher than system's
