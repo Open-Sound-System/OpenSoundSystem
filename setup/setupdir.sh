@@ -9,6 +9,8 @@ then
 	exit 1
 fi
 
+[ -z "$CC" ] && CC=cc
+
 echo srcdir=$SRCDIR
 
 BLDDIR=`pwd`
@@ -84,7 +86,7 @@ echo BLDDIR=$BLDDIR > .directories
 echo SRCDIR=$SRCDIR >> .directories
 echo OSSLIBDIR=$OSSLIBDIR >> .directories
 
-cc -o dirsetup $SRCDIR/setup/dirsetup.c
+$CC $LDFLAGS -o dirsetup $SRCDIR/setup/dirsetup.c
 
 # Make sure the latest soundcard.h version is installed in the system
 #rm /usr/include/sys/soundcard.h
@@ -142,7 +144,7 @@ then
   DTARGETOS="-D$TARGETOS"
 fi
 
-cc -D`uname -s` $DTARGETOS -o srcconf $SRCDIR/setup/srcconf.c
+$CC $LDFLAGS -D`uname -s` $DTARGETOS -o srcconf $SRCDIR/setup/srcconf.c
 
 if ./srcconf $*
 then
@@ -245,7 +247,7 @@ fi
 # Setup the link to the right os.h file for this operating system.
 (cd kernel/framework/include;ln -s ../../../kernel/OS/$OS/os_*.h os.h)
 
-cc -o ossvers -I./kernel/framework/include  setup/ossvers.c
+$CC $LDFLAGS -o ossvers -I./kernel/framework/include  setup/ossvers.c
 ./ossvers > .version
 rm ./ossvers
 

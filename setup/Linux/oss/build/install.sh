@@ -7,6 +7,8 @@ else
   echo "OSSLIBDIR=/usr/lib/oss" > /etc/oss.conf
 fi
 
+[ -z "$LD" ] && LD=ld
+
 cd $OSSLIBDIR/build
 
 rm -f $OSSLIBDIR/.cuckoo_installed
@@ -201,7 +203,7 @@ then
 	exit 3
 fi
 
-if ! ld -r osscore.ko osscore_mainline.o -o /lib/modules/$UNAME/kernel/oss/osscore.ko
+if ! $LD -r osscore.ko osscore_mainline.o -o /lib/modules/$UNAME/kernel/oss/osscore.ko
 then
 	echo Linking the osscore module failed
 	exit 5
@@ -238,7 +240,7 @@ do
 		exit 4
 	fi
 
-	if ! ld -r $N.ko $N_mainline.o -o /lib/modules/$UNAME/kernel/oss/$N.ko
+	if ! $LD -r $N.ko $N_mainline.o -o /lib/modules/$UNAME/kernel/oss/$N.ko
 	then
 		echo Linking $N module failed
 		exit 6

@@ -11,6 +11,8 @@ else
    TXT2MAN=./txt2man
 fi
 
+[ -z "$LD" ] && LD=ld
+
 rm -rf prototype
 
 mkdir prototype
@@ -105,7 +107,7 @@ cp -a $SRCDIR/setup/Linux/oss/* prototype/$OSSLIBDIR/
 cp -a $SRCDIR/setup/Linux/sbin prototype/usr/
 chmod +x prototype/$OSSLIBDIR/scripts/*
 
-if ! ld -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
+if ! $LD -r -o prototype/$OSSLIBDIR/$OBJECTS/osscore.o target/objects/*.o
 then
   echo Linking osscore failed!
   exit 1
@@ -121,7 +123,7 @@ done
 for n in target/modules/*.o
 do
 	N=`basename $n .o`
-	ld -r -o prototype/$OSSLIBDIR/$MODULES/$N.o $n
+	$LD -r -o prototype/$OSSLIBDIR/$MODULES/$N.o $n
 	echo Check devices for $N
   	grep "^$N[ 	]" ./devices.list >> devlist.txt
 
@@ -147,12 +149,12 @@ rm -f /tmp/ossman.txt
 # Link the optional NOREGPARM modules
 if test -d noregparm
 then
-   ld -r -o prototype/$OSSLIBDIR/objects.noregparm/osscore.o noregparm/target/objects/*.o
+   $LD -r -o prototype/$OSSLIBDIR/objects.noregparm/osscore.o noregparm/target/objects/*.o
 
    for n in noregparm/target/modules/*.o
    do
 	N=`basename $n .o`
-	ld -r -o prototype/$OSSLIBDIR/modules.noregparm/$N.o $n
+	$LD -r -o prototype/$OSSLIBDIR/modules.noregparm/$N.o $n
    done
 fi
 
