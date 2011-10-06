@@ -30,6 +30,7 @@
 #define INTEL_DEVICE_ICH9       0x293f
 #define INTEL_DEVICE_ICH10		0x3a3e
 #define INTEL_DEVICE_ICH10_B	0x3a6e
+#define INTEL_DEVICE_CPT	0x1c20
 #define INTEL_DEVICE_PCH		0x3b56
 #define INTEL_DEVICE_PCH2		0x3b57
 #define INTEL_DEVICE_SCH		0x811b
@@ -1838,6 +1839,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case INTEL_DEVICE_ICH10_B:
     case INTEL_DEVICE_PCH:
     case INTEL_DEVICE_PCH2:
+    case INTEL_DEVICE_CPT:
       devc->chip_name = "Intel HD Audio";
       break;
 
