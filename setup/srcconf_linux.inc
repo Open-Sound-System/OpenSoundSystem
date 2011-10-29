@@ -40,7 +40,7 @@ check_sysdep (conf_t * conf, struct utsname *un)
     }
 
   if (do_warning_checks)
-    strcpy(conf->OSflags, "-Wall -Werror");
+    strcpy(conf->OSflags, "-Wall");
   strcpy (conf->ccomp, targetcc);
   strcpy (conf->cplusplus, "g++ -fno-rtti -fno-exceptions -I.");
   strcpy (conf->platform, "i86pc");

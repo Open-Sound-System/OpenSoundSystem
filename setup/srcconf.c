@@ -1160,7 +1160,7 @@ printf("Symlink %s -> %s\n", source, target);
 
       fprintf (f, "$(BINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(BINDIR)/%s $(OBJECTS) %s\n",
+	       "\t$(CC) $(CFLAGS) -s -o $(BINDIR)/%s $(OBJECTS) $(LIBRARIES) $(LDFLAGS) %s\n",
 	       name, extra_libraries);
       fprintf (f, "\n\n");
     }
@@ -1189,7 +1189,7 @@ printf("Symlink %s -> %s\n", source, target);
 
       fprintf (f, "$(SBINDIR)/%s:\t$(OBJECTS)\n", name);
       fprintf (f,
-	       "\t$(CC) $(CFLAGS) $(LIBRARIES) $(LDFLAGS) -s -o $(SBINDIR)/%s $(OBJECTS) %s\n",
+	       "\t$(CC) $(CFLAGS) -s -o $(SBINDIR)/%s $(OBJECTS) $(LIBRARIES) $(LDFLAGS) %s\n",
 	       name, extra_libraries);
       fprintf (f, "\n\n");
     }
