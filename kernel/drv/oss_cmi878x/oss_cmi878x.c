@@ -456,7 +456,7 @@ i2c_write (cmi8788_devc *devc, unsigned char codec_num, unsigned char reg,
 
 }
 
-static int
+static void
 cs4398_init (cmi8788_devc *devc, int codec_addr)
 {
 
@@ -481,11 +481,9 @@ cs4398_init (cmi8788_devc *devc, int codec_addr)
   i2c_write(devc, codec_addr, 7, 0xF0);
   /* Remove power down flag. */
   i2c_write(devc, codec_addr, CS4398_MISC_CTRL, CS4398_CPEN);
-
-  return 1;
 }
 
-static int
+static void
 cs4362a_init(cmi8788_devc *devc, int codec_addr)
 {
   
@@ -515,12 +513,10 @@ cs4362a_init(cmi8788_devc *devc, int codec_addr)
   i2c_write(devc, codec_addr, CS4362A_VOLB_3, 0x40);
   /* Power up. */
   i2c_write(devc, codec_addr, CS4362A_MODE1_CTRL, CS4362A_CPEN);
-
-  return 1;
 }
 
 
-static int
+static void
 cs2000_init(cmi8788_devc *devc, int addr)
 {
 
@@ -2403,7 +2399,7 @@ cmi8788_mix_init (int dev)
 				  "OUTPUTSRC", 3,
 				  MIXF_READABLE | MIXF_WRITEABLE)) < 0)
 	return ctl;
-    mixer_ext_set_strings (dev, ctl, "Speaker Headphone FP-Headphone", 0);
+    mixer_ext_set_strings (dev, ctl, "Speaker Headphone FrontHeadphone", 0);
 
 
     if ((ctl =
@@ -2483,7 +2479,8 @@ cmi8788_mix_init (int dev)
 }
 
 
-void ac97_hwinit(cmi8788_devc *devc)
+static void 
+ac97_hwinit(cmi8788_devc *devc)
 {
 
     /* Gpio #0 programmed as output, set CMI9780 Reg0x70 */
