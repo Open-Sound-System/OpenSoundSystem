@@ -1886,6 +1886,9 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case CREATIVE_XFI_HDA:
       devc->chip_name = "Creative Labs XFi XTreme Audio";
       break;
+
+    default:
+      devc->chip_name = "High definition audio device";
     }
 
   pci_read_config_dword (osdev, PCI_MEM_BASE_ADDRESS_0, &devc->membar_addr);
