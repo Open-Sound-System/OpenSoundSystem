@@ -139,7 +139,7 @@ then
 fi
 
 DTARGETOS=
-if ! test -z $TARGETOS
+if test "$TARGETOS " != " "
 then
   DTARGETOS="-D$TARGETOS"
 fi
