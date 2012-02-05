@@ -4,7 +4,7 @@
 
 VERSION=`sh showversion.sh`
 RELEASE=`cat buildid.dat`
-ARCH=`uname -i`
+ARCH=`uname -m`
 OSSNAME=oss-linux
 
 RPMNAME=$OSSNAME-$VERSION
@@ -23,7 +23,7 @@ cat /tmp/filelist >> spec
 rm -rf /tmp/prototype
 cp -af prototype /tmp
 tar zcvf /tmp/oss $RPMNAME
-rpmbuild -bb --define "_sourcedir /tmp" --define "_rpmdir ./" --define '_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm' spec
+rpmbuild -bb --buildroot=/tmp/prototype --define "_sourcedir /tmp" --define "_rpmdir ./" --define '_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm' spec
 # Cleanup
 rm -rf /tmp/oss /tmp/filelist $RPMNAME spec
 
