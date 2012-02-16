@@ -1691,8 +1691,11 @@ create_vmix_engine (vmix_mixer_t * mixer)
 						&vmix_driver,
 						sizeof (audiodrv_t),
 						opts,
-						AFMT_S16_NE | AFMT_S32_NE |
-						AFMT_FLOAT, mixer, -1)) < 0)
+#ifdef CONFIG_OSS_VMIX_FLOAT
+						AFMT_FLOAT |
+#endif
+						AFMT_S16_NE | AFMT_S32_NE,
+						mixer, -1)) < 0)
     {
       return portc->audio_dev;
     }
