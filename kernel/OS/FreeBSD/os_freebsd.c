@@ -7,6 +7,7 @@
 #include "midi_core.h"
 #include <oss_pci.h>
 #include <sys/conf.h>
+#include <sys/module.h>
 #include <sys/proc.h>
 #include <sys/sx.h>
 #include <sys/mman.h>
@@ -306,7 +307,7 @@ oss_get_cardinfo (int cardnum, oss_card_info * ci)
 
   if (cards[cardnum]->name != NULL)
     strncpy (ci->longname, cards[cardnum]->name, 128);
-  ci->shortname[127] = 0;
+  ci->longname[127] = 0;
 
   if (cards[cardnum]->nick != NULL)
     strncpy (ci->shortname, cards[cardnum]->nick, 16);
@@ -404,8 +405,19 @@ oss_install_chrdev (oss_device_t * osdev, char *name, int dev_class,
 
   if (!(flags & CHDEV_VIRTUAL) && (name != NULL))
     {
+#if __FreeBSD_version >= 900023
+      bsd_cdev =
+	make_dev_credf (MAKEDEV_CHECKNAME, &oss_cdevsw, num, NULL,
+			UID_ROOT, GID_WHEEL, 0666, name, 0);
+      if (bsd_cdev == NULL)
+	{
+	  cmn_err (CE_WARN, "Cannot allocate device node /dev/%s\n", name);
+	  return;
+	}
+#else
       bsd_cdev =
 	make_dev (&oss_cdevsw, num, UID_ROOT, GID_WHEEL, 0666, name, 0);
+#endif
       cdev->info = bsd_cdev;
     }
 }
@@ -595,6 +607,12 @@ soundcard_attach (void)
 {
   oss_device_t *osdev;
 
+  if (module_lookupbyname("sound") != NULL)
+    {
+      cmn_err (CE_WARN, "Open Sound System conflicts with FreeBSD driver\n");
+      cmn_err (CE_CONT, "Please remove sound(4) from kernel or unload it\n");
+      return EBUSY;
+    }
   if ((osdev = PMALLOC (NULL, sizeof (*osdev))) == NULL)
     {
       return ENOSPC;
