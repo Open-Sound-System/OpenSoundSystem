@@ -836,6 +836,7 @@ static const codec_desc_t codecs[] = {
   {0x10ec0888, "ALC888", VF_ALC88X_HACK, (char **) &alc883remap}, 
   {0x10ec0889, "ALC889", VF_ALC88X_HACK, (char **) &alc883remap}, 
   {0x10ec0892, "ALC892", VF_ALC88X_HACK, (char **) &alc883remap}, 
+  {0x10ec0899, "ALC899", VF_ALC88X_HACK, (char **) &alc883remap},
 
   /* CMedia HDA codecs */
   {0x13f69880, "CMI9880", VF_NONE, (char **) &cmi9880remap},
