@@ -466,19 +466,21 @@ cs4398_init (cmi8788_devc *devc, int codec_addr)
   /* Power down, enable control mode.
    * i2c_write(devc, codec_addr, CS4398_MISC_CTRL, 
    * CS4398_CPEN | CS4398_POWER_DOWN);
-   * Left justified PCM (DAC and 8788 support I2S, but doesn't work.
-   * Setting it introduces clipping like hell).
    */
-  i2c_write(devc, codec_addr, CS4398_MODE_CTRL, 0);
+  
+  /* Left justified PCM (DAC and 8788 support I2S, but doesn't work.
+   * Setting it introduces clipping like hell).
+   * Setting Double-Speed mode to enable 176.4 & 192 KHz playback */
+  i2c_write(devc, codec_addr, CS4398_MODE_CTRL, 0x01);
   /* That's the DAC default, set anyway.  */
   i2c_write(devc, codec_addr, 3, 0x09);
-  /* PCM auto-mute. */
-  i2c_write(devc, codec_addr, 4, 0x82);
+  /* PCM auto-mute - DAC Default (PCM & DSD AutoMute & AutoPolarity)*/
+  i2c_write(devc, codec_addr, 4, 0xC0);
   /* Vol A+B to -64dB. */
   i2c_write(devc, codec_addr, 5, 0x80);
   i2c_write(devc, codec_addr, 6, 0x80);
-  /* Soft-ramping. */
-  i2c_write(devc, codec_addr, 7, 0xF0);
+  /* Soft-ramping - DAC Default (Soft Ramp with RampUp & RampDown)*/
+  i2c_write(devc, codec_addr, 7, 0xB0);
   /* Remove power down flag. */
   i2c_write(devc, codec_addr, CS4398_MISC_CTRL, CS4398_CPEN);
 }
@@ -889,7 +891,20 @@ cmi8788_audio_close (int dev, int mode)
 {
   cmi8788_portc *portc = audio_engines[dev]->portc;
   cmi8788_devc *devc = audio_engines[dev]->devc;
-
+  
+  /* muting AB, front, channels when we're done with playing audio - 'pop' & click free
+   * when stopping sound or when doing soundoff
+   * Only for D1/DX models - not sure if the problem appears on other Xonars
+   * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC */
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+    case SUBID_XONAR_D1:
+      i2c_write(devc,XONAR_DX_FRONTDAC, CS4398_MUTE_CTRL, 0xD8);
+      oss_udelay(1000);
+      break;
+  }
+   
   cmi8788_audio_reset (dev);
   portc->open_mode = 0;
   devc->open_mode &= ~mode;
@@ -924,7 +939,7 @@ cmi8788_audio_trigger (int dev, int state)
   cmi8788_portc *portc = audio_engines[dev]->portc;
   cmi8788_devc *devc = audio_engines[dev]->devc;
   oss_native_word flags;
-
+  
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
   if (portc->open_mode & OPEN_WRITE)
     {
@@ -1002,7 +1017,7 @@ cmi8788_audio_trigger (int dev, int state)
 
 	    }
 	}
-    }
+    }	
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
 }
 
@@ -1475,6 +1490,19 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
   portc->audio_enabled &= ~PCM_ENABLE_OUTPUT;
   portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
+  
+  /* unmuting the AB channels that were muted after we stopped playing audio.
+   * Delay is here for 'pop' & click free switching of sample rates. 
+   * Only for D1/DX models - not sure if the problem appears on other Xonars 
+   * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC */
+  switch(devc->model)
+  {
+    case SUBID_XONAR_DX:
+    case SUBID_XONAR_D1:
+      oss_udelay(1000);
+      i2c_write(devc,XONAR_DX_FRONTDAC,CS4398_MUTE_CTRL,0xC0);
+      break;
+  }
   return 0;
 }
 
