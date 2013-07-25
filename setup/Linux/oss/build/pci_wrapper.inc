@@ -17,7 +17,11 @@ typedef struct
 static dev_map_t dev_map[MAX_INSTANCE];
 static int n_devmap = 0;
 
-static int __devinit
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+ static int __devinit
+#else
+ static int
+#endif
 osspci_probe (struct pci_dev *pcidev, const struct pci_device_id *pciid)
 {
   oss_device_t *osdev;
@@ -65,7 +69,11 @@ osspci_probe (struct pci_dev *pcidev, const struct pci_device_id *pciid)
   return 0;
 }
 
-static void __devexit
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+ static int __devexit
+#else
+ static int
+#endif
 osspci_remove (struct pci_dev *pcidev)
 {
   int i;
@@ -80,7 +88,7 @@ osspci_remove (struct pci_dev *pcidev)
 	pci_disable_device (dev_map[i].pcidev);
 	osdev_delete (osdev);
 
-	return;
+	return 0;
       }
 
   printk (KERN_ALERT DRIVER_NICK ": Can't find the PCI device to detach\n");
