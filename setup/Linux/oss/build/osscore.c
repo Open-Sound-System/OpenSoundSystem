@@ -984,7 +984,9 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   fop->llseek = oss_no_llseek;
   fop->read = tmp_read;
   fop->write = tmp_write;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,11,0)
   fop->readdir = NULL;		/* tmp_readdir; */
+#endif
   fop->poll = tmp_poll;
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,35)
   fop->ioctl = tmp_ioctl;
