@@ -318,6 +318,13 @@ then
   $OSSLIBDIR/soundon.user >> $LOG 2>&1
 fi
 
+# Use alternative place for soundon.user
+if test -x /etc/oss/soundon.user
+then
+  echo Running /etc/oss/soundon.user >> $LOG
+  /etc/oss/soundon.user >> $LOG 2>&1
+fi
+
 if test "`ossinfo -g|grep TRIAL` " != " "
 then
 	echo
