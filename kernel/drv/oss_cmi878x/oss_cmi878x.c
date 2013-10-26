@@ -137,6 +137,10 @@
 #define	CS4398_MCLKDIV3   (1<<3)	/* Divive MCLK by 3 */
 #define CS4398_I2S	  (1<<4)	/* Set I2S mode */
 
+#define CS4398_SINGLE_SPEED 	0x00
+#define CS4398_DOUBLE_SPEED	0x01
+#define CS4398_QUAD_SPEED	0x02
+
 /* defs for CS4362A DAC */
 #define CS4362A_MODE1_CTRL 	0x01
 #define CS4362A_MODE2_CTRL	0x02
@@ -463,15 +467,14 @@ cs4398_init (cmi8788_devc *devc, int codec_addr)
   /* Fast Two-Wire. Reduces the wire ready time. */
   OUTW(devc->osdev, 0x0100, I2C_CTRL);
 
-  /* Power down, enable control mode.
-   * i2c_write(devc, codec_addr, CS4398_MISC_CTRL, 
-   * CS4398_CPEN | CS4398_POWER_DOWN);
-   */
+    /* Power down, enable control mode */
+    i2c_write(devc, codec_addr, CS4398_MISC_CTRL, 
+    CS4398_CPEN | CS4398_POWER_DOWN);
+   
   
   /* Left justified PCM (DAC and 8788 support I2S, but doesn't work.
-   * Setting it introduces clipping like hell).
-   * Setting Double-Speed mode to enable 176.4 & 192 KHz playback */
-  i2c_write(devc, codec_addr, CS4398_MODE_CTRL, 0x01);
+   * Setting it introduces clipping like hell)*/
+  i2c_write(devc, codec_addr, CS4398_MODE_CTRL, 0x00);
   /* That's the DAC default, set anyway.  */
   i2c_write(devc, codec_addr, 3, 0x09);
   /* PCM auto-mute - DAC Default (PCM & DSD AutoMute & AutoPolarity)*/
@@ -892,10 +895,12 @@ cmi8788_audio_close (int dev, int mode)
   cmi8788_portc *portc = audio_engines[dev]->portc;
   cmi8788_devc *devc = audio_engines[dev]->devc;
   
-  /* muting AB, front, channels when we're done with playing audio - 'pop' & click free
+  /* 
+   * muting AB, front, channels when we're done with playing audio - 'pop' & click free
    * when stopping sound or when doing soundoff
    * Only for D1/DX models - not sure if the problem appears on other Xonars
-   * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC */
+   * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC 
+   */
   switch(devc->model)
   {
     case SUBID_XONAR_DX:
@@ -948,6 +953,25 @@ cmi8788_audio_trigger (int dev, int state)
 	  if ((portc->audio_enabled & PCM_ENABLE_OUTPUT) &&
 	      !(portc->trigger_bits & PCM_ENABLE_OUTPUT))
 	    {
+	      
+	      /* 
+	      * Delay is here for removal of dangerous DC current and pops/clicks  - they might still
+	      * appear, but they won't damage anything.
+	      * Maybe it's just my Xonar DX, but it's pushing out small DC current 
+	      *	so we're waiting for it to settle down so to not let external amp amplify DC.
+	      * We're also unmuting the AB channels that were muted after we stopped playing audio.
+	      * Only for D1/DX models - not sure if the problem appears on other Xonars 
+	      * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC 
+	      */
+	      switch(devc->model)
+	      {
+		case SUBID_XONAR_DX:
+		case SUBID_XONAR_D1:
+		  oss_udelay(1000);
+		  i2c_write(devc,XONAR_DX_FRONTDAC,CS4398_MUTE_CTRL,0xC0);
+		  break;
+	      }
+	      
 	      /* Enable Interrupt */
 	      OUTW (devc->osdev,
 		    INW (devc->osdev, IRQ_MASK) | portc->play_irq_mask,
@@ -1292,6 +1316,52 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
   dmap_p dmap = audio_engines[dev]->dmap_out;
   oss_native_word flags;
   int i2s_rate, rate, spdif_rate, bits = 0, i2s_bits, channels = 0;
+  
+   /*
+   * Setting correct MCLK and oversampling speed based on input signal
+   * Only for D1/DX models and only for front (CS4398) DAC
+   * as I don't have any means of testing other channels or other cards
+   */
+    switch(devc->model)
+    {
+    case SUBID_XONAR_DX:
+    case SUBID_XONAR_D1:
+	  /*
+	   * If we're playing sub 50KHz audio, we're leaving MCLK at default
+	   * and setting oversampling to single mode - 128x oversampling
+	   */
+	  if(portc->speed < 50000)
+	  {
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_SINGLE_SPEED);
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
+	    CS4398_CPEN);
+	  }
+	  /*
+	   * If we're playing 50-100KHz audio, we're setting MCLK at default/2
+	   * (dividing MCLK by 2)
+	   * and setting oversampling to double mode - 64 oversampling
+	   */
+	  else if(portc->speed < 100000)
+	  {
+
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_DOUBLE_SPEED);
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
+	    CS4398_CPEN | CS4398_MCLKDIV2);
+	  }
+	  /*
+	   * If we're playing sub 100-200KHz audio, we're setting MCLK at default/2
+	   * (dividing MCLK by 2)
+	   * and setting oversampling to quad mode - 32x oversampling
+	   */
+	  else if(portc->speed < 200000)
+	  {
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_QUAD_SPEED); 
+	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
+	    CS4398_CPEN | CS4398_MCLKDIV2);
+	  }
+	  
+	  break;
+    }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
@@ -1491,18 +1561,7 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
   portc->trigger_bits &= ~PCM_ENABLE_OUTPUT;
   MUTEX_EXIT_IRQRESTORE (devc->mutex, flags);
   
-  /* unmuting the AB channels that were muted after we stopped playing audio.
-   * Delay is here for 'pop' & click free switching of sample rates. 
-   * Only for D1/DX models - not sure if the problem appears on other Xonars 
-   * Also only for DAC for front channels - not sure if the problem appears on side/rear/center DAC */
-  switch(devc->model)
-  {
-    case SUBID_XONAR_DX:
-    case SUBID_XONAR_D1:
-      oss_udelay(1000);
-      i2c_write(devc,XONAR_DX_FRONTDAC,CS4398_MUTE_CTRL,0xC0);
-      break;
-  }
+  
   return 0;
 }
 
