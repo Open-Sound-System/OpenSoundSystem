@@ -108,6 +108,7 @@
 #define XONAR_ST_CLOCK		0x9c
 #define XONAR_DS_FRONTDAC	0x1
 #define XONAR_DS_SURRDAC	0x0
+#define XONAR_MCLOCK_128	0x00
 #define XONAR_MCLOCK_256	0x10
 #define XONAR_MCLOCK_512	0x20
 
@@ -206,6 +207,9 @@
 
 /* CS4362A Reg 06h, 09h, 0Ch */
 /* ATAPI crap, does anyone still use analog CD playback? */
+#define CS4362A_SINGLE_SPEED 	0x00
+#define CS4362A_DOUBLE_SPEED	0x01
+#define CS4362A_QUAD_SPEED	0x02
 
 /* CS4362A Reg 07h, 08h, 0Ah, 0Bh, 0Dh, 0Eh */
 /* Volume registers */
@@ -954,7 +958,7 @@ cmi8788_audio_trigger (int dev, int state)
 	      !(portc->trigger_bits & PCM_ENABLE_OUTPUT))
 	    {
 	      
-	      /* 
+	     /* 
 	      * Delay is here for removal of dangerous DC current and pops/clicks  - they might still
 	      * appear, but they won't damage anything.
 	      * Maybe it's just my Xonar DX, but it's pushing out small DC current 
@@ -1316,52 +1320,6 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
   dmap_p dmap = audio_engines[dev]->dmap_out;
   oss_native_word flags;
   int i2s_rate, rate, spdif_rate, bits = 0, i2s_bits, channels = 0;
-  
-   /*
-   * Setting correct MCLK and oversampling speed based on input signal
-   * Only for D1/DX models and only for front (CS4398) DAC
-   * as I don't have any means of testing other channels or other cards
-   */
-    switch(devc->model)
-    {
-    case SUBID_XONAR_DX:
-    case SUBID_XONAR_D1:
-	  /*
-	   * If we're playing sub 50KHz audio, we're leaving MCLK at default
-	   * and setting oversampling to single mode - 128x oversampling
-	   */
-	  if(portc->speed < 50000)
-	  {
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_SINGLE_SPEED);
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
-	    CS4398_CPEN);
-	  }
-	  /*
-	   * If we're playing 50-100KHz audio, we're setting MCLK at default/2
-	   * (dividing MCLK by 2)
-	   * and setting oversampling to double mode - 64 oversampling
-	   */
-	  else if(portc->speed < 100000)
-	  {
-
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_DOUBLE_SPEED);
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
-	    CS4398_CPEN | CS4398_MCLKDIV2);
-	  }
-	  /*
-	   * If we're playing sub 100-200KHz audio, we're setting MCLK at default/2
-	   * (dividing MCLK by 2)
-	   * and setting oversampling to quad mode - 32x oversampling
-	   */
-	  else if(portc->speed < 200000)
-	  {
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_QUAD_SPEED); 
-	    i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MISC_CTRL, 
-	    CS4398_CPEN | CS4398_MCLKDIV2);
-	  }
-	  
-	  break;
-    }
 
   MUTEX_ENTER_IRQDISABLE (devc->mutex, flags);
 
@@ -1414,6 +1372,77 @@ cmi8788_audio_prepare_for_output (int dev, int bsize, int bcount)
 	    bits = 0;
 	    break;
 	  }
+	  
+	  
+	  /*
+	   * Setting correct MCLK/RCLK ratio and oversampling speed based on input signal
+	   * We have a clock generator at 24.5760MHz, so we use ratios for that speed
+	   * Only for D1/DX models and only for front (CS4398) DAC
+	   * as I don't have any means of testing other channels or other cards
+	   */
+	   switch(devc->model)
+	   {
+	   case SUBID_XONAR_DX:
+	   case SUBID_XONAR_D1:
+		/*
+		 * If we're playing up to 50KHz audio we need to set 512x MCLK/LRCK ratio
+		 * and set oversampling to single mode - 128x oversampling
+		 */
+		 if(portc->speed <= 50000)
+		 {
+		   OUTW (devc->osdev, 0x010A | XONAR_MCLOCK_512, I2S_MULTICH_FORMAT);
+		   i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_SINGLE_SPEED);
+		   		   
+		  /* Surround sound currently doesn't work on Xonar D1/DX - if it ever starts working
+		   * these three lines below are correct for setting the oversampling mode for surround DAC
+		
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX1_CTRL, 0x24 | CS4362A_SINGLE_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX2_CTRL, 0x24 | CS4362A_SINGLE_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX3_CTRL, 0x24 | CS4362A_SINGLE_SPEED);
+		   
+		   */
+		 }
+		 
+		/*
+		 * If we're playing up to 100KHz audio we need to set 256x MCLK/LRCK ratio
+		 * and set oversampling to double mode - 64x oversampling
+		 */
+		 else if(portc->speed <= 100000)
+		 {
+		   OUTW (devc->osdev, 0x010A | XONAR_MCLOCK_256, I2S_MULTICH_FORMAT);
+		   i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_DOUBLE_SPEED);
+		   
+		  /* Surround sound currently doesn't work on Xonar D1/DX - if it ever starts working
+		   * these three lines below are correct for setting the oversampling mode for surround DAC
+		
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX1_CTRL, 0x24 | CS4362A_DOUBLE_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX2_CTRL, 0x24 | CS4362A_DOUBLE_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX3_CTRL, 0x24 | CS4362A_DOUBLE_SPEED);
+		   
+		   */
+		 }
+		 
+		/*
+		 * If we're playing up to 200KHz audio we need to set 128x MCLK/LRCK ratio
+		 * and set oversampling to double mode - 32x oversampling
+		 */
+		 else if(portc->speed <= 200000)
+		 {
+		   OUTW (devc->osdev, 0x010A | XONAR_MCLOCK_128, I2S_MULTICH_FORMAT);
+		   i2c_write(devc, XONAR_DX_FRONTDAC, CS4398_MODE_CTRL, CS4398_QUAD_SPEED); 
+		   
+		  /* Surround sound currently doesn't work on Xonar D1/DX - if it ever starts working
+		   * these three lines below are correct for setting the oversampling mode for surround DAC
+		
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX1_CTRL, 0x24 | CS4362A_QUAD_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX2_CTRL, 0x24 | CS4362A_QUAD_SPEED);
+		   i2c_write(devc, XONAR_DX_SURRDAC, CS4362A_MIX3_CTRL, 0x24 | CS4362A_QUAD_SPEED);
+		   
+		   */
+		 }
+	  
+		 break;
+	   }
 
 	/* set the format bits in play format register */
 	OUTB (devc->osdev, (INB (devc->osdev, PLAY_FORMAT) & ~0xC) | bits,
