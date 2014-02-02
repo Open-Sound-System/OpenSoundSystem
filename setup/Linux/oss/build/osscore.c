@@ -130,6 +130,11 @@ oss_memcpy (void *t_, const void *f_, size_t l)
   return t;
 }
 
+void *memmove(void *dest, const void *src, size_t n)
+{
+	return oss_memcpy(dest, src, n);
+}
+
 void *
 oss_memset (void *t, int val, size_t l)
 {
