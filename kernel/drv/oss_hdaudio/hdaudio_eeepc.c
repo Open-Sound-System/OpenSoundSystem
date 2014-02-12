@@ -1,4 +1,4 @@
-#define COPYING Copyright (C) 4Front Technologies 2009. All rights reserved.
+#define COPYING Copyright (C) 4Front Technologies 2014. All rights reserved.
 
 /*
  * Purpose: Dedicated HDaudio mixer driver for Asus Eee PC

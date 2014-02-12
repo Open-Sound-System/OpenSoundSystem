@@ -1,4 +1,4 @@
-#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
+#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2014. All rights reserved.
 
 #define PCI_SUBDEVICE_ID_CREATIVE_SB0760        0x0024
 #define PCI_SUBDEVICE_ID_CREATIVE_SB08801       0x0041

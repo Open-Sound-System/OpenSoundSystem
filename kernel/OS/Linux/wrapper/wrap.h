@@ -6,7 +6,7 @@
  * modified in the target system because the precompiled binaries included
  * in the OSS installation package depend on it too.
  */
-#define COPYING12 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
+#define COPYING12 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2014. All rights reserved.
 
 /*
  * Some integer types

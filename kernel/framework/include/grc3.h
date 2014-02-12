@@ -4,7 +4,7 @@
  * GRC3 is a high quality sample rate conversion module that uses fixed point
  * arithmetic.
  */
-#define COPYING30 Copyright (C) George Yohng, Hannu Savolainen and Dev Mazumdar 1996-2009. All rights reserved.§
+#define COPYING30 Copyright (C) George Yohng, Hannu Savolainen and Dev Mazumdar 1996-2014. All rights reserved.§
 
 #ifndef GRC3_H_INCLUDED
 #define GRC3_H_INCLUDED

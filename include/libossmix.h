@@ -1,7 +1,7 @@
 /*
  * Declaration file for the ossmix library.
  */
-#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
+#define COPYING2 Copyright (C) Hannu Savolainen and Dev Mazumdar 2014. All rights reserved.
 
 typedef struct _ossmix_callback_parm ossmix_callback_parm_t;
 

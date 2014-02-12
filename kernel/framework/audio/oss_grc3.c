@@ -18,7 +18,7 @@
 
 char _grc3_copyright[] =
   "GRC library version 3.0\n"
-  "Copyright (C)2001-2009 4Front Technologies\n"
+  "Copyright (C)2001-2014 4Front Technologies\n"
   "Copyright (C)2001-2002 by George Yohng\n\0" "GRC3 ENGINE";
 
 #ifdef GRC3_COMPILE_L

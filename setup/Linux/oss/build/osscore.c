@@ -7,7 +7,7 @@
  */
 
 /*
- * Copyright (C) 4Front Technologies 2005-2009. Released under GPL2 license.
+ * Copyright (C) 4Front Technologies 2005-2014. Released under GPL2 license.
  */
 //#include <linux/config.h>
 typedef int *ioctl_arg;

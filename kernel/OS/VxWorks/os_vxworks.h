@@ -5,7 +5,7 @@
  * Purpose: OS specific definitions for VxWorks
  *
  */
-#define COPYING9 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2009. All rights reserved.
+#define COPYING9 Copyright (C) Hannu Savolainen and Dev Mazumdar 2000-2014. All rights reserved.
 
 #define OS_VERSION "5.5"
 

@@ -1,4 +1,4 @@
-#define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 2009. All rights reserved.
+#define COPYING3 Copyright (C) Hannu Savolainen and Dev Mazumdar 2014. All rights reserved.
 
 extern int mixlib_trace;
 
