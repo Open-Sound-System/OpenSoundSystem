@@ -4,7 +4,9 @@
 
 #BEOS_SYSTEM=beos/system
 # to install as user addons
-BEOS_SYSTEM=home/config
+BEOS_SYSTEM=${SYSTEM_DIR:-home/config}
+ADDONS_DIR=$BEOS_SYSTEM/add-ons
+BIN_DIR=$BEOS_SYSTEM/bin
 
 DRVPREFIX=oss_
 
@@ -36,16 +38,17 @@ mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/media
 #hack for now
 #mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin
-mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/audio/multi
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/audio/oss
 #hack for now
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/oss
 ln -s ../../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/oss/
-ln -s ../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/
+# Avoid loading OSS too early at boot,
+# the media addon will probe /dev/audio/oss anyway
+#ln -s ../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/
 #hack: install bins for now
-mkdir -p prototype/home/config/bin
+mkdir -p prototype/$BIN_DIR
 mkdir -p prototype/home/config/settings/kernel/drivers
-mkdir -p prototype/home/Desktop
+#mkdir -p prototype/home/Desktop
 
 #cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 
@@ -55,8 +58,8 @@ mkdir -p prototype/home/Desktop
 #cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
-cp -f target/bin/* prototype/home/config/bin
-cp -f target/sbin/* prototype/home/config/bin
+cp -f target/bin/* prototype/$BIN_DIR/
+cp -f target/sbin/* prototype/$BIN_DIR/
 
 #cp -R $SRCDIR/oss/* prototype/$OSSLIBDIR
 
@@ -90,16 +93,23 @@ core=prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss
 # no midi yet
 rm target/modules/oss_midiloop.o
 
+for k in /boot/develop/lib/x86/_KERNEL_ /boot/system/develop/lib/_KERNEL_; do
+	if [ -e "$k" ]; then
+		KERNEL="$k"
+		break
+	fi
+done
+
 # try to build all in a single bin for now...
 # driver_beos.o shouldn' be in, oh well...
 # R5 has symbols like __ucmpdi2 but not Haiku, so use libgcc
-gcc -o $core target/objects/*.o target/modules/*.o -nostdlib -lgcc /boot/develop/lib/x86/_KERNEL_ || exit 1
+gcc -o $core target/objects/*.o target/modules/*.o -nostdlib -lgcc $KERNEL || exit 1
 setvermime $core
 
 # except the loader driver...
 # using the same bin works in BeOS but not in Haiku.
 drv=prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin/${DRVPREFIX}loader
-gcc -o $drv target/objects/driver_beos.o -nostdlib /boot/develop/lib/x86/_KERNEL_ || exit 1
+gcc -o $drv target/objects/driver_beos.o -nostdlib $KERNEL || exit 1
 setvermime $drv
 
 rm -f devlist.txt

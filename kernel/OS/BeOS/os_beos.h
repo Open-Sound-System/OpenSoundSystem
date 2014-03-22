@@ -171,6 +171,11 @@ extern int oss_create_uio (uio_t * uiop, char *buf, size_t count, uio_rw_t rw,
  * Mutexes
  */
 
+/* Haiku defines a specific initializer now, BeOS just used 0. */
+#ifndef B_INITIALIZE_SPINLOCK
+#define B_INITIALIZE_SPINLOCK(spinlock) do { *spinlock = 0; } while (false)
+#endif
+
 #ifdef MUTEX_CHECKS
 /* Debugging version */
 struct _oss_mutex_t
@@ -198,7 +203,7 @@ extern void debug_mutex_exit (oss_mutex_t * mutex, char *file, int line, oss_nat
 #define MUTEX_EXIT(mutex, flags)			debug_mutex_exit(&mutex, __FILE__, __LINE__, NULL)
 #else
 typedef spinlock oss_mutex_t;
-#define MUTEX_INIT(osdev, mutex, hier)			{ mutex = 0; }
+#define MUTEX_INIT(osdev, mutex, hier)			B_INITIALIZE_SPINLOCK(&(mutex))
 #define MUTEX_CLEANUP(mutex)			
 #define MUTEX_ENTER_IRQDISABLE(mutex, flags)	\
 { \
