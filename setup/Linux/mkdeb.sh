@@ -12,7 +12,7 @@ if test `uname -m` = "x86_64"; then ARCH=amd64
 else ARCH=`uname -m|sed 's/^i[3-9]86/i386/'`
 fi
 
-DEBNAME=${OSSNAME}-${VERSION}-${RELEASE}_${ARCH}
+DEBNAME=${OSSNAME}-v${VERSION}-${RELEASE}-${ARCH}
 
 # Checking for known MD5 hashing programs
 if type md5sum > /dev/null 2>&1; then MD5=MD5SUM

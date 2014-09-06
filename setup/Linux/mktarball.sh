@@ -5,7 +5,10 @@
 VERSION=`sh showversion.sh`
 RELEASE=`cat buildid.dat`
 OSSNAME=oss-linux
-PKGNAME=$OSSNAME-$VERSION-$RELEASE-`uname -m`
+if test `uname -m` = "x86_64"; then ARCH=amd64
+else ARCH=`uname -m|sed 's/^i[3-9]86/i386/'`
+fi
+PKGNAME=$OSSNAME-$VERSION-$RELEASE-$ARCH
 
 echo building $PKGNAME.tar.bz2
 #cp ./setup/Linux/installoss.sh prototype

@@ -43,12 +43,6 @@ export NO_REGPARM=1
 
 echo > .nocopy
 echo Setting up kernel-only NOREGPARM compiling environment
-if ! test -d noregparm
-then
-	echo Error: no noregparm directory
-	exit -1
-fi
-
 (cd noregparm;sh $SRCDIR/setup/setupdir.sh -K)
 rm -f .nocopy
 

@@ -469,14 +469,19 @@ oss_get_pid (void)
   return current->pid;
 }
 
-int
+unsigned int
 oss_get_uid (void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
+  return current->cred->uid.val;
+#else 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,29)
   return current->cred->uid;
 #else
   return current->uid;
 #endif
+#endif
+  return 0;
 }
 
 typedef struct tmout_desc
@@ -926,6 +931,7 @@ oss_no_llseek (struct file *file, loff_t offset, int orig)
   return -EINVAL;
 }
 
+#if 0
 static int
 oss_no_fsync (struct file *f, struct dentry *d, int datasync)
 {
@@ -937,6 +943,7 @@ oss_no_fasync (int x, struct file *f, int m)
 {
   return -EINVAL;
 }
+#endif
 
 /*
  *	Wrappers for installing and uninstalling character and block devices.
@@ -999,8 +1006,8 @@ alloc_fop (oss_device_t * osdev, struct oss_file_operation_handle *op)
   fop->mmap = tmp_mmap;
   fop->open = tmp_open;
   fop->release = tmp_release;
-  fop->fsync = oss_no_fsync;
-  fop->fasync = oss_no_fasync;
+  fop->fsync = NULL; /* oss_no_fsync; */
+  fop->fasync = NULL; /* oss_no_fasync; */
   fop->lock = NULL;
   fop->flush = NULL;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
@@ -1669,7 +1676,7 @@ osscore_intr (int irq, void *arg)
 extern int oss_pci_read_config_irq (oss_device_t * osdev, unsigned long where,
 				    unsigned char *val);
 
-char *
+const char *
 oss_pci_read_devpath (dev_info_t * dip)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,30)

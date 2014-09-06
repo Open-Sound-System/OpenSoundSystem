@@ -12,7 +12,7 @@
  * Some integer types
  */
 #if defined(__x86_64__)
-typedef unsigned long long oss_native_word;	/* Same as the address and status register size */
+typedef unsigned long oss_native_word;	/* Same as the address and status register size */
 #else
 typedef unsigned long oss_native_word;	/* Same as the address and status register size */
 #endif
@@ -50,7 +50,8 @@ extern void oss_spin_unlock (oss_mutex_t mutex);
 extern unsigned long long oss_get_jiffies (void);
 extern char *oss_get_procname (void);
 extern int oss_get_pid (void);
-extern int oss_get_uid (void);
+extern unsigned int oss_get_uid (void);
+
 
 struct oss_wait_queue;
 struct module;
@@ -137,8 +138,6 @@ typedef struct oss_file_operation_handle
   int (*release) (oss_inode_handle_t *, oss_file_handle_t *);
   long (*compat_ioctl) (oss_file_handle_t *, unsigned int, unsigned long);
   long (*unlocked_ioctl) (oss_file_handle_t *, unsigned int, unsigned long);
-  int (*fsync) (oss_inode_handle_t *, oss_file_handle_t *);
-  int (*fasync) (oss_inode_handle_t *, oss_file_handle_t *, int);
 }
 oss_file_operation_handle_t;
 
@@ -176,7 +175,7 @@ extern void osdev_delete (oss_device_t * osdev);
 /*
  * PCI config space access (in osscore.c)
  */
-extern char *oss_pci_read_devpath (dev_info_t * dip);
+extern const char *oss_pci_read_devpath (dev_info_t * dip);
 extern int osscore_pci_read_config_byte (dev_info_t * dip, unsigned int where,
 					 unsigned char *val);
 extern int osscore_pci_read_config_irq (dev_info_t * dip, unsigned int where,

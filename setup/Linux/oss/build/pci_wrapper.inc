@@ -92,6 +92,7 @@ osspci_remove (struct pci_dev *pcidev)
       }
 
   printk (KERN_ALERT DRIVER_NICK ": Can't find the PCI device to detach\n");
+  return -EIO;
 }
 
 void

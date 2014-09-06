@@ -1057,6 +1057,7 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   osdev->dip = dip;
   //osdev->osid = dip;
   osdev->unloaded = 0;
+  osdev->available = 1;
   osdev->first_mixer = -1;
   osdev->instance = instance;
   osdev->dev_type = dev_type;
@@ -1094,8 +1095,6 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
       cmn_err (CE_WARN, "Bad device type\n");
       return NULL;
     }
-
-  osdev->available = 1;
 
 /*
  * Create the device handle

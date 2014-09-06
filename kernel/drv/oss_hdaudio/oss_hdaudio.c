@@ -37,6 +37,7 @@
 #define INTEL_DEVICE_PBG        0x1d20
 #define INTEL_DEVICE_PPT        0x1e20
 #define INTEL_DEVICE_SCH        0x811b
+#define INTEL_DEVICE_PCH_C      0x8c20
 
 #define NVIDIA_VENDOR_ID        0x10de
 #define NVIDIA_DEVICE_MCP51     0x026c
@@ -1820,6 +1821,7 @@ oss_hdaudio_attach (oss_device_t * osdev)
     case INTEL_DEVICE_ICH10_B:
     case INTEL_DEVICE_PCH:
     case INTEL_DEVICE_PCH_B:
+    case INTEL_DEVICE_PCH_C:
       devc->chip_name = "Intel HD Audio";
       break;
 
