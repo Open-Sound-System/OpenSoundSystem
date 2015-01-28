@@ -185,7 +185,6 @@ oss_kmem_alloc (size_t size, int flags)
   *len = size + sizeof (uint64_t);
 
 #ifdef MEMDEBUG
-#if 1
   {
     int i;
     for (i = 0; i < num_memblocks; i++)
@@ -198,7 +197,6 @@ oss_kmem_alloc (size_t size, int flags)
 	  return ptr;
 	}
   }
-#endif
 
   if (num_memblocks < MAX_MEMBLOCKS)
     {
@@ -243,18 +241,18 @@ oss_kmem_free (void *addr)
 }
 
 static const ddi_dma_attr_t dma_attr_pci = {
-  DMA_ATTR_V0,		// Version
-  0x00000000ULL,	// Address low
-  0xfffffff0ULL,	// Address high
-  0xffffffffULL,	// Counter max
-  1ULL,			// Default byte align
-  0x7f,			// Burst size
-  0x1,			// Minimum xfer size
-  0xffffffffULL,	// Maximum xfer size
-  0xffffffffULL,	// Max segment size
-  1,			// S/G list length
-  1,			// Granularity
-  0			// Flag
+  DMA_ATTR_V0,          // Version
+  0x00000000,        // Address low
+  0xffffffff,        // Address high
+  0xfffffffe,        // Counter max
+  4,                 // Default byte align
+  0x3c,                 // Burst size
+  4,                  // Minimum xfer size
+  0xffffffff,        // Maximum xfer size
+  0xffffffff,        // Max segment size
+  1,                    // S/G list length
+  4,                    // Granularity
+  0                     // Flag
 };
 
 #if !defined(SOL9) && !defined(SOL8)
@@ -657,46 +655,6 @@ oss_devmap (dev_t dev, devmap_cookie_t handle, offset_t off, size_t len,
 
   return ENOTSUP;
 }
-#endif
-
-#if 0
-// Not used in misc modules.
-static struct cb_ops oss_cb_ops = {
-  oss_open,
-  oss_close,
-  nodev,			/* not a block driver   */
-  nodev,			/* no print routine     */
-  nodev,			/* no dump routine      */
-  oss_read,
-  oss_write,
-  oss_ioctl,
-#ifdef ALLOW_BUFFER_MAPPING
-  oss_devmap,
-#else
-  nodev,			/* no devmap routine    */
-#endif
-  nodev,
-  nodev,			/* no segmap routine    */
-  oss_chpoll,			/* no chpoll routine    */
-  ddi_prop_op,
-  0,				/* not a STREAMS driver */
-  D_NEW | D_MP | D_64BIT,	/* safe for multi-thread/multi-processor */
-  CB_REV
-};
-
-static struct dev_ops oss_ops = {
-  DEVO_REV,			/* DEVO_REV indicated by manual */
-  0,				/* device reference count       */
-  oss_getinfo,
-  nulldev,
-  nulldev,
-  oss_attach,
-  oss_detach,
-  nodev,			/* device reset routine         */
-  &oss_cb_ops,
-  NULL,				/* bus operations               */
-  NULL				/* TODO: Power management */
-};
 #endif
 
 extern struct mod_ops mod_miscops;
@@ -1178,18 +1136,14 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
  * The memlimit parameter is equal to oss_alloc_dmabuf().
  */
   int err;
-#if defined(sparc)
-  uint_t len;
-#else
   size_t len;
-#endif
   uint_t count;
   contig_desc *desc;
   ddi_dma_attr_t dma_attr;
   ddi_device_acc_attr_t *acc_attr;
 
   int flags =
-    DDI_DMA_REDZONE | DDI_DMA_CONSISTENT | DDI_DMA_READ | DDI_DMA_WRITE;
+    DDI_DMA_CONSISTENT | DDI_DMA_READ | DDI_DMA_WRITE;
 
   if (osdev == NULL)
     {
@@ -1229,18 +1183,8 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
 #define IOMEM_DATA_UNCACHED 0	// Fix for Solaris 10
 #endif
 
-#if defined(sparc)
-  if ((err = ddi_mem_alloc (osdev->dip,
-			    NULL,
-			    size + 4096,
-			    0,
-			    (caddr_t *) & desc->first_addr,
-			    (uint_t *) & len)) != DDI_SUCCESS)
-
-
-#else
   if ((err = ddi_dma_mem_alloc (desc->dhandle,
-				size + 4096,
+				size, /* + 4096,*/
 				acc_attr,
 				flags,
 				DDI_DMA_SLEEP,
@@ -1248,7 +1192,6 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
 				(caddr_t *) & desc->first_addr,
 				(size_t *) & len,
 				&desc->dma_acc_handle)) != DDI_SUCCESS)
-#endif
     {
       cmn_err (CE_WARN, "Failed to allocate %d bytes of contig memory (%d)\n",
 	       size, err);
@@ -1285,9 +1228,6 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
   desc->physaddr = desc->cookie.dmac_address;
 
   desc->last_addr = desc->first_addr + desc->size - 1;
-  desc->first_addr =
-    (void *) (((unsigned long) desc->first_addr + 4095) & ~4095);
-  desc->physaddr = (desc->physaddr + 4095) & ~4095;
   *phaddr = desc->physaddr;
 
   desc->next = contig_list;
@@ -1337,14 +1277,11 @@ oss_contig_free (oss_device_t * osdev, void *p, int sz)
   if ((err = ddi_dma_unbind_handle (desc->dhandle)) != DDI_SUCCESS)
     cmn_err (CE_WARN, "Failed to free DMA handle (%d)\n", err);
 
-#if defined(sparc)
-  ddi_mem_free (desc->orig_buf);
-#else
   if (desc->dma_acc_handle == NULL)
     cmn_err (CE_WARN, "desc->dma_acc_handle==NULL\n");
   else
     ddi_dma_mem_free (&desc->dma_acc_handle);
-#endif
+
   ddi_dma_free_handle (&desc->dhandle);
 
 
@@ -1814,11 +1751,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 		    oss_uint64_t maxaddr, int direction)
 {
   int err;
-#if defined(sparc)
-  uint_t len;
-#else
   size_t len;
-#endif
   uint_t ncookies;
   contig_desc *desc;
   oss_device_t *osdev = dmap->osdev;
@@ -1827,7 +1760,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   extern int dma_buffsize;
   ddi_device_acc_attr_t *acc_attr;
 
-  int flags = DDI_DMA_REDZONE | DDI_DMA_CONSISTENT |
+  int flags = DDI_DMA_CONSISTENT |
     (direction == OPEN_READ) ? DDI_DMA_READ : DDI_DMA_WRITE;
 
   if (osdev == NULL)
@@ -1873,7 +1806,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
   dmap->dma_parms.state = 0;
   dmap->dma_parms.enabled = 1;
   dmap->dma_parms.ignore = 0;
-
+  
   if (osdev->dip == NULL)
     {
       cmn_err (CE_WARN, "oss_alloc_dmabuf: osdev->dip==NULL\n");
@@ -1904,14 +1837,6 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 
   while (err != DDI_SUCCESS && dmap->dmabuf == NULL && dmap->buffsize >= 4096)
     {
-#if defined(sparc)
-      if ((err = ddi_mem_alloc (osdev->dip,
-				NULL,
-				dmap->buffsize,
-				0,
-				(caddr_t *) & dmap->dmabuf,
-				(uint_t *) & len)) != DDI_SUCCESS)
-#else
       if ((err = ddi_dma_mem_alloc (dmap->dmabuf_dma_handle,
 				    dmap->buffsize,
 				    acc_attr,
@@ -1922,7 +1847,6 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 				    (size_t *) & len,
 				    &dmap->dma_parms.dma_acc_handle)) !=
 	  DDI_SUCCESS)
-#endif
 	{
 	  if (!(alloc_flags & DMABUF_QUIET))
 	    DDB (cmn_err (CE_WARN,
@@ -1959,10 +1883,7 @@ __oss_alloc_dmabuf (int dev, dmap_p dmap, unsigned int alloc_flags,
 
       return OSS_EIO;
     }
-
-  dmap->dmabuf =
-    (unsigned char *) ((((unsigned long) dmap->dmabuf) + 4095) & ~4095);
-  dmap->dmabuf_phys = (dmap->dma_parms.cookie.dmac_address + 4095) & ~4095;
+  dmap->dmabuf_phys = dmap->dma_parms.cookie.dmac_address;
 
   desc = PMALLOC (osdev, sizeof (contig_desc));
   if (desc == NULL)
@@ -1995,11 +1916,7 @@ oss_free_dmabuf (int dev, dmap_p dmap)
 
   if ((err = ddi_dma_unbind_handle (dmap->dmabuf_dma_handle)) != DDI_SUCCESS)
     cmn_err (CE_WARN, "Failed to free DMA handle (%d)\n", err);
-#if defined(sparc)
-  ddi_mem_free (dmap->dma_parms.orig_buf);
-#else
   ddi_dma_mem_free (&dmap->dma_parms.dma_acc_handle);
-#endif
   ddi_dma_free_handle (&dmap->dmabuf_dma_handle);
 
   dmap->dmabuf = NULL;
@@ -2039,14 +1956,7 @@ oss_intr (caddr_t arg)		/* Global interrupt handler */
   if (osdev->bottomhalf_handler == NULL)
     return DDI_INTR_CLAIMED;
 
-#if 0
-  if (osdev->intr_is_hilevel)
-    {
-/* TODO: Schedule the bottom half handler */
-    }
-  else
-#endif
-    osdev->bottomhalf_handler (osdev);
+   osdev->bottomhalf_handler (osdev);
 
 #ifdef MUTEX_CHECKS
   inside_intr = x;
@@ -2379,12 +2289,6 @@ oss_get_procinfo(int what)
 	case OSS_GET_PROCINFO_GID:
 		return ddi_get_cred()->cr_gid;
 		break;
-
-#if 0
-	case OSS_GET_PROCINFO_PGID:
-		return ddi_get_cred()->cr_pgid;
-		break;
-#endif
 
 	}
 	return OSS_EINVAL;
