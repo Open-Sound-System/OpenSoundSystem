@@ -2,10 +2,20 @@
 
 . ./.directories
 
-#BEOS_SYSTEM=beos/system
-# to install as user addons
-BEOS_SYSTEM=home/config
+# default is to install as user addons
+BEOS_SYSTEM="${BEOS_SYSTEM:-boot/home/config}"
+DRIVER_SETTINGS="${DRIVER_SETTINGS:-boot/home/config/settings/kernel/drivers}"
 
+# the path to the kernel binary we can link to
+if [ $OSTYPE = "haiku" ]; then
+# x86/ would be for secondary arch here
+KERNEL=/system/develop/lib/_KERNEL_
+else
+# BeOS has x86/ and ppc/
+KERNEL=/boot/develop/lib/x86/_KERNEL_
+fi
+
+# prefix of driver settings files
 DRVPREFIX=oss_
 
 rm -rf prototype
@@ -36,16 +46,18 @@ mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/media
 #hack for now
 #mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin
-mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/audio/multi
+#mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/audio/multi
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/audio/oss
 #hack for now
 mkdir -p prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/oss
 ln -s ../../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/oss/
-ln -s ../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/
+# Avoid loading OSS too early at boot,
+# the media addon will probe /dev/audio/oss anyway
+#ln -s ../bin/${DRVPREFIX}loader prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/dev/
 #hack: install bins for now
-mkdir -p prototype/home/config/bin
-mkdir -p prototype/home/config/settings/kernel/drivers
-mkdir -p prototype/home/Desktop
+mkdir -p prototype/$BEOS_SYSTEM/bin
+mkdir -p prototype/$DRIVER_SETTINGS
+#mkdir -p prototype/home/Desktop
 
 #cp $SRCDIR/include/soundcard.h prototype/usr/include/sys
 
@@ -55,8 +67,8 @@ mkdir -p prototype/home/Desktop
 #cp $SRCDIR/kernel/framework/include/midiparser.h prototype/$OSSLIBDIR/include/
 
 (cd target/bin; rm -f ossrecord; ln -s ossplay ossrecord)
-cp -f target/bin/* prototype/home/config/bin
-cp -f target/sbin/* prototype/home/config/bin
+cp -f target/bin/* prototype/$BEOS_SYSTEM/bin
+cp -f target/sbin/* prototype/$BEOS_SYSTEM/bin
 
 #cp -R $SRCDIR/oss/* prototype/$OSSLIBDIR
 
@@ -85,7 +97,7 @@ function setvermime () {
 #core=prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss/${DRVPREFIX}core
 #must match internal module name...
 core=prototype/$BEOS_SYSTEM/add-ons/kernel/media/oss
-#gcc -o $drv target/objects/*.o -nostdlib /boot/develop/lib/x86/_KERNEL_ || exit 1
+#gcc -o $drv target/objects/*.o -nostdlib $KERNEL || exit 1
 
 # no midi yet
 rm target/modules/oss_midiloop.o
@@ -93,19 +105,24 @@ rm target/modules/oss_midiloop.o
 # try to build all in a single bin for now...
 # driver_beos.o shouldn' be in, oh well...
 # R5 has symbols like __ucmpdi2 but not Haiku, so use libgcc
-gcc -o $core target/objects/*.o target/modules/*.o -nostdlib -lgcc /boot/develop/lib/x86/_KERNEL_ || exit 1
+gcc -fno-strict-aliasing -fno-delete-null-pointer-checks -fno-builtin-fork -fno-builtin-vfork \
+	-shared -nostdlib -Xlinker -soname=$core -z max-page-size=0x1000 -o $core \
+	target/objects/*.o target/modules/*.o $KERNEL -lgcc || exit 1
 setvermime $core
 
 # except the loader driver...
 # using the same bin works in BeOS but not in Haiku.
 drv=prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin/${DRVPREFIX}loader
-gcc -o $drv target/objects/driver_beos.o -nostdlib /boot/develop/lib/x86/_KERNEL_ || exit 1
+gcc -fno-strict-aliasing -fno-delete-null-pointer-checks -fno-builtin-fork -fno-builtin-vfork \
+	-shared -nostdlib -Xlinker -soname=$drv -z max-page-size=0x1000 -o $drv \
+	target/objects/driver_beos.o \
+	$KERNEL -lgcc || exit 1
 setvermime $drv
 
 rm -f devlist.txt
 
 # generate driver settings
-settingspath=prototype/home/config/settings/kernel/drivers
+settingspath=prototype/$DRIVER_SETTINGS
 gensettings < kernel/framework/ac97/.params > $settingspath/oss_core
 gensettings < kernel/drv/osscore/.params >> $settingspath/oss_core
 for n in target/modules/*.o
@@ -142,7 +159,7 @@ do
 	#ld -r -o prototype/$OSSLIBDIR/modules/$N/Driver.o $n
 
 	#drv=prototype/$BEOS_SYSTEM/add-ons/kernel/drivers/bin/${DRVPREFIX}$N
-	#gcc -o $drv $n -nostdlib /boot/develop/lib/x86/_KERNEL_ || exit 1
+	#gcc -o $drv $n -nostdlib $KERNEL || exit 1
 	#longver="`cat .version`"
 	#shortver="${longver%% *}"
 	#appver="${shortver:0:1} ${shortver:0:1} 0 b ${shortver##*[a-z]}"

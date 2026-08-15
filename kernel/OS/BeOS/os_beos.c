@@ -70,7 +70,11 @@ benaphore osscore_benaphore;
 
 #define DEBUG_IRQ 1
 #if DEBUG_IRQ
+#ifdef __HAIKU__
+int32 irq_count = 0;
+#else
 vint32 irq_count = 0;
+#endif
 #endif
 
 volatile int oss_open_devices = 0;
@@ -130,8 +134,8 @@ oss_contig_malloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
   size += B_PAGE_SIZE - 1;
   size &= ~(B_PAGE_SIZE - 1);
 
-  if ((err = id = create_area(OSS_CONTIG_AREA_NAME, &p, B_ANY_KERNEL_ADDRESS,
-                         size, lock, 0)) < B_OK)
+  if ((err = id = create_area(OSS_CONTIG_AREA_NAME, &p, B_ANY_KERNEL_ADDRESS, \
+			size, lock, B_KERNEL_READ_AREA | B_KERNEL_WRITE_AREA | B_CLONEABLE_AREA )) < B_OK)
     {
       cmn_err (CE_WARN, "create_area() failed\n");
       return NULL;
@@ -241,7 +245,11 @@ oss_virt_to_bus (void *addr)
     }
   //XXX:which???
   //return (oss_native_word)pent[0].address;
-  return (oss_native_word)(gPCI->ram_address(pent[0].address));
+  //XXX: ram_address historically takes a void* which isn't the same size...
+  // check for overflow, then we just return it, on x86 it's a noop anyway
+  if (sizeof(const void *) < sizeof(phys_addr_t) && ((addr_t)pent[0].address != pent[0].address))
+    return (oss_native_word)pent[0].address;
+  return (oss_native_word)(gPCI->ram_address((const void *)(addr_t)pent[0].address));
 }
 
 
@@ -304,13 +312,13 @@ oss_uiomove (void *address, size_t nbytes, enum uio_rw rwflag, uio_t * uio)
   switch (rwflag)
     {
     case UIO_READ:
-      //XXX:user_memcpy...
-      memcpy (uio->ptr, address, nbytes);
+      if (user_memcpy (uio->ptr, address, nbytes) < B_OK)
+		return B_BAD_ADDRESS;
       break;
 
     case UIO_WRITE:
-      //XXX:user_memcpy...
-      memcpy (address, uio->ptr, nbytes);
+      if (user_memcpy (address, uio->ptr, nbytes) < B_OK)
+		return B_BAD_ADDRESS;
       break;
     }
 
@@ -598,18 +606,19 @@ oss_untimeout (timeout_id_t id)
 
 
 caddr_t
-oss_map_pci_mem (oss_device_t * osdev, int nr, int phaddr, int size)
+oss_map_pci_mem (oss_device_t * osdev, int nr, phys_addr_t phaddr, int size)
 {
   status_t err;
   void *va = NULL;
-  FENTRYA("%p,%d,%u,%d", osdev, nr, phaddr, size);
+  FENTRYA("%p,%d,%Lx,%d", osdev, nr, (uint64)phaddr, size);
   //XXX:align phaddr ?
   /* round up to page size */
   size += B_PAGE_SIZE - 1;
   size &= ~(B_PAGE_SIZE - 1);
   
-  err = map_physical_memory(OSS_PCI_AREA_NAME, (void *)phaddr, size, 
-                            B_ANY_KERNEL_BLOCK_ADDRESS, 0, &va);
+  err = map_physical_memory(OSS_PCI_AREA_NAME, phaddr, size, \
+			B_ANY_KERNEL_BLOCK_ADDRESS, \
+			B_KERNEL_READ_AREA | B_KERNEL_WRITE_AREA | B_CLONEABLE_AREA, &va);
   if (err < B_OK)
     va = NULL;
   FEXITR((uint32)va);
@@ -1057,7 +1066,8 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
   osdev->dip = dip;
   //osdev->osid = dip;
   osdev->unloaded = 0;
-  osdev->available = 1;
+  // not until we're sure the device reservation worked!!!
+  //osdev->available = 1;
   osdev->first_mixer = -1;
   osdev->instance = instance;
   osdev->dev_type = dev_type;
@@ -1095,6 +1105,8 @@ osdev_create (dev_info_t * dip, int dev_type, int instance, const char *nick,
       cmn_err (CE_WARN, "Bad device type\n");
       return NULL;
     }
+
+  osdev->available = 1;
 
 /*
  * Create the device handle
@@ -2118,8 +2130,8 @@ ossdrv_ioctl(ossdev_cookie_t *cookie, uint32 op, void *buffer, size_t length)
 
       if ((cmd & SIOC_IN) && len > 0)
 	{
-	  memcpy (buf, buffer, len);
-	    //return EFAULT;
+	  if (user_memcpy (buf, buffer, len) < B_OK)
+		return B_BAD_ADDRESS;
 	}
 
     }
@@ -2128,8 +2140,8 @@ ossdrv_ioctl(ossdev_cookie_t *cookie, uint32 op, void *buffer, size_t length)
 
   if ((cmd & SIOC_OUT) && len > 0)
     {
-      memcpy (buffer, buf, len);
-	//return EFAULT;
+      if (user_memcpy (buffer, buf, len) < B_OK)
+		return B_BAD_ADDRESS;
     }
 
 

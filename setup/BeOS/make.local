@@ -2,7 +2,10 @@ build: 	kernel/framework/include/buildid.h all
 	sh build.sh
 
 copy:	build
-	cp -R prototype/* /boot/
+	(cd prototype; find -P . -type d | xargs -i{} mkdir -p ${DESTDIR}/{})
+	(cd prototype; find -P . -type f | xargs -i{} cp {} ${DESTDIR}/{})
+	(cd prototype; find -P . -type l | xargs -i{} cp -d {} ${DESTDIR}/{})
+
 
 package:	build
 		sh setup/BeOS/mkpkg.sh
