@@ -24,6 +24,12 @@ extern int hdaudio_noskip;
 
 static codec_t NULL_codec = { 0 };	/* TODO: Temporary workaround - to be removed */
 
+/* Local bound for hda_touch_mixer_busy[], independent of MAX_MIXER_DEV
+ * (defined in a build-generated header not reachable from here) -- only
+ * needs to be >= the largest mixer dev index this driver could ever be
+ * handed. */
+#define HDA_MIXER_DEV_MAX 32
+
 
 /* Si3055 functions (implemented in hdaudio_si3055.c) */
 extern void hdaudio_si3055_endpoint_init(hdaudio_mixer_t *mixer, int cad);
@@ -91,14 +97,319 @@ hdaudio_mixer_get_inendpoints (hdaudio_mixer_t * mixer,
   return mixer->num_inendpoints;
 }
 
+/*
+ * Legacy (OSS 3.6 SOUND_MIXER_*) compatibility for old applications such
+ * as rexima that don't speak the mixer_ext API. HDA codec topology varies
+ * too much between machines to hardcode a fixed set of controls, so the
+ * handful of slots below are located dynamically by pattern-matching the
+ * mixer_ext controls this card actually created (see hdaudio_mixer_init())
+ * and are simply absent from the legacy masks if no match is found.
+ */
+
+/*
+ * Find a mixer_ext control on this same mixer device whose id starts
+ * with "prefix" and contains "substr". Returns its index, or -1.
+ *
+ * mixer_devs[dev]->nr_ext/extensions[] are populated lazily by
+ * touch_mixer(), which this driver already calls once at attach time
+ * (see hdaudio_mixer_init()) -- but that's not the only path in: the
+ * legacy ioctl dispatch (oss_legacy_mixer_ioctl(), how hda_mixer_ioctl()
+ * gets called) never touches the mixer_ext API itself, so it doesn't
+ * imply a prior touch_mixer() the way every mixer_ext-API code path
+ * does. Calling touch_mixer() here covers that gap.
+ *
+ * touch_mixer() itself, though, starts by querying *this same driver's*
+ * legacy ioctl handler for SOUND_MIXER_READ_CAPS/DEVMASK before it gets
+ * to the point of calling back into oss_hdaudio's own control-creation
+ * callback -- and that query dispatches straight back into
+ * hda_mixer_ioctl() -> hda_find_ext(). Without a guard, that nested call
+ * would see nr_ext still 0 and call touch_mixer() again, recursing
+ * without bound until the kernel stack overflows. hda_touch_mixer_busy[]
+ * breaks the cycle: a nested call just skips straight to the search
+ * below, which correctly finds nothing yet, since the driver's own
+ * controls aren't created until the outermost touch_mixer() call
+ * reaches mixer_devs[dev]->create_controls() after this query returns.
+ */
+static char hda_touch_mixer_busy[HDA_MIXER_DEV_MAX];
+
+static int
+hda_find_ext (int dev, const char *prefix, const char *substr)
+{
+  int i, plen = strlen (prefix);
+
+  if (dev >= 0 && dev < HDA_MIXER_DEV_MAX && !hda_touch_mixer_busy[dev])
+    {
+      hda_touch_mixer_busy[dev] = 1;
+      touch_mixer (dev);
+      hda_touch_mixer_busy[dev] = 0;
+    }
+
+  for (i = 0; i < mixer_devs[dev]->nr_ext; i++)
+    {
+      oss_mixext *ext = mixer_find_ext (dev, i);
+
+      if (ext == NULL)
+	continue;
+
+      if (strncmp (ext->id, prefix, plen) != 0)
+	continue;
+
+      if (substr == NULL || strstr (ext->id, substr) != NULL)
+	return i;
+    }
+
+  return -1;
+}
+
+/*
+ * Some HDA controls (e.g. the internal mic jack) are exposed as a
+ * two-level mixer_ext group ("jack" -> "int-mic") with the actual value
+ * on an anonymous child of the inner group, rather than as a single
+ * control with a flat id. ossmix/oss4 join the group names with "." for
+ * display ("jack.int-mic"), but that joined string is never any single
+ * control's own ext->id, so hda_find_ext()'s flat prefix match can never
+ * find these -- walk the hierarchy explicitly instead: find the group
+ * named "group1", find its child group named "group2", then return the
+ * first grandchild that's an actual value control rather than another
+ * group/marker.
+ */
+static int
+hda_find_group_leaf (int dev, const char *group1, const char *group2)
+{
+  int i, j, k, n;
+
+  if (dev >= 0 && dev < HDA_MIXER_DEV_MAX && !hda_touch_mixer_busy[dev])
+    {
+      hda_touch_mixer_busy[dev] = 1;
+      touch_mixer (dev);
+      hda_touch_mixer_busy[dev] = 0;
+    }
+
+  n = mixer_devs[dev]->nr_ext;
+
+  for (i = 0; i < n; i++)
+    {
+      oss_mixext *g1 = mixer_find_ext (dev, i);
+
+      if (g1 == NULL || g1->type != MIXT_GROUP || strcmp (g1->id, group1) != 0)
+	continue;
+
+      for (j = 0; j < n; j++)
+	{
+	  oss_mixext *g2 = mixer_find_ext (dev, j);
+
+	  if (g2 == NULL || g2->parent != i || g2->type != MIXT_GROUP
+	      || strcmp (g2->id, group2) != 0)
+	    continue;
+
+	  for (k = 0; k < n; k++)
+	    {
+	      oss_mixext *leaf = mixer_find_ext (dev, k);
+
+	      if (leaf == NULL || leaf->parent != j)
+		continue;
+
+	      if (leaf->type == MIXT_GROUP || leaf->type == MIXT_MARKER
+		  || leaf->type == MIXT_DEVROOT)
+		continue;
+
+	      return k;
+	    }
+	}
+    }
+
+  return -1;
+}
+
+/*
+ * Read/write a mixer_ext control's handler directly, by array index.
+ * Bypasses oss_legacy_mixer_ioctl()/MIXER_READ(ctrl) on purpose since
+ * that would call back into this very function.
+ */
+static int
+hda_ext_rw (int dev, int extnr, unsigned int cmd, int value)
+{
+  oss_mixext_desc *ext_desc = &mixer_devs[dev]->extensions[extnr];
+
+  if (ext_desc->handler == NULL)
+    return OSS_EIO;
+
+  return ext_desc->handler (dev, ext_desc->ext.ctrl, cmd, value);
+}
+
+/*
+ * Convert a mixer_ext slider (native range 0..maxvalue) to/from the
+ * legacy 0-100 percentage, packed as left|(right<<8). These controls are
+ * mono/gang controls, so the same percentage is used for both channels.
+ */
+static int
+hda_legacy_read_slider_ext (int dev, int extnr)
+{
+  int raw, pct;
+  oss_mixext *ext;
+
+  if (extnr < 0)
+    return -1;
+
+  if ((ext = mixer_find_ext (dev, extnr)) == NULL || ext->maxvalue <= 0)
+    return -1;
+
+  if ((raw = hda_ext_rw (dev, extnr, SNDCTL_MIX_READ, 0)) < 0)
+    return -1;
+
+  /*
+   * MIXT_MONOSLIDER16 controls (e.g. vmix's outvol) return the value
+   * packed as value|(value<<16), matching the low16/high16 convention
+   * their stereo counterparts use for two independent channels. Mask
+   * back down to the actual value before scaling, or any nonzero
+   * reading overflows this percentage math and clamps straight to 100.
+   */
+  raw &= 0xffff;
+
+  pct = (raw * 100) / ext->maxvalue;
+  if (pct > 100)
+    pct = 100;
+  if (pct < 0)
+    pct = 0;
+
+  return pct | (pct << 8);
+}
+
+static int
+hda_legacy_write_slider_ext (int dev, int extnr, int value)
+{
+  int raw, pct;
+  oss_mixext *ext;
+
+  if (extnr < 0)
+    return -1;
+
+  if ((ext = mixer_find_ext (dev, extnr)) == NULL)
+    return -1;
+
+  pct = value & 0xff;
+  if (pct > 100)
+    pct = 100;
+
+  raw = (pct * ext->maxvalue) / 100;
+
+  if (hda_ext_rw (dev, extnr, SNDCTL_MIX_WRITE, raw) < 0)
+    return -1;
+
+  return pct | (pct << 8);
+}
+
+static int
+hda_legacy_read_slider (int dev, const char *prefix, const char *substr)
+{
+  return hda_legacy_read_slider_ext (dev, hda_find_ext (dev, prefix, substr));
+}
+
+static int
+hda_legacy_write_slider (int dev, const char *prefix, const char *substr,
+			  int value)
+{
+  return hda_legacy_write_slider_ext (dev,
+				      hda_find_ext (dev, prefix, substr),
+				      value);
+}
+
+/*
+ * Locate the mic control, trying the layouts seen on different HDA
+ * codecs: a flat "misc.mic"/"jack.int-mic"-prefixed id, or a two-level
+ * "jack" -> "int-mic" group with the value on an anonymous child --
+ * see hda_find_group_leaf().
+ */
+static int
+hda_find_mic_ext (int dev)
+{
+  int extnr;
+
+  /*
+   * record.rec2-sel is tried first: on ALC298-based laptops the
+   * internal mic is commonly wired to this ADC specifically, per
+   * direct capture-amplitude testing (rec1-sel/rec3-sel read back
+   * silent while rec2-sel picked up real signal). jack.int-mic, tried
+   * further below, is a real, writable control but doesn't affect the
+   * capture path -- most likely a jack-sense or monitor gain rather
+   * than the ADC's own input gain.
+   */
+  if ((extnr = hda_find_group_leaf (dev, "record", "rec2-sel")) >= 0)
+    return extnr;
+
+  if ((extnr = hda_find_ext (dev, "misc.mic", NULL)) >= 0)
+    return extnr;
+
+  if ((extnr = hda_find_ext (dev, "jack.int-mic", NULL)) >= 0)
+    return extnr;
+
+  if ((extnr = hda_find_group_leaf (dev, "jack", "int-mic")) >= 0)
+    return extnr;
+
+  return hda_find_group_leaf (dev, "misc", "mic");
+}
+
 /*ARGSUSED*/
 static int
 hda_mixer_ioctl (int dev, int audiodev, unsigned int cmd, ioctl_arg arg)
 {
-  if (cmd == SOUND_MIXER_READ_DEVMASK ||
-      cmd == SOUND_MIXER_READ_RECMASK || cmd == SOUND_MIXER_READ_RECSRC ||
-      cmd == SOUND_MIXER_READ_STEREODEVS)
-    return *arg = 0;
+  int val, mask;
+
+  if (cmd == SOUND_MIXER_READ_DEVMASK || cmd == SOUND_MIXER_READ_STEREODEVS)
+    {
+      mask = 0;
+      if (hda_find_ext (dev, "vmix", "-outvol") >= 0)
+	mask |= SOUND_MASK_VOLUME | SOUND_MASK_PCM;
+      if (hda_find_mic_ext (dev) >= 0)
+	mask |= SOUND_MASK_MIC;
+      return *arg = mask;
+    }
+
+  if (cmd == SOUND_MIXER_READ_RECMASK || cmd == SOUND_MIXER_READ_RECSRC)
+    {
+      mask = 0;
+      if (hda_find_mic_ext (dev) >= 0)
+	mask |= SOUND_MASK_MIC;
+      return *arg = mask;
+    }
+
+  if (cmd == SOUND_MIXER_READ_VOLUME || cmd == SOUND_MIXER_READ_PCM)
+    {
+      if ((val = hda_legacy_read_slider (dev, "vmix", "-outvol")) < 0)
+	return OSS_EINVAL;
+      return *arg = val;
+    }
+
+  if (cmd == SOUND_MIXER_WRITE_VOLUME || cmd == SOUND_MIXER_WRITE_PCM)
+    {
+      if ((val = hda_legacy_write_slider (dev, "vmix", "-outvol", *arg)) < 0)
+	return OSS_EINVAL;
+      return *arg = val;
+    }
+
+  if (cmd == SOUND_MIXER_READ_MIC)
+    {
+      /*
+       * The actual gain comes from vmix's own input volume control, not
+       * straight off the ADC found by hda_find_mic_ext(): that control can
+       * be a MIXT_STEREOSLIDER16 needing left|(right<<16) on write, and
+       * hda_legacy_write_slider_ext() only ever writes a single scalar --
+       * on a stereo control that mutes the channel whose bits land in the
+       * half it never sets. vmix's invol is a MIXT_MONOSLIDER16 (same
+       * shape as the vmix-outvol control already used for legacy
+       * VOLUME/PCM above), so it is gang-safe by construction.
+       */
+      if ((val = hda_legacy_read_slider (dev, "vmix", "-invol")) < 0)
+	return OSS_EINVAL;
+      return *arg = val;
+    }
+
+  if (cmd == SOUND_MIXER_WRITE_MIC)
+    {
+      if ((val = hda_legacy_write_slider (dev, "vmix", "-invol", *arg)) < 0)
+	return OSS_EINVAL;
+      return *arg = val;
+    }
 
   return OSS_EINVAL;
 }
