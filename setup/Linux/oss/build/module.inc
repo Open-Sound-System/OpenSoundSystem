@@ -50,7 +50,9 @@ static struct pci_driver osspci_driver = {
   .name = DRIVER_NICK,
   .id_table = id_table,
   .probe = osspci_probe,
-  .remove = osspci_remove
+  .remove = osspci_remove,
+  .suspend = osspci_suspend,
+  .resume = osspci_resume
 };
 
 static int __init

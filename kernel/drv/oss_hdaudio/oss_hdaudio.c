@@ -13,6 +13,19 @@
  *
  */
 
+#ifdef __linux__
+/*
+ * Needed for the i915 display-power-well binding further down (see
+ * the big comment above hda_i915_init()) -- pulled in here, before
+ * oss_hdaudio_cfg.h's own compat-macro setup (printk/HZ/etc
+ * redefinitions), because including them afterwards collides with
+ * that setup instead of layering cleanly on top of it.
+ */
+#include <linux/component.h>
+#include <linux/device.h>
+#include <drm/intel/i915_component.h>
+#endif
+
 #include "oss_hdaudio_cfg.h"
 #include "oss_pci.h"
 #include "hdaudio.h"
@@ -69,6 +82,16 @@
 #define INTEL_DEVICE_RPL_S      0x7a50
 #define INTEL_DEVICE_APL        0x5a98
 #define INTEL_DEVICE_GML        0x3198
+
+/*
+ * PCI config offset/bit ALSA's hda_intel.c clears before, and restores
+ * after, every controller reset on Skylake-and-later Intel controllers
+ * (AZX_DRIVER_SKL in hda_intel_init_chip()) -- disables a specific bit
+ * clock-domain clock gate that otherwise keeps the reset from actually
+ * reaching (and waking) the codec. See init_HDA()/oss_hdaudio_resume().
+ */
+#define INTEL_HDA_CGCTL			0x48
+#define INTEL_HDA_CGCTL_MISCBDCGE	(0x1 << 6)
 
 #define NVIDIA_VENDOR_ID        0x10de
 #define NVIDIA_DEVICE_MCP51     0x026c
@@ -154,6 +177,33 @@ typedef struct
   unsigned int response, resp_ex;
 } rirb_entry_t;
 
+/*
+ * Suspend/resume support (see oss_hdaudio_suspend()/oss_hdaudio_resume()).
+ *
+ * The HD Audio controller and codec have no suspend/resume support of
+ * their own in the ACPI S3 sense -- they simply lose all of their
+ * internal state (CORB/RIRB, every verb-programmed widget setting)
+ * across a suspend, coming back at D0 in their power-on-default state,
+ * exactly like a cold boot. To restore working audio without tearing
+ * down (and thus needing to recreate) any device file, mixer control
+ * or DMA buffer -- which would require first evicting every process
+ * with the device open -- every "persistent" verb (one that programs
+ * lasting widget state, as opposed to a one-shot command or a GET
+ * query) sent through do_corb_write() is cached here, keyed by
+ * (cad, nid, direct, verb). On resume the controller is reset and the
+ * entire cache is simply replayed, same idea as ALSA's regmap cache
+ * sync on codec resume.
+ */
+#define HDA_VERB_CACHE_SIZE	2048
+
+typedef struct
+{
+  unsigned short cad, nid;
+  unsigned char direct;
+  unsigned short verb;
+  unsigned int parm;
+} hda_verb_cache_ent_t;
+
 typedef struct hda_devc_t
 {
   oss_device_t *osdev;
@@ -198,6 +248,11 @@ typedef struct hda_devc_t
 
   int num_spdin, num_spdout;
   int num_mdmin, num_mdmout;
+
+  /* Suspend/resume: see hda_verb_cache_ent_t above */
+  hda_verb_cache_ent_t verb_cache[HDA_VERB_CACHE_SIZE];
+  int verb_cache_n;
+  int verb_cache_full;		/* Logged the overflow warning already? */
 }
 hda_devc_t;
 
@@ -311,6 +366,76 @@ hdaintr (oss_device_t * osdev)
   return serviced;
 }
 
+/*
+ * Is this verb worth caching for suspend/resume replay? Only verbs that
+ * program lasting widget state belong here -- one-shot commands
+ * (SET_CODEC_RESET) and GET_* queries (which never reach do_corb_write()
+ * as a "verb" in the first place, but let's not assume) must not be
+ * replayed blindly.
+ */
+static int
+hda_verb_is_persistent (unsigned int verb)
+{
+  if ((verb & 0xf00) == 0x300)	/* SET_GAIN, any side/index/type */
+    return 1;
+
+  switch (verb)
+    {
+    case SET_SELECTOR:
+    case SET_PINCTL:
+    case SET_EAPD:
+    case SET_POWER_STATE:
+    case SET_CONVERTER:
+    case SET_CONVERTER_FORMAT:
+    case SET_GPIO_DIR:
+    case SET_GPIO_ENABLE:
+    case SET_GPIO_DATA:
+    case SET_GPIO_WKEN:
+    case SET_GPIO_UNSOL:
+    case SET_GPIO_STICKY:
+      return 1;
+    }
+
+  return 0;
+}
+
+static void
+hda_verb_cache_record (hda_devc_t * devc, unsigned int cad, unsigned int nid,
+			unsigned int d, unsigned int verb, unsigned int parm)
+{
+  int i;
+
+  if (!hda_verb_is_persistent (verb))
+    return;
+
+  for (i = 0; i < devc->verb_cache_n; i++)
+    if (devc->verb_cache[i].cad == cad && devc->verb_cache[i].nid == nid &&
+	devc->verb_cache[i].direct == d && devc->verb_cache[i].verb == verb)
+      {
+	devc->verb_cache[i].parm = parm;
+	return;
+      }
+
+  if (devc->verb_cache_n >= HDA_VERB_CACHE_SIZE)
+    {
+      if (!devc->verb_cache_full)
+	{
+	  devc->verb_cache_full = 1;
+	  cmn_err (CE_WARN,
+		   "oss_hdaudio: verb cache full -- some codec state may "
+		   "not survive suspend/resume\n");
+	}
+      return;
+    }
+
+  devc->verb_cache[devc->verb_cache_n].cad = cad;
+  devc->verb_cache[devc->verb_cache_n].nid = nid;
+  devc->verb_cache[devc->verb_cache_n].direct = d;
+  devc->verb_cache[devc->verb_cache_n].verb = verb;
+  devc->verb_cache[devc->verb_cache_n].parm = parm;
+  devc->verb_cache_n++;
+}
+
 static int
 do_corb_write (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
 	       unsigned int verb, unsigned int parm)
@@ -319,6 +444,8 @@ do_corb_write (void *dc, unsigned int cad, unsigned int nid, unsigned int d,
   unsigned int tmp;
   oss_native_word flags;
   hda_devc_t *devc = (hda_devc_t *) dc;
+
+  hda_verb_cache_record (devc, cad, nid, d, verb, parm);
 
   tmp = (cad << 28) | (d << 27) | (nid << 20) | (verb << 8) | (parm & 0xffff);
   wp = PCI_READB (devc->osdev, devc->azbar + HDA_CORBWP) & 0x00ff;
@@ -1110,53 +1237,112 @@ static const audiodrv_t hda_audio_driver = {
   hda_get_buffer_pointer
 };
 
+/*
+ * Number of times to repeat the CRST low->high link reset pulse below
+ * if STATESTS still shows no codec present at all after the first
+ * attempt. Some Intel PCH controllers (seen in practice on this exact
+ * chip, 8086:a170, after several back-to-back resets in one session --
+ * e.g. repeated module reloads or several suspend/resume cycles) don't
+ * reliably re-assert a codec's presence bit on the very first pulse; a
+ * second or third full pulse recovers it without needing a cold boot.
+ * ALSA's azx_reset() has the same double-pulse-on-empty-STATESTS quirk.
+ */
+#define CRST_RETRIES	4
+
+/*
+ * See the big comment above INTEL_HDA_CGCTL's #define. Intel-only;
+ * harmless on chipsets that don't implement/use this bit, but not
+ * worth risking on anything that isn't actually an Intel controller.
+ */
+static void
+hda_intel_cgctl_set (hda_devc_t * devc, int enable)
+{
+  unsigned int val;
+
+  if ((devc->vendor_id >> 16) != INTEL_VENDOR_ID)
+    return;
+
+  pci_read_config_dword (devc->osdev, INTEL_HDA_CGCTL, &val);
+  if (enable)
+    val |= INTEL_HDA_CGCTL_MISCBDCGE;
+  else
+    val &= ~INTEL_HDA_CGCTL_MISCBDCGE;
+  pci_write_config_dword (devc->osdev, INTEL_HDA_CGCTL, val);
+}
+
 static int
 reset_controller (hda_devc_t * devc)
 {
   unsigned int tmp, tmout;
+  int attempt;
 
-  /*reset the controller by writing a 0*/
-  tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
-  tmp &= ~CRST;
-  PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
-
-  /*wait until the controller writes a 0 to indicate reset is done or until 50ms have passed*/
-  tmout = 50;
-  while ((PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
-    oss_udelay (1000);
-
-  oss_udelay (1000);
-
-  /*bring the controller out of reset  by writing a 1*/
-  tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
-  tmp |= CRST;
-  PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
-
-  /*wait until the controller writes a 1 to indicate it is ready is or until 50ms have passed*/
-  tmout = 50;
-  while (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
-    oss_udelay (1000);
-
-  oss_udelay (1000);
-
-  /*if the controller is not ready now, abort*/
-  if (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL)))
+  for (attempt = 0; attempt < CRST_RETRIES; attempt++)
     {
-      cmn_err (CE_WARN, "Controller not ready\n");
-      return 0;
-    }
+      /*reset the controller by writing a 0*/
+      tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
+      tmp &= ~CRST;
+      PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
 
-  if (!devc->codecmask)
-    {
+      /*wait until the controller writes a 0 to indicate reset is done or until 50ms have passed*/
+      tmout = 50;
+      while ((PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
+	oss_udelay (1000);
+
+      oss_udelay (1000);
+
+      /*bring the controller out of reset  by writing a 1*/
+      tmp = PCI_READL (devc->osdev, devc->azbar + HDA_GCTL);
+      tmp |= CRST;
+      PCI_WRITEL (devc->osdev, devc->azbar + HDA_GCTL, tmp);
+
+      /*wait until the controller writes a 1 to indicate it is ready is or until 50ms have passed*/
+      tmout = 50;
+      while (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL) & CRST) && --tmout)
+	oss_udelay (1000);
+
+      /* Give the link/codec extra time to settle and assert its
+       * presence bit -- 1ms is enough on a clean boot, but not always
+       * enough after several resets in a row. */
+      oss_udelay (20000);
+
+      /*if the controller is not ready now, abort*/
+      if (!(PCI_READL (devc->osdev, devc->azbar + HDA_GCTL)))
+	{
+	  cmn_err (CE_WARN, "Controller not ready\n");
+	  return 0;
+	}
+
+      if (devc->codecmask)
+	return 1;		/* Already known from a previous reset (resume) */
+
       devc->codecmask = PCI_READW (devc->osdev, devc->azbar + HDA_STATESTS);
-      DDB (cmn_err (CE_CONT, "Codec mask %x\n", devc->codecmask));
+      DDB (cmn_err (CE_CONT, "Codec mask %x (attempt %d)\n",
+		    devc->codecmask, attempt + 1));
+
+      if (devc->codecmask)
+	{
+	  if (attempt > 0)
+	    cmn_err (CE_CONT,
+		     "oss_hdaudio: link reset needed %d attempts before a "
+		     "codec responded\n", attempt + 1);
+	  return 1;
+	}
     }
 
-  return 1;
+  cmn_err (CE_WARN,
+	   "oss_hdaudio: no codec responded after %d link reset attempts\n",
+	   CRST_RETRIES);
+  return 1;			/* Let the caller's own codec probe report the details */
 }
 
+/*
+ * first_time=1 (normal attach): allocate a fresh CORB/RIRB buffer.
+ * first_time=0 (resume): the existing buffer (devc->corb/corb_phys) is
+ * still valid RAM -- suspend doesn't free it -- so just reuse it instead
+ * of leaking a new 4K allocation on every suspend/resume cycle.
+ */
 static int
-setup_controller (hda_devc_t * devc)
+setup_controller (hda_devc_t * devc, int first_time)
 {
   unsigned int tmp, tmout;
   oss_native_word phaddr;
@@ -1200,17 +1386,20 @@ setup_controller (hda_devc_t * devc)
       return 0;
     }
 
-  if ((devc->corb =
-       CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->corb_dma_handle)) == NULL)
+  if (first_time)
     {
-      cmn_err (CE_WARN, "Out of memory (CORB)\n");
-      return 0;
+      if ((devc->corb =
+	   CONTIG_MALLOC (devc->osdev, 4096, MEMLIMIT_32BITS, &phaddr, devc->corb_dma_handle)) == NULL)
+	{
+	  cmn_err (CE_WARN, "Out of memory (CORB)\n");
+	  return 0;
+	}
+
+      devc->corb_phys = phaddr;
+
+      devc->rirb = (rirb_entry_t *) (devc->corb + 512);	/* 512 dwords = 2048 bytes */
+      devc->rirb_phys = devc->corb_phys + 2048;
     }
-
-  devc->corb_phys = phaddr;
-
-  devc->rirb = (rirb_entry_t *) (devc->corb + 512);	/* 512 dwords = 2048 bytes */
-  devc->rirb_phys = devc->corb_phys + 2048;
 
 /*
  * Initialize CORB registers
@@ -1744,6 +1933,12 @@ activate_vmix (hda_devc_t * devc)
 #endif
 }
 
+/* Defined further down (see the big i915 comment above hda_i915_init());
+ * forward-declared here since init_HDA() needs it around the reset
+ * below, before the rest of the i915 binding code is textually
+ * defined. */
+static void hda_i915_codec_wake_override (int enable);
+
 static int
 init_HDA (hda_devc_t * devc)
 {
@@ -1752,8 +1947,21 @@ init_HDA (hda_devc_t * devc)
 
   /* Reset controller */
 
+  /* On Intel platforms with a display-linked HDA controller, merely
+   * holding the power well (hda_i915_power_up(), already done by our
+   * caller) isn't enough to make the codec actually answer CORB/RIRB
+   * across this reset -- confirmed against ALSA's own controller
+   * driver, which wraps its equivalent of everything below with
+   * exactly this override. A no-op if i915 binding never happened. */
+  hda_i915_codec_wake_override (1);
+  hda_intel_cgctl_set (devc, 0);
+
   if (!reset_controller (devc))
-    return 0;
+    {
+      hda_intel_cgctl_set (devc, 1);
+      hda_i915_codec_wake_override (0);
+      return 0;
+    }
 
   PCI_WRITEL (devc->osdev, devc->azbar + HDA_INTCTL, PCI_READL (devc->osdev, devc->azbar + HDA_INTCTL) | 0xc0000000);	/* Intr enable */
 
@@ -1778,8 +1986,18 @@ init_HDA (hda_devc_t * devc)
     PCI_WRITEB (devc->osdev, devc->azbar + HDA_RIRBSIZE, 0x0);
 
   /* setup the CORB/RIRB structs */
-  if (!setup_controller (devc))
-    return 0;
+  if (!setup_controller (devc, 1))
+    {
+      hda_intel_cgctl_set (devc, 1);
+      hda_i915_codec_wake_override (0);
+      return 0;
+    }
+
+  /* Matches ALSA's own scope for both of these: just the controller
+   * reset above, not the codec probing below -- once woken, the codec
+   * keeps responding normally without the override forcing it. */
+  hda_intel_cgctl_set (devc, 1);
+  hda_i915_codec_wake_override (0);
 
   /* setup the engine structs */
   if (!setup_engines (devc))
@@ -1815,6 +2033,247 @@ init_HDA (hda_devc_t * devc)
   return 1;
 }
 
+/*
+ * On Intel platforms with an integrated GPU (Skylake and later -- this
+ * covers essentially every current Intel laptop/desktop with an i915
+ * display driver), the HD Audio controller's link shares a power well
+ * with the display. That well is only kept on if something explicitly
+ * asks i915 for it through the kernel's generic component framework;
+ * nothing else keeps it powered on our behalf. Without this, the
+ * codec silently stops responding to CORB/RIRB the moment i915
+ * decides the well isn't needed for anything else -- which in
+ * practice means the controller works once, right after a fresh boot
+ * (BIOS/firmware happens to leave the well on that long), and then
+ * never again after the first module reload or an actual
+ * suspend/resume, no matter how many times or how carefully the HDA
+ * link itself (GCTL/CORB/RIRB) is reset -- the reset succeeds, but
+ * there's simply no power reaching the far side of it.
+ *
+ * i915 registers *itself* as a plain component (component_add_typed(),
+ * type I915_COMPONENT_AUDIO -- see i915_audio_component_register() in
+ * i915's own intel_audio.c). The HD-audio side is supposed to be the
+ * *master*: component_master_add_with_match(), with a match function
+ * that looks for a PCI device whose driver is named "i915" (or "xe")
+ * offering that same component type -- see i915_component_master_match()
+ * in ALSA's sound/hda/hdac_i915.c, which this mirrors (self-contained,
+ * deliberately not linked against any part of ALSA). Once matched,
+ * component_bind_all() from our own master .bind callback is what
+ * actually invokes i915's component .bind, handing back a filled-in
+ * struct i915_audio_component with real get_power()/put_power() ops.
+ *
+ * (An earlier version of this got the master/component roles backwards
+ * -- registering oss_hdaudio as a second I915_COMPONENT_AUDIO component
+ * instead of as the master -- which silently never bound, since nothing
+ * was ever waiting to match two same-typed components against each
+ * other. Confirmed against the actual kernel source, not guessed.)
+ *
+ * i915_component.h moved from <drm/i915_component.h> to
+ * <drm/intel/i915_component.h> in Linux 6.11; older kernels needing
+ * this will want the old path instead.
+ */
+#ifdef __linux__
+#include "ossdip.h"	/* struct _dev_info_t's real fields (dip->dev) */
+
+/*
+ * Just enough to recognize a PCI device (dev_is_pci()'s own check,
+ * done by hand) without pulling in the whole of linux/pci.h here --
+ * that collides with this codebase's own PCI compat layer (wrap.h/
+ * os.h), which needs to control that include itself; every other PCI
+ * access in this file already goes through its own PCI-register and
+ * pci-config-space wrapper calls instead of raw kernel PCI calls, for
+ * the same reason.
+ */
+extern struct bus_type pci_bus_type;
+
+static struct i915_audio_component hda_i915_acomp;
+static unsigned long hda_i915_power_ref;
+static int hda_i915_master_added;
+
+static int
+hda_i915_match (struct device *dev, int subcomponent, void *data)
+{
+  if (dev->bus != &pci_bus_type || dev->driver == NULL)
+    return 0;
+
+  if (strcmp (dev->driver->name, "i915") != 0 &&
+      strcmp (dev->driver->name, "xe") != 0)
+    return 0;
+
+  return subcomponent == I915_COMPONENT_AUDIO;
+}
+
+static int
+hda_i915_master_bind (struct device *dev)
+{
+  int ret;
+
+  ret = component_bind_all (dev, &hda_i915_acomp);
+  if (ret < 0)
+    return ret;
+
+  if (hda_i915_acomp.base.dev == NULL || hda_i915_acomp.base.ops == NULL)
+    {
+      component_unbind_all (dev, &hda_i915_acomp);
+      return -ENODEV;
+    }
+
+  return 0;
+}
+
+static void
+hda_i915_master_unbind (struct device *dev)
+{
+  component_unbind_all (dev, &hda_i915_acomp);
+}
+
+static const struct component_master_ops hda_i915_master_ops = {
+  .bind = hda_i915_master_bind,
+  .unbind = hda_i915_master_unbind,
+};
+
+static void
+hda_i915_init (oss_device_t * osdev)
+{
+  struct component_match *match = NULL;
+
+  memset (&hda_i915_acomp, 0, sizeof (hda_i915_acomp));
+  hda_i915_master_added = 0;
+
+  if (osdev->dip == NULL || osdev->dip->dev == NULL)
+    return;
+
+  /* No integrated GPU, or an i915/xe build too old/new to match this
+   * way: component_master_add_with_match() just finds no candidate
+   * and we carry on without ever holding a power reference, same as
+   * before this existed -- get_power()/put_power() below are both
+   * no-ops then. */
+  component_match_add_typed (osdev->dip->dev, &match, hda_i915_match, NULL);
+  hda_i915_master_added =
+    (component_master_add_with_match (osdev->dip->dev, &hda_i915_master_ops,
+				       match) == 0);
+}
+
+static void
+hda_i915_exit (oss_device_t * osdev)
+{
+  if (!hda_i915_master_added)
+    return;
+
+  component_master_del (osdev->dip->dev, &hda_i915_master_ops);
+  hda_i915_master_added = 0;
+  memset (&hda_i915_acomp, 0, sizeof (hda_i915_acomp));
+}
+
+/*
+ * component_master_add_with_match() above matches synchronously if
+ * i915's own component is already registered (i915 loads well before
+ * any HDA driver in every ordinary boot), so in practice
+ * hda_i915_acomp.base.ops is already usable by the time this returns
+ * -- no deferring needed. This stays as a safety net for the
+ * unusual case where i915 (or xe) hasn't registered its component
+ * yet: ask the driver core to retry our whole probe() shortly rather
+ * than press on without ever holding the power well.
+ *
+ * Bounded (HDA_I915_MAX_DEFERS attempts): on hardware with no
+ * integrated GPU at all, no match will ever appear, so this must not
+ * defer indefinitely -- after the cap, attach proceeds without ever
+ * holding a power reference, exactly like before any of this existed.
+ */
+#define HDA_I915_MAX_DEFERS	10
+static int hda_i915_defer_count;
+
+static int
+hda_i915_should_defer (void)
+{
+  if (hda_i915_acomp.base.ops != NULL)
+    return 0;			/* Already bound -- nothing to wait for */
+
+  if (hda_i915_defer_count >= HDA_I915_MAX_DEFERS)
+    return 0;			/* Given it a fair chance; move on */
+
+  hda_i915_defer_count++;
+  return 1;
+}
+
+static void
+hda_i915_power_up (void)
+{
+  if (hda_i915_acomp.base.ops != NULL &&
+      hda_i915_acomp.base.ops->get_power != NULL)
+    hda_i915_power_ref =
+      hda_i915_acomp.base.ops->get_power (hda_i915_acomp.base.dev);
+}
+
+static void
+hda_i915_power_down (void)
+{
+  if (hda_i915_acomp.base.ops != NULL &&
+      hda_i915_acomp.base.ops->put_power != NULL)
+    hda_i915_acomp.base.ops->put_power (hda_i915_acomp.base.dev,
+					 hda_i915_power_ref);
+}
+
+/*
+ * Requesting the power well (get_power/put_power above) is not, on
+ * its own, enough to make the codec answer CORB/RIRB during a link
+ * reset -- confirmed against ALSA's actual controller driver
+ * (sound/pci/hda/hda_intel.c, hda_intel_init_chip()): it wraps the
+ * *entire* controller reset with this separate codec_wake_override
+ * on/off pair, which is what actually makes the codec listen for and
+ * respond to the reset. Without it, the well can be genuinely on and
+ * the codec will still look "not physically present" to a GET_PARAMETER
+ * probe right after reset -- which is exactly what got this whole
+ * i915 investigation started in the first place. See its use around
+ * reset_controller()/setup_controller() in init_HDA().
+ */
+static void
+hda_i915_codec_wake_override (int enable)
+{
+  if (hda_i915_acomp.base.ops != NULL &&
+      hda_i915_acomp.base.ops->codec_wake_override != NULL)
+    hda_i915_acomp.base.ops->codec_wake_override (hda_i915_acomp.base.dev,
+						   enable);
+}
+#else /* !__linux__: no such power-well concept on any other OSS target */
+static void
+hda_i915_init (oss_device_t * osdev)
+{
+}
+
+static void
+hda_i915_exit (oss_device_t * osdev)
+{
+}
+
+static void
+hda_i915_power_up (void)
+{
+}
+
+static void
+hda_i915_power_down (void)
+{
+}
+
+static void
+hda_i915_codec_wake_override (int enable)
+{
+}
+
+static int
+hda_i915_should_defer (void)
+{
+  return 0;
+}
+#endif
+
+#ifndef EPROBE_DEFER
+/* Matches Linux's <linux/errno.h>. Never actually returned on any
+ * other OSS target, since hda_i915_should_defer() above always
+ * returns 0 there -- only needed so the portable oss_hdaudio_attach()
+ * below still compiles everywhere. */
+#define EPROBE_DEFER 517
+#endif
 
 int
 oss_hdaudio_attach (oss_device_t * osdev)
@@ -1834,6 +2293,17 @@ oss_hdaudio_attach (oss_device_t * osdev)
       cmn_err (CE_WARN, "oss_hdaudio_attach: Already attached\n");
       return 0;
     }
+
+  /* Nothing allocated yet -- bail out cheaply and let the driver core
+   * retry us later if the i915 power well isn't bound yet. See the
+   * big comment above hda_i915_should_defer(). */
+  hda_i915_init (osdev);
+  if (hda_i915_should_defer ())
+    {
+      hda_i915_exit (osdev);
+      return -EPROBE_DEFER;
+    }
+
   already_attached = 1;
 
   pci_read_config_word (osdev, PCI_VENDOR_ID, &vendor);
@@ -2027,12 +2497,18 @@ oss_hdaudio_attach (oss_device_t * osdev)
       pci_write_config_byte (osdev, 0x44, btmp & 0xf8);
      }
 
+  hda_i915_power_up ();
+  oss_udelay (200000);		/* Let the power well actually settle */
+
   err = init_HDA (devc);
   if (err == 0)
     {
       int j;
 
       cmn_err (CE_NOTE, "oss_hdaudio: init_HDA failed, cleaning up\n");
+
+      hda_i915_power_down ();
+      hda_i915_exit (osdev);
 
       oss_unregister_interrupts (devc->osdev);
 
@@ -2127,6 +2603,193 @@ oss_hdaudio_detach (oss_device_t * osdev)
 
   oss_spdif_uninstall (&devc->spdc);
 
+  hda_i915_power_down ();
+  hda_i915_exit (osdev);
+
   oss_unregister_device (devc->osdev);
+  return 1;
+}
+
+/*
+ * Suspend/resume (see the hda_verb_cache_ent_t comment above for the
+ * overall design). Neither function touches any device file, mixer
+ * control or DMA buffer -- only hardware registers -- so nothing here
+ * needs (or is allowed to assume) that every process with the device
+ * open has been closed first, unlike oss_hdaudio_detach().
+ */
+int
+oss_hdaudio_suspend (oss_device_t * osdev)
+{
+  hda_devc_t *devc = (hda_devc_t *) osdev->devc;
+
+  if (devc == NULL || devc->azbar == NULL)
+    return 1;
+
+  /* Quiesce the controller so it doesn't churn out interrupts or DMA
+   * while power goes away. Mirrors the same lines in
+   * oss_hdaudio_detach(), minus everything that frees memory or
+   * unregisters something -- resume picks the very same devc/engine/
+   * mixer/DMA-buffer structures back up in place. */
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_INTSTS, 0xc0000000);	/* ack pending ints */
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_INTCTL, 0);	/* Intr disable */
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_STATESTS, 0x7);
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_RIRBSTS, 0x5);
+  PCI_WRITEB (devc->osdev, devc->azbar + HDA_RIRBCTL, 0);	/* Stop */
+  PCI_WRITEB (devc->osdev, devc->azbar + HDA_CORBCTL, 0);	/* Stop */
+
+  /* Give up the shared display/audio power well -- see the big
+   * comment above hda_i915_init(). Re-requested in oss_hdaudio_resume()
+   * before anything below touches a register again. */
+  hda_i915_power_down ();
+
+  return 1;
+}
+
+/*
+ * Re-arm one already-open, already-running engine after resume: same
+ * BDL buffer and dmap as before suspend (neither was freed), just
+ * reprogram the stream descriptor registers -- the hardware forgot
+ * them across the sleep -- and re-trigger. No-op for a portc that
+ * isn't actually attached/running.
+ */
+static void
+hda_engine_resume_one (hda_devc_t * devc, hda_portc_t * portc, int direction)
+{
+  dmap_t *dmap;
+  hda_engine_t *engine;
+
+  if (portc == NULL || portc->engine == NULL)
+    return;
+
+  if (!(portc->audio_enabled & direction))
+    return;			/* Wasn't actually running */
+
+  if (audio_engines[portc->audiodev] == NULL)
+    return;
+
+  dmap = (direction == PCM_ENABLE_OUTPUT) ?
+    audio_engines[portc->audiodev]->dmap_out :
+    audio_engines[portc->audiodev]->dmap_in;
+  if (dmap == NULL)
+    return;
+
+  engine = portc->engine;
+
+  /* Force hda_audio_trigger() below to see this direction as
+   * "not yet armed" so it actually reprograms the run bit. */
+  portc->trigger_bits &= ~direction;
+
+  init_bdl (devc, engine, dmap);
+  if (setup_audio_engine (devc, engine, portc, dmap) < 0)
+    {
+      cmn_err (CE_WARN,
+	       "oss_hdaudio: resume: failed to re-arm engine for dev %d\n",
+	       portc->audiodev);
+      return;
+    }
+
+  hda_audio_trigger (portc->audiodev, direction);
+}
+
+int
+oss_hdaudio_resume (oss_device_t * osdev)
+{
+  hda_devc_t *devc = (hda_devc_t *) osdev->devc;
+  unsigned short pci_command;
+  unsigned int tmp;
+  int cad, i;
+
+  if (devc == NULL || devc->azbar == NULL)
+    return 1;
+
+  /* Re-request the shared display/audio power well *first* -- see the
+   * big comment above hda_i915_init(). Everything below is pointless
+   * if the link on the far side of it isn't actually powered. */
+  hda_i915_power_up ();
+
+  /* Bus mastering/memory decode: pci_restore_state() (run by the PCI
+   * core before calling us) should already have brought this back,
+   * but re-assert explicitly, same as oss_hdaudio_attach() does, so
+   * this doesn't silently depend on that. */
+  pci_read_config_word (osdev, PCI_COMMAND, &pci_command);
+  pci_command |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
+  pci_write_config_word (osdev, PCI_COMMAND, pci_command);
+
+  /* Controller-level bring-up: identical sequence to init_HDA(), minus
+   * everything that allocates memory or creates OS-visible objects
+   * (setup_engines()'s buffers, the mixer's widget/control graph, the
+   * audio/mixer device files) -- all of that is still valid from the
+   * original attach and must not be recreated. Same
+   * hda_i915_codec_wake_override() wrapping as init_HDA(); see the
+   * comment there. */
+  hda_i915_codec_wake_override (1);
+  hda_intel_cgctl_set (devc, 0);
+
+  if (!reset_controller (devc))
+    {
+      hda_intel_cgctl_set (devc, 1);
+      hda_i915_codec_wake_override (0);
+      cmn_err (CE_WARN, "oss_hdaudio: resume: controller reset failed\n");
+      return 0;
+    }
+
+  PCI_WRITEL (devc->osdev, devc->azbar + HDA_INTCTL,
+	      PCI_READL (devc->osdev, devc->azbar + HDA_INTCTL) | 0xc0000000);
+
+  tmp = (PCI_READB (devc->osdev, devc->azbar + HDA_CORBSIZE) >> 4) & 0x07;
+  if (tmp & 0x4)
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_CORBSIZE, 0x2);
+  else if (tmp & 0x2)
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_CORBSIZE, 0x1);
+  else
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_CORBSIZE, 0x0);
+
+  tmp = (PCI_READB (devc->osdev, devc->azbar + HDA_RIRBSIZE) >> 4) & 0x07;
+  if (tmp & 0x4)
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_RIRBSIZE, 0x2);
+  else if (tmp & 0x2)
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_RIRBSIZE, 0x1);
+  else
+    PCI_WRITEB (devc->osdev, devc->azbar + HDA_RIRBSIZE, 0x0);
+
+  if (!setup_controller (devc, 0))
+    {
+      hda_intel_cgctl_set (devc, 1);
+      hda_i915_codec_wake_override (0);
+      cmn_err (CE_WARN, "oss_hdaudio: resume: CORB/RIRB setup failed\n");
+      return 0;
+    }
+
+  hda_intel_cgctl_set (devc, 1);
+  hda_i915_codec_wake_override (0);
+
+  /* Wake every codec that was attached before suspend -- the link
+   * reset above put them all back in a power-on-default state, which
+   * on most codecs means D3/not responding until explicitly told to
+   * power up (same wake step attach_codec() falls back to when a
+   * codec doesn't answer on the first read). */
+  for (cad = 0; cad < MAX_CODECS; cad++)
+    if (devc->codecmask & (1 << cad))
+      do_corb_write (devc, cad, 0, 0, SET_POWER_STATE, 0);
+
+  oss_udelay (10000);
+
+  /* Replay every persistent verb (amp gains, pin controls, EAPD,
+   * selectors, converter/stream-format assignments, ...) issued since
+   * attach -- this is what actually puts every widget (including
+   * every board-specific fixup in hdaudio_gpio_handlers.c) back the
+   * way it was, without re-walking or recreating the widget/mixer
+   * graph itself. */
+  for (i = 0; i < devc->verb_cache_n; i++)
+    do_corb_write (devc, devc->verb_cache[i].cad, devc->verb_cache[i].nid,
+		   devc->verb_cache[i].direct, devc->verb_cache[i].verb,
+		   devc->verb_cache[i].parm);
+
+  /* Re-arm whatever was actually mid-stream at suspend time. */
+  for (i = 0; i < devc->num_outputs; i++)
+    hda_engine_resume_one (devc, &devc->output_portc[i], PCM_ENABLE_OUTPUT);
+  for (i = 0; i < devc->num_inputs; i++)
+    hda_engine_resume_one (devc, &devc->input_portc[i], PCM_ENABLE_INPUT);
+
   return 1;
 }

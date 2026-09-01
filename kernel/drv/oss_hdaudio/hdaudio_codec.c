@@ -1963,13 +1963,23 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
      * when the codec is in its power-on state). If the codec answers
      * zero (left in a powered down state by a previous driver), fall
      * back to a codec reset + power-up and retry.
+     *
+     * A real HDA vendor ID always has a nonzero PCI vendor code in its
+     * upper 16 bits (0x10ec..., 0x8086..., etc) -- so a response like
+     * 0x00000031, seen in practice right as the link/power well has
+     * just come back (before the codec has actually finished settling),
+     * is exactly as bogus as a flat zero and must be retried the same
+     * way, or it gets treated as a successfully-read-but-unknown codec
+     * instead of an codec that just needs a bit more time.
      */
+#define HDA_VENDOR_LOOKS_VALID(v)	(((v) & 0xffff0000) != 0)
+
     for (nretry = 0; nretry < 3; nretry++)
       {
 	int rdok;
 
 	rdok = corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_VENDOR, &a, &b);
-	if (rdok && a != 0)
+	if (rdok && HDA_VENDOR_LOOKS_VALID (a))
 	  break;
 	oss_udelay (10000);
       }
@@ -1988,11 +1998,12 @@ attach_codec (hdaudio_mixer_t * mixer, int cad, char *hw_info,
 
 	    rdok = corb_read (mixer, cad, 0, 0, GET_PARAMETER, HDA_VENDOR, &a,
 			      &b);
-	    if (rdok && a != 0)
+	    if (rdok && HDA_VENDOR_LOOKS_VALID (a))
 	      break;
 	    oss_udelay (10000);
 	  }
       }
+#undef HDA_VENDOR_LOOKS_VALID
 
     if (nretry == 3)
       {
