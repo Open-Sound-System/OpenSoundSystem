@@ -18,7 +18,11 @@
 
 #include <oss_config.h>
 #include <midi_core.h>
+#if defined(__has_include) && __has_include(<linux/stdarg.h>)
 #include <linux/stdarg.h>
+#else
+#include <stdarg.h>
+#endif
 oss_mutex_t oss_timing_mutex;
 
 char *oss_license_string = OSS_LICENSE;

@@ -12,6 +12,7 @@
 ### END INIT INFO
 
 OSSETCDIR=/etc/oss4
+OSSLIBDIR=/usr/lib/oss
 OSSVARDIR=/var/lib/oss4
 
 . /etc/oss.conf
@@ -65,7 +66,7 @@ unload_modules()
 	fi
 
 	# Unload oss drivers
-	for n in `cat $OSSETCDIR/installed_drivers | sed 's/#.*//'`
+	for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'`
 	do
 		if ! /sbin/rmmod $n
 		then
@@ -91,21 +92,35 @@ case "$1" in
 		exit 0
 	fi
 
-	# Check if oss kernel modules are installed
-	if ! test -f /lib/modules/`uname -r`/kernel/oss4/osscore.ko && ! test -f /lib/modules/`uname -r`/updates/dkms/osscore.ko
+	# Check if oss kernel modules are installed. Module files may be
+	# compressed (.ko.gz/.ko.xz/.ko.zst) depending on the distro's
+	# module compression settings, so check for all known variants.
+	OSSCORE_FOUND=
+	for _dir in /lib/modules/`uname -r`/kernel/oss4 /lib/modules/`uname -r`/updates/dkms
+	do
+		for _ext in ko ko.gz ko.xz ko.zst
+		do
+			if test -f "$_dir/osscore.$_ext"
+			then
+				OSSCORE_FOUND=1
+				break 2
+			fi
+		done
+	done
+	if test -z "$OSSCORE_FOUND"
 	then
 		log_action_end_msg 1 'No kernel modules detected'
 		exit 0
 	fi
 
 	# Detect hardware
-	if ! test -f $OSSETCDIR/installed_drivers
+	if ! test -f $OSSLIBDIR/etc/installed_drivers
 	then
 		/usr/sbin/ossdetect -v
 	fi
-	if ! test -f $OSSETCDIR/installed_drivers
+	if ! test -f $OSSLIBDIR/etc/installed_drivers
 	then
-		log_action_end_msg 10 "No $OSSETCDIR/installed_drivers - cannot continue (problem with ossdetect?)"
+		log_action_end_msg 10 "No $OSSLIBDIR/etc/installed_drivers - cannot continue (problem with ossdetect?)"
 		exit 10
 	fi
 
@@ -122,7 +137,7 @@ case "$1" in
 	fi
 
 	# Load oss drivers
-	for n in `cat $OSSETCDIR/installed_drivers | sed 's/#.*//'`
+	for n in `cat $OSSLIBDIR/etc/installed_drivers | sed 's/#.*//'`
 	do
 		OPTIONS=
 

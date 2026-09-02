@@ -1,3 +1,4 @@
 OSSETCDIR=/etc/oss4
+OSSLIBDIR=/usr/lib/oss
 OSSVARDIR=/var/lib/oss4
 OSSDKMSDIR=/var/lib/dkms/oss4/_VERSION_

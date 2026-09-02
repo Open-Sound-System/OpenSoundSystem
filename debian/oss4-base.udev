@@ -1,0 +1,7 @@
+# Re-create OSS4 device nodes and OSS 3.6-compatible legacy links (such as
+# /dev/dsp, /dev/mixer, /dev/dsp0, /dev/audio, /dev/midi00) whenever an OSS4
+# sound driver binds to hardware. This covers hotplugged devices (e.g. USB
+# sound cards handled by oss_usb) in addition to the initial boot-time probe
+# already done by the oss4-base init script.
+ACTION=="bind", SUBSYSTEM=="pci", DRIVER=="oss_*", RUN+="/usr/sbin/oss4-hotplug"
+ACTION=="bind", SUBSYSTEM=="usb", DRIVER=="oss_*", RUN+="/usr/sbin/oss4-hotplug"

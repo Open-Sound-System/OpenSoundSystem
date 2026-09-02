@@ -1,6 +1,7 @@
 debian/30oss4-pm etc/pm/sleep.d
 debian/modprobe.d/oss4-base.conf etc/modprobe.d/
 debian/oss.conf etc/
+debian/oss4-hotplug usr/sbin
 usr/bin/ossinfo
 usr/bin/ossmix
 usr/bin/ossplay

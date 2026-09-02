@@ -56,7 +56,7 @@ done
 OBJS="os_linux.o `echo $SOURCES |sed -e 's,\.c,.o,g'`"
 cat >"$NEWDIR"/core/Makefile <<EOF
 MULTIARCH_PATH = /usr/include/\$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-EXTRA_CFLAGS = -I\$(KBUILD_EXTMOD) -isystem /usr/include -isystem \$(MULTIARCH_PATH) \
+ccflags-y = -I\$(KBUILD_EXTMOD) -isystem /usr/include -isystem \$(MULTIARCH_PATH) \
 	-isystem \$(shell \$(CC) --print-file-name=include-fixed)
 obj-m += osscore.o
 osscore-objs := oss_core.o $OBJS
@@ -80,7 +80,7 @@ osscore_symbols.inc:
 KBUILD_EXTRA_SYMBOLS := \$(PWD)/core/Module.symvers
 
 MULTIARCH_PATH = /usr/include/\$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
-EXTRA_CFLAGS=-D_KERNEL -I\$(KBUILD_EXTMOD)/../core -I\$(KBUILD_EXTMOD) -isystem /usr/include -isystem \$(MULTIARCH_PATH) \
+ccflags-y=-D_KERNEL -I\$(KBUILD_EXTMOD)/../core -I\$(KBUILD_EXTMOD) -isystem /usr/include -isystem \$(MULTIARCH_PATH) \
 	-isystem \$(shell \$(CC) --print-file-name=include-fixed)
 EOF
 

@@ -616,7 +616,11 @@ oss_untimeout (timeout_id_t id)
   if (tmout->timestamp != id)	/* Expired timer */
     return;
   if (tmout->active)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)
+    timer_delete (&tmout->timer);
+#else
     del_timer (&tmout->timer);
+#endif
   tmout->active = 0;
   tmout->timestamp = 0;
 }
@@ -830,7 +834,11 @@ oss_reserve_pages (oss_native_word start_addr, oss_native_word end_addr)
   lastpage = virt_to_page (end_addr);
 
   for (page = virt_to_page (start_addr); page <= lastpage; page++)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7,0,0)
+    SetPageReserved (page);
+#else
     set_bit (PG_reserved, &page->flags);
+#endif
 }
 
 void
@@ -841,7 +849,11 @@ oss_unreserve_pages (oss_native_word start_addr, oss_native_word end_addr)
   lastpage = virt_to_page (end_addr);
 
   for (page = virt_to_page (start_addr); page <= lastpage; page++)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7,0,0)
+    ClearPageReserved (page);
+#else
     clear_bit (PG_reserved, &page->flags);
+#endif
 }
 
 /*

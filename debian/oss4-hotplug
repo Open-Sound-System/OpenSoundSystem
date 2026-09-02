@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# Re-create OSS4 device nodes and the OSS 3.6-compatible legacy device
+# links (/dev/dsp, /dev/mixer, /dev/dsp0, /dev/midi00, ...) whenever an
+# OSS4 driver binds to hardware. Invoked from udev (see oss4-base.udev)
+# so that hotplugged devices (e.g. USB sound cards handled by oss_usb)
+# get the same device nodes/links that oss4-base's init script creates
+# for hardware present at boot.
+#
+test -x /usr/sbin/ossdetect || exit 0
+test -f /proc/opensound/devfiles || exit 0
+
+/usr/sbin/ossdetect -d -m 660 -g audio
+
+test -x /usr/sbin/ossdevlinks && /usr/sbin/ossdevlinks

@@ -19,6 +19,10 @@
 #ifndef GRC3_H_INCLUDED
 #define GRC3_H_INCLUDED
 
+#ifndef __KERNEL__
+#include <stdint.h>
+#endif
+
 #if !defined(CONFIG_OSS_GRC_MIN_QUALITY) || CONFIG_OSS_GRC_MIN_QUALITY > 6
 #define CONFIG_OSS_GRC_MIN_QUALITY 0
 #endif
