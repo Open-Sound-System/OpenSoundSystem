@@ -2617,13 +2617,56 @@ oss_hdaudio_detach (oss_device_t * osdev)
  * needs (or is allowed to assume) that every process with the device
  * open has been closed first, unlike oss_hdaudio_detach().
  */
+/*
+ * Stop one already-running engine's actual DMA run bit *without*
+ * touching portc->audio_enabled -- that flag is how
+ * hda_engine_resume_one() (below) knows this engine needs to be
+ * re-armed on the way back up. Mirrors the "turn it off" half of
+ * hda_audio_trigger(), minus the audio_enabled clear, which is exactly
+ * the difference between "the app stopped this stream" (trigger) and
+ * "the hardware is about to lose power out from under it regardless of
+ * what the app wants" (this). No-op for a portc that isn't running.
+ */
+static void
+hda_engine_suspend_one (hda_devc_t * devc, hda_portc_t * portc, int direction)
+{
+  hda_engine_t *engine;
+  unsigned char tmp;
+
+  if (portc == NULL || portc->engine == NULL)
+    return;
+
+  if (!(portc->audio_enabled & direction))
+    return;			/* Wasn't actually running */
+
+  engine = portc->engine;
+
+  tmp = PCI_READB (devc->osdev, engine->base + 0x00);
+  tmp &= ~0x1e;			/* Run off & per-stream intr disable */
+  PCI_WRITEB (devc->osdev, engine->base + 0x00, tmp);
+
+  portc->trigger_bits &= ~direction;
+}
+
 int
 oss_hdaudio_suspend (oss_device_t * osdev)
 {
   hda_devc_t *devc = (hda_devc_t *) osdev->devc;
+  int i;
 
   if (devc == NULL || devc->azbar == NULL)
     return 1;
+
+  /* Stop every actually-running DMA engine *first*, before anything
+   * else below touches a shared register or the power well goes away.
+   * Letting an engine keep mid-transfer bus-master DMA running right
+   * up until the link reset / power-well teardown is exactly the kind
+   * of thing that can wedge this hardware hard enough to need a
+   * physical power cycle, rather than merely losing the stream. */
+  for (i = 0; i < devc->num_outputs; i++)
+    hda_engine_suspend_one (devc, &devc->output_portc[i], PCM_ENABLE_OUTPUT);
+  for (i = 0; i < devc->num_inputs; i++)
+    hda_engine_suspend_one (devc, &devc->input_portc[i], PCM_ENABLE_INPUT);
 
   /* Quiesce the controller so it doesn't churn out interrupts or DMA
    * while power goes away. Mirrors the same lines in
