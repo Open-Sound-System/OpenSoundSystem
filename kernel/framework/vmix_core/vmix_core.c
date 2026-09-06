@@ -2115,7 +2115,11 @@ vmix_attach_audiodev(oss_device_t *osdev, int masterdev, int inputdev, unsigned 
   mixer->osdev = osdev;
   mixer->first_input_mixext = -1;
   mixer->first_output_mixext = -1;
-  mixer->src_quality = 0;
+#ifdef CONFIG_OSS_VMIX_FLOAT
+  mixer->src_quality = 0;	/* "Fast" - always a valid value in FLOAT builds */
+#else
+  mixer->src_quality = CONFIG_OSS_GRC_MIN_QUALITY;	/* "Fast" (0) isn't offered in FIXEDPOINT builds */
+#endif
 
   mixer->output_mixer_dev = -1;
   mixer->input_mixer_dev = -1;

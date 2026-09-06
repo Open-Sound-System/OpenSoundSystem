@@ -4225,6 +4225,24 @@ find_raw_input_space (adev_p adev, dmap_p dmap, int *dmapos)
   if (count == 0)
     count = dmap->bytes_in_use;
 
+  /*
+   * dmap->bytes_in_use is supposed to always fit inside the actual
+   * dmap->dmabuf allocation (dmap->buffsize), but some engines (e.g.
+   * vmix's per-client capture devices) derive bytes_in_use through a
+   * separate path than the one that sized dmabuf. If the two ever drift
+   * apart, handing back a dmapos/count pair based on the wrong (larger)
+   * size lets the caller copy_to_user() past the real end of dmabuf --
+   * which is a hard kernel BUG() under CONFIG_HARDENED_USERCOPY, not just
+   * a corrupted read. Clamp against the real allocation size here.
+   */
+  if (dmap->buffsize > 0)
+    {
+      if (offs >= dmap->buffsize)
+	offs %= dmap->buffsize;
+      if (offs + count > dmap->buffsize)
+	count = dmap->buffsize - offs;
+    }
+
   *dmapos = offs;
   MUTEX_EXIT_IRQRESTORE (dmap->mutex, flags);
 
@@ -4463,6 +4481,33 @@ oss_audio_read (int dev, struct fileinfo *file, uio_t * buf, int count)
       if (uiomove (dmabuf, l, UIO_READ, buf) != 0)
 	{
 	  cmn_err (CE_WARN, "audio: uiomove(UIO_READ) failed\n");
+	  /*
+	   * Dump the full dmap/uio state at the exact moment copy_to_user()
+	   * fails. A bare EFAULT here is otherwise very hard to diagnose --
+	   * this only fires on the already-rare failure path, so keep it
+	   * rather than treating it as one-off debug output to strip out.
+	   */
+	  cmn_err (CE_WARN,
+		   "audio: EFAULT diag: dev=%d engine=%d comm=%s pid=%d\n",
+		   dev, adev->engine_num, oss_get_procname (), oss_get_pid ());
+	  cmn_err (CE_WARN,
+		   "audio: EFAULT diag: l=%d c=%d p=%d n=%d count=%d dmabuf=%p\n",
+		   l, c, p, n, count, dmabuf);
+	  cmn_err (CE_WARN,
+		   "audio: EFAULT diag: uio->ptr=%p uio->resid=%d uio->rw=%d uio->kernel_space=%d\n",
+		   buf->ptr, buf->resid, buf->rw, buf->kernel_space);
+	  cmn_err (CE_WARN,
+		   "audio: EFAULT diag: COOKED=%d frag_size=%d nfrags=%d bytes_in_use=%d "
+		   "frame_size=%d user_frame_size=%d expand_factor=%d\n",
+		   !!(dmap->flags & DMAP_COOKED), dmap->fragment_size, dmap->nfrags,
+		   dmap->bytes_in_use, dmap->frame_size, dmap->user_frame_size,
+		   dmap->expand_factor);
+	  cmn_err (CE_WARN,
+		   "audio: EFAULT diag: byte_counter=%llu user_counter=%llu "
+		   "tmpbuf_ptr=%d tmpbuf_len=%d\n",
+		   (unsigned long long) dmap->byte_counter,
+		   (unsigned long long) dmap->user_counter,
+		   dmap->tmpbuf_ptr, dmap->tmpbuf_len);
 	  return OSS_EFAULT;
 	}
       if ((ret = move_rdpointer (adev, dmap, l)) < 0)
@@ -4508,6 +4553,15 @@ audio_space_in_queue (adev_p adev, dmap_p dmap, int count)
 	dmap->play_underruns++;
 	if (!dmap->underrun_flag)
 	  {
+	    /*
+	     * Log once per underrun episode (not every occurrence -- this
+	     * check already latches via underrun_flag) so a glitch heard in
+	     * Firefox/Zoom can be correlated against dmesg timestamps
+	     * without flooding the log.
+	     */
+	    cmn_err (CE_WARN,
+		     "[oss xrun] output underrun on engine %d (total=%d)\n",
+		     adev->engine_num, dmap->play_underruns);
 #ifdef DO_TIMINGS
 	    oss_do_timing ("Clearing the buffer");
 #endif
@@ -5571,11 +5625,26 @@ do_inputintr (int dev, int intr_flags)
       dmap->interrupt_count++;
     }
 
-  while (dmap->byte_counter > dmap->user_counter &&
-	 (int) (dmap->byte_counter - dmap->user_counter) > dmap->bytes_in_use)
+  if (dmap->byte_counter > dmap->user_counter &&
+      (int) (dmap->byte_counter - dmap->user_counter) > dmap->bytes_in_use)
     {
-      dmap->user_counter += dmap->fragment_size;
-      dmap->rec_overruns++;
+      /*
+       * Log once per overrun burst (not every dropped fragment inside the
+       * loop below) so a capture glitch -- e.g. behind a Firefox/Zoom A/V
+       * desync -- can be correlated against dmesg timestamps without
+       * flooding the log. Logged after the loop, once rec_overruns
+       * actually reflects this burst, so "total" isn't stale by the
+       * burst's own count.
+       */
+      while (dmap->byte_counter > dmap->user_counter &&
+	     (int) (dmap->byte_counter - dmap->user_counter) > dmap->bytes_in_use)
+	{
+	  dmap->user_counter += dmap->fragment_size;
+	  dmap->rec_overruns++;
+	}
+
+      cmn_err (CE_WARN, "[oss xrun] input overrun on engine %d (total=%d)\n",
+	       dev, dmap->rec_overruns);
     }
   dmap->fragment_counter = (dmap->fragment_counter + 1) % dmap->nfrags;
 
@@ -5705,6 +5774,10 @@ do_outputintr (int dev, int intr_flags)
 
 	  if (!dmap->underrun_flag)
 	    {
+	      /* See the matching comment in audio_space_in_queue(). */
+	      cmn_err (CE_WARN,
+		       "[oss xrun] output underrun on engine %d (total=%d)\n",
+		       dev, dmap->play_underruns);
 #ifdef DO_TIMINGS
 	      oss_do_timing ("Clearing the buffer");
 #endif

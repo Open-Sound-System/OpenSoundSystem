@@ -1111,6 +1111,7 @@ extern int hdaudio_mac_realtek_GPIO_init (int dev, hdaudio_mixer_t * mixer, int 
 extern int hdaudio_eeepc_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_asus_a7k_GPIO_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 extern int hdaudio_asus_m9_mixer_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
+extern int hdaudio_lenovo_alc298_init (int dev, hdaudio_mixer_t * mixer, int cad, int top_group);
 
 static const codec_desc_t subdevices[] = {
   {0x98801019, "ECS 915P-A", VF_NONE, NULL, 0x76541320},
@@ -1164,6 +1165,14 @@ static const codec_desc_t subdevices[] = {
  * Thinkpad R61
  */
   {0x17aa20bb, "Thinkpad R61", VF_NONE, (char**) &ad1984remap, 0, hdaudio_thinkpad_r61_mixer_init},
+
+/*
+ * Thinkpad T470-family (ALC298, subsystem 17aa:222d) -- DAC/pin pairing
+ * and AA-loopback fixes matching ALSA's ALC298_FIXUP_TPT470_DOCK chain
+ * for the same exact subsystem ID. See hdaudio_lenovo_alc298_init() in
+ * hdaudio_gpio_handlers.c.
+ */
+  {0x17aa222d, "Thinkpad (ALC298)", VF_NONE, NULL, 0, hdaudio_lenovo_alc298_init, 0x10ec0298},
 
 /*
  * Asus Eee PC (model 900 at least)

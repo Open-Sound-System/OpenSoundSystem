@@ -1,3 +1,32 @@
+oss4 (4.2-build2020-11) unstable; urgency=medium
+
+  * Legacy OSS 3.6 mixer compat, oss_strncmp/DMA-locking/IRQ-cleanup
+    fixes, kernel 6.2/7.0 compat, ALC298 speaker-leak fix, HDA engine-
+    count fix, Haiku fixes, packaging fixes.
+  * oss_hdaudio: capture hardened-usercopy crash fix, input-overrun
+    xrun dmesg logging, ALC298 low speaker/headphone volume fix
+    (DAC output amps left at codec-reset default, now exposed as
+    front/rear mixer controls and maxed to the amp's own 0dB point).
+  * oss_hdaudio: real suspend/resume support on Linux (verb-cache
+    replay + in-place controller/codec re-init, no device files or
+    DMA buffers torn down) via a new generic PCI .suspend/.resume
+    hook in module.inc/pci_wrapper.inc.
+  * oss_hdaudio: on Intel platforms where the HDA controller's link
+    shares a power well with the integrated GPU (Skylake and later),
+    bind to i915 as the audio-component *master* (component_master_
+    add_with_match(), matching ALSA's sound/hda/hdac_i915.c) and
+    request that well before touching hardware, wrapping every
+    controller reset with i915's codec-wake-override and the
+    Skylake-specific CGCTL clock-gating quirk -- without this, the
+    HDA link only ever worked once, right after a cold boot, and
+    never again after any module reload or suspend/resume. Also
+    widens reset_controller()'s link-reset retry and tightens the
+    codec vendor-ID validity check (a transient post-reset garbage
+    read was being accepted as a final "unknown codec" instead of
+    retried).
+
+ -- Rafael Diniz <rafael@riseup.net>  Tue, 18 Aug 2026 20:49:58 +0100
+
 oss4 (4.2-build2020-10) unstable; urgency=medium
 
   * This fork adds working audio support for the Lenovo ThinkPad P70

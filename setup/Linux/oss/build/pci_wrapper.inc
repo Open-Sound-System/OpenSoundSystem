@@ -61,12 +61,32 @@ osspci_probe (struct pci_dev *pcidev, const struct pci_device_id *pciid)
     dev_err(&pcidev->dev, "can't enable device.\n");
     return err;
   }
-  if (!DRIVER_ATTACH (osdev))
-    {
-      osdev_delete (osdev);
-      pci_disable_device (pcidev);
-      return -EIO;
-    }
+  {
+    int attach_ret = DRIVER_ATTACH (osdev);
+
+    /*
+     * DRIVER_ATTACH()'s normal contract is a plain boolean (0=failed,
+     * nonzero=success). -EPROBE_DEFER is the one exception: a driver
+     * whose attach depends on some other subsystem (e.g. oss_hdaudio
+     * on Intel platforms needing i915 to hand back its shared audio
+     * power well -- see hda_i915_should_defer() in oss_hdaudio.c) can
+     * return it to ask the driver core to retry this probe() later,
+     * instead of that being treated as a hard failure.
+     */
+    if (attach_ret == -EPROBE_DEFER)
+      {
+	osdev_delete (osdev);
+	pci_disable_device (pcidev);
+	return -EPROBE_DEFER;
+      }
+
+    if (!attach_ret)
+      {
+	osdev_delete (osdev);
+	pci_disable_device (pcidev);
+	return -EIO;
+      }
+  }
 
   dev_map[n_devmap].pcidev = pcidev;
   dev_map[n_devmap++].osdev = osdev;
@@ -109,6 +129,55 @@ osspci_remove (struct pci_dev *pcidev)
 #else
   return;
 #endif
+}
+
+/*
+ * Default no-op suspend/resume: a driver that hasn't been updated to
+ * implement <name>_suspend()/<name>_resume() (DRIVER_SUSPEND/
+ * DRIVER_RESUME) still links and loads fine -- these weak definitions
+ * are simply overridden by the linker when the driver provides its
+ * own, real, strongly-defined versions of the same two names.
+ */
+int __attribute__ ((weak))
+DRIVER_SUSPEND (oss_device_t * osdev)
+{
+  return 0;
+}
+
+int __attribute__ ((weak))
+DRIVER_RESUME (oss_device_t * osdev)
+{
+  return 0;
+}
+
+static int
+osspci_suspend (struct pci_dev *pcidev, pm_message_t state)
+{
+  int i;
+
+  for (i = 0; i < n_devmap; i++)
+    if (dev_map[i].pcidev == pcidev)
+      {
+	DRIVER_SUSPEND (dev_map[i].osdev);
+	break;
+      }
+
+  return 0;
+}
+
+static int
+osspci_resume (struct pci_dev *pcidev)
+{
+  int i;
+
+  for (i = 0; i < n_devmap; i++)
+    if (dev_map[i].pcidev == pcidev)
+      {
+	DRIVER_RESUME (dev_map[i].osdev);
+	break;
+      }
+
+  return 0;
 }
 
 void

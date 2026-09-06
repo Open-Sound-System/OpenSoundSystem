@@ -15,6 +15,7 @@
 
 #include <linux/version.h>
 #include <linux/time.h>
+#include <linux/spinlock.h>
 
 #include <oss_config.h>
 #include <midi_core.h>
@@ -77,11 +78,15 @@ struct oss_dma_map_entry
 };
 
 static struct oss_dma_map_entry oss_dma_map[OSS_DMA_MAP_MAX];
+static DEFINE_SPINLOCK (oss_dma_map_lock);
 
 static int
 oss_dma_map_add (void *va, dma_addr_t dma, int size, struct device *dev)
 {
   int i;
+  unsigned long flags;
+
+  spin_lock_irqsave (&oss_dma_map_lock, flags);
 
   for (i = 0; i < OSS_DMA_MAP_MAX; i++)
     if (oss_dma_map[i].va == NULL)
@@ -90,8 +95,11 @@ oss_dma_map_add (void *va, dma_addr_t dma, int size, struct device *dev)
 	oss_dma_map[i].dma = dma;
 	oss_dma_map[i].size = size;
 	oss_dma_map[i].dev = dev;
+	spin_unlock_irqrestore (&oss_dma_map_lock, flags);
 	return 0;
       }
+
+  spin_unlock_irqrestore (&oss_dma_map_lock, flags);
 
   cmn_err (CE_NOTE, "oss_dma_map: too many DMA buffers\n");
   return -1;
@@ -102,6 +110,9 @@ oss_dma_map_del (void *va, dma_addr_t * dma, int *size,
 		 struct device **dev)
 {
   int i;
+  unsigned long flags;
+
+  spin_lock_irqsave (&oss_dma_map_lock, flags);
 
   for (i = 0; i < OSS_DMA_MAP_MAX; i++)
     if (oss_dma_map[i].va == va)
@@ -110,9 +121,11 @@ oss_dma_map_del (void *va, dma_addr_t * dma, int *size,
 	*size = oss_dma_map[i].size;
 	*dev = oss_dma_map[i].dev;
 	oss_dma_map[i].va = NULL;
+	spin_unlock_irqrestore (&oss_dma_map_lock, flags);
 	return 0;
       }
 
+  spin_unlock_irqrestore (&oss_dma_map_lock, flags);
   return -1;
 }
 
@@ -129,12 +142,19 @@ oss_dma_capable (oss_device_t * osdev)
 int
 oss_dma_has (void *p)
 {
-  int i;
+  int i, found = 0;
+  unsigned long flags;
 
+  spin_lock_irqsave (&oss_dma_map_lock, flags);
   for (i = 0; i < OSS_DMA_MAP_MAX; i++)
     if (oss_dma_map[i].va == p)
-      return 1;
-  return 0;
+      {
+	found = 1;
+	break;
+      }
+  spin_unlock_irqrestore (&oss_dma_map_lock, flags);
+
+  return found;
 }
 
 /*
@@ -158,13 +178,21 @@ oss_dma_alloc (oss_device_t * osdev, int size, oss_uint64_t memlimit,
 
   dev = osdev->dip->dev;
 
+  /*
+   * Use the narrowest zone that actually satisfies memlimit, rather than
+   * stacking GFP_DMA (the 16MB ISA zone) on top of GFP_DMA32 for any
+   * request under 4GB -- callers asking for e.g. MEMLIMIT_28BITS (1GB)
+   * don't need to be squeezed into the heavily-contested 16MB zone.
+   */
 #ifdef GFP_DMA32
-  if (memlimit < 0x0000000100000000LL)
+  if (memlimit < 0x0000000001000000LL)		/* < 16MB: needs ISA zone */
+    flags |= GFP_DMA;
+  else if (memlimit < 0x0000000100000000LL)	/* < 4GB */
     flags |= GFP_DMA32;
-#endif
-
+#else
   if (memlimit < 0x00000000ffffffffLL)
     flags |= GFP_DMA;
+#endif
 
   if (size < PAGE_SIZE)
     size = PAGE_SIZE;

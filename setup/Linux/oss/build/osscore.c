@@ -651,11 +651,7 @@ oss_uiomove (void *addr, size_t nbytes, enum uio_rw rwflag, uio_t * uio)
   switch (rwflag)
     {
     case UIO_READ:
-      c = nbytes;
-      if (c > 10)
-	c = 0;
-
-      if ((c = copy_to_user (uio->ptr, address, nbytes) != 0))
+      if ((c = copy_to_user (uio->ptr, address, nbytes)) != 0)
 	{
 	  uio->resid -= nbytes;
 	  oss_cmn_err (CE_CONT, "copy_to_user(%d) failed (%d)\n", nbytes, c);
@@ -868,13 +864,21 @@ oss_contig_malloc (oss_device_t * osdev, int buffsize, oss_uint64_t memlimit,
   if (oss_dma_capable (osdev))
     return oss_dma_alloc (osdev, buffsize, memlimit, phaddr);
 
+  /*
+   * Use the narrowest zone that actually satisfies memlimit, rather than
+   * stacking GFP_DMA (the 16MB ISA zone) on top of GFP_DMA32 for any
+   * request under 4GB -- callers asking for e.g. MEMLIMIT_28BITS (1GB)
+   * don't need to be squeezed into the heavily-contested 16MB zone.
+   */
 #ifdef GFP_DMA32
-  if (memlimit < 0x0000000100000000LL)
+  if (memlimit < 0x0000000001000000LL)		/* < 16MB: needs ISA zone */
+    flags |= GFP_DMA;
+  else if (memlimit < 0x0000000100000000LL)	/* < 4GB */
     flags |= GFP_DMA32;
-#endif
-
+#else
   if (memlimit < 0x00000000ffffffffLL)
     flags |= GFP_DMA;
+#endif
 
   start_addr = NULL;
 
