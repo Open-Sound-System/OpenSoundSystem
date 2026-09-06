@@ -2704,8 +2704,14 @@ oss_hdaudio_resume (oss_device_t * osdev)
 
   /* Re-request the shared display/audio power well *first* -- see the
    * big comment above hda_i915_init(). Everything below is pointless
-   * if the link on the far side of it isn't actually powered. */
+   * if the link on the far side of it isn't actually powered. Same
+   * settle delay as oss_hdaudio_attach() -- get_power() returning
+   * doesn't guarantee the well/link is *usable* yet, and touching
+   * devc->azbar (below, via reset_controller()) before it is can wedge
+   * this hardware hard enough to need a physical power cycle, not just
+   * fail to probe like it does at plain attach time. */
   hda_i915_power_up ();
+  oss_udelay (200000);		/* Let the power well actually settle */
 
   /* Bus mastering/memory decode: pci_restore_state() (run by the PCI
    * core before calling us) should already have brought this back,
